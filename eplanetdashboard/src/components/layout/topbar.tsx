@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Menu, Moon, Search, Sun, LogOut, User, Settings, UserCog, Check } from 'lucide-react'
+import { Menu, Moon, Search, Sun, LogOut, User, Settings, UserCog } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { PersonAvatar } from '@/components/ui/avatar'
 import {
@@ -9,19 +9,15 @@ import {
 import { useUIStore } from '@/store/ui-store'
 import { useAuthStore } from '@/store/auth-store'
 import { roleLabels } from '@/mock/current-user'
-import type { Role } from '@/types'
 import { Breadcrumbs } from './breadcrumbs'
 import { GlobalSearch } from './global-search'
 import { NotificationCenter } from './notification-center'
-
-const allRoles = Object.keys(roleLabels) as Role[]
 
 export function Topbar() {
   const theme = useUIStore((s) => s.theme)
   const toggleTheme = useUIStore((s) => s.toggleTheme)
   const setMobileNavOpen = useUIStore((s) => s.setMobileNavOpen)
   const currentUser = useAuthStore((s) => s.currentUser)
-  const setRole = useAuthStore((s) => s.setRole)
   const [searchOpen, setSearchOpen] = useState(false)
 
   useEffect(() => {
@@ -68,26 +64,11 @@ export function Topbar() {
         </Button>
         <NotificationCenter />
 
-        {/* Demo-only role switcher — stands in for real login until Track A's auth is wired in. */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="hidden gap-1.5 sm:flex">
-              <UserCog className="size-3.5" /> {roleLabels[currentUser.role]}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="font-normal text-[11px] uppercase tracking-wide text-muted-foreground">
-              Preview dashboard as
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {allRoles.map((role) => (
-              <DropdownMenuItem key={role} onClick={() => setRole(role)}>
-                {roleLabels[role]}
-                {role === currentUser.role && <Check className="ml-auto size-3.5 text-primary" />}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Static role badge displaying active role without dropdown switcher */}
+        <div className="hidden items-center gap-1.5 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-xs font-medium text-muted-foreground sm:flex">
+          <UserCog className="size-3.5" />
+          <span>{roleLabels[currentUser.role]}</span>
+        </div>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
