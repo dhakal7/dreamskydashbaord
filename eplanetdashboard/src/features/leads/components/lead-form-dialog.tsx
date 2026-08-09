@@ -1,0 +1,440 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { UserPlus, AlertTriangle } from 'lucide-react'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import { countries, counselors, createReferralAgent, referralAgents } from '@/mock'
+import { useLeadsStore } from '../store'
+import type { Lead, LeadSource, StudyLevel, Priority } from '@/types'
+
+// ── Zod Schema ───────────────────────────────────────────────────────────────
+
+const formSchema = z.object({
+  name: z.string().min(2, 'Name is required'),
+  email: z.string().email('Valid email is required'),
+  phone: z.string().min(7, 'Phone is required'),
+  source: z.enum(['website', 'facebook', 'referral_agent', 'walk_in', 'education_fair', 'google_ads', 'instagram']),
+  interestedCountry: z.string().min(1, 'Country is required'),
+  interestedLevel: z.enum(['foundation', 'diploma', 'bachelor', 'master', 'phd']),
+  address: z.string().min(2, 'Address is required'),
+  priority: z.enum(['low', 'medium', 'high', 'urgent']),
+  counselorIds: z.array(z.string()).min(1, 'At least one counselor is required'),
+})
+
+type FormData = z.infer<typeof formSchema>
+
+const sourceLabels: Record<LeadSource, string> = {
+  website: 'Website', facebook: 'Facebook', referral_agent: 'Referral Agent', walk_in: 'Walk-in',
+  education_fair: 'Education Fair', google_ads: 'Google Ads', instagram: 'Instagram',
+}
+
+const levelLabels: Record<StudyLevel, string> = {
+  foundation: 'Foundation', diploma: 'Diploma', bachelor: 'Bachelor', master: 'Master', phd: 'PhD',
+}
+
+const priorityLabels: Record<Priority, string> = {
+  low: 'Low', medium: 'Medium', high: 'High', urgent: 'Urgent',
+}
+
+// ── Props ─────────────────────────────────────────────────────────────────────
+
+interface LeadFormDialogProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  leadToEdit?: Lead | null
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
+export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialogProps) {
+  const addLead = useLeadsStore((s) => s.addLead)
+  const updateLead = useLeadsStore((s) => s.updateLead)
+  const [agentQuery, setAgentQuery] = useState('')
+
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
+    resolver: zodResolver(formSchema) as any,
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      source: 'website',
+      interestedCountry: '',
+      interestedLevel: 'bachelor',
+      address: '',
+      priority: 'medium',
+      counselorIds: [],
+    },
+  })
+
+  useEffect(() => {
+    if (open && leadToEdit) {
+      reset({
+        name: leadToEdit.name,
+        email: leadToEdit.email,
+        phone: leadToEdit.phone,
+        source: leadToEdit.source || 'website',
+        interestedCountry: leadToEdit.interestedCountry || '',
+        interestedLevel: leadToEdit.interestedLevel || 'bachelor',
+        address: leadToEdit.address || '',
+        priority: leadToEdit.priority || 'medium',
+        counselorIds: leadToEdit.counselorId ? [leadToEdit.counselorId] : [],
+      })
+      if (leadToEdit.referralAgentName) setAgentQuery(leadToEdit.referralAgentName)
+    } else if (open) {
+      reset({
+        name: '',
+        email: '',
+        phone: '',
+        source: 'website',
+        interestedCountry: '',
+        interestedLevel: 'bachelor',
+        address: '',
+        priority: 'medium',
+        counselorIds: [],
+      })
+      setAgentQuery('')
+    }
+  }, [open, leadToEdit, reset])
+
+  const selectedSource = watch('source')
+  const selectedCountryName = watch('interestedCountry')
+  const showAgentField = selectedSource === 'referral_agent'
+
+  const suggestedAgents = useMemo(() => {
+    const query = agentQuery.trim().toLowerCase()
+    if (!query) return referralAgents.slice(0, 6)
+    return referralAgents.filter((agent) => agent.name.toLowerCase().includes(query) || agent.email.toLowerCase().includes(query)).slice(0, 6)
+  }, [agentQuery])
+
+  function onSubmit(data: FormData) {
+    const selectedCounselors = counselors.filter((c) => data.counselorIds.includes(c.id))
+    const primaryCounselor = selectedCounselors[0]
+    const resolvedAgent = showAgentField ? createReferralAgent(agentQuery) : null
+
+    const assignments = selectedCounselors.map((counselor) => ({
+      country: data.interestedCountry,
+      counselorId: counselor.id,
+      counselorName: counselor.name,
+    }))
+
+    if (leadToEdit) {
+      updateLead(leadToEdit.id, {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        source: data.source,
+        interestedCountry: data.interestedCountry,
+        interestedLevel: data.interestedLevel,
+        address: data.address,
+        priority: data.priority,
+        counselorId: primaryCounselor?.id ?? leadToEdit.counselorId,
+        counselorName: primaryCounselor?.name ?? leadToEdit.counselorName,
+        referralAgentId: resolvedAgent?.id ?? leadToEdit.referralAgentId,
+        referralAgentName: resolvedAgent?.name ?? agentQuery.trim() ?? leadToEdit.referralAgentName,
+      })
+    } else {
+      addLead({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        photoColor: '#2563EB',
+        source: data.source,
+        stage: 'new',
+        counselorId: primaryCounselor?.id ?? '',
+        counselorName: primaryCounselor?.name ?? 'Unassigned',
+        selectedCountry: data.interestedCountry,
+        selectedCounselorId: primaryCounselor?.id ?? '',
+        selectedCounselorName: primaryCounselor?.name ?? 'Unassigned',
+        countryCounselorAssignments: assignments,
+        interestedCountry: data.interestedCountry,
+        interestedLevel: data.interestedLevel,
+        address: data.address,
+        priority: data.priority,
+        referralAgentId: resolvedAgent?.id,
+        referralAgentName: resolvedAgent?.name ?? (agentQuery.trim() || undefined),
+        notes: '',
+      })
+    }
+    setAgentQuery('')
+    onOpenChange(false)
+    reset()
+  }
+
+  function handleClose() {
+    setAgentQuery('')
+    reset()
+    onOpenChange(false)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="max-w-lg gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b border-border/60 px-6 py-4">
+          <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            <UserPlus className="size-3.5" />
+            {leadToEdit ? 'Edit Lead' : 'New Lead'}
+          </div>
+          <DialogTitle className="mt-1 text-lg font-bold">
+            {leadToEdit ? `Edit Lead Details: ${leadToEdit.name}` : 'Capture a New Lead'}
+          </DialogTitle>
+          <DialogDescription>
+            {leadToEdit ? 'Update contact info, email, phone, and lead parameters.' : "Enter the prospect's details to add them to the pipeline."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[60vh]">
+          <div className="space-y-4 px-6 py-5">
+            {/* Name + Email */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Full Name</label>
+                <Input
+                  placeholder="e.g. Anisha Khadka"
+                  className={`h-9 text-sm ${errors.name ? 'border-danger-500' : ''}`}
+                  {...register('name')}
+                />
+                {errors.name && (
+                  <p className="text-[11px] text-danger-600 flex items-center gap-1">
+                    <AlertTriangle className="size-3" />{errors.name.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Email</label>
+                <Input
+                  type="email"
+                  placeholder="lead@email.com"
+                  className={`h-9 text-sm ${errors.email ? 'border-danger-500' : ''}`}
+                  {...register('email')}
+                />
+                {errors.email && (
+                  <p className="text-[11px] text-danger-600 flex items-center gap-1">
+                    <AlertTriangle className="size-3" />{errors.email.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Phone + Source */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Phone</label>
+                <Input
+                  placeholder="98XXXXXXXX"
+                  className={`h-9 text-sm ${errors.phone ? 'border-danger-500' : ''}`}
+                  {...register('phone')}
+                />
+                {errors.phone && (
+                  <p className="text-[11px] text-danger-600 flex items-center gap-1">
+                    <AlertTriangle className="size-3" />{errors.phone.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Source</label>
+                <Controller
+                  name="source"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={(value) => {
+                      field.onChange(value)
+                      if (value !== 'referral_agent') {
+                        setAgentQuery('')
+                      }
+                    }}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(sourceLabels) as LeadSource[]).map((s) => (
+                          <SelectItem key={s} value={s}>{sourceLabels[s]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+
+            {showAgentField && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Referral Agent</label>
+                <Input
+                  placeholder="Start typing an agent name"
+                  value={agentQuery}
+                  onChange={(event) => setAgentQuery(event.target.value)}
+                  className="h-9 text-sm"
+                />
+                {agentQuery.trim().length > 0 && suggestedAgents.length > 0 && (
+                  <div className="rounded-md border border-border/70 bg-muted/40 p-2 text-sm">
+                    {suggestedAgents.map((agent) => (
+                      <button
+                        key={agent.id}
+                        type="button"
+                        className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-background"
+                        onClick={() => setAgentQuery(agent.name)}
+                      >
+                        <span className="font-medium">{agent.name}</span>
+                        <span className="text-xs text-muted-foreground">{agent.referralCode}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  Select an existing agent or type a new name to create one automatically.
+                </p>
+              </div>
+            )}
+
+            {/* Address */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Address</label>
+              <Input
+                placeholder="e.g. Baneshwor, Kathmandu"
+                className={`h-9 text-sm ${errors.address ? 'border-danger-500' : ''}`}
+                {...register('address')}
+              />
+              {errors.address && (
+                <p className="text-[11px] text-danger-600 flex items-center gap-1">
+                  <AlertTriangle className="size-3" />{errors.address.message}
+                </p>
+              )}
+            </div>
+
+            {/* Interested Country + Level */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Interested Country</label>
+                <Controller
+                  name="interestedCountry"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger className={errors.interestedCountry ? 'border-danger-500' : ''}>
+                        <SelectValue placeholder="Select country…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {countries.map((c) => (
+                          <SelectItem key={c.id} value={c.name}>
+                            {c.flag} {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {errors.interestedCountry && (
+                  <p className="text-[11px] text-danger-600 flex items-center gap-1">
+                    <AlertTriangle className="size-3" />{errors.interestedCountry.message}
+                  </p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Interested Level</label>
+                <Controller
+                  name="interestedLevel"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(levelLabels) as StudyLevel[]).map((l) => (
+                          <SelectItem key={l} value={l}>{levelLabels[l]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Priority */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-foreground">Priority</label>
+              <Controller
+                name="priority"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(priorityLabels) as Priority[]).map((p) => (
+                        <SelectItem key={p} value={p}>{priorityLabels[p]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            {/* Counselor Assignment */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-foreground">Assign Counselors for Selected Country</label>
+              <Controller
+                name="counselorIds"
+                control={control}
+                render={({ field }) => (
+                  <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
+                    <p className="mb-2 text-[11px] text-muted-foreground">
+                      Select one or more counselors for {selectedCountryName || 'the selected country'}.
+                    </p>
+                    <div className="space-y-2">
+                      {counselors.map((c) => {
+                        const checked = (field.value ?? []).includes(c.id)
+                        return (
+                          <label key={c.id} className="flex items-center justify-between gap-3 rounded-md border border-transparent px-2 py-1.5 hover:border-border/70 hover:bg-background/80">
+                            <span className="text-sm font-medium">{c.name}</span>
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(value) => {
+                                const next = value
+                                  ? [...(field.value ?? []), c.id]
+                                  : (field.value ?? []).filter((id: string) => id !== c.id)
+                                field.onChange(next)
+                              }}
+                            />
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              />
+              {errors.counselorIds && (
+                <p className="text-[11px] text-danger-600 flex items-center gap-1">
+                  <AlertTriangle className="size-3" />{errors.counselorIds.message}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <DialogFooter className="border-t border-border/60 bg-muted/30 px-6 py-4">
+            <Button type="button" variant="outline" size="sm" onClick={handleClose}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" disabled={isSubmitting}>
+              <UserPlus className="size-3.5 mr-1" />
+              Add Lead
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
