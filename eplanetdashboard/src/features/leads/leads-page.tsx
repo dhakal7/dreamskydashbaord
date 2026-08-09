@@ -32,13 +32,12 @@ export default function LeadsPage() {
   const handleMove = (id: string, stage: LeadStage) => {
     moveLead(id, stage)
     if (!isMockMode()) {
-      const stageMap: Record<LeadStage, string> = {
+      const stageMap: Partial<Record<LeadStage, string>> = {
         new: 'LEAD',
         contacted: 'LEAD',
         counseling: 'PROSPECT',
         interested: 'PROSPECT',
         completed: 'ENROLLED',
-        lost: 'LOST',
       }
       const backendStage = stageMap[stage] || 'LEAD'
       changePipelineStage.mutate({ id, body: { stage: backendStage } })

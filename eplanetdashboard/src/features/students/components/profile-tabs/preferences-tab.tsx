@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Sparkles, CheckCircle2, TrendingUp, ShieldCheck, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
