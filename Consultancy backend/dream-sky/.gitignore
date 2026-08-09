@@ -1,0 +1,13 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+/src/generated/prisma
+
+# Uploaded student documents (encrypted, local storage)
+uploads/
+
+# IDE / editor / AI tool folders
+.claude/
+.windsurf/
+.agents/

@@ -1,0 +1,836 @@
+// This is your Prisma schema file
+// Learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Role {
+  SUPER_ADMIN
+  BRANCH_ADMIN
+  COUNSELOR
+  FRONT_DESK
+  TEACHER
+  REFERRAL_AGENT
+  STUDENT
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum PipelineStage {
+  LEAD
+  PROSPECT
+  ENROLLED
+  APPLIED
+  OFFER_RECEIVED
+  VISA_APPLIED
+  VISA_APPROVED
+  DEPARTED
+  LOST
+}
+
+enum DocumentType {
+  PASSPORT
+  TRANSCRIPT
+  ENGLISH_TEST
+  BANK_STATEMENT
+  OFFER_LETTER
+  VISA
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum CommunicationChannel {
+  EMAIL
+  PHONE
+  WHATSAPP
+  IN_PERSON
+  MEETING
+}
+
+enum CommunicationDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum AppointmentType {
+  INITIAL_CONSULTATION
+  FOLLOW_UP
+  DOCUMENT_REVIEW
+  VISA_COUNSELING
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CARD
+  ONLINE
+  CHEQUE
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+  DEFERRED
+  WITHDRAWN
+}
+
+enum OfferType {
+  CONDITIONAL
+  UNCONDITIONAL
+}
+
+enum VisaStatus {
+  NOT_APPLIED
+  PREPARING
+  SUBMITTED
+  APPROVED
+  REFUSED
+  RESUBMITTING
+}
+
+enum CommissionRuleRole {
+  COUNSELOR
+  REFERRAL_AGENT
+}
+
+enum CommissionRuleType {
+  FIXED
+  PERCENTAGE
+  TIERED
+}
+
+enum CommissionStatus {
+  PENDING
+  PAID
+  DISPUTED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum ClassContentType {
+  NOTE
+  MATERIAL
+  ASSIGNMENT
+}
+
+enum EventType {
+  SEMINAR
+  UNI_VISIT
+  FAIR
+  WEBINAR
+  MEETING
+  WORKSHOP
+  ORIENTATION
+  OTHER
+}
+
+enum EventApprovalStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+}
+
+enum ReminderOffset {
+  ONE_MONTH
+  ONE_WEEK
+  ONE_DAY
+  SAME_DAY
+}
+
+enum ReminderStatus {
+  PENDING
+  SENT
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  WHATSAPP
+  PUSH
+}
+
+enum NotificationTemplateApprovalStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+enum NotificationStatus {
+  QUEUED
+  SENT
+  FAILED
+}
+
+enum Level {
+  DIPLOMA
+  BACHELOR
+  MASTER
+  PHD
+}
+
+enum FieldOfStudy {
+  ENGINEERING
+  BUSINESS
+  IT_COMPUTING
+  HEALTH_SCIENCES
+  ARTS_HUMANITIES
+  LAW
+  NATURAL_SCIENCES
+  SOCIAL_SCIENCES
+  EDUCATION
+  HOSPITALITY_TOURISM
+  OTHER
+}
+
+enum ProcessingType {
+  SELF
+  PARTNER_CONSULTANCY
+}
+
+model PartnerConsultancy {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  students  Student[]
+}
+
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IDENTITY & ACCESS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  address   String?
+  phone     String?
+  email     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users           User[]
+  events          Event[]
+  classes         Class[]
+  commissionRules CommissionRule[]
+}
+
+model User {
+  id                 String     @id @default(cuid())
+  email              String     @unique
+  passwordHash       String
+  firstName          String
+  lastName           String
+  phone              String?
+  role               Role
+  status             UserStatus @default(ACTIVE)
+  branchId           String?
+  mustChangePassword Boolean    @default(false)
+  studentId          String?    @unique
+  twoFactorSecret    String?
+  twoFactorEnabled   Boolean    @default(false)
+  lastLoginAt        DateTime?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  branch               Branch?              @relation(fields: [branchId], references: [id])
+  counselorProfile     CounselorProfile?
+  teacherProfile       TeacherProfile?
+  referralAgentProfile ReferralAgentProfile?
+  assignedStudents     Student[]            @relation("AssignedCounselor")
+  changedStages        PipelineStageHistory[]
+  communicationLogs    CommunicationLog[]   @relation("LogAuthor")
+  appointments         Appointment[]        @relation("CounselorAppointments")
+  uploadedDocuments    Document[]           @relation("DocumentUploader")
+  verifiedDocuments    Document[]           @relation("DocumentVerifier")
+  receivedCommissions  Commission[]         @relation("RecipientUser")
+  taughtClasses        Class[]              @relation("ClassTeacher")
+  createdEvents        Event[]              @relation("CreatedEvents")
+  approvedEvents       Event[]              @relation("ApprovedEvents")
+  auditLogs            AuditLog[]           @relation("AuditActor")
+  notifications        Notification[]       @relation("RecipientUser")
+  createdTemplates     NotificationTemplate[] @relation("CreatedTemplates")
+  publicInquiriesConverted PublicInquiry[]   @relation("ConvertedByUser")
+  attendanceMarked     AttendanceRecord[]   @relation("AttendanceMarker")
+  classContentCreated  ClassContent[]       @relation("ContentCreator")
+  refreshTokens        RefreshToken[]
+}
+
+model CounselorProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  specialization String?
+  targetQuota    Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model TeacherProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  subjects  String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ReferralAgentProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  referralCode String   @unique
+  qrCodeUrl    String?
+  bankDetails  Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referrals Student[] @relation("ReferredByAgent")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STUDENT PIPELINE (Track A)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Student {
+  id                  String        @id @default(cuid())
+  firstName           String
+  lastName            String
+  email               String        @unique
+  phone               String?
+  dateOfBirth         DateTime?
+  nationality         String?
+  currentStage        PipelineStage @default(LEAD)
+  source              String?
+  assignedCounselorId String?
+  referredByAgentId   String?
+  academicBackground  Json?
+  financialBackground Json?
+  familyBackground    Json?
+  notes               String?
+  isActive            Boolean       @default(true)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  processingType       ProcessingType      @default(SELF)
+  partnerConsultancyId String?
+  partnerConsultancy   PartnerConsultancy? @relation(fields: [partnerConsultancyId], references: [id], onDelete: SetNull)
+
+  assignedCounselor User?                  @relation("AssignedCounselor", fields: [assignedCounselorId], references: [id])
+  referredByAgent   ReferralAgentProfile?  @relation("ReferredByAgent", fields: [referredByAgentId], references: [id])
+  stageHistory      PipelineStageHistory[]
+  testScores        TestScore[]
+  documents         Document[]
+  communicationLogs CommunicationLog[]
+  appointments      Appointment[]
+  payments          Payment[]
+  applications      Application[]
+  enrollments       Enrollment[]
+  attendanceRecords AttendanceRecord[]
+  commissions       Commission[]
+}
+
+model PipelineStageHistory {
+  id          String        @id @default(cuid())
+  studentId   String
+  stage       PipelineStage
+  changedAt   DateTime      @default(now())
+  changedById String?
+  reasonCode  String?
+
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  changedBy User?   @relation(fields: [changedById], references: [id])
+}
+
+model TestScore {
+  id         String    @id @default(cuid())
+  studentId  String
+  type       String
+  score      Float
+  testDate   DateTime
+  expiryDate DateTime?
+  createdAt  DateTime  @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id             String         @id @default(cuid())
+  studentId      String
+  type           DocumentType
+  status         DocumentStatus @default(PENDING)
+  fileUrl        String
+  originalName   String?
+  mimeType       String?
+  fileSize       Int?
+  uploadedById   String?
+  verifiedById   String?
+  expiryDate     DateTime?
+  acknowledged   Boolean        @default(false)
+  acknowledgedAt DateTime?
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  uploadedBy User?   @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  verifiedBy User?   @relation("DocumentVerifier", fields: [verifiedById], references: [id])
+}
+
+model CommunicationLog {
+  id             String                 @id @default(cuid())
+  studentId      String
+  authorId       String?
+  channel        CommunicationChannel
+  direction      CommunicationDirection
+  content        String
+  nextFollowUpAt DateTime?
+  createdAt      DateTime               @default(now())
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  author  User?   @relation("LogAuthor", fields: [authorId], references: [id])
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  studentId   String
+  counselorId String?
+  datetime    DateTime
+  durationMin Int               @default(30)
+  status      AppointmentStatus @default(SCHEDULED)
+  type        AppointmentType
+  meetingMode String            @default("OFFICE")
+  meetingLink String?
+  notes       String?
+  outcome     String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  counselor User?   @relation("CounselorAppointments", fields: [counselorId], references: [id])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  studentId   String
+  feeType     String
+  totalAmount Float
+  currency    String        @default("NPR")
+  fxRate      Float?
+  status      PaymentStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  student      Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+}
+
+model Transaction {
+  id            String        @id @default(cuid())
+  paymentId     String
+  amount        Float
+  method        PaymentMethod
+  receiptNumber String?       @unique
+  paidAt        DateTime      @default(now())
+  notes         String?
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+model Application {
+  id           String            @id @default(cuid())
+  studentId    String
+  universityId String
+  courseId     String
+  status       ApplicationStatus @default(DRAFT)
+  intake       String?
+  priority     String?
+  notes        String?
+  submittedAt  DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  student    Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  university University @relation(fields: [universityId], references: [id])
+  course     Course     @relation(fields: [courseId], references: [id])
+  offers     Offer[]
+  visaCase   VisaCase?
+}
+
+model Offer {
+  id            String    @id @default(cuid())
+  applicationId String
+  type          OfferType
+  details       Json?
+  receivedAt    DateTime  @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model VisaCase {
+  id               String     @id @default(cuid())
+  applicationId    String     @unique
+  status           VisaStatus @default(NOT_APPLIED)
+  visaType         String?
+  embassy          String?
+  notes            String?
+  refusalReason    String?
+  resubmissionLink String?
+  submittedAt      DateTime?
+  decisionAt       DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BUSINESS LAYER (Track B - Merged & Ported)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Country {
+  id           String       @id @default(cuid())
+  name         String       @unique
+  code         String       @unique
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @default(now()) @updatedAt
+
+  universities University[]
+}
+
+model University {
+  id              String   @id @default(cuid())
+  name            String
+  countryId       String
+  city            String?
+  website         String?
+  description     String?
+  logoUrl         String?
+  visaSuccessRate Decimal? @db.Decimal(5, 2)
+  ranking         Int?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  country         Country          @relation(fields: [countryId], references: [id])
+  courses         Course[]
+  applications    Application[]
+  commissionRules CommissionRule[]
+}
+
+model Course {
+  id                 String   @id @default(cuid())
+  universityId       String
+  name               String
+  level              Level?
+  fieldOfStudy       FieldOfStudy? @default(OTHER)
+  durationMonths     Int?
+  tuitionFee         Float?
+  currency           String   @default("USD")
+  minGPA             Float?
+  englishRequirement Json?
+  scholarships       Json?
+  deadlines          Json?
+  entryRequirements  Json?
+  intakeDates        DateTime[]
+  seatCapacity       Int?
+  seatsRemaining     Int?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  university   University    @relation(fields: [universityId], references: [id], onDelete: Cascade)
+  applications Application[]
+}
+
+model RecommendationResult {
+  id                        String   @id @default(cuid())
+  recordId                  String   // Lead or Student ID from Track A
+  inputSnapshot             Json     // Request payload
+  results                   Json     // Scored matches
+  generatedAt               DateTime @default(now())
+  counselorOverrideCourseId String?
+
+  @@index([recordId, generatedAt(sort: Desc)])
+}
+
+model CommissionRule {
+  id                String             @id @default(cuid())
+  role              CommissionRuleRole
+  type              CommissionRuleType
+  triggerStage      PipelineStage
+  tierConfig        Json?
+  fixedAmount       Float?
+  percentage        Float?
+  value             Float?
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  scopeBranchId     String?
+  scopeUniversityId String?
+  isActive          Boolean            @default(true)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  scopeBranch     Branch?        @relation(fields: [scopeBranchId], references: [id])
+  scopeUniversity University?    @relation(fields: [scopeUniversityId], references: [id])
+  commissions     Commission[]
+
+  @@index([role, triggerStage, isActive])
+}
+
+model Commission {
+  id            String           @id @default(cuid())
+  ruleId        String?
+  ruleSnapshot  Json             // Full immutable copy of rule
+  recipientId   String
+  studentId     String
+  amount        Float
+  currency      String           @default("NPR")
+  status        CommissionStatus @default(PENDING)
+  disputeReason String?
+  paidAt        DateTime?
+  paidBy        String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  rule      CommissionRule? @relation(fields: [ruleId], references: [id])
+  recipient User            @relation("RecipientUser", fields: [recipientId], references: [id])
+  student   Student         @relation(fields: [studentId], references: [id])
+
+  @@index([recipientId, status])
+  @@index([studentId])
+}
+
+model Class {
+  id        String   @id @default(cuid())
+  teacherId String
+  name      String
+  subject   String?
+  schedule  Json?
+  branchId  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  teacher           User               @relation("ClassTeacher", fields: [teacherId], references: [id])
+  branch            Branch?            @relation(fields: [branchId], references: [id])
+  enrollments       Enrollment[]
+  attendanceRecords AttendanceRecord[]
+  contents          ClassContent[]
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  classId   String
+  studentId String
+  enrolledAt DateTime @default(now())
+
+  class   Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, studentId])
+}
+
+model AttendanceRecord {
+  id        String           @id @default(cuid())
+  classId   String
+  studentId String
+  date      DateTime
+  status    AttendanceStatus
+  markedById String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @default(now()) @updatedAt
+
+  class    Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  student  Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  markedBy User?   @relation("AttendanceMarker", fields: [markedById], references: [id])
+
+  @@unique([classId, studentId, date])
+}
+
+model ClassContent {
+  id          String           @id @default(cuid())
+  classId     String
+  type        ClassContentType
+  title       String
+  body        String?
+  fileUrl     String?
+  dueDate     DateTime?
+  createdById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  class     Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("ContentCreator", fields: [createdById], references: [id])
+}
+
+model Event {
+  id             String              @id @default(cuid())
+  title          String
+  description    String?
+  type           EventType
+  datetime       DateTime
+  location       String?
+  branchId       String?
+  createdById    String?
+  audienceRoles  String[]
+  approvalStatus EventApprovalStatus @default(REQUESTED)
+  approvedById   String?
+  approvedAt     DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  branch     Branch?         @relation(fields: [branchId], references: [id])
+  createdBy  User?           @relation("CreatedEvents", fields: [createdById], references: [id])
+  approvedBy User?           @relation("ApprovedEvents", fields: [approvedById], references: [id])
+  reminders  EventReminder[]
+
+  @@index([datetime])
+  @@index([approvalStatus])
+}
+
+model EventReminder {
+  id           String         @id @default(cuid())
+  eventId      String
+  offsetMin    Int?
+  offset       ReminderOffset?
+  status       ReminderStatus @default(PENDING)
+  scheduledFor DateTime?
+  sentAt       DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @default(now()) @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledFor])
+}
+
+model NotificationTemplate {
+  id             String                             @id @default(cuid())
+  channel        NotificationChannel
+  name           String                             @unique
+  content        String
+  approvalStatus NotificationTemplateApprovalStatus @default(DRAFT)
+  createdById    String?
+  createdAt      DateTime                           @default(now())
+  updatedAt      DateTime                           @updatedAt
+
+  createdBy     User?          @relation("CreatedTemplates", fields: [createdById], references: [id])
+  notifications Notification[]
+}
+
+model Notification {
+  id              String             @id @default(cuid())
+  channel         NotificationChannel
+  templateId      String?
+  recipientUserId String
+  subject         String?
+  body            String?
+  status          NotificationStatus @default(QUEUED)
+  payload         Json?
+  sentAt          DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @default(now()) @updatedAt
+
+  template  NotificationTemplate? @relation(fields: [templateId], references: [id])
+  recipient User                  @relation("RecipientUser", fields: [recipientUserId], references: [id])
+
+  @@index([recipientUserId, status])
+  @@index([createdAt])
+}
+
+model PublicInquiry {
+  id              String    @id @default(cuid())
+  name            String
+  phone           String
+  email           String
+  message         String
+  countryInterest String?
+  source          String    @default("website")
+  converted       Boolean   @default(false)
+  convertedAt     DateTime?
+  convertedById   String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  convertedBy User? @relation("ConvertedByUser", fields: [convertedById], references: [id])
+
+  @@index([converted])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  entity    String
+  entityId  String
+  field     String?
+  oldValue  String?
+  newValue  String?
+  timestamp DateTime @default(now())
+
+  actor User? @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([entity, entityId])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
