@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — DreamSky Education Consultancy</title>
+    
+    <!-- Meta Description & SEO -->
+    <meta name="description" content="Privacy Policy and Data Protection Statement for DreamSky Education Consultancy, Nepal. Learn how we collect, store, process, and protect your personal information." />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        'sans': ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                        'jakarta': ['"Plus Jakarta Sans"', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif']
+                    },
+                    colors: {
+                        navy: '#0A0A0A',
+                        redAccent: '#DC2626',
+                        redAccentDark: '#B91C1C',
+                        grayBg: '#F8FAFC',
+                        cardBg: '#FFFFFF',
+                        darkCard: '#141414',
+                    },
+                    borderRadius: { 'xl': '20px', '2xl': '24px', '3xl': '32px' },
+                    boxShadow: {
+                        'soft': '0 10px 40px rgba(0,0,0,0.04)',
+                        'glow': '0 12px 40px rgba(220,38,38,0.18)',
+                        'glass': '0 8px 32px rgba(0,0,0,0.04)',
+                        'premium': '0 20px 60px rgba(0,0,0,0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #374151;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #0A0A0A;
+        }
+
+        /* --- Header & Glass Navigation --- */
+        .glass-nav {
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .glass-nav .nav-logo-text {
+            color: #FFFFFF;
+            transition: color 0.4s ease;
+        }
+        .glass-nav .nav-link {
+            position: relative;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.90);
+            transition: color 0.3s ease;
+        }
+        .glass-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #DC2626;
+            border-radius: 4px;
+            transition: width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .glass-nav .nav-link:hover {
+            color: #F87171;
+        }
+        .glass-nav .nav-link:hover::after {
+            width: 100%;
+        }
+        .glass-nav .nav-login-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+        .glass-nav .nav-login-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.45);
+            color: #FFFFFF;
+            transform: translateY(-1px);
+        }
+        .glass-nav .nav-cta-btn {
+            background: #DC2626;
+            color: #FFFFFF;
+            box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
+            transition: all 0.3s ease;
+        }
+        .glass-nav .nav-cta-btn:hover {
+            background: #B91C1C;
+            transform: translateY(-1px);
+        }
+
+        /* Scrolled state */
+        .glass-nav.scrolled {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-bottom: 1px solid rgba(229, 231, 235, 0.8) !important;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.06) !important;
+        }
+        .glass-nav.scrolled .nav-logo-text { color: #0A0A0A !important; }
+        .glass-nav.scrolled .hamburger-icon { color: #0A0A0A !important; }
+        .glass-nav.scrolled .nav-link { color: #1F2937 !important; }
+        .glass-nav.scrolled .nav-link:hover { color: #DC2626 !important; }
+        .glass-nav.scrolled .nav-login-btn {
+            background: #F3F4F6;
+            border-color: #E5E7EB;
+            color: #1F2937;
+        }
+        .glass-nav.scrolled .nav-login-btn:hover {
+            background: #FEF2F2;
+            border-color: #FECDD3;
+            color: #DC2626;
+        }
+
+        /* --- Mobile Navigation Drawer --- */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 380px;
+            height: 100vh;
+            background: #FFFFFF;
+            padding: 90px 28px 40px;
+            transition: right 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: -10px 0 60px rgba(0, 0, 0, 0.10);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .mobile-menu.open { right: 0; }
+        .mobile-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.50);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            z-index: 999;
+        }
+        .mobile-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 7px; }
+        ::-webkit-scrollbar-track { background: #F1F5F9; }
+        ::-webkit-scrollbar-thumb { background: #DC2626; border-radius: 10px; }
+
+        .slim-footer {
+            background: linear-gradient(135deg, #050B18 0%, #0A162C 50%, #060B16 100%);
+            color: #FFFFFF;
+            border-top: 1px solid rgba(220, 38, 38, 0.20);
+            position: relative;
+        }
+
+        /* Legal Content Styling */
+        .legal-clause {
+            scroll-margin-top: 100px;
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-800 bg-[#FAFBFD] selection:bg-rose-500 selection:text-white text-base">
+
+    <!-- MOBILE OVERLAY & DRAWER MENU -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="Untitled-1.html#home" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">Home</a>
+        <div class="border-b border-gray-100 py-3">
+            <div class="text-[#0A0A0A] font-bold text-sm mb-2 text-redAccent">About Us</div>
+            <div class="pl-4 space-y-2 text-xs font-semibold">
+                <a href="mission-vision.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">Mission and Vision</a>
+                <a href="team.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">Our Team</a>
+            </div>
+        </div>
+        <div class="border-b border-gray-100 py-3">
+            <div class="text-[#0A0A0A] font-bold text-sm mb-2 text-redAccent">Destinations</div>
+            <div class="pl-4 space-y-2 text-xs font-semibold">
+                <a href="australia.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇦🇺 Study in Australia</a>
+                <a href="canada.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇨🇦 Study in Canada</a>
+                <a href="uk.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇬🇧 Study in UK</a>
+                <a href="usa.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇺🇸 Study in USA</a>
+                <a href="newzealand.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇳🇿 Study in New Zealand</a>
+                <a href="europe.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇪🇺 Study in Europe</a>
+            </div>
+        </div>
+        <a href="Untitled-1.html#partners" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">Universities</a>
+        <a href="Untitled-1.html#journey" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">Study Journey</a>
+        <button onclick="openAuthModal('login'); document.getElementById('mobileMenu')?.classList.remove('open'); document.getElementById('mobileOverlay')?.classList.remove('active');" class="mt-4 w-full flex items-center justify-center gap-2 bg-rose-50 text-gray-900 border border-rose-200 font-bold py-3 rounded-full hover:bg-redAccent hover:text-white transition shadow-sm">
+            <i class="fas fa-user-circle text-base text-redAccent"></i> Login
+        </button>
+        <a href="Untitled-1.html#contact" class="mt-3 block w-full text-center bg-redAccent text-white font-semibold py-3.5 rounded-full hover:bg-redAccentDark transition shadow-md">Book Free Consultation</a>
+    </div>
+
+    <!-- ============================================================
+    HEADER — Glass Navigation with Interactive Hover Dropdowns
+    ============================================================ -->
+    <header class="fixed top-0 left-0 w-full z-50 glass-nav" id="header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="Untitled-1.html" class="flex items-center gap-3 group">
+                    <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="DreamSky" class="w-10 h-10 rounded-xl object-contain bg-white p-1 shadow-md border border-gray-100 group-hover:scale-105 transition-transform duration-300" />
+                    <div class="nav-logo-text font-bold text-xl leading-tight tracking-tight">Dream<span class="text-blue-600">Sky</span></div>
+                </a>
+
+                <nav class="hidden xl:flex items-center gap-8">
+                    <a href="Untitled-1.html#home" class="nav-link text-sm py-1">Home</a>
+                    
+                    <!-- About Us Dropdown Menu -->
+                    <div class="relative group py-2">
+                        <a href="Untitled-1.html#about" class="nav-link text-sm py-1 inline-flex items-center gap-1.5 cursor-pointer">
+                            <span>About Us</span>
+                            <i class="fas fa-chevron-down text-[10px] opacity-80 group-hover:rotate-180 transition-transform duration-300"></i>
+                        </a>
+
+                        <!-- Dropdown Popup Card -->
+                        <div class="absolute top-full left-0 w-56 bg-white/95 backdrop-blur-xl rounded-2xl p-2 shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                            <a href="mission-vision.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-bullseye text-redAccent w-4 text-center group-hover/item:scale-110 transition-transform"></i>
+                                <span>Mission and Vision</span>
+                            </a>
+                            <a href="team.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-users text-redAccent w-4 text-center group-hover/item:scale-110 transition-transform"></i>
+                                <span>Our Team</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Destinations Dropdown Menu -->
+                    <div class="relative group py-2">
+                        <a href="Untitled-1.html#destinations" class="nav-link text-sm py-1 inline-flex items-center gap-1.5 cursor-pointer">
+                            <span>Destinations</span>
+                            <i class="fas fa-chevron-down text-[10px] opacity-80 group-hover:rotate-180 transition-transform duration-300"></i>
+                        </a>
+
+                        <!-- Dropdown Popup Card -->
+                        <div class="absolute top-full left-0 w-60 bg-white/95 backdrop-blur-xl rounded-2xl p-2 shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                            <a href="australia.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇦🇺</span>
+                                <span>Study in Australia</span>
+                            </a>
+                            <a href="canada.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇨🇦</span>
+                                <span>Study in Canada</span>
+                            </a>
+                            <a href="uk.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇬🇧</span>
+                                <span>Study in UK</span>
+                            </a>
+                            <a href="usa.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇺🇸</span>
+                                <span>Study in USA</span>
+                            </a>
+                            <a href="newzealand.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇳🇿</span>
+                                <span>Study in New Zealand</span>
+                            </a>
+                            <a href="europe.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇪🇺</span>
+                                <span>Study in Europe</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <a href="Untitled-1.html#partners" class="nav-link text-sm py-1">Universities</a>
+                    <a href="Untitled-1.html#journey" class="nav-link text-sm py-1">Journey</a>
+                    <a href="Untitled-1.html#contact" class="nav-link text-sm py-1">Contact</a>
+                </nav>
+
+                <div class="flex items-center gap-2.5">
+                    <button onclick="openAuthModal('login')" class="nav-login-btn hidden sm:inline-flex items-center gap-2 text-xs font-semibold px-5 py-2.5 rounded-full transition transform hover:-translate-y-0.5 shadow-md hover:shadow-lg cursor-pointer">
+                        <i class="fas fa-user-circle text-sm"></i> Login
+                    </button>
+                    <a href="Untitled-1.html#contact" class="nav-cta-btn hidden sm:inline-flex text-xs font-semibold px-5 py-2.5 rounded-full transition transform hover:-translate-y-0.5 shadow-md hover:shadow-lg">
+                        Book Consultation <i class="fas fa-arrow-right ml-2 my-auto group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                    <button class="xl:hidden p-2 text-white hover:text-redAccent hover:scale-110 transition focus:outline-none hamburger-icon" id="hamburger" aria-label="Toggle Navigation">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO HEADER BANNER -->
+    <section class="pt-32 pb-16 bg-gradient-to-b from-[#0A0A0A] via-[#111827] to-[#0A0A0A] text-white relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="max-w-3xl">
+<div class="mb-6 inline-flex items-center gap-3.5 bg-white/10 backdrop-blur-md px-5 py-3 rounded-2xl border border-white/20 shadow-lg">
+                    <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="DreamSky Logo" class="w-12 h-12 rounded-xl object-contain bg-white p-1 shadow-md border border-white/20" />
+                    <div>
+                        <div class="text-white font-black text-xl leading-tight tracking-tight">Dream<span class="text-blue-500">Sky</span> Education Consultancy</div>
+                        <div class="text-xs text-rose-300 font-semibold tracking-wide">Official Legal Agreement & Document</div>
+                    </div>
+                </div>
+                <span class="text-rose-400 font-extrabold text-xs tracking-[0.25em] uppercase block mb-3">
+                    DATA PROTECTION & PRIVACY STATEMENT
+                </span>
+                <h1 class="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight mb-4">
+                    Privacy Policy
+                </h1>
+                <p class="text-gray-300 text-sm sm:text-base leading-relaxed font-normal">
+                    DreamSky Education Consultancy is committed to safeguarding your personal data and maintaining full privacy compliance across all educational advisory and visa guidance services.
+                </p>
+                <div class="mt-6 flex flex-wrap items-center gap-6 text-xs text-gray-400 border-t border-gray-800 pt-5">
+                    <div><strong>Last Updated:</strong> February 2026</div>
+                    <div><strong>Compliance:</strong> Nepal Personal Data & MOEST Regulations</div>
+                    <div><strong>Scope:</strong> Website Visitors, Applicants & Enrolled Students</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MAIN CONTENT SECTION -->
+    <section class="py-16 bg-[#FAFBFD]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                
+                <!-- STICKY TABLE OF CONTENTS SIDEBAR -->
+                <aside class="lg:col-span-4">
+                    <div class="sticky top-28 bg-white rounded-3xl p-6 shadow-sm border border-gray-200/80 space-y-4">
+                        <h3 class="text-sm font-black text-[#0A0A0A] uppercase tracking-wider border-b border-gray-100 pb-3">
+                            Policy Navigation
+                        </h3>
+                        <nav class="space-y-1 text-xs font-semibold text-gray-600 max-h-[70vh] overflow-y-auto pr-2">
+                            <a href="#privacy-1" class="block py-1.5 px-3 rounded-lg hover:bg-rose-50 hover:text-redAccent transition">1. Introduction & Scope</a>
+                            <a href="#privacy-2" class="block py-1.5 px-3 rounded-lg hover:bg-rose-50 hover:text-redAccent transition">2. Information We Collect</a>
+                            <a href="#privacy-3" class="block py-1.5 px-3 rounded-lg hover:bg-rose-50 hover:text-redAccent transition">3. How We Use Information</a>
+                            <a href="#privacy-4" class="block py-1.5 px-3 rounded-lg hover:bg-rose-50 hover:text-redAccent transition">4. Data Sharing & Third Parties</a>
+                            <a href="#privacy-5" class="block py-1.5 px-3 rounded-lg hover:bg-rose-50 hover:text-redAccent transition">5. Data Security & Retention</a>
+                            <a href="#privacy-6" class="block py-1.5 px-3 rounded-lg hover:bg-rose-50 hover:text-redAccent transition">6. International Transfers</a>
+                            <a href="#privacy-7" class="block py-1.5 px-3 rounded-lg hover:bg-rose-50 hover:text-redAccent transition">7. Your Data Rights</a>
+                            <a href="#privacy-8" class="block py-1.5 px-3 rounded-lg hover:bg-rose-50 hover:text-redAccent transition">8. Cookies & Analytics</a>
+                            <a href="#privacy-9" class="block py-1.5 px-3 rounded-lg hover:bg-rose-50 hover:text-redAccent transition">9. Third-Party Links</a>
+                            <a href="#privacy-10" class="block py-1.5 px-3 rounded-lg hover:bg-rose-50 hover:text-redAccent transition">10. Contact Officer & Updates</a>
+                        </nav>
+                        
+                        <div class="pt-4 border-t border-gray-100 text-xs text-gray-500">
+                            Questions regarding your personal data processing? Contact our privacy team at <a href="mailto:info@dreamsky.edu.np" class="text-redAccent font-bold hover:underline" target="_blank" rel="noopener noreferrer">info@dreamsky.edu.np</a>.
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- PRIVACY POLICY CONTENT -->
+                <main class="lg:col-span-8 space-y-10">
+
+                    <!-- Editorial Image Banner 1 -->
+                    
+                    
+
+                    <!-- Clause 1 -->
+                    <article id="privacy-1" class="legal-clause bg-white rounded-3xl p-8 shadow-sm border border-gray-200/80 space-y-3">
+                        <span class="text-xs font-black text-redAccent uppercase tracking-widest">Clause 1.0</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-[#0A0A0A]">1. Introduction & Scope</h2>
+                        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+                            This Privacy Policy explains how DreamSky Education Consultancy ("DreamSky", "we", "us", or "our") collects, stores, processes, and protects personal information obtained through our website, mobile communications, consultation sessions, and application forms. This policy applies to all prospective applicants, registered students, parents, and website visitors.
+                        </p>
+                    </article>
+
+                    <!-- Clause 2 -->
+                    <article id="privacy-2" class="legal-clause bg-white rounded-3xl p-8 shadow-sm border border-gray-200/80 space-y-4">
+                        <span class="text-xs font-black text-redAccent uppercase tracking-widest">Clause 2.0</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-[#0A0A0A]">2. Information We Collect</h2>
+                        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+                            To deliver comprehensive educational advisory services, we collect necessary personal, academic, and financial information, categorized as follows:
+                        </p>
+                        <div class="space-y-3 pt-2">
+                            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                <h3 class="text-sm font-bold text-[#0A0A0A]">A. Identity & Contact Details</h3>
+                                <p class="text-xs sm:text-sm text-gray-600 mt-1">Full legal name, date of birth, nationality, passport numbers, email address, phone numbers, permanent residential address, and emergency contact details.</p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                <h3 class="text-sm font-bold text-[#0A0A0A]">B. Academic Records & Test Results</h3>
+                                <p class="text-xs sm:text-sm text-gray-600 mt-1">Transcripts, marksheets, degree certificates, standardized test scores (IELTS, PTE, TOEFL, SAT, GRE, GMAT), letters of recommendation, and statements of purpose.</p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                <h3 class="text-sm font-bold text-[#0A0A0A]">C. Financial & Visa Verification Documents</h3>
+                                <p class="text-xs sm:text-sm text-gray-600 mt-1">Sponsor income statements, bank balance certificates, tax clearance documents, relationship verification certificates, and previous visa application history required by foreign embassies.</p>
+                            </div>
+                            <div class="p-4 rounded-2xl bg-gray-50 border border-gray-100">
+                                <h3 class="text-sm font-bold text-[#0A0A0A]">D. Digital & Technical Data</h3>
+                                <p class="text-xs sm:text-sm text-gray-600 mt-1">IP addresses, browser types, device information, operating systems, referring URLs, and website interaction logs collected automatically via secure cookies.</p>
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Clause 3 -->
+                    <article id="privacy-3" class="legal-clause bg-white rounded-3xl p-8 shadow-sm border border-gray-200/80 space-y-4">
+                        <span class="text-xs font-black text-redAccent uppercase tracking-widest">Clause 3.0</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-[#0A0A0A]">3. How We Use Your Information</h2>
+                        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+                            DreamSky processes collected personal information strictly for legitimate business and educational advisement purposes, including:
+                        </p>
+                        <ul class="list-disc pl-6 space-y-2 text-sm sm:text-base text-gray-600 font-medium">
+                            <li>Evaluating academic eligibility and shortlisting suitable foreign universities and courses.</li>
+                            <li>Submitting official university admission applications on your behalf.</li>
+                            <li>Preparing student visa files, financial documentation, and interview preparations.</li>
+                            <li>Booking official language proficiency examination slots (IELTS, PTE) and test preparation classes.</li>
+                            <li>Communicating essential updates, offer letters, visa decisions, and tuition payment instructions.</li>
+                            <li>Fulfilling legal reporting compliance under Ministry of Education (MOEST) guidelines in Nepal.</li>
+                        </ul>
+                    </article>
+
+                    <!-- Editorial Image Banner 2 -->
+                    
+
+                    <!-- Clause 4 -->
+                    <article id="privacy-4" class="legal-clause bg-white rounded-3xl p-8 shadow-sm border border-gray-200/80 space-y-4">
+                        <span class="text-xs font-black text-redAccent uppercase tracking-widest">Clause 4.0</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-[#0A0A0A]">4. Data Sharing & Third Parties</h2>
+                        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+                            We do not sell, rent, or trade student personal data to third-party marketing companies. Information is shared only with mandatory entities directly involved in processing your education and visa applications:
+                        </p>
+                        <div class="space-y-2 text-sm sm:text-base text-gray-600 font-medium">
+                            <p><strong>1. Partner Institutions & Universities:</strong> Foreign colleges, universities, and education providers for admissions evaluation.</p>
+                            <p><strong>2. Embassy & Government Authorities:</strong> Visa processing units, immigration departments, and verification bodies.</p>
+                            <p><strong>3. Official Examination Bodies:</strong> IDP, British Council, Pearson VUE, and ETS for test result verifications.</p>
+                            <p><strong>4. Statutory Law Enforcement:</strong> Government regulators when required by binding legal court orders in Nepal.</p>
+                        </div>
+                    </article>
+
+                    <!-- Clause 5 -->
+                    <article id="privacy-5" class="legal-clause bg-white rounded-3xl p-8 shadow-sm border border-gray-200/80 space-y-3">
+                        <span class="text-xs font-black text-redAccent uppercase tracking-widest">Clause 5.0</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-[#0A0A0A]">5. Data Security & Storage Protocols</h2>
+                        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+                            DreamSky implements multi-layered physical, technical, and organizational security controls to protect documents against unauthorized access, loss, or alteration. Student digital files are stored in encrypted cloud servers with restricted role-based staff access. Hardcopy records are stored in locked archives and destroyed securely after statutory retention periods expire.
+                        </p>
+                    </article>
+
+                    <!-- Clause 6 -->
+                    <article id="privacy-6" class="legal-clause bg-white rounded-3xl p-8 shadow-sm border border-gray-200/80 space-y-3">
+                        <span class="text-xs font-black text-redAccent uppercase tracking-widest">Clause 6.0</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-[#0A0A0A]">6. International Data Transfers</h2>
+                        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+                            Because study abroad applications require transmitting credentials across international borders, your personal information will be transferred to educational institutions and embassies located in target destination countries (including Australia, Canada, United Kingdom, United States, New Zealand, and European nations). By engaging our service, you consent to these international data transfers.
+                        </p>
+                    </article>
+
+                    <!-- Clause 7 -->
+                    <article id="privacy-7" class="legal-clause bg-white rounded-3xl p-8 shadow-sm border border-gray-200/80 space-y-4">
+                        <span class="text-xs font-black text-redAccent uppercase tracking-widest">Clause 7.0</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-[#0A0A0A]">7. Your Data Protection Rights</h2>
+                        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+                            As a student applicant, you maintain specific rights regarding the personal information held by DreamSky:
+                        </p>
+                        <ul class="list-disc pl-6 space-y-2 text-sm sm:text-base text-gray-600 font-medium">
+                            <li><strong>Right of Access:</strong> Request a copy of the personal documents and application records held in our file.</li>
+                            <li><strong>Right to Rectification:</strong> Request correction of inaccurate academic or identity details.</li>
+                            <li><strong>Right to Erasure:</strong> Request deletion of non-statutory records once application processing terminates.</li>
+                            <li><strong>Withdrawal of Consent:</strong> Withdraw consent for non-essential electronic communications at any time.</li>
+                        </ul>
+                    </article>
+
+                    <!-- Clause 8 -->
+                    <article id="privacy-8" class="legal-clause bg-white rounded-3xl p-8 shadow-sm border border-gray-200/80 space-y-3">
+                        <span class="text-xs font-black text-redAccent uppercase tracking-widest">Clause 8.0</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-[#0A0A0A]">8. Cookies & Web Analytics</h2>
+                        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+                            Our website utilizes standard session cookies and web analytics scripts to optimize user navigation, measure traffic patterns, and refine online user experience. You can disable cookies in your web browser settings without preventing normal access to our informative content.
+                        </p>
+                    </article>
+
+                    <!-- Clause 9 -->
+                    <article id="privacy-9" class="legal-clause bg-white rounded-3xl p-8 shadow-sm border border-gray-200/80 space-y-3">
+                        <span class="text-xs font-black text-redAccent uppercase tracking-widest">Clause 9.0</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-[#0A0A0A]">9. Third-Party Web Links</h2>
+                        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+                            Our digital pages contain links to external third-party websites (such as university portals, embassy visa portals, and test booking platforms). DreamSky holds no responsibility for the privacy practices, content, or security of external websites.
+                        </p>
+                    </article>
+
+                    <!-- Clause 10 -->
+                    <article id="privacy-10" class="legal-clause bg-white rounded-3xl p-8 shadow-sm border border-gray-200/80 space-y-4">
+                        <span class="text-xs font-black text-redAccent uppercase tracking-widest">Clause 10.0</span>
+                        <h2 class="text-xl sm:text-2xl font-black text-[#0A0A0A]">10. Contact Privacy Officer & Policy Updates</h2>
+                        <p class="text-sm sm:text-base text-gray-600 leading-relaxed">
+                            DreamSky reserves the right to update this Privacy Policy periodically to reflect changes in legal or operational requirements. Updated versions will be published on this page with an updated revision date.
+                        </p>
+                        <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 text-xs sm:text-sm text-gray-700 space-y-1">
+                            <p><strong>DreamSky Education Consultancy Privacy Desk</strong></p>
+                            <p>2nd Floor, KL Tower, Boudhanath Sadak, Kathmandu 44600, Nepal</p>
+                            <p>Email: <a href="mailto:info@dreamsky.edu.np" class="text-redAccent font-bold hover:underline" target="_blank" rel="noopener noreferrer">info@dreamsky.edu.np</a> | Phone: 01-5928292</p>
+                        </div>
+                    </article>
+
+                </main>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="slim-footer py-14">
+        <!-- Top Royal Blue & Red Brand Line -->
+        <div class="h-1 w-full bg-gradient-to-r from-blue-600 via-redAccent to-blue-500 absolute top-0 left-0 right-0"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-white/10">
+                
+                <!-- Col 1: Brand, Bio & Accreditations (4 cols) -->
+                <div class="lg:col-span-4 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="DreamSky" class="w-11 h-11 rounded-xl object-contain bg-white p-1 shadow-md border border-white/20" />
+                        <div class="text-white font-black text-xl leading-tight tracking-tight">Dream<span class="text-blue-600">Sky</span></div>
+                    </div>
+                    <p class="text-xs text-gray-300 leading-relaxed font-normal">
+                        Nepal's premier education consultancy empowering students with admissions, visa guidance, test prep (IELTS/PTE), and post-arrival support for top global universities.
+                    </p>
+                    
+                    <!-- Govt Approval Badges -->
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                        <span class="bg-blue-900/60 text-blue-200 border border-blue-700/50 text-[10px] font-semibold px-2.5 py-1 rounded-md">
+                            <i class="fas fa-check-circle text-blue-400 mr-1"></i> MOEST Approved
+                        </span>
+                        <span class="bg-red-900/40 text-red-200 border border-red-700/40 text-[10px] font-semibold px-2.5 py-1 rounded-md">
+                            <i class="fas fa-shield-alt text-red-400 mr-1"></i> TITI Certified
+                        </span>
+                    </div>
+
+                    <!-- Social Icons (Facebook, Instagram & TikTok Only) -->
+                    <div class="flex gap-2.5 pt-2">
+                        <a href="Untitled-1.html" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="Untitled-1.html" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="Untitled-1.html" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm" title="TikTok"><i class="fab fa-tiktok"></i></a>
+                    </div>
+                </div>
+
+                <!-- Col 2: Navigation Links (2 cols) -->
+                <div class="lg:col-span-2 space-y-3">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">Quick Links</h4>
+                    <ul class="space-y-2 text-xs text-gray-300 font-medium">
+                        <li><a href="Untitled-1.html#home" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Home</a></li>
+                        <li><a href="Untitled-1.html#about" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> About Us & Team</a></li>
+                        <li><a href="Untitled-1.html#destinations" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Destinations</a></li>
+                        <li><a href="Untitled-1.html#partners" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Universities</a></li>
+                        <li><a href="Untitled-1.html#journey" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Study Journey</a></li>
+                        <li><a href="Untitled-1.html#contact" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Contact Us</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 3: Study Destinations (3 cols) -->
+                <div class="lg:col-span-3 space-y-3">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">Top Countries</h4>
+                    <ul class="space-y-2 text-xs text-gray-300 font-medium">
+                        <li><a href="australia.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">AU</span> <span>Study in Australia</span></a></li>
+                        <li><a href="canada.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">CA</span> <span>Study in Canada</span></a></li>
+                        <li><a href="uk.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">UK</span> <span>Study in United Kingdom</span></a></li>
+                        <li><a href="usa.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">US</span> <span>Study in United States</span></a></li>
+                        <li><a href="newzealand.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">NZ</span> <span>Study in New Zealand</span></a></li>
+                        <li><a href="europe.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">EU</span> <span>Study in Europe</span></a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 4: Central Office & Support Hours (3 cols) -->
+                <div class="lg:col-span-3 space-y-3">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">Headquarters</h4>
+                    <ul class="space-y-2.5 text-xs text-gray-300">
+                        <li class="flex items-start gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-blue-400 text-[10px] shrink-0 mt-0.5"><i class="fas fa-map-marker-alt"></i></div>
+                            <a href="https://maps.app.goo.gl/4uaCbrnNGFcTqChk9" target="_blank" rel="noopener noreferrer" class="hover:text-blue-400 transition underline underline-offset-2">2nd Floor, KL Tower, Boudhanath Sadak, Kathmandu 44600</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-blue-900/40 border border-blue-700/40 flex items-center justify-center text-blue-400 text-[10px] shrink-0"><i class="fas fa-phone-alt"></i></div>
+                            <a href="tel:015928292" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">01-5928292</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-emerald-900/40 border border-emerald-700/40 flex items-center justify-center text-emerald-400 text-[10px] shrink-0"><i class="fab fa-whatsapp"></i></div>
+                            <a href="https://wa.me/9779768987156?text=Hello%20Dream%20Sky,%20I%20am%20interested%20in%20studying%20abroad." target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 transition">+977 9768987156 (Chat on WhatsApp)</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-blue-400 text-[10px] shrink-0"><i class="fas fa-envelope"></i></div>
+                            <a href="mailto:info@dreamsky.edu.np" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">info@dreamsky.edu.np</a>
+                        </li>
+                        <li class="flex items-center gap-2.5 text-[11px] text-gray-400 pt-1">
+                            <i class="far fa-clock text-amber-400 text-xs"></i>
+                            <span>Sun – Fri: 7:00 AM – 6:00 PM</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <!-- Bottom Copyright Bar -->
+            <div class="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] text-gray-400">
+                <div>&copy; 2026 Dream Sky Education Consultancy. All rights reserved.</div>
+                <div class="flex items-center gap-5 font-medium">
+                    <a href="privacy.html" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    <a href="terms.html" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                    <a href="Untitled-1.html#home" class="w-8 h-8 rounded-xl bg-redAccent/30 hover:bg-redAccent text-rose-200 hover:text-white border border-rose-500/40 flex items-center justify-center transition-all duration-300" title="Back to top">
+                        <i class="fas fa-chevron-up text-xs"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JAVASCRIPT ENGINE -->
+    <script>
+        const hamburger = document.getElementById('hamburger');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+
+        function toggleMobile() {
+            if (!mobileMenu || !mobileOverlay) return;
+            mobileMenu.classList.toggle('open');
+            mobileOverlay.classList.toggle('active');
+            document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+        }
+
+        if (hamburger) hamburger.addEventListener('click', toggleMobile);
+        if (mobileOverlay) mobileOverlay.addEventListener('click', toggleMobile);
+
+        
+    </script>
+    <!-- ============================================================
+    AUTH MODAL — Student Login & Consultation Booking
+    ============================================================ -->
+    <div id="authModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div id="authModalCard" class="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl transform scale-95 transition-all duration-300 border border-gray-100 overflow-hidden">
+            <!-- Close Button -->
+            <button onclick="closeAuthModal()" class="absolute top-5 right-5 w-9 h-9 rounded-full bg-gray-100 text-gray-400 hover:bg-redAccent hover:text-white flex items-center justify-center transition-all duration-200 z-10 cursor-pointer">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+
+            <!-- Brand Header -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center gap-2 mb-2">
+                    <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="DreamSky" class="w-8 h-8 rounded-lg object-contain bg-white p-0.5 shadow-sm border border-gray-100" />
+                    <span class="font-black text-lg text-gray-900">Dream<span class="text-blue-600">Sky</span></span>
+                </div>
+                <h3 id="authModalTitle" class="text-xl font-black text-[#0A0A0A]">Welcome Back!</h3>
+                <p id="authModalSubtitle" class="text-xs text-gray-500 font-medium mt-1">Access your DreamSky student dashboard</p>
+            </div>
+
+            <!-- Tab Switcher (Log In vs Book Consultation) -->
+            <div id="authTabGroup" class="flex bg-gray-100 p-1.5 rounded-2xl mb-6">
+                <button type="button" id="tabBtnLogin" onclick="switchAuthTab('login')" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer">
+                    Log In
+                </button>
+                <button type="button" id="tabBtnSignup" onclick="switchAuthTab('signup')" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer">
+                    Book Consultation
+                </button>
+            </div>
+
+            <!-- 1. LOGIN FORM (No Social Buttons) -->
+            <form id="authFormLogin" onsubmit="handleAuthSubmit(event, 'login')" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Email Address</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="email" required placeholder="student@example.com" class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pl-11 pr-11 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                        <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
+                            <i class="fas fa-eye text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me & Forgot Password Row -->
+                <div class="flex items-center justify-between pt-1 pb-1">
+                    <label class="flex items-center gap-2 text-xs text-gray-600 font-semibold cursor-pointer select-none">
+                        <input type="checkbox" id="rememberMe" class="w-4 h-4 rounded border-gray-300 text-redAccent focus:ring-redAccent accent-red-600 cursor-pointer" />
+                        Remember me
+                    </label>
+                    <button type="button" onclick="switchAuthTab('forgot')" class="text-xs font-bold text-redAccent hover:underline focus:outline-none cursor-pointer">
+                        Forgot Password?
+                    </button>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- 2. BOOK CONSULTATION FORM (Replaces Sign Up) -->
+            <form id="authFormSignup" onsubmit="handleAuthSubmit(event, 'consultation')" class="space-y-3.5 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" required placeholder="John Doe" class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Phone / WhatsApp Number</label>
+                    <div class="relative">
+                        <i class="fas fa-phone-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="tel" required placeholder="+977 98XXXXXXXX" class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Preferred Destination</label>
+                    <div class="relative">
+                        <i class="fas fa-globe absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <select required class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition bg-white appearance-none">
+                            <option value="" disabled selected>Select Destination</option>
+                            <option value="Australia">🇦🇺 Study in Australia</option>
+                            <option value="Canada">🇨🇦 Study in Canada</option>
+                            <option value="UK">🇬🇧 Study in UK</option>
+                            <option value="USA">🇺🇸 Study in USA</option>
+                            <option value="New Zealand">🇳🇿 Study in New Zealand</option>
+                            <option value="Europe">🇪🇺 Study in Europe</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Academic Level</label>
+                    <div class="relative">
+                        <i class="fas fa-graduation-cap absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <select required class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition bg-white appearance-none">
+                            <option value="" disabled selected>Select Study Level</option>
+                            <option value="Undergraduate">Undergraduate (Bachelor's)</option>
+                            <option value="Postgraduate">Postgraduate (Master's / PhD)</option>
+                            <option value="Diploma">Diploma / Vocational</option>
+                            <option value="Test Prep">Test Preparation (IELTS / PTE)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer mt-2">
+                    Request Free Consultation
+                </button>
+            </form>
+
+            <!-- 3. FORGOT PASSWORD FORM -->
+            <form id="authFormForgot" onsubmit="handleAuthSubmit(event, 'forgot')" class="space-y-4 hidden">
+                <div class="text-center bg-rose-50/70 border border-rose-100 p-3.5 rounded-2xl mb-2">
+                    <i class="fas fa-key text-redAccent text-xl mb-1"></i>
+                    <p class="text-xs text-gray-600 font-semibold leading-relaxed">Enter your registered email address and we will send you a password reset link.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Registered Email Address</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="email" required placeholder="student@example.com" class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer">
+                    Send Reset Link
+                </button>
+
+                <button type="button" onclick="switchAuthTab('login')" class="w-full text-center text-xs font-bold text-gray-500 hover:text-redAccent transition flex items-center justify-center gap-1.5 pt-2 cursor-pointer">
+                    <i class="fas fa-arrow-left"></i> Back to Log In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Auth Modal Scripts -->
+    <script>
+        function openAuthModal(tab = 'login') {
+            const modal = document.getElementById('authModal');
+            const card = document.getElementById('authModalCard');
+            if (!modal || !card) return;
+            switchAuthTab(tab);
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100', 'pointer-events-auto');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('authModal');
+            const card = document.getElementById('authModalCard');
+            if (!modal || !card) return;
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.style.overflow = '';
+        }
+
+        function switchAuthTab(tab) {
+            const formLogin = document.getElementById('authFormLogin');
+            const formSignup = document.getElementById('authFormSignup');
+            const formForgot = document.getElementById('authFormForgot');
+            const btnLogin = document.getElementById('tabBtnLogin');
+            const btnSignup = document.getElementById('tabBtnSignup');
+            const tabGroup = document.getElementById('authTabGroup');
+            const title = document.getElementById('authModalTitle');
+            const subtitle = document.getElementById('authModalSubtitle');
+
+            if (!formLogin || !formSignup || !formForgot) return;
+
+            formLogin.classList.add('hidden');
+            formSignup.classList.add('hidden');
+            formForgot.classList.add('hidden');
+            tabGroup.classList.remove('hidden');
+
+            btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer";
+            btnSignup.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer";
+
+            if (tab === 'login') {
+                formLogin.classList.remove('hidden');
+                btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer";
+                title.innerText = "Welcome Back!";
+                subtitle.innerText = "Access your DreamSky student dashboard";
+            } else if (tab === 'signup' || tab === 'consultation') {
+                formSignup.classList.remove('hidden');
+                btnSignup.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer";
+                title.innerText = "Book Free Consultation";
+                subtitle.innerText = "Speak directly with an expert education counselor";
+            } else if (tab === 'forgot') {
+                formForgot.classList.remove('hidden');
+                tabGroup.classList.add('hidden');
+                title.innerText = "Forgot Password";
+                subtitle.innerText = "We'll help you recover access";
+            }
+        }
+
+        function handleAuthSubmit(event, type) {
+            event.preventDefault();
+            const remember = document.getElementById('rememberMe')?.checked;
+            if (type === 'login') {
+                alert(`🎉 Logged in successfully! ${remember ? '(Remember Me is active)' : ''}`);
+            } else if (type === 'signup' || type === 'consultation') {
+                alert('🎉 Consultation request submitted successfully! A DreamSky counselor will contact you within 24 hours.');
+            } else if (type === 'forgot') {
+                alert('✉️ Password reset link sent to your registered email!');
+            }
+            closeAuthModal();
+        }
+
+        function togglePasswordVisibility(inputId, iconBtn) {
+            const input = document.getElementById(inputId);
+            const icon = iconBtn.querySelector('i');
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash text-sm text-redAccent';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye text-sm text-gray-400';
+            }
+        }
+
+        document.getElementById('authModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeAuthModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeAuthModal();
+        });
+    </script>
+
+    
+
+
+    <!-- Header Glass Scroll Listener (Transitions exactly when scrolling past Hero Section) -->
+    <script>
+        (function() {
+            const header = document.getElementById('header');
+            const heroSection = document.getElementById('home') || document.querySelector('section');
+            function updateHeaderScroll() {
+                if (!header) return;
+                const heroHeight = heroSection ? heroSection.offsetHeight : 600;
+                const headerHeight = header.offsetHeight || 80;
+                const threshold = Math.max(100, heroHeight - headerHeight);
+                if (window.scrollY > threshold) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            }
+            window.addEventListener('scroll', updateHeaderScroll);
+            window.addEventListener('resize', updateHeaderScroll);
+            updateHeaderScroll();
+        })();
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Study in USA — DreamSky Education Consultancy</title>
+    
+    <!-- Meta Description & SEO -->
+    <meta name="description" content="Explore studying in USA with DreamSky Education Consultancy. Top Ivy League & Tier 1 research universities, STEM OPT 3 year work extension, F-1 visa guidance, and generous scholarships." />
+    
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        'sans': ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                        'jakarta': ['"Plus Jakarta Sans"', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif']
+                    },
+                    colors: {
+                        navy: '#0A0A0A',
+                        redAccent: '#DC2626',
+                        redAccentDark: '#B91C1C',
+                        grayBg: '#F8FAFC',
+                        cardBg: '#FFFFFF',
+                        darkCard: '#141414',
+                    },
+                    borderRadius: { 'xl': '20px', '2xl': '24px', '3xl': '32px' },
+                    boxShadow: {
+                        'soft': '0 10px 40px rgba(0,0,0,0.04)',
+                        'glow': '0 12px 40px rgba(220,38,38,0.18)',
+                        'glow-lg': '0 20px 60px rgba(220,38,38,0.25)',
+                        'glass': '0 8px 32px rgba(0,0,0,0.04)',
+                        'premium': '0 20px 60px rgba(0,0,0,0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #374151;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #0A0A0A;
+        }
+
+        /* --- Header & Glass Navigation --- */
+        .glass-nav {
+            background: transparent;
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .glass-nav .nav-logo-text {
+            color: #FFFFFF;
+            transition: color 0.4s ease;
+        }
+        .glass-nav .nav-link {
+            position: relative;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.90);
+            transition: color 0.3s ease;
+        }
+        .glass-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #DC2626;
+            border-radius: 4px;
+            transition: width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .glass-nav .nav-link:hover {
+            color: #F87171;
+        }
+        .glass-nav .nav-link:hover::after {
+            width: 100%;
+        }
+        .glass-nav .nav-login-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+        .glass-nav .nav-login-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.45);
+            color: #FFFFFF;
+            transform: translateY(-1px);
+        }
+        .glass-nav .nav-cta-btn {
+            background: #DC2626;
+            color: #FFFFFF;
+            box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
+            transition: all 0.3s ease;
+        }
+        .glass-nav .nav-cta-btn:hover {
+            background: #B91C1C;
+            transform: translateY(-1px);
+        }
+
+        /* Scrolled state */
+        .glass-nav.scrolled {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-bottom: 1px solid rgba(229, 231, 235, 0.8) !important;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.06) !important;
+        }
+        .glass-nav.scrolled .nav-logo-text { color: #0A0A0A !important; }
+        .glass-nav.scrolled .hamburger-icon { color: #0A0A0A !important; }
+        .glass-nav.scrolled .nav-link { color: #1F2937 !important; }
+        .glass-nav.scrolled .nav-link:hover { color: #DC2626 !important; }
+        .glass-nav.scrolled .nav-login-btn {
+            background: #F3F4F6;
+            border-color: #E5E7EB;
+            color: #1F2937;
+        }
+        .glass-nav.scrolled .nav-login-btn:hover {
+            background: #FEF2F2;
+            border-color: #FECDD3;
+            color: #DC2626;
+        }
+
+        /* --- Hero Section Background & Overlay --- */
+        .hero-bg-container {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(10, 10, 10, 0.75) 0%, rgba(10, 10, 10, 0.60) 50%, rgba(10, 10, 10, 0.85) 100%);
+            z-index: 1;
+        }
+
+        /* --- Card Slideshow Styles --- */
+        .uni-card-slideshow {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        .uni-slide-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            -o-object-fit: cover;
+               object-fit: cover;
+            -o-object-position: center;
+               object-position: center;
+            opacity: 0;
+            transition: opacity 1.2s ease-in-out, transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 0;
+        }
+        .uni-slide-img.active {
+            opacity: 1 !important;
+            z-index: 10 !important;
+        }
+        .group:hover .uni-slide-img.active {
+            transform: scale(1.08);
+        }
+
+        /* --- Mobile Navigation Drawer --- */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 380px;
+            height: 100vh;
+            background: #FFFFFF;
+            padding: 90px 28px 40px;
+            transition: right 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: -10px 0 60px rgba(0, 0, 0, 0.10);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .mobile-menu.open { right: 0; }
+        .mobile-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.50);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            z-index: 999;
+        }
+        .mobile-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 7px; }
+        ::-webkit-scrollbar-track { background: #F1F5F9; }
+        ::-webkit-scrollbar-thumb { background: #DC2626; border-radius: 10px; }
+
+        .slim-footer {
+            background: linear-gradient(135deg, #050B18 0%, #0A162C 50%, #060B16 100%);
+            color: #FFFFFF;
+            border-top: 1px solid rgba(220, 38, 38, 0.20);
+            position: relative;
+        }
+        @keyframes floatBalanced {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-float {
+            animation: floatBalanced 5.5s ease-in-out infinite;
+        }
+        .animate-float-delayed {
+            animation: floatBalanced 5.5s ease-in-out 2.75s infinite;
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-900 bg-[#FFFDFD] selection:bg-rose-500 selection:text-white text-base">
+
+    <!-- MOBILE OVERLAY & DRAWER MENU -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="Untitled-1.html#home" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">Home</a>
+        <div class="border-b border-gray-100 py-3">
+            <div class="text-[#0A0A0A] font-bold text-sm mb-2 text-redAccent">About Us</div>
+            <div class="pl-4 space-y-2 text-xs font-semibold">
+                <a href="mission-vision.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">Mission and Vision</a>
+                <a href="team.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">Our Team</a>
+            </div>
+        </div>
+        <div class="border-b border-gray-100 py-3">
+            <div class="text-[#0A0A0A] font-bold text-sm mb-2 text-redAccent">Destinations</div>
+            <div class="pl-4 space-y-2 text-xs font-semibold">
+                <a href="australia.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇦🇺 Study in Australia</a>
+                <a href="canada.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇨🇦 Study in Canada</a>
+                <a href="uk.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇬🇧 Study in UK</a>
+                <a href="usa.html" class="block py-1 text-redAccent font-bold">🇺🇸 Study in USA</a>
+                <a href="newzealand.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇳🇿 Study in New Zealand</a>
+                <a href="europe.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇪🇺 Study in Europe</a>
+            </div>
+        </div>
+        <a href="#discover" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">Experience USA</a>
+        <a href="#courses" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">Courses</a>
+        <a href="#faqs" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">FAQs</a>
+        <button onclick="openAuthModal('login'); document.getElementById('mobileMenu')?.classList.remove('open'); document.getElementById('mobileOverlay')?.classList.remove('active');" class="mt-4 w-full flex items-center justify-center gap-2 bg-rose-50 text-gray-900 border border-rose-200 font-bold py-3 rounded-full hover:bg-redAccent hover:text-white transition shadow-sm">
+            <i class="fas fa-user-circle text-base text-redAccent"></i> Login
+        </button>
+        <a href="Untitled-1.html#contact" class="mt-3 block w-full text-center bg-redAccent text-white font-semibold py-3.5 rounded-full hover:bg-redAccentDark transition shadow-md" target="_blank" rel="noopener noreferrer">Book Free Consultation</a>
+    </div>
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="fixed top-0 left-0 w-full z-50 glass-nav" id="header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="Untitled-1.html" class="flex items-center gap-3 group">
+                    <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="DreamSky Education Consultancy" class="w-10 h-10 rounded-xl object-contain bg-white p-1 shadow-md border border-gray-100 group-hover:scale-105 transition-transform duration-300" />
+                    <div class="flex flex-col">
+                        <div class="nav-logo-text font-bold text-xl leading-tight tracking-tight">
+                            Dream<span class="text-blue-600">Sky</span>
+                        </div>
+                    </div>
+                </a>
+
+                <nav class="hidden xl:flex items-center gap-8">
+                    <a href="Untitled-1.html#home" class="nav-link text-sm py-1">Home</a>
+                    <div class="relative group py-2">
+                        <a href="Untitled-1.html#about" class="nav-link text-sm py-1 inline-flex items-center gap-1.5 cursor-pointer" target="_blank" rel="noopener noreferrer">
+                            <span>About Us</span>
+                            <i class="fas fa-chevron-down text-[10px] opacity-80 group-hover:rotate-180 transition-transform duration-300"></i>
+                        </a>
+                        <div class="absolute top-full left-0 w-56 bg-white/95 backdrop-blur-xl rounded-2xl p-2 shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                            <a href="mission-vision.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-bullseye text-redAccent w-4 text-center"></i>
+                                <span>Mission and Vision</span>
+                            </a>
+                            <a href="team.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-users text-redAccent w-4 text-center"></i>
+                                <span>Our Team</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="relative group py-2">
+                        <a href="Untitled-1.html#destinations" class="nav-link text-sm py-1 text-redAccent inline-flex items-center gap-1.5 cursor-pointer" target="_blank" rel="noopener noreferrer">
+                            <span>Destinations</span>
+                            <i class="fas fa-chevron-down text-[10px] opacity-80 group-hover:rotate-180 transition-transform duration-300"></i>
+                        </a>
+                        <div class="absolute top-full left-0 w-60 bg-white/95 backdrop-blur-xl rounded-2xl p-2 shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                            <a href="australia.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200" target="_blank" rel="noopener noreferrer"><span class="text-base">🇦🇺</span><span>Study in Australia</span></a>
+                            <a href="canada.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200" target="_blank" rel="noopener noreferrer"><span class="text-base">🇨🇦</span><span>Study in Canada</span></a>
+                            <a href="uk.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200" target="_blank" rel="noopener noreferrer"><span class="text-base">🇬🇧</span><span>Study in UK</span></a>
+                            <a href="usa.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-redAccent bg-rose-50/80 hover:translate-x-1 transition-all duration-200"><span class="text-base">🇺🇸</span><span>Study in USA</span></a>
+                            <a href="newzealand.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200" target="_blank" rel="noopener noreferrer"><span class="text-base">🇳🇿</span><span>Study in New Zealand</span></a>
+                            <a href="europe.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200" target="_blank" rel="noopener noreferrer"><span class="text-base">🇪🇺</span><span>Study in Europe</span></a>
+                        </div>
+                    </div>
+
+                    <a href="#discover" class="nav-link text-sm py-1">Experience USA</a>
+                    <a href="Untitled-1.html#journey" class="nav-link text-sm py-1" target="_blank" rel="noopener noreferrer">Journey</a>
+                    <a href="Untitled-1.html#contact" class="nav-link text-sm py-1" target="_blank" rel="noopener noreferrer">Contact</a>
+                </nav>
+
+                <div class="flex items-center gap-2.5">
+                    <button onclick="openAuthModal('login')" class="nav-login-btn hidden sm:inline-flex items-center gap-2 text-xs font-semibold px-5 py-2.5 rounded-full transition transform hover:-translate-y-0.5 shadow-md hover:shadow-lg cursor-pointer">
+                        <i class="fas fa-user-circle text-sm"></i>
+                        <span>Login</span>
+                    </button>
+                    <a href="Untitled-1.html#contact" class="nav-cta-btn hidden sm:inline-flex text-xs font-semibold px-5 py-2.5 rounded-full transition transform hover:-translate-y-0.5 shadow-md hover:shadow-lg" target="_blank" rel="noopener noreferrer">
+                        <span>Book Consultation</span>
+                        <i class="fas fa-arrow-right ml-2 my-auto"></i>
+                    </a>
+                    <button class="xl:hidden p-2 text-white hover:text-redAccent hover:scale-110 transition focus:outline-none hamburger-icon" id="hamburger" aria-label="Toggle Navigation">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 1. HERO SECTION -->
+    <section class="relative min-h-screen flex items-center overflow-hidden pt-28 sm:pt-36 pb-20 sm:pb-28 bg-[#0A0A0A]" id="home">
+        <div class="hero-bg-container overflow-hidden" id="heroBgContainer">
+            <img id="heroBgImage" src="./usa_destination.png" alt="Study in USA Background" class="w-full h-full object-cover object-center scale-105 transition-all duration-700 opacity-45" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1920&q=80';" />
+        </div>
+        <div class="hero-overlay"></div>
+
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start pt-2 sm:pt-4">
+                
+                <!-- Left Content Area -->
+                <div class="lg:col-span-5 space-y-6">
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.12] drop-shadow-md">
+                        Study in USA <br />
+                        <span class="text-redAccent">Ivy League Standard &amp; 3 Year STEM OPT</span>
+                    </h1>
+
+                    <p class="text-gray-200 text-lg sm:text-xl leading-relaxed font-normal max-w-xl drop-shadow">
+                        The USA hosts the world's highest concentration of Ivy League &amp; Tier 1 research universities, offering cutting edge innovation, merit scholarships, and 36 month STEM OPT work authorization.
+                    </p>
+
+                    <div class="pt-2 space-y-3">
+                        <a href="#faqs" class="inline-flex items-center gap-3 px-6 py-3.5 bg-redAccent hover:bg-redAccentDark text-white font-extrabold text-sm rounded-full shadow-lg shadow-rose-600/30 transition-all duration-300 group hover:scale-[1.02] cursor-pointer">
+                            <i class="fas fa-circle-question text-base text-rose-200"></i>
+                            <span>Have Questions? Read USA FAQs</span>
+                            <i class="fas fa-arrow-down text-xs group-hover:translate-y-0.5 transition-transform duration-300"></i>
+                        </a>
+
+                        <div class="flex flex-wrap gap-2 pt-1 text-xs">
+                            <a href="#faqs" class="px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-gray-200 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer">
+                                <i class="fas fa-graduation-cap text-rose-400 text-xs"></i> Ivy League &amp; Tier 1
+                            </a>
+                            <a href="#faqs" class="px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-gray-200 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer">
+                                <i class="fas fa-passport text-rose-400 text-xs"></i> 3 Year STEM OPT
+                            </a>
+                            <a href="#faqs" class="px-3.5 py-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-gray-200 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer">
+                                <i class="fas fa-award text-rose-400 text-xs"></i> F-1 Visa Guidance
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Side: 4 Floating Photo Cards Grid -->
+                <div class="lg:col-span-7">
+                    <div class="grid grid-cols-2 gap-5 sm:gap-6 lg:gap-7">
+                        <!-- Card 1: Top Universities -->
+                        <div class="group rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20 h-60 sm:h-72 lg:h-80 relative cursor-pointer animate-float">
+                            <img id="uniCardImage" src="/assets/us-CAj6GYu0.jpg" alt="Top US Universities" class="w-full h-full object-cover group-hover:scale-110 transition-all duration-500" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&q=80';" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none z-10"></div>
+                            <div class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                                <div class="text-sm sm:text-base font-bold text-white uppercase tracking-wider drop-shadow-md flex items-center justify-between">
+                                    <span>TOP UNIVERSITIES</span>
+                                    <i class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                                </div>
+                                <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                    MIT, Harvard, Stanford, UC Berkeley &amp; 4000+ Colleges
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Student Life -->
+                        <div class="group rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20 h-60 sm:h-72 lg:h-80 relative cursor-pointer animate-float-delayed">
+                            <img id="studentLifeCardImage" src="/assets/std-BNSv_cX6.jpg" alt="Student Life in USA" class="w-full h-full object-cover group-hover:scale-110 transition-all duration-500" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80';" />
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none z-10"></div>
+                            <div class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                                <div class="text-sm sm:text-base font-bold text-white uppercase tracking-wider drop-shadow-md flex items-center justify-between">
+                                    <span>STUDENT LIFE</span>
+                                    <i class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                                </div>
+                                <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                    1 Million+ International Students
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Cities & Heritage -->
+                        <div class="group rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20 h-60 sm:h-72 lg:h-80 relative cursor-pointer animate-float-delayed">
+                            <img id="citiesHeritageCardImage" src="/assets/usa_destination-irM3OInT.jpg" alt="US Metropolises" class="w-full h-full object-cover group-hover:scale-110 transition-all duration-500" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=800&q=80';" />
+                            <div
+                                class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none z-10">
+                            </div>
+                            <div
+                                class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                                <div
+                                    class="text-sm sm:text-base font-bold text-white uppercase tracking-wider drop-shadow-md flex items-center justify-between">
+                                    <span>CITIES & LANDMARKS</span>
+                                    <i
+                                        class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                                </div>
+                                <div
+                                    class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                    New York, Silicon Valley, Boston, Chicago
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 4: Career Opportunities -->
+                        <div
+                            class="group rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20 h-60 sm:h-72 lg:h-80 relative cursor-pointer animate-float">
+                            <img id="opportunitiesCardImage" src="/assets/engineer-DH6mcH3H.jpg"
+                                alt="Career Opportunities in USA"
+                                class="w-full h-full object-cover group-hover:scale-110 transition-all duration-500"
+                                onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&q=80';" />
+                            <div
+                                class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent pointer-events-none z-10">
+                            </div>
+                            <div
+                                class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                                <div
+                                    class="text-sm sm:text-base font-bold text-white uppercase tracking-wider drop-shadow-md flex items-center justify-between">
+                                    <span>CAREER OPPORTUNITIES</span>
+                                    <i
+                                        class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                                </div>
+                                <div
+                                    class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                    Up to 36 Months STEM OPT Extension
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. EXPERIENCE USA SECTION — 8-Card Showcase Grid -->
+    <section class="py-24 bg-gradient-to-b from-slate-50 via-white to-slate-50 relative overflow-hidden border-b border-gray-100" id="discover">
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            
+            <!-- Section Header -->
+            <div class="text-center max-w-3xl mx-auto mb-14">
+                <span class="text-redAccent font-black text-sm tracking-[0.25em] uppercase flex items-center justify-center gap-3">
+                    <span class="w-8 h-[2px] bg-redAccent rounded-full inline-block"></span> 
+                    STUDY & LIVE IN THE USA
+                    <span class="w-8 h-[2px] bg-redAccent rounded-full inline-block"></span>
+                </span>
+                <h2 class="text-4xl sm:text-5xl font-black text-[#0A0A0A] mt-3 tracking-tight">
+                    Experience the USA
+                </h2>
+                <p class="text-gray-600 text-base sm:text-lg mt-3">
+                    Discover world class research institutions, Ivy League prestige, vibrant campus life, and up to 36-month STEM OPT extension across America.
+                </p>
+            </div>
+
+            <!-- 8-Card Grid (2 Universities, 2 Heritage, 2 Student Life, 2 Career Opportunities) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
+                
+                <!-- Category 1: UNIVERSITIES - Card 1 -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <div class="uni-card-slideshow">
+                            <img src="/assets/us-CAj6GYu0.jpg" alt="MIT & Harvard Campuses" class="uni-slide-img active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&q=80';" />
+                            <img src="/assets/as-CDuaskWW.jpg" alt="Stanford & Berkeley" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80';" />
+                            <img src="/assets/dsfhsdf-4Vo00GaQ.jpg" alt="Tier 1 US Research Labs" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80';" />
+                        </div>
+
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent pointer-events-none z-10"></div>
+
+                        <div class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                            <div class="text-lg sm:text-xl font-black text-white leading-snug tracking-tight drop-shadow-md flex items-center justify-between">
+                                <span>Explore Top Universities</span>
+                                <i class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                            </div>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                Discover Top Universities
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 1: UNIVERSITIES - Card 2 -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <div class="uni-card-slideshow">
+                            <img src="/assets/gf-RNRWR-Bt.jpg" alt="Ivy League Architecture" class="uni-slide-img active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&q=80';" />
+                            <img src="/assets/sda-Bfyy7m7R.jpg" alt="University Research Quad" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80';" />
+                            <img src="/assets/images-L9NxGgun.jfif" alt="State University System" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80';" />
+                        </div>
+
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent pointer-events-none z-10"></div>
+
+                        <div class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                            <div class="text-lg sm:text-xl font-black text-white leading-snug tracking-tight drop-shadow-md flex items-center justify-between">
+                                <span>Ivy League & Tier 1 Campuses</span>
+                                <i class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                            </div>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                Discover Ivy League & Tier 1 Campuses
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 2: HERITAGE & CULTURE - Card 3 -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <div class="uni-card-slideshow">
+                            <img src="/assets/usa_destination-irM3OInT.jpg" alt="New York City Times Square" class="uni-slide-img active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&q=80';" />
+                            <img src="/assets/a8143f2e69db6fc7743e0fd7fb5198d8-CIAWYF9l.jpg" alt="San Francisco Golden Gate Bridge" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=800&q=80';" />
+                            <img src="/assets/dfsdf-DQRjIYTw.jpg" alt="Grand Canyon & US National Parks" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1514395462725-fb4566210144?w=800&q=80';" />
+                        </div>
+
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent pointer-events-none z-10"></div>
+
+                        <div class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                            <div class="text-lg sm:text-xl font-black text-white leading-snug tracking-tight drop-shadow-md flex items-center justify-between">
+                                <span>Iconic Landmarks & Cities</span>
+                                <i class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                            </div>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                Discover American Culture & Heritage
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 2: HERITAGE & CULTURE - Card 4 -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <div class="uni-card-slideshow">
+                            <img src="/assets/fd-CaWju5Ym.jpg" alt="Washington DC & Museums" class="uni-slide-img active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=800&q=80';" />
+                            <img src="/assets/hil-Drh3WZxk.jpg" alt="Statue of Liberty" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&q=80';" />
+                            <img src="/assets/sds-Cn0sVr5X.jpg" alt="US Historic Monuments" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1514395462725-fb4566210144?w=800&q=80';" />
+                        </div>
+
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent pointer-events-none z-10"></div>
+
+                        <div class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                            <div class="text-lg sm:text-xl font-black text-white leading-snug tracking-tight drop-shadow-md flex items-center justify-between">
+                                <span>Heritage & Museums</span>
+                                <i class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                            </div>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                Discover Historic Landmarks
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 3: STUDENT LIFE - Card 5 -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <div class="uni-card-slideshow">
+                            <img src="/assets/std-BNSv_cX6.jpg" alt="Vibrant American Campus Culture" class="uni-slide-img active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80';" />
+                            <img src="/assets/student1-CI6-3MaC.jpg" alt="International Students in USA" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&q=80';" />
+                            <img src="/assets/camp-D7PL0n3d.jpg" alt="College Sports & Stadiums" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1576495199011-eb94736d05d6?w=800&q=80';" />
+                        </div>
+
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent pointer-events-none z-10"></div>
+
+                        <div class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                            <div class="text-lg sm:text-xl font-black text-white leading-snug tracking-tight drop-shadow-md flex items-center justify-between">
+                                <span>Vibrant Student Life</span>
+                                <i class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                            </div>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                Discover International Student Life
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 3: STUDENT LIFE - Card 6 -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <div class="uni-card-slideshow">
+                            <img src="/assets/studentere-CpDLPIfv.jpg" alt="Campus Innovation Hubs" class="uni-slide-img active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=800&q=80';" />
+                            <img src="/assets/0131c20eed0a951cef9f44bc620d02ff-Cs-WE2o6.jpg" alt="University Clubs & Greek Life" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&q=80';" />
+                            <img src="/assets/camp-D7PL0n3d.jpg" alt="Academic Libraries" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80';" />
+                        </div>
+
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent pointer-events-none z-10"></div>
+
+                        <div class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                            <div class="text-lg sm:text-xl font-black text-white leading-snug tracking-tight drop-shadow-md flex items-center justify-between">
+                                <span>Campus Libraries & Clubs</span>
+                                <i class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                            </div>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                Discover Student Facilities & Clubs
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 4: CAREER OPPORTUNITIES - Card 7 -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <div class="uni-card-slideshow">
+                            <img src="/assets/engineer-DH6mcH3H.jpg" alt="Silicon Valley Tech Giants" class="uni-slide-img active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&q=80';" />
+                            <img src="/assets/ads-eNPsjbPY.jpg" alt="Wall Street Financial District" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80';" />
+                            <img src="/assets/d-orGoMCLl.jpg" alt="AI Research & Tech Labs" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80';" />
+                        </div>
+
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent pointer-events-none z-10"></div>
+
+                        <div class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                            <div class="text-lg sm:text-xl font-black text-white leading-snug tracking-tight drop-shadow-md flex items-center justify-between">
+                                <span>Innovation & Business Hubs</span>
+                                <i class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                            </div>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                Discover Tech & Financial Districts
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Category 4: CAREER OPPORTUNITIES - Card 8 -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <div class="uni-card-slideshow">
+                            <img src="/assets/law-DWPbFFXk.jpg" alt="Corporate & Legal Careers" class="uni-slide-img active" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=800&q=80';" />
+                            <img src="/assets/doctor-BR6cu58L.jpg" alt="Healthcare & Medical Internships" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80';" />
+                            <img src="/assets/as-CWmWmFYd.jpg" alt="Graduate STEM OPT Opportunities" class="uni-slide-img" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&q=80';" />
+                        </div>
+
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent pointer-events-none z-10"></div>
+
+                        <div class="absolute bottom-4 left-4 right-4 sm:bottom-5 sm:left-5 sm:right-5 z-20 space-y-1">
+                            <div class="text-lg sm:text-xl font-black text-white leading-snug tracking-tight drop-shadow-md flex items-center justify-between">
+                                <span>Career Opportunities</span>
+                                <i class="fas fa-arrow-up-right text-redAccent text-xs opacity-80 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all duration-300"></i>
+                            </div>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-12 group-hover:opacity-100 transition-all duration-300 text-xs sm:text-sm font-semibold text-rose-300 drop-shadow">
+                                Discover 36-Month STEM OPT Rights
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 3. TOP COURSES IN USA SECTION -->
+    <section class="py-24 bg-gradient-to-b from-white via-slate-50 to-white relative overflow-hidden" id="courses">
+        <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            
+            <!-- Section Header -->
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="text-redAccent font-black text-sm tracking-[0.25em] uppercase flex items-center justify-center gap-3">
+                    <span class="w-8 h-[2px] bg-redAccent rounded-full inline-block"></span> 
+                    WORLD CLASS FACULTIES
+                    <span class="w-8 h-[2px] bg-redAccent rounded-full inline-block"></span>
+                </span>
+                <h2 class="text-4xl sm:text-5xl font-black text-[#0A0A0A] mt-3 tracking-tight">
+                    Top Courses in USA
+                </h2>
+                <p class="text-gray-600 text-base sm:text-lg mt-3">
+                    Explore top-ranked STEM & professional degree programs offered by US universities with generous scholarships.
+                </p>
+            </div>
+
+            <!-- Filter Tabs (UG / PG / Diploma) -->
+            <div class="flex items-center justify-center gap-3 mb-14 flex-wrap">
+                <button onclick="switchCourseTab('ug', event)" class="course-tab-btn bg-redAccent text-white font-extrabold text-sm sm:text-base px-8 py-3.5 rounded-full shadow-lg shadow-rose-600/20 transition cursor-pointer">
+                    Undergraduate (UG)
+                </button>
+                <button onclick="switchCourseTab('pg', event)" class="course-tab-btn bg-gray-100 hover:bg-gray-200 hover:text-redAccent text-gray-700 font-bold text-sm sm:text-base px-8 py-3.5 rounded-full transition cursor-pointer">
+                    Postgraduate (PG)
+                </button>
+                <button onclick="switchCourseTab('diploma', event)" class="course-tab-btn bg-gray-100 hover:bg-gray-200 hover:text-redAccent text-gray-700 font-bold text-sm sm:text-base px-8 py-3.5 rounded-full transition cursor-pointer">
+                    Foundation & Associate
+                </button>
+            </div>
+
+            <!-- UG COURSES GRID -->
+            <div id="grid-ug" class="course-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
+                
+                <!-- UG 1: BSc Computer Science & AI -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80" alt="BSc Computer Science" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">BSc Computer Science & AI</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Software architecture, machine learning, and Silicon Valley co-op placements.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 4 Years</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 22k – 55k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UG 2: BSc Business Administration -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80" alt="BSc Business Administration" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">BSc Business Admin</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Wall Street finance, corporate strategy, marketing, and entrepreneurship track.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 4 Years</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 20k – 50k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UG 3: BSc Mechanical & Electrical Eng. -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80" alt="Mechanical Engineering" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">BSc Mechanical & Electrical Eng.</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">ABET-accredited engineering design, robotics, energy systems, and microelectronics.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 4 Years</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 24k – 58k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UG 4: BSc Biomedical & Pre-Med -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80" alt="Biomedical Sciences" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">BSc Biomedical & Pre Med</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Biotechnology research, genetic engineering, and pre med preparation for US medical schools.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 4 Years</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 21k – 52k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- PG COURSES GRID -->
+            <div id="grid-pg" class="course-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8 hidden">
+                
+                <!-- PG 1: Master of Business Administration (MBA) -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80" alt="MBA" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">Master of Business Admin (STEM)</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Executive management, tech entrepreneurship, consulting, and 3 year OPT STEM extension.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 2 Years</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 30k – 65k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PG 2: MS Data Science & Business Analytics -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80" alt="MS Data Science" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">MS Data Science & Analytics</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Big data engineering, machine learning, and predictive modeling (3 Year OPT STEM designation).</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 1.5 - 2 Years</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 25k – 55k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PG 3: MS Cybersecurity & Information Assurance -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=800&q=80" alt="Cybersecurity" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">MS Cybersecurity & Info. Sec.</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Ethical hacking, cloud security, risk analysis, and cryptography with 3 year OPT STEM.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 2 Years</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 24k – 50k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PG 4: Master of Public Health (MPH) -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=800&q=80" alt="Master of Public Health" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">Master of Public Health (MPH)</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Epidemiology, biostatistics, healthcare management, and global health policy.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 2 Years</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 22k – 48k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- DIPLOMA COURSES GRID -->
+            <div id="grid-diploma" class="course-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8 hidden">
+                
+                <!-- Diploma 1: Associate of Science (Computer Science) -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=800&q=80" alt="Associate of Science" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">Associate of Science (AS)</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Community college pathway with guaranteed 2+2 transfer to top 4 year US universities.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 2 Years</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 8k – 15k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diploma 2: Associate of Business Administration -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80" alt="Associate of Business" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">Associate of Business Admin</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Foundational business principles with guaranteed 2+2 university transfer agreements.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 2 Years</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 9k – 16k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diploma 3: International Year One (UTP) -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80" alt="Undergraduate Pathway" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">International Year One (UTP)</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Direct entry to 2nd year of bachelor's degree with academic English support.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 1 Year</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 18k – 32k/yr</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diploma 4: Pre-Master's / Graduate Pathway -->
+                <div class="relative group">
+                    <div class="absolute -inset-1.5 bg-gradient-to-r from-red-600 via-rose-500 to-blue-600 rounded-[30px] opacity-0 group-hover:opacity-75 blur-lg transition-all duration-500 pointer-events-none -z-10 group-hover:scale-[1.02]"></div>
+                    <div class="rounded-3xl overflow-hidden shadow-xl border-2 border-gray-100 group-hover:border-red-500/80 h-72 sm:h-80 lg:h-96 relative cursor-pointer transition-all duration-500 ease-out group-hover:-translate-y-2">
+                        <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=80" alt="Graduate Pathway" class="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=800&q=80';" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/20 group-hover:from-black/95 group-hover:via-black/75 group-hover:to-black/35 transition-all duration-500"></div>
+                        <div class="absolute bottom-0 left-0 right-0 p-5 sm:p-6 z-20 transition-all duration-500">
+                            <h3 class="text-xl sm:text-2xl font-black text-white leading-snug tracking-tight drop-shadow-md mb-1.5">Pre Master's / Grad Pathway</h3>
+                            <div class="max-h-0 opacity-0 overflow-hidden group-hover:max-h-56 group-hover:opacity-100 transition-all duration-500 space-y-2 pt-1">
+                                <p class="text-xs text-gray-200 font-medium leading-relaxed drop-shadow">Preparation for master's entry, GRE/GMAT waiver options, and advanced academic writing.</p>
+                                <div class="flex items-center gap-3 text-xs font-semibold text-rose-200 pt-0.5">
+                                    <span><i class="far fa-clock mr-1 text-redAccent"></i> 1-2 Semesters</span>
+                                    <span><i class="fas fa-coins mr-1 text-redAccent"></i> USD 14k – 26k</span>
+                                </div>
+                                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 mt-2.5 px-4.5 py-2 bg-redAccent hover:bg-redAccentDark text-white text-xs font-extrabold rounded-full shadow-lg transition-all duration-300" target="_blank" rel="noopener noreferrer"><span>Learn More</span><i class="fas fa-arrow-right text-[10px]"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Bottom CTA Button -->
+            <div class="text-center mt-12">
+                <a href="Untitled-1.html#contact" class="inline-flex items-center gap-2 bg-white hover:bg-rose-50 border-2 border-redAccent text-redAccent font-extrabold text-sm px-8 py-3.5 rounded-full transition-all duration-300 shadow-sm" target="_blank" rel="noopener noreferrer">
+                    <span>Explore More US Courses</span>
+                    <i class="fas fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 4. FREQUENTLY ASKED QUESTIONS (FAQS) & STICKY CONSULTATION CTA -->
+    <section class="py-20 bg-gradient-to-b from-white via-[#FAFBFD] to-white relative overflow-hidden" id="faqs">
+        <style>
+            /* Scroll Animation Styles for USA FAQ Section */
+            .faq-card-reveal {
+                opacity: 0;
+                transform: translateY(28px) scale(0.98);
+                transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+                will-change: opacity, transform;
+            }
+            .faq-bubble-left {
+                opacity: 0;
+                transform: translateX(-36px);
+                transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+                will-change: opacity, transform;
+            }
+            .faq-bubble-right {
+                opacity: 0;
+                transform: translateX(36px);
+                transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+                will-change: opacity, transform;
+            }
+            .faq-animated.faq-card-reveal {
+                opacity: 1 !important;
+                transform: translateY(0) scale(1) !important;
+            }
+            .faq-animated.faq-bubble-left,
+            .faq-animated.faq-bubble-right {
+                opacity: 1 !important;
+                transform: translateX(0) !important;
+            }
+        </style>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            
+            <!-- Section Header -->
+            <div class="text-center max-w-3xl mx-auto mb-14">
+                <span class="text-redAccent font-black text-xs tracking-[0.25em] uppercase flex items-center justify-center gap-3">
+                    <span class="w-8 h-[2px] bg-redAccent rounded-full inline-block"></span> 
+                    GOT QUESTIONS?
+                    <span class="w-8 h-[2px] bg-redAccent rounded-full inline-block"></span>
+                </span>
+                <h2 class="text-3xl sm:text-5xl font-black text-[#0A0A0A] mt-3 tracking-tight">
+                    🇺🇸 Study in USA FAQs
+                </h2>
+                <p class="text-gray-600 text-sm sm:text-base mt-3 max-w-2xl mx-auto">
+                    Answers to common questions about F-1 student visas, STEM OPT 36-month work extensions, Form I-20, scholarships, and US university admissions.
+                </p>
+            </div>
+
+            <!-- TWO-COLUMN SPLIT LAYOUT: BALANCED FAQ CARD (7 COLUMNS) + WIDER MATCHING HEIGHT FORM CTA CARD (5 COLUMNS) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch max-w-7xl mx-auto">
+                
+                <!-- LEFT COLUMN: FAQ CARD CONTAINER (lg:col-span-7) -->
+                <div class="lg:col-span-7 bg-[#F8FAFC] rounded-3xl p-6 sm:p-8 border border-gray-200/90 shadow-xl relative overflow-hidden flex flex-col space-y-4">
+                    
+                    <!-- Chat Header Badge inside Master Card -->
+                    <div class="flex items-center justify-between pb-4 border-b border-gray-200/80 mb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="w-3 h-3 rounded-full bg-emerald-500 animate-ping"></div>
+                            <span class="text-xs sm:text-sm font-extrabold text-gray-800 uppercase tracking-wider">Interactive USA Student FAQ Desk</span>
+                        </div>
+                        <span class="text-xs font-bold text-gray-400">Select any question to expand</span>
+                    </div>
+
+                    <!-- CHAT BUBBLE 01 (LEFT ALIGNED) -->
+                    <details class="group self-start w-[96%] sm:w-[90%] transition-all duration-300" open>
+                        <summary class="flex items-center justify-between bg-rose-50/90 hover:bg-rose-100/90 text-gray-900 border border-rose-200/80 rounded-2xl rounded-tl-sm p-4 cursor-pointer list-none select-none group-open:bg-white group-open:border-redAccent group-open:shadow-md transition-all duration-300">
+                            <span class="flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-full bg-redAccent text-white font-bold text-[10px] flex items-center justify-center shrink-0">Q1</span>
+                                <span class="font-extrabold text-xs sm:text-sm leading-snug">Why study in the United States?</span>
+                            </span>
+                            <span class="w-6 h-6 rounded-full bg-white/80 group-open:bg-redAccent group-open:text-white text-gray-500 flex items-center justify-center text-[10px] group-open:rotate-180 transition-all duration-300 shrink-0 ml-2">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-2 p-4 bg-white text-gray-700 rounded-2xl border border-rose-100 text-xs sm:text-sm leading-relaxed shadow-sm">
+                            The US offers unparalleled academic reputation, over 4,000 accredited universities, generous merit scholarships, state of the art research labs, and 3 year STEM OPT work extensions.
+                        </div>
+                    </details>
+
+                    <!-- CHAT BUBBLE 02 (RIGHT ALIGNED) -->
+                    <details class="group self-end w-[96%] sm:w-[90%] transition-all duration-300">
+                        <summary class="flex items-center justify-between bg-blue-50/90 hover:bg-blue-100/90 text-gray-900 border border-blue-200/80 rounded-2xl rounded-tr-sm p-4 cursor-pointer list-none select-none group-open:bg-white group-open:border-blue-600 group-open:shadow-md transition-all duration-300">
+                            <span class="flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">Q2</span>
+                                <span class="font-extrabold text-xs sm:text-sm leading-snug">What is STEM OPT and how does it work?</span>
+                            </span>
+                            <span class="w-6 h-6 rounded-full bg-white/80 group-open:bg-blue-600 group-open:text-white text-gray-500 flex items-center justify-center text-[10px] group-open:rotate-180 transition-all duration-300 shrink-0 ml-2">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-2 p-4 bg-white text-gray-700 rounded-2xl border border-blue-100 text-xs sm:text-sm leading-relaxed shadow-sm">
+                            STEM OPT allows graduates with eligible Science, Technology, Engineering, or Math degrees on an F-1 visa to extend their Optional Practical Training (OPT) by 24 months, for 36 total months of work authorization.
+                        </div>
+                    </details>
+
+                    <!-- CHAT BUBBLE 03 (LEFT ALIGNED) -->
+                    <details class="group self-start w-[96%] sm:w-[90%] transition-all duration-300">
+                        <summary class="flex items-center justify-between bg-rose-50/90 hover:bg-rose-100/90 text-gray-900 border border-rose-200/80 rounded-2xl rounded-tl-sm p-4 cursor-pointer list-none select-none group-open:bg-white group-open:border-redAccent group-open:shadow-md transition-all duration-300">
+                            <span class="flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-full bg-redAccent text-white font-bold text-[10px] flex items-center justify-center shrink-0">Q3</span>
+                                <span class="font-extrabold text-xs sm:text-sm leading-snug">What is Form I-20 and how do I get it?</span>
+                            </span>
+                            <span class="w-6 h-6 rounded-full bg-white/80 group-open:bg-redAccent group-open:text-white text-gray-500 flex items-center justify-center text-[10px] group-open:rotate-180 transition-all duration-300 shrink-0 ml-2">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-2 p-4 bg-white text-gray-700 rounded-2xl border border-rose-100 text-xs sm:text-sm leading-relaxed shadow-sm">
+                            Form I-20 is an official US government document issued by a SEVP-certified school after acceptance and proof of funds. It is required to pay SEVIS fees and book an F-1 visa interview.
+                        </div>
+                    </details>
+
+                    <!-- CHAT BUBBLE 04 (RIGHT ALIGNED) -->
+                    <details class="group self-end w-[96%] sm:w-[90%] transition-all duration-300">
+                        <summary class="flex items-center justify-between bg-blue-50/90 hover:bg-blue-100/90 text-gray-900 border border-blue-200/80 rounded-2xl rounded-tr-sm p-4 cursor-pointer list-none select-none group-open:bg-white group-open:border-blue-600 group-open:shadow-md transition-all duration-300">
+                            <span class="flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">Q4</span>
+                                <span class="font-extrabold text-xs sm:text-sm leading-snug">What tests (IELTS, TOEFL, SAT, GRE) are required for US universities?</span>
+                            </span>
+                            <span class="w-6 h-6 rounded-full bg-white/80 group-open:bg-blue-600 group-open:text-white text-gray-500 flex items-center justify-center text-[10px] group-open:rotate-180 transition-all duration-300 shrink-0 ml-2">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-2 p-4 bg-white text-gray-700 rounded-2xl border border-blue-100 text-xs sm:text-sm leading-relaxed shadow-sm">
+                            English tests (IELTS/TOEFL/PTE/Duolingo) are required. SAT/ACT is optional at many UG universities. For PG, GRE/GMAT is required by some programs, while many offer GPA-based waivers.
+                        </div>
+                    </details>
+
+                    <!-- CHAT BUBBLE 05 (LEFT ALIGNED) -->
+                    <details class="group self-start w-[96%] sm:w-[90%] transition-all duration-300">
+                        <summary class="flex items-center justify-between bg-rose-50/90 hover:bg-rose-100/90 text-gray-900 border border-rose-200/80 rounded-2xl rounded-tl-sm p-4 cursor-pointer list-none select-none group-open:bg-white group-open:border-redAccent group-open:shadow-md transition-all duration-300">
+                            <span class="flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-full bg-redAccent text-white font-bold text-[10px] flex items-center justify-center shrink-0">Q5</span>
+                                <span class="font-extrabold text-xs sm:text-sm leading-snug">Can international students work while studying in the USA?</span>
+                            </span>
+                            <span class="w-6 h-6 rounded-full bg-white/80 group-open:bg-redAccent group-open:text-white text-gray-500 flex items-center justify-center text-[10px] group-open:rotate-180 transition-all duration-300 shrink-0 ml-2">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-2 p-4 bg-white text-gray-700 rounded-2xl border border-rose-100 text-xs sm:text-sm leading-relaxed shadow-sm">
+                            F-1 students can work on-campus up to 20 hours per week during academic sessions and full time during breaks. Off-campus work requires CPT (Curricular Practical Training) authorization.
+                        </div>
+                    </details>
+
+                    <!-- CHAT BUBBLE 06 (RIGHT ALIGNED) -->
+                    <details class="group self-end w-[96%] sm:w-[90%] transition-all duration-300">
+                        <summary class="flex items-center justify-between bg-blue-50/90 hover:bg-blue-100/90 text-gray-900 border border-blue-200/80 rounded-2xl rounded-tr-sm p-4 cursor-pointer list-none select-none group-open:bg-white group-open:border-blue-600 group-open:shadow-md transition-all duration-300">
+                            <span class="flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">Q6</span>
+                                <span class="font-extrabold text-xs sm:text-sm leading-snug">Are scholarships available for international students in the USA?</span>
+                            </span>
+                            <span class="w-6 h-6 rounded-full bg-white/80 group-open:bg-blue-600 group-open:text-white text-gray-500 flex items-center justify-center text-[10px] group-open:rotate-180 transition-all duration-300 shrink-0 ml-2">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-2 p-4 bg-white text-gray-700 rounded-2xl border border-blue-100 text-xs sm:text-sm leading-relaxed shadow-sm">
+                            Yes. US universities offer merit tuition scholarships, Graduate Assistantships (GA), Teaching Assistantships (TA), and Research Assistantships (RA) that significantly reduce tuition costs.
+                        </div>
+                    </details>
+
+                    <!-- CHAT BUBBLE 07 (LEFT ALIGNED) -->
+                    <details class="group self-start w-[96%] sm:w-[90%] transition-all duration-300">
+                        <summary class="flex items-center justify-between bg-rose-50/90 hover:bg-rose-100/90 text-gray-900 border border-rose-200/80 rounded-2xl rounded-tl-sm p-4 cursor-pointer list-none select-none group-open:bg-white group-open:border-redAccent group-open:shadow-md transition-all duration-300">
+                            <span class="flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-full bg-redAccent text-white font-bold text-[10px] flex items-center justify-center shrink-0">Q7</span>
+                                <span class="font-extrabold text-xs sm:text-sm leading-snug">How much does it cost to study in the US?</span>
+                            </span>
+                            <span class="w-6 h-6 rounded-full bg-white/80 group-open:bg-redAccent group-open:text-white text-gray-500 flex items-center justify-center text-[10px] group-open:rotate-180 transition-all duration-300 shrink-0 ml-2">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-2 p-4 bg-white text-gray-700 rounded-2xl border border-rose-100 text-xs sm:text-sm leading-relaxed shadow-sm">
+                            Annual tuition ranges from USD 15,000 to USD 55,000 depending on public or private institution type, plus living expenses estimated at USD 10,000–18,000 per year.
+                        </div>
+                    </details>
+
+                    <!-- CHAT BUBBLE 08 (RIGHT ALIGNED) -->
+                    <details class="group self-end w-[96%] sm:w-[90%] transition-all duration-300">
+                        <summary class="flex items-center justify-between bg-blue-50/90 hover:bg-blue-100/90 text-gray-900 border border-blue-200/80 rounded-2xl rounded-tr-sm p-4 cursor-pointer list-none select-none group-open:bg-white group-open:border-blue-600 group-open:shadow-md transition-all duration-300">
+                            <span class="flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">Q8</span>
+                                <span class="font-extrabold text-xs sm:text-sm leading-snug">What is the F-1 visa interview like for Nepali students?</span>
+                            </span>
+                            <span class="w-6 h-6 rounded-full bg-white/80 group-open:bg-blue-600 group-open:text-white text-gray-500 flex items-center justify-center text-[10px] group-open:rotate-180 transition-all duration-300 shrink-0 ml-2">
+                                <i class="fas fa-chevron-down"></i>
+                            </span>
+                        </summary>
+                        <div class="mt-2 p-4 bg-white text-gray-700 rounded-2xl border border-blue-100 text-xs sm:text-sm leading-relaxed shadow-sm">
+                            The F-1 visa interview at the US Embassy in Kathmandu takes 2 to 5 minutes. You must demonstrate genuine student intent, academic capability, clear career goals, and solid financial backing.
+                        </div>
+                    </details>
+
+                </div>
+
+                <!-- RIGHT COLUMN: FORM CTA CARD (VIBRANT AMBIENT USA CROSSFADE - lg:col-span-5, h-fit) -->
+                <div class="lg:col-span-5 h-fit self-start relative rounded-3xl overflow-hidden shadow-xl border border-gray-200/90 p-6 sm:p-7 bg-white/90 backdrop-blur-2xl transition-all duration-300 hover:shadow-2xl">
+                    
+                    <!-- Ambient Crossfading USA Landmark Background Layer (Identifiable US Landmarks) -->
+                    <div class="absolute inset-0 -z-10 overflow-hidden">
+                        <div class="us-city-bg-slides absolute inset-0 w-full h-full pointer-events-none">
+                            <img src="/assets/usa_destination-irM3OInT.jpg" alt="USA Campus Landmark" class="us-bg-slide opacity-35 absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out" />
+                            <img src="/assets/usa_hero_photo-C3TXv7Y7.jpg" alt="USA University Quad" class="us-bg-slide opacity-0 absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out" />
+                            <img src="/assets/a8143f2e69db6fc7743e0fd7fb5198d8-CIAWYF9l.jpg" alt="US Capitol Landmark" class="us-bg-slide opacity-0 absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out" />
+                            <img src="/assets/dfsdf-DQRjIYTw.jpg" alt="New York Skyline" class="us-bg-slide opacity-0 absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out" />
+                        </div>
+                        <!-- Light Glass Tint Overlay for text readability without obscuring landmarks -->
+                        <div class="absolute inset-0 bg-gradient-to-br from-white/92 via-white/85 to-rose-50/80"></div>
+                    </div>
+                    
+                    <div>
+                        <!-- Header -->
+                        <div class="mb-5">
+                            <h3 class="text-2xl sm:text-3xl font-black text-[#0A0A0A] tracking-tight leading-snug">Want to study in the USA?</h3>
+                            <p class="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed mt-1">Connect with certified advisors for 1-on-1 USA application & visa support.</p>
+                        </div>
+
+                        <!-- Form -->
+                        <form onsubmit="event.preventDefault(); alert('Thank you! Our US advisor will contact you shortly.');" class="space-y-3.5">
+                            <div>
+                                <label class="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-1">Full Name <span class="text-redAccent">*</span></label>
+                                <input type="text" required placeholder="Your full name" class="w-full px-4 py-2.5 bg-white/95 border border-gray-200/90 rounded-xl text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-redAccent/15 transition-all duration-200 shadow-sm hover:border-gray-300" />
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-1">Email <span class="text-redAccent">*</span></label>
+                                    <input type="email" required placeholder="email@example.com" class="w-full px-4 py-2.5 bg-white/95 border border-gray-200/90 rounded-xl text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-redAccent/15 transition-all duration-200 shadow-sm hover:border-gray-300" />
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-1">Phone <span class="text-redAccent">*</span></label>
+                                    <input type="tel" required placeholder="+977 9800000000" class="w-full px-4 py-2.5 bg-white/95 border border-gray-200/90 rounded-xl text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-redAccent/15 transition-all duration-200 shadow-sm hover:border-gray-300" />
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-1">Preferred Degree Level <span class="text-redAccent">*</span></label>
+                                <select required class="w-full px-4 py-2.5 bg-white/95 border border-gray-200/90 rounded-xl text-xs sm:text-sm text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-redAccent/15 transition-all duration-200 shadow-sm hover:border-gray-300">
+                                    <option value="">Select Level</option>
+                                    <option value="Undergraduate">Undergraduate Degree</option>
+                                    <option value="Postgraduate">Postgraduate / Master's</option>
+                                    <option value="Pathway">Pre-Master's / Grad Pathway</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-extrabold text-gray-700 uppercase tracking-wider mb-1">Any questions or additional information? <span class="text-gray-400 font-normal lowercase">(optional)</span></label>
+                                <textarea rows="2" placeholder="Ask us anything about Form I-20, STEM OPT, GRE waivers, or US visas..." class="w-full px-4 py-2 bg-white/95 border border-gray-200/90 rounded-xl text-xs sm:text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-redAccent/15 transition-all duration-200 shadow-sm resize-none hover:border-gray-300"></textarea>
+                            </div>
+                            
+                            <!-- Privacy Policy & Terms Checkbox -->
+                            <div class="flex items-start gap-2.5 pt-1">
+                                <input type="checkbox" id="us-form-terms" required class="mt-0.5 w-4 h-4 text-redAccent bg-white border-gray-300 rounded focus:ring-redAccent focus:ring-2 cursor-pointer accent-redAccent" />
+                                <label for="us-form-terms" class="text-[11px] sm:text-xs text-gray-600 font-medium leading-tight select-none cursor-pointer">
+                                    By submitting this form, you agree to our <a href="./terms.html" class="text-redAccent font-bold hover:underline" target="_blank" rel="noopener noreferrer">Terms and Conditions</a> and <a href="./privacy.html" class="text-redAccent font-bold hover:underline" target="_blank" rel="noopener noreferrer">Privacy Policy</a>.
+                                </label>
+                            </div>
+
+                            <button type="submit" class="w-full py-3.5 px-6 bg-gradient-to-r from-redAccent via-rose-600 to-redAccent hover:from-rose-600 hover:to-red-700 text-white font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-xl shadow-rose-600/35 hover:shadow-rose-600/50 hover:scale-[1.01] active:scale-[0.99] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer group mt-2">
+                                <span>Submit Application / Inquiry</span>
+                                <i class="fas fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Accordion Auto-Collapse Single-Open & Scroll-Triggered Animation Script -->
+            <script>
+                document.querySelectorAll('#faqs details').forEach((targetDetail) => {
+                    targetDetail.addEventListener('click', () => {
+                        if (!targetDetail.open) {
+                            document.querySelectorAll('#faqs details').forEach((detail) => {
+                                if (detail !== targetDetail) {
+                                    detail.removeAttribute('open');
+                                }
+                            });
+                        }
+                    });
+                });
+
+                // Scroll-Triggered Staggered Revealing Animation (Alternating Slide-In)
+                document.addEventListener("DOMContentLoaded", () => {
+                    const faqSection = document.querySelector('#faqs');
+                    const faqMasterCard = document.querySelector('#faqs .lg\\:col-span-7');
+                    const formCard = document.querySelector('#faqs .lg\\:col-span-5');
+                    const bubbles = document.querySelectorAll('#faqs details');
+
+                    if (!faqSection) return;
+
+                    // Apply initial hidden animation classes
+                    if (faqMasterCard) faqMasterCard.classList.add('faq-card-reveal');
+                    if (formCard) formCard.classList.add('faq-card-reveal');
+
+                    bubbles.forEach((bubble, index) => {
+                        if (index % 2 === 0) {
+                            bubble.classList.add('faq-bubble-left');
+                        } else {
+                            bubble.classList.add('faq-bubble-right');
+                        }
+                        // Stagger delay: 85ms per bubble
+                        bubble.style.transitionDelay = `${120 + (index * 85)}ms`;
+                    });
+
+                    // IntersectionObserver - triggers once when entering viewport
+                    const observer = new IntersectionObserver((entries, obs) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                if (faqMasterCard) faqMasterCard.classList.add('faq-animated');
+                                if (formCard) formCard.classList.add('faq-animated');
+                                bubbles.forEach((bubble) => {
+                                    bubble.classList.add('faq-animated');
+                                });
+                                obs.unobserve(entry.target); // Trigger only once
+                            }
+                        });
+                    }, { threshold: 0.12 });
+
+                    observer.observe(faqSection);
+
+                    // Ambient USA Landmark Background Crossfade Slider
+                    const usCitySlides = document.querySelectorAll('.us-bg-slide');
+                    if (usCitySlides.length > 0) {
+                        let usSlideIndex = 0;
+                        setInterval(() => {
+                            usCitySlides[usSlideIndex].style.opacity = '0';
+                            usSlideIndex = (usSlideIndex + 1) % usCitySlides.length;
+                            usCitySlides[usSlideIndex].style.opacity = '0.35';
+                        }, 4500);
+                    }
+                });
+            </script>
+
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="slim-footer py-14">
+        <div class="h-1 w-full bg-gradient-to-r from-blue-600 via-redAccent to-blue-500 absolute top-0 left-0 right-0">
+        </div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-white/10">
+                <div class="lg:col-span-4 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="DreamSky"
+                            class="w-11 h-11 rounded-xl object-contain bg-white p-1 shadow-md border border-white/20" />
+                        <div class="text-white font-black text-2xl leading-tight tracking-tight">Dream<span
+                                class="text-blue-600">Sky</span></div>
+                    </div>
+                    <p class="text-xs text-gray-300 leading-relaxed">Nepal's premier education consultancy empowering
+                        students with admissions, visa guidance, test prep (IELTS/PTE), and post-arrival support for top
+                        global universities.</p>
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                        <span
+                            class="bg-blue-900/60 text-blue-200 border border-blue-700/50 text-[10px] font-semibold px-2.5 py-1 rounded-md"><i
+                                class="fas fa-check-circle text-blue-400 mr-1"></i> MOEST Approved</span>
+                        <span
+                            class="bg-red-900/40 text-red-200 border border-red-700/40 text-[10px] font-semibold px-2.5 py-1 rounded-md"><i
+                                class="fas fa-shield-alt text-red-400 mr-1"></i> TITI Certified</span>
+                    </div>
+                    <div class="flex gap-2.5 pt-2">
+                        <a href="#"
+                            class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm"><i
+                                class="fab fa-facebook-f"></i></a>
+                        <a href="#"
+                            class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm"><i
+                                class="fab fa-instagram"></i></a>
+                        <a href="#"
+                            class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm"><i
+                                class="fab fa-tiktok"></i></a>
+                    </div>
+                </div>
+                <div class="lg:col-span-2 space-y-3">
+                    <h4
+                        class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">
+                        Quick Links</h4>
+                    <ul class="space-y-2 text-xs text-gray-300 font-medium">
+                        <li><a href="Untitled-1.html#home"
+                                class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i
+                                    class="fas fa-chevron-right text-[8px] text-blue-500"></i> Home</a></li>
+                        <li><a href="mission-vision.html"
+                                class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i
+                                    class="fas fa-chevron-right text-[8px] text-blue-500"></i> Mission & Vision</a></li>
+                        <li><a href="team.html" class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i
+                                    class="fas fa-chevron-right text-[8px] text-blue-500"></i> Our Team</a></li>
+                        <li><a href="Untitled-1.html#destinations"
+                                class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i
+                                    class="fas fa-chevron-right text-[8px] text-blue-500"></i> Destinations</a></li>
+                        <li><a href="Untitled-1.html#partners"
+                                class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i
+                                    class="fas fa-chevron-right text-[8px] text-blue-500"></i> Universities</a></li>
+                        <li><a href="Untitled-1.html#journey"
+                                class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i
+                                    class="fas fa-chevron-right text-[8px] text-blue-500"></i> Study Journey</a></li>
+                        <li><a href="Untitled-1.html#contact"
+                                class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i
+                                    class="fas fa-chevron-right text-[8px] text-blue-500"></i> Contact Us</a></li>
+                    </ul>
+                </div>
+                <div class="lg:col-span-3 space-y-3">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">Top Countries</h4>
+                    <ul class="space-y-2 text-xs text-gray-300 font-medium">
+                        <li><a href="australia.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">AU</span> <span>Study in Australia</span></a></li>
+                        <li><a href="canada.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">CA</span> <span>Study in Canada</span></a></li>
+                        <li><a href="uk.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">UK</span> <span>Study in United Kingdom</span></a></li>
+                        <li><a href="usa.html" class="text-blue-400 font-bold flex items-center gap-2.5"><span class="px-1.5 py-0.5 rounded bg-blue-600 text-white font-extrabold text-[10px] uppercase border border-blue-400 tracking-wider shrink-0">US</span> <span>Study in United States</span></a></li>
+                        <li><a href="newzealand.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">NZ</span> <span>Study in New Zealand</span></a></li>
+                        <li><a href="europe.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">EU</span> <span>Study in Europe</span></a></li>
+                    </ul>
+                </div>
+                <div class="lg:col-span-3 space-y-3">
+                    <h4
+                        class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">
+                        Headquarters</h4>
+                    <ul class="space-y-2.5 text-xs text-gray-300">
+                        <li class="flex items-start gap-2.5">
+                            <div
+                                class="w-6 h-6 rounded-md bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-blue-400 text-[10px] shrink-0 mt-0.5">
+                                <i class="fas fa-map-marker-alt"></i></div><a
+                                href="https://maps.app.goo.gl/4uaCbrnNGFcTqChk9" target="_blank"
+                                rel="noopener noreferrer"
+                                class="hover:text-blue-400 transition underline underline-offset-2">2nd Floor, KL Tower,
+                                Boudhanath Sadak, Kathmandu 44600</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div
+                                class="w-6 h-6 rounded-md bg-blue-900/40 border border-blue-700/40 flex items-center justify-center text-blue-400 text-[10px] shrink-0">
+                                <i class="fas fa-phone-alt"></i></div><a href="tel:015928292"
+                                class="hover:text-white transition" target="_blank" rel="noopener noreferrer">01-5928292</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div
+                                class="w-6 h-6 rounded-md bg-emerald-900/40 border border-emerald-700/40 flex items-center justify-center text-emerald-400 text-[10px] shrink-0">
+                                <i class="fab fa-whatsapp"></i></div><a
+                                href="https://wa.me/9779768987156?text=Hello%20Dream%20Sky,%20I%20am%20interested%20in%20studying%20abroad."
+                                target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 transition">+977
+                                9768987156 (Chat on WhatsApp)</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div
+                                class="w-6 h-6 rounded-md bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-blue-400 text-[10px] shrink-0">
+                                <i class="fas fa-envelope"></i></div><a href="mailto:info@dreamsky.edu.np"
+                                class="hover:text-white transition" target="_blank" rel="noopener noreferrer">info@dreamsky.edu.np</a>
+                        </li>
+                        <li class="flex items-center gap-2.5 text-[11px] text-gray-400 pt-1"><i
+                                class="far fa-clock text-amber-400 text-xs"></i><span>Sun – Fri: 7:00 AM – 6:00
+                                PM</span></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-400">
+                <div>&copy; 2026 Dream Sky Education Consultancy. All rights reserved.</div>
+                <div class="flex items-center gap-5 font-medium">
+                    <a href="privacy.html" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    <a href="terms.html" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                    <a href="#"
+                        class="w-8 h-8 rounded-xl bg-redAccent/30 hover:bg-redAccent text-rose-200 hover:text-white border border-rose-500/40 flex items-center justify-center transition-all duration-300"><i
+                            class="fas fa-arrow-up text-xs"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        const hamburger = document.getElementById('hamburger');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+        function toggleMobile() {
+            if (!mobileMenu || !mobileOverlay) return;
+            mobileMenu.classList.toggle('open');
+            mobileOverlay.classList.toggle('active');
+            document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+        }
+        if (hamburger) hamburger.addEventListener('click', toggleMobile);
+        if (mobileOverlay) mobileOverlay.addEventListener('click', toggleMobile);
+        document.querySelectorAll('.mobile-menu a').forEach(link => link.addEventListener('click', toggleMobile));
+
+        function switchCourseTab(tabName, event) {
+            document.querySelectorAll('.course-tab-btn').forEach(t => { t.className = "course-tab-btn bg-gray-100 hover:bg-gray-200 hover:text-redAccent text-gray-700 font-bold text-sm sm:text-base px-8 py-3.5 rounded-full transition cursor-pointer"; });
+            event.currentTarget.className = "course-tab-btn bg-redAccent text-white font-extrabold text-sm sm:text-base px-8 py-3.5 rounded-full shadow-lg shadow-rose-600/20 transition cursor-pointer";
+            document.querySelectorAll('.course-grid').forEach(grid => grid.classList.add('hidden'));
+            const targetGrid = document.getElementById('grid-' + tabName);
+            if (targetGrid) targetGrid.classList.remove('hidden');
+        }
+
+        (function () {
+            function setupImageRotation(elementId, fileList, basePaths, intervalMs = 3500) {
+                const imgEl = document.getElementById(elementId);
+                if (!imgEl || !fileList || fileList.length === 0) return;
+                let currentIdx = 0, workingPath = basePaths[0];
+                const fallbacks = {
+                    'heroBgImage': 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=1920&q=80',
+                    'uniCardImage': 'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=800&q=80',
+                    'studentLifeCardImage': 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80',
+                    'citiesHeritageCardImage': 'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?w=800&q=80',
+                    'opportunitiesCardImage': 'https://images.unsplash.com/photo-1521737711867-e3b97375f902?w=800&q=80'
+                };
+                imgEl.onerror = function () { if (fallbacks[elementId]) this.src = fallbacks[elementId]; };
+                function findPath(idx) {
+                    if (idx >= basePaths.length) { startLoop(); return; }
+                    const t = new Image();
+                    t.onload = () => { workingPath = basePaths[idx]; startLoop(); };
+                    t.onerror = () => findPath(idx + 1);
+                    t.src = basePaths[idx] + fileList[0];
+                }
+                function startLoop() {
+                    imgEl.src = workingPath + fileList[0];
+                    if (fileList.length <= 1) return;
+                    setInterval(() => {
+                        currentIdx = (currentIdx + 1) % fileList.length;
+                        imgEl.style.transition = 'opacity 0.5s ease-in-out';
+                        imgEl.style.opacity = imgEl.id === 'heroBgImage' ? '0.15' : '0.3';
+                        setTimeout(() => { imgEl.src = workingPath + fileList[currentIdx]; imgEl.style.opacity = imgEl.id === 'heroBgImage' ? '0.45' : '1'; }, 250);
+                    }, intervalMs);
+                }
+                findPath(0);
+            }
+            setupImageRotation('heroBgImage', ['usa_destination.jpg', 'usa_hero_photo.jpg', 'a8143f2e69db6fc7743e0fd7fb5198d8.jpg'], ['./assets/destinations/USA/heritage/', './assets/destinations/USA/', './'], 4000);
+            setupImageRotation('uniCardImage', ['us.jpg', 'as.jpg', 'dsfhsdf.jpg', 'gf.jpg', 'sda.jpg'], ['./assets/destinations/USA/universities/', './assets/destinations/USA/', './'], 3000);
+            setupImageRotation('studentLifeCardImage', ['std.jpg', 'student1.jpg', 'camp.jpg', 'studentere.jpg'], ['./assets/student life/', 'assets/student life/'], 2800);
+            setupImageRotation('citiesHeritageCardImage', ['usa_destination.jpg', 'a8143f2e69db6fc7743e0fd7fb5198d8.jpg', 'dfsdf.jpg', 'fd.jpg', 'hil.jpg', 'sds.jpg', 'usa_hero_photo.jpg'], ['./assets/destinations/USA/heritage/', './assets/destinations/USA/', './'], 3200);
+            setupImageRotation('opportunitiesCardImage', ['engineer.jpg', 'doctor.jpg', 'law.jpg', 'ads.jpg', 'as.jpg', 'd.jpg'], ['./assets/opportunities/', 'assets/opportunities/'], 2700);
+        })();
+
+        
+    </script>
+    <!-- ============================================================
+    AUTH MODAL — Student Login & Consultation Booking
+    ============================================================ -->
+    <div id="authModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div id="authModalCard" class="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl transform scale-95 transition-all duration-300 border border-gray-100 overflow-hidden">
+            <!-- Close Button -->
+            <button onclick="closeAuthModal()" class="absolute top-5 right-5 w-9 h-9 rounded-full bg-gray-100 text-gray-400 hover:bg-redAccent hover:text-white flex items-center justify-center transition-all duration-200 z-10 cursor-pointer">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+
+            <!-- Brand Header -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center gap-2 mb-2">
+                    <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="DreamSky" class="w-8 h-8 rounded-lg object-contain bg-white p-0.5 shadow-sm border border-gray-100" />
+                    <span class="font-black text-lg text-gray-900">Dream<span class="text-blue-600">Sky</span></span>
+                </div>
+                <h3 id="authModalTitle" class="text-xl font-black text-[#0A0A0A]">Welcome Back!</h3>
+                <p id="authModalSubtitle" class="text-xs text-gray-500 font-medium mt-1">Access your DreamSky student dashboard</p>
+            </div>
+
+            <!-- Tab Switcher (Log In vs Book Consultation) -->
+            <div id="authTabGroup" class="flex bg-gray-100 p-1.5 rounded-2xl mb-6">
+                <button type="button" id="tabBtnLogin" onclick="switchAuthTab('login')" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer">
+                    Log In
+                </button>
+                <button type="button" id="tabBtnSignup" onclick="switchAuthTab('signup')" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer">
+                    Book Consultation
+                </button>
+            </div>
+
+            <!-- 1. LOGIN FORM (No Social Buttons) -->
+            <form id="authFormLogin" onsubmit="handleAuthSubmit(event, 'login')" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Email Address</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="email" required placeholder="student@example.com" class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pl-11 pr-11 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                        <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
+                            <i class="fas fa-eye text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me & Forgot Password Row -->
+                <div class="flex items-center justify-between pt-1 pb-1">
+                    <label class="flex items-center gap-2 text-xs text-gray-600 font-semibold cursor-pointer select-none">
+                        <input type="checkbox" id="rememberMe" class="w-4 h-4 rounded border-gray-300 text-redAccent focus:ring-redAccent accent-red-600 cursor-pointer" />
+                        Remember me
+                    </label>
+                    <button type="button" onclick="switchAuthTab('forgot')" class="text-xs font-bold text-redAccent hover:underline focus:outline-none cursor-pointer">
+                        Forgot Password?
+                    </button>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- 2. BOOK CONSULTATION FORM (Replaces Sign Up) -->
+            <form id="authFormSignup" onsubmit="handleAuthSubmit(event, 'consultation')" class="space-y-3.5 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" required placeholder="John Doe" class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Phone / WhatsApp Number</label>
+                    <div class="relative">
+                        <i class="fas fa-phone-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="tel" required placeholder="+977 98XXXXXXXX" class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Preferred Destination</label>
+                    <div class="relative">
+                        <i class="fas fa-globe absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <select required class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition bg-white appearance-none">
+                            <option value="" disabled selected>Select Destination</option>
+                            <option value="Australia">🇦🇺 Study in Australia</option>
+                            <option value="Canada">🇨🇦 Study in Canada</option>
+                            <option value="UK">🇬🇧 Study in UK</option>
+                            <option value="USA">🇺🇸 Study in USA</option>
+                            <option value="New Zealand">🇳🇿 Study in New Zealand</option>
+                            <option value="Europe">🇪🇺 Study in Europe</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Academic Level</label>
+                    <div class="relative">
+                        <i class="fas fa-graduation-cap absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <select required class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition bg-white appearance-none">
+                            <option value="" disabled selected>Select Study Level</option>
+                            <option value="Undergraduate">Undergraduate (Bachelor's)</option>
+                            <option value="Postgraduate">Postgraduate (Master's / PhD)</option>
+                            <option value="Diploma">Diploma / Vocational</option>
+                            <option value="Test Prep">Test Preparation (IELTS / PTE)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer mt-2">
+                    Request Free Consultation
+                </button>
+            </form>
+
+            <!-- 3. FORGOT PASSWORD FORM -->
+            <form id="authFormForgot" onsubmit="handleAuthSubmit(event, 'forgot')" class="space-y-4 hidden">
+                <div class="text-center bg-rose-50/70 border border-rose-100 p-3.5 rounded-2xl mb-2">
+                    <i class="fas fa-key text-redAccent text-xl mb-1"></i>
+                    <p class="text-xs text-gray-600 font-semibold leading-relaxed">Enter your registered email address and we will send you a password reset link.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Registered Email Address</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="email" required placeholder="student@example.com" class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer">
+                    Send Reset Link
+                </button>
+
+                <button type="button" onclick="switchAuthTab('login')" class="w-full text-center text-xs font-bold text-gray-500 hover:text-redAccent transition flex items-center justify-center gap-1.5 pt-2 cursor-pointer">
+                    <i class="fas fa-arrow-left"></i> Back to Log In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Auth Modal Scripts -->
+    <script>
+        function openAuthModal(tab = 'login') {
+            const modal = document.getElementById('authModal');
+            const card = document.getElementById('authModalCard');
+            if (!modal || !card) return;
+            switchAuthTab(tab);
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100', 'pointer-events-auto');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('authModal');
+            const card = document.getElementById('authModalCard');
+            if (!modal || !card) return;
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.style.overflow = '';
+        }
+
+        function switchAuthTab(tab) {
+            const formLogin = document.getElementById('authFormLogin');
+            const formSignup = document.getElementById('authFormSignup');
+            const formForgot = document.getElementById('authFormForgot');
+            const btnLogin = document.getElementById('tabBtnLogin');
+            const btnSignup = document.getElementById('tabBtnSignup');
+            const tabGroup = document.getElementById('authTabGroup');
+            const title = document.getElementById('authModalTitle');
+            const subtitle = document.getElementById('authModalSubtitle');
+
+            if (!formLogin || !formSignup || !formForgot) return;
+
+            formLogin.classList.add('hidden');
+            formSignup.classList.add('hidden');
+            formForgot.classList.add('hidden');
+            tabGroup.classList.remove('hidden');
+
+            btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer";
+            btnSignup.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer";
+
+            if (tab === 'login') {
+                formLogin.classList.remove('hidden');
+                btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer";
+                title.innerText = "Welcome Back!";
+                subtitle.innerText = "Access your DreamSky student dashboard";
+            } else if (tab === 'signup' || tab === 'consultation') {
+                formSignup.classList.remove('hidden');
+                btnSignup.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer";
+                title.innerText = "Book Free Consultation";
+                subtitle.innerText = "Speak directly with an expert education counselor";
+            } else if (tab === 'forgot') {
+                formForgot.classList.remove('hidden');
+                tabGroup.classList.add('hidden');
+                title.innerText = "Forgot Password";
+                subtitle.innerText = "We'll help you recover access";
+            }
+        }
+
+        function handleAuthSubmit(event, type) {
+            event.preventDefault();
+            const remember = document.getElementById('rememberMe')?.checked;
+            if (type === 'login') {
+                alert(`🎉 Logged in successfully! ${remember ? '(Remember Me is active)' : ''}`);
+            } else if (type === 'signup' || type === 'consultation') {
+                alert('🎉 Consultation request submitted successfully! A DreamSky counselor will contact you within 24 hours.');
+            } else if (type === 'forgot') {
+                alert('✉️ Password reset link sent to your registered email!');
+            }
+            closeAuthModal();
+        }
+
+        function togglePasswordVisibility(inputId, iconBtn) {
+            const input = document.getElementById(inputId);
+            const icon = iconBtn.querySelector('i');
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash text-sm text-redAccent';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye text-sm text-gray-400';
+            }
+        }
+
+        document.getElementById('authModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeAuthModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeAuthModal();
+        });
+    </script>
+
+    
+
+
+    <!-- Header Glass Scroll Listener (Transitions exactly when scrolling past Hero Section) -->
+    <script>
+        (function() {
+            const header = document.getElementById('header');
+            const heroSection = document.getElementById('home') || document.querySelector('section');
+            function updateHeaderScroll() {
+                if (!header) return;
+                const heroHeight = heroSection ? heroSection.offsetHeight : 600;
+                const headerHeight = header.offsetHeight || 80;
+                const threshold = Math.max(100, heroHeight - headerHeight);
+                if (window.scrollY > threshold) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            }
+            window.addEventListener('scroll', updateHeaderScroll);
+            window.addEventListener('resize', updateHeaderScroll);
+            updateHeaderScroll();
+        })();
+    </script>
+
+</body>
+
+</html>

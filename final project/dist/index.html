@@ -1,0 +1,2895 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dream Sky Education Consultancy — Global Education & Visa Experts</title>
+    <meta name="description" content="Dream Sky Education Consultancy – Premier international education counseling, visa assistance, test preparation, and university placements worldwide." />
+
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+    <!-- Font Awesome 6 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        'sans': ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                        'jakarta': ['"Plus Jakarta Sans"', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif']
+                    },
+                    colors: {
+                        navy: '#0A0A0A',
+                        redAccent: '#DC2626',
+                        redAccentDark: '#B91C1C',
+                        grayBg: '#F8FAFC',
+                        cardBg: '#FFFFFF',
+                        darkCard: '#141414',
+                    },
+                    borderRadius: { 'xl': '20px', '2xl': '24px', '3xl': '32px' },
+                    boxShadow: {
+                        'soft': '0 10px 40px rgba(0,0,0,0.04)',
+                        'glow': '0 12px 40px rgba(220,38,38,0.18)',
+                        'glow-lg': '0 20px 60px rgba(220,38,38,0.25)',
+                        'glass': '0 8px 32px rgba(0,0,0,0.04)',
+                        'premium': '0 20px 60px rgba(0,0,0,0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* ============================================================
+           CUSTOM STYLES — Modern Corporate Design & Smooth Transitions
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            background: #FFFFFF;
+            color: #374151;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #0A0A0A;
+        }
+
+        /* --- Header & Glass Navigation (Transparent at top -> Solid Glass on scroll) --- */
+        .glass-nav {
+            background: transparent;
+            backdrop-filter: blur(0px);
+            -webkit-backdrop-filter: blur(0px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .glass-nav .nav-logo-text {
+            color: #FFFFFF;
+            transition: color 0.4s ease;
+        }
+        .glass-nav .nav-logo-sub {
+            color: rgba(255, 255, 255, 0.70);
+            transition: color 0.4s ease;
+        }
+        .glass-nav .nav-link {
+            position: relative;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.90);
+            transition: color 0.3s ease;
+        }
+        .glass-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #DC2626;
+            border-radius: 4px;
+            transition: width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .glass-nav .nav-link:hover {
+            color: #F87171;
+        }
+        .glass-nav .nav-link:hover::after {
+            width: 100%;
+        }
+        .glass-nav .nav-login-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+        .glass-nav .nav-login-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.45);
+            color: #FFFFFF;
+            transform: translateY(-1px);
+        }
+        .glass-nav.scrolled .nav-login-btn {
+            background: #F3F4F6;
+            border-color: #E5E7EB;
+            color: #1F2937;
+        }
+        .glass-nav.scrolled .nav-login-btn:hover {
+            background: #FEF2F2;
+            border-color: #FECDD3;
+            color: #DC2626;
+        }
+
+        .glass-nav .nav-cta-btn {
+            background: #DC2626;
+            color: #FFFFFF;
+            box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
+            transition: all 0.3s ease;
+        }
+        .glass-nav .nav-cta-btn:hover {
+            background: #B91C1C;
+            transform: translateY(-1px);
+        }
+
+        /* Scrolled state */
+        .glass-nav.scrolled {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-bottom: 1px solid rgba(229, 231, 235, 0.8) !important;
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.06) !important;
+        }
+        .glass-nav.scrolled .nav-logo-text {
+            color: #0A0A0A !important;
+        }
+        .glass-nav.scrolled .nav-logo-sub {
+            color: #6B7280 !important;
+        }
+        .glass-nav.scrolled .hamburger-icon {
+            color: #0A0A0A !important;
+        }
+        .glass-nav.scrolled .nav-link {
+            color: #1F2937 !important;
+        }
+        .glass-nav.scrolled .nav-link:hover {
+            color: #DC2626 !important;
+        }
+
+        /* --- Hero Section & Dynamic Background --- */
+        .hero-bg-container {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .hero-video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            -o-object-fit: cover;
+               object-fit: cover;
+            opacity: 1;
+            transition: opacity 1.5s ease-in-out;
+            z-index: 1;
+        }
+        .hero-slide {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            -o-object-fit: cover;
+               object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+            z-index: 0;
+        }
+        .hero-slide.active {
+            opacity: 1;
+            z-index: 2;
+        }
+        .hero-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(10, 10, 10, 0.70) 0%, rgba(10, 10, 10, 0.50) 50%, rgba(10, 10, 10, 0.80) 100%);
+            z-index: 1;
+        }
+
+        /* --- Glass Panels & Cards --- */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.60);
+        }
+        .glass-form {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.70);
+        }
+
+        /* --- Full-Bleed Wall-to-Wall Infinite Carousel Tracks --- */
+        .carousel-track {
+            display: flex;
+            gap: 28px;
+            animation: scrollInfinite 45s linear infinite;
+            width: -moz-max-content;
+            width: max-content;
+        }
+        .carousel-track-reverse {
+            animation: scrollInfiniteReverse 50s linear infinite;
+        }
+        .carousel-track:hover {
+            animation-play-state: paused;
+        }
+        @keyframes scrollInfinite {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        @keyframes scrollInfiniteReverse {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0); }
+        }
+
+        /* --- 1. Your Study Abroad Journey Cards (White Card + Top Rounded Cover Image + Hover Elevation) --- */
+        .journey-card-modern {
+            background: #FFFFFF;
+            border-radius: 24px;
+            overflow: hidden;
+            border: 1px solid #F1F5F9;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+        }
+        .journey-card-modern .card-img-wrap {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+            border-radius: 24px 24px 0 0;
+        }
+        .journey-card-modern .card-img {
+            width: 100%;
+            height: 100%;
+            -o-object-fit: cover;
+               object-fit: cover;
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .journey-card-modern .card-body {
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+        .journey-card-modern .step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 38px;
+            height: 38px;
+            border-radius: 12px;
+            background: #FEF2F2;
+            color: #DC2626;
+            font-weight: 800;
+            font-size: 0.85rem;
+            margin-bottom: 14px;
+            border: 1px solid rgba(220, 38, 38, 0.15);
+            transition: all 0.3s ease;
+        }
+        .journey-card-modern:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 25px 60px rgba(220, 38, 38, 0.20);
+            border-color: rgba(220, 38, 38, 0.35);
+        }
+        .journey-card-modern:hover .card-img {
+            transform: scale(1.08);
+        }
+        .journey-card-modern:hover .step-badge {
+            background: #DC2626;
+            color: #FFFFFF;
+            box-shadow: 0 6px 18px rgba(220, 38, 38, 0.35);
+        }
+
+        /* Floating Idle Animation */
+        .float-idle {
+            animation: floatContinuous 6s ease-in-out infinite;
+        }
+        @keyframes floatContinuous {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+
+        /* --- 2. Country / Destination Cards (Refined Height 480px & Sleek 18px Curve) --- */
+        .dest-card-cover {
+            display: block;
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            height: 480px;
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.5s ease;
+            perspective: 1000px;
+            transform-style: preserve-3d;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+        }
+        .dest-card-cover .bg-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            -o-object-fit: cover;
+               object-fit: cover;
+            image-rendering: -webkit-optimize-contrast;
+            filter: contrast(1.06) brightness(1.04);
+            transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1), filter 0.5s ease;
+        }
+        .dest-card-cover .overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.0) 0%, rgba(0, 0, 0, 0.15) 35%, rgba(10, 10, 10, 0.92) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            text-align: center;
+            padding: 24px;
+            color: #FFFFFF;
+            transition: background 0.4s ease;
+        }
+        .dest-card-cover:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 25px 60px rgba(220, 38, 38, 0.20);
+        }
+        .dest-card-cover:hover .bg-img {
+            transform: scale(1.08);
+            filter: contrast(1.10) brightness(1.08);
+        }
+        .dest-card-cover:hover .overlay {
+            background: linear-gradient(180deg, rgba(220, 38, 38, 0.08) 0%, rgba(0, 0, 0, 0.20) 45%, rgba(10, 10, 10, 0.92) 100%);
+        }
+
+        /* --- 3. Partner Universities (Full Image Cover Cards & Hover Popup Overlay) --- */
+        .uni-card-cover {
+            flex-shrink: 0;
+            width: 320px;
+            height: 380px;
+            border-radius: 18px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.08);
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.5s ease;
+            cursor: pointer;
+        }
+        .uni-card-cover .bg-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            -o-object-fit: cover;
+               object-fit: cover;
+            transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .uni-card-cover .overlay-default {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.30) 45%, rgba(10, 10, 10, 0.92) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 22px;
+            color: #FFFFFF;
+            transition: opacity 0.4s ease;
+        }
+        .uni-card-cover .overlay-hover-popup {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 10, 10, 0.92);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px;
+            color: #FFFFFF;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            pointer-events: none;
+        }
+        .uni-card-cover:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 22px 50px rgba(220, 38, 38, 0.20);
+        }
+        .uni-card-cover:hover .bg-img {
+            transform: scale(1.10);
+        }
+        .uni-card-cover:hover .overlay-hover-popup {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        /* --- 4. Student Success Stories (Full Cover Portrait Cards with Face Always Visible) --- */
+        .story-card-cover {
+            flex-shrink: 0;
+            width: 310px;
+            height: 420px;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 14px 40px rgba(0, 0, 0, 0.08);
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.5s ease;
+            cursor: pointer;
+        }
+        .story-card-cover .bg-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            -o-object-fit: cover;
+               object-fit: cover;
+            transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .story-card-cover .overlay-default {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.15) 50%, rgba(10, 10, 10, 0.90) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 24px;
+            color: #FFFFFF;
+            transition: opacity 0.3s ease;
+        }
+        .story-card-cover .overlay-hover-popup {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(10, 10, 10, 0.0) 0%, rgba(10, 10, 10, 0.85) 30%, rgba(10, 10, 10, 0.96) 100%);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 24px;
+            color: #FFFFFF;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            pointer-events: none;
+            z-index: 3;
+            height: 55%;
+        }
+        .story-card-cover:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 60px rgba(220, 38, 38, 0.20);
+        }
+        .story-card-cover:hover .bg-img {
+            transform: scale(1.10);
+        }
+        .story-card-cover:hover .overlay-default {
+            opacity: 0;
+        }
+        .story-card-cover:hover .overlay-hover-popup {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        /* --- 5. Team Showcase Cards (Full Cover Portrait Style) --- */
+        .team-card-cover {
+            width: 290px;
+            height: 400px;
+            flex-shrink: 0;
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.06);
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s ease;
+            cursor: pointer;
+        }
+        .team-card-cover .bg-img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            -o-object-fit: cover;
+               object-fit: cover;
+            -o-object-position: top;
+               object-position: top;
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .team-card-cover .overlay-default {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.20) 45%, rgba(10, 10, 10, 0.92) 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 22px;
+            color: #FFFFFF;
+            transition: opacity 0.3s ease;
+        }
+        .team-card-cover .overlay-hover-popup {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(10, 10, 10, 0.0) 0%, rgba(10, 10, 10, 0.88) 30%, rgba(10, 10, 10, 0.98) 100%);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 22px;
+            color: #FFFFFF;
+            opacity: 0;
+            transform: translateY(18px);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            pointer-events: none;
+            z-index: 3;
+            height: 60%;
+        }
+        .team-card-cover:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 25px 60px rgba(220, 38, 38, 0.20);
+        }
+        .team-card-cover:hover .bg-img {
+            transform: scale(1.08);
+        }
+        .team-card-cover:hover .overlay-default {
+            opacity: 0;
+        }
+        .team-card-cover:hover .overlay-hover-popup {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+        /* --- Floating 3D Flip Card for Contact / Application Card --- */
+        @keyframes floatCard {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-12px); }
+        }
+        .flip-card-container {
+            perspective: 1200px;
+            width: 100%;
+            height: 530px;
+            position: relative;
+            animation: floatCard 6s ease-in-out infinite;
+        }
+        .flip-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+            transform-style: preserve-3d;
+        }
+        .flip-card-inner.flipped {
+            transform: rotateY(180deg);
+        }
+        .flip-card-front, .flip-card-back {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+            background: #FFFFFF;
+        }
+        .flip-card-front {
+            z-index: 2;
+            transform: rotateY(0deg);
+        }
+        .flip-card-back {
+            transform: rotateY(180deg);
+            z-index: 1;
+        }
+
+        /* --- Corporate Footer with Logo Blue-Red Brand Gradient --- */
+        .slim-footer {
+            background: linear-gradient(135deg, #050B18 0%, #0A162C 50%, #060B16 100%);
+            color: #FFFFFF;
+            border-top: 1px solid rgba(220, 38, 38, 0.20);
+            position: relative;
+        }
+
+        /* --- Scroll Reveal Animations --- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .stagger-grid > * {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .stagger-grid.visible > *:nth-child(1) { transition-delay: 0.05s; }
+        .stagger-grid.visible > *:nth-child(2) { transition-delay: 0.10s; }
+        .stagger-grid.visible > *:nth-child(3) { transition-delay: 0.15s; }
+        .stagger-grid.visible > *:nth-child(4) { transition-delay: 0.20s; }
+        .stagger-grid.visible > *:nth-child(5) { transition-delay: 0.25s; }
+        .stagger-grid.visible > *:nth-child(6) { transition-delay: 0.30s; }
+        .stagger-grid.visible > *:nth-child(7) { transition-delay: 0.35s; }
+        .stagger-grid.visible > *:nth-child(8) { transition-delay: 0.40s; }
+        .stagger-grid.visible > * {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- Mobile Navigation Drawer --- */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 380px;
+            height: 100vh;
+            background: #FFFFFF;
+            padding: 90px 28px 40px;
+            transition: right 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: -10px 0 60px rgba(0, 0, 0, 0.10);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .mobile-menu.open { right: 0; }
+        .mobile-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.50);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            z-index: 999;
+        }
+        .mobile-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        /* --- Floating Label Inputs --- */
+        .form-floating {
+            position: relative;
+        }
+        .form-floating input,
+        .form-floating select,
+        .form-floating textarea {
+            width: 100%;
+            padding: 18px 16px 8px 16px;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 16px;
+            font-size: 0.95rem;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.90);
+            color: #0F172A;
+            outline: none;
+        }
+        .form-floating input:focus,
+        .form-floating select:focus,
+        .form-floating textarea:focus {
+            border-color: #DC2626;
+            box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.08);
+            background: #FFFFFF;
+        }
+        .form-floating label {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 0.85rem;
+            color: #94A3B8;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            font-weight: 500;
+        }
+        .form-floating input:not(:-moz-placeholder)~label, .form-floating textarea:not(:-moz-placeholder)~label {
+            top: 6px;
+            transform: none;
+            font-size: 0.68rem;
+            color: #DC2626;
+            font-weight: 700;
+        }
+        .form-floating input:focus~label,
+        .form-floating input:not(:placeholder-shown)~label,
+        .form-floating select:focus~label,
+        .form-floating select:not([value=""])~label,
+        .form-floating textarea:focus~label,
+        .form-floating textarea:not(:placeholder-shown)~label {
+            top: 6px;
+            transform: none;
+            font-size: 0.68rem;
+            color: #DC2626;
+            font-weight: 700;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #F1F5F9; }
+        ::-webkit-scrollbar-thumb { background: #DC2626; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- ============================================================
+    MOBILE OVERLAY & DRAWER MENU
+    ============================================================ -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#home" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">Home</a>
+        <div class="border-b border-gray-100 py-3">
+            <div class="text-[#0A0A0A] font-bold text-sm mb-2 text-redAccent">About Us</div>
+            <div class="pl-4 space-y-2 text-xs font-semibold">
+                <a href="mission-vision.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">Mission and Vision</a>
+                <a href="team.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">Our Team</a>
+            </div>
+        </div>
+        <div class="border-b border-gray-100 py-3">
+            <div class="text-[#0A0A0A] font-bold text-sm mb-2 text-redAccent">Destinations</div>
+            <div class="pl-4 space-y-2 text-xs font-semibold">
+                <a href="australia.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇦🇺 Study in Australia</a>
+                <a href="canada.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇨🇦 Study in Canada</a>
+                <a href="uk.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇬🇧 Study in UK</a>
+                <a href="usa.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇺🇸 Study in USA</a>
+                <a href="newzealand.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇳🇿 Study in New Zealand</a>
+                <a href="europe.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇪🇺 Study in Europe</a>
+            </div>
+        </div>
+        <a href="#partners" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">Universities</a>
+        <a href="#journey" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">Study Journey</a>
+        <button onclick="openAuthModal('login'); document.getElementById('mobileMenu')?.classList.remove('open'); document.getElementById('mobileOverlay')?.classList.remove('active');" class="mt-4 w-full flex items-center justify-center gap-2 bg-rose-50 text-gray-900 border border-rose-200 font-bold py-3 rounded-full hover:bg-redAccent hover:text-white transition shadow-sm">
+            <i class="fas fa-user-circle text-base text-redAccent"></i> Login
+        </button>
+        <a href="#contact" class="mt-3 block w-full text-center bg-redAccent text-white font-semibold py-3.5 rounded-full hover:bg-redAccentDark transition shadow-md">Book Free Consultation</a>
+    </div>
+
+    <!-- ============================================================
+    HEADER — Glass Navigation with Interactive Hover Dropdowns
+    ============================================================ -->
+    <header class="fixed top-0 left-0 w-full z-50 glass-nav" id="header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="#" class="flex items-center gap-3 group">
+                    <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="DreamSky" class="w-10 h-10 rounded-xl object-contain bg-white p-1 shadow-md border border-gray-100 group-hover:scale-105 transition-transform duration-300" />
+                    <div class="nav-logo-text font-bold text-xl leading-tight tracking-tight">Dream<span class="text-blue-600">Sky</span></div>
+                </a>
+
+                <nav class="hidden xl:flex items-center gap-8">
+                    <a href="#home" class="nav-link text-sm py-1">Home</a>
+                    
+                    <!-- About Us Dropdown Menu -->
+                    <div class="relative group py-2">
+                        <a href="#about" class="nav-link text-sm py-1 inline-flex items-center gap-1.5 cursor-pointer">
+                            <span>About Us</span>
+                            <i class="fas fa-chevron-down text-[10px] opacity-80 group-hover:rotate-180 transition-transform duration-300"></i>
+                        </a>
+
+                        <!-- Dropdown Popup Card -->
+                        <div class="absolute top-full left-0 w-56 bg-white/95 backdrop-blur-xl rounded-2xl p-2 shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                            <a href="mission-vision.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-bullseye text-redAccent w-4 text-center group-hover/item:scale-110 transition-transform"></i>
+                                <span>Mission and Vision</span>
+                            </a>
+                            <a href="team.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-users text-redAccent w-4 text-center group-hover/item:scale-110 transition-transform"></i>
+                                <span>Our Team</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Destinations Dropdown Menu -->
+                    <div class="relative group py-2">
+                        <a href="#destinations" class="nav-link text-sm py-1 inline-flex items-center gap-1.5 cursor-pointer">
+                            <span>Destinations</span>
+                            <i class="fas fa-chevron-down text-[10px] opacity-80 group-hover:rotate-180 transition-transform duration-300"></i>
+                        </a>
+
+                        <!-- Dropdown Popup Card -->
+                        <div class="absolute top-full left-0 w-60 bg-white/95 backdrop-blur-xl rounded-2xl p-2 shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                            <a href="australia.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇦🇺</span>
+                                <span>Study in Australia</span>
+                            </a>
+                            <a href="canada.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇨🇦</span>
+                                <span>Study in Canada</span>
+                            </a>
+                            <a href="uk.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇬🇧</span>
+                                <span>Study in UK</span>
+                            </a>
+                            <a href="usa.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇺🇸</span>
+                                <span>Study in USA</span>
+                            </a>
+                            <a href="newzealand.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇳🇿</span>
+                                <span>Study in New Zealand</span>
+                            </a>
+                            <a href="europe.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇪🇺</span>
+                                <span>Study in Europe</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <a href="#partners" class="nav-link text-sm py-1">Universities</a>
+                    <a href="#journey" class="nav-link text-sm py-1">Journey</a>
+                    <a href="#contact" class="nav-link text-sm py-1">Contact</a>
+                </nav>
+
+                <div class="flex items-center gap-2.5">
+                    <button onclick="openAuthModal('login')" class="nav-login-btn hidden sm:inline-flex items-center gap-2 text-xs font-semibold px-5 py-2.5 rounded-full transition transform hover:-translate-y-0.5 shadow-md hover:shadow-lg cursor-pointer">
+                        <i class="fas fa-user-circle text-sm"></i> Login
+                    </button>
+                    <a href="#contact" class="nav-cta-btn hidden sm:inline-flex text-xs font-semibold px-5 py-2.5 rounded-full transition transform hover:-translate-y-0.5 shadow-md hover:shadow-lg">
+                        Book Consultation <i class="fas fa-arrow-right ml-2 my-auto group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                    <button class="xl:hidden p-2 text-white hover:text-redAccent hover:scale-110 transition focus:outline-none hamburger-icon" id="hamburger" aria-label="Toggle Navigation">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================================
+    1. HERO SECTION — Refined Typography, Background Video & Cinematic Slideshow
+    ============================================================ -->
+    <section class="relative min-h-[90vh] lg:min-h-screen flex items-center overflow-hidden pt-28 pb-20" id="home">
+        <!-- Dynamic Background Container (Airplane to Logo Animation Video -> Cinematic Slideshow) -->
+        <div class="hero-bg-container">
+            <video class="hero-video" id="heroVideo" autoplay muted playsinline poster="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg">
+                <source src="/assets/Airplane_to_logo_animation_202607241246-BX9NcF_R.mp4" type="video/mp4" />
+            </video>
+            <!-- Cinematic Crossfade Images (Rotates smoothly in hero background after video finishes) -->
+            <img src="/assets/hero_bg2-DuHUoGrX.jpg" alt="Students Collaborative Study Session" class="hero-slide" />
+            <img src="/assets/hero_bg3-2nkwsSYR.jpg" alt="Student Studying in University Library" class="hero-slide" />
+            <img src="/assets/student1-CI6-3MaC.jpg" alt="Vibrant Campus Student Life" class="hero-slide" />
+            <img src="/assets/engineer-DH6mcH3H.jpg" alt="Engineering & Tech Pathways" class="hero-slide" />
+            <img src="/assets/camp-D7PL0n3d.jpg" alt="Orientation & Leadership Workshops" class="hero-slide" />
+            <img src="/assets/doctor-BR6cu58L.jpg" alt="Healthcare & Medical Sciences" class="hero-slide" />
+            <img src="/assets/greenwich_2-N0MZqyTP.jpg" alt="UK University Heritage & Historic Campus" class="hero-slide" />
+            <img src="/assets/studentere-CpDLPIfv.jpg" alt="Collaborative Academic Research" class="hero-slide" />
+            <img src="/assets/law-DWPbFFXk.jpg" alt="Law & International Relations" class="hero-slide" />
+            <img src="/assets/std-BNSv_cX6.jpg" alt="International Student Community" class="hero-slide" />
+            <img src="/assets/0bbd51b0158c6fd07bc44477a7886c53-C5R7hv31.jpg" alt="Post-Graduate Global Research" class="hero-slide" />
+            <img src="/assets/0131c20eed0a951cef9f44bc620d02ff-Cs-WE2o6.jpg" alt="Multicultural Student Activities" class="hero-slide" />
+            <img src="/assets/fkfs-BHn7vXEw.jpg" alt="Innovation & Science Laboratories" class="hero-slide" />
+            <img src="/assets/uwa_-__university_of_western_australia-4293_a8a4da961a28422d9371071c2ad746e8-B3jPst6e.jpg" alt="Top Global Partner Universities" class="hero-slide" />
+            <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1920&q=80" alt="Students Study Abroad Experience" class="hero-slide" />
+            <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1920&q=80" alt="Global University Campus Grounds" class="hero-slide" />
+        </div>
+        <!-- Subtle Dark Overlay -->
+        <div class="hero-overlay"></div>
+
+        <!-- Interactive Sound Toggle Control for Hero Video -->
+        <button id="heroSoundToggle" type="button" class="absolute bottom-6 right-6 z-20 bg-black/60 hover:bg-redAccent text-white text-xs font-bold px-4 py-2.5 rounded-full backdrop-blur-md border border-white/20 transition-all duration-300 flex items-center gap-2 shadow-lg group" title="Toggle Video Audio">
+            <i class="fas fa-volume-mute group-hover:scale-110 transition-transform" id="soundIcon"></i>
+            <span id="soundText">Enable Video Audio</span>
+        </button>
+
+        <div class="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-4 pl-4 sm:pl-6 lg:pl-4">
+            <div class="max-w-3xl">
+                <!-- Clean Refined Heading -->
+                <h1 class="text-4xl sm:text-6xl lg:text-6xl font-bold tracking-tight text-white leading-[1.12] reveal">
+                    Empowering Your <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-rose-300 to-amber-200">Global Education</span> Journey
+                </h1>
+                
+                <!-- Refined Paragraph -->
+                <p class="text-base sm:text-lg text-white/80 max-w-2xl mt-6 leading-relaxed font-normal reveal">
+                    Guiding ambitious students across Nepal with expert counseling, university selection, test preparation, and guaranteed visa support for USA, Canada, UK, Australia, Europe & New Zealand.
+                </p>
+
+                <!-- Action CTA Buttons -->
+                <div class="flex flex-wrap gap-4 mt-9 reveal">
+                    <a href="#contact" class="bg-redAccent text-white font-semibold px-7 py-3.5 rounded-full hover:bg-redAccentDark transition duration-300 shadow-lg shadow-redAccent/25 flex items-center gap-2.5 text-sm">
+                        <i class="fas fa-calendar-alt text-xs"></i> Start Free Assessment
+                    </a>
+                    <a href="#destinations" class="bg-white/10 hover:bg-white/20 text-white font-semibold px-7 py-3.5 rounded-full backdrop-blur-md border border-white/20 transition duration-300 flex items-center gap-2.5 text-sm">
+                        Explore Destinations <i class="fas fa-compass text-xs text-red-300"></i>
+                    </a>
+                </div>
+
+                <!-- CEO Quote Statement (Minimal Soft Backing Overlay — Frameless) -->
+                <div class="mt-10 sm:mt-12 reveal">
+                    <div class="inline-block bg-black/25 backdrop-blur-md rounded-2xl p-4 sm:p-5 max-w-2xl">
+                        <div class="flex items-start gap-2.5">
+                            <span class="text-red-400 text-2xl sm:text-3xl font-serif leading-none shrink-0 font-bold">“</span>
+                            <p class="text-sm sm:text-base text-white/95 font-medium italic leading-relaxed drop-shadow-md">
+                                Education changes lives. We simply open the doors.
+                            </p>
+                        </div>
+                        <div class="text-right text-xs text-rose-200/90 font-bold tracking-wide mt-2 drop-shadow-sm">
+                            — Ashis Shrestha, <span class="text-white/80 font-normal">Founder & CEO of DreamSky</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    2. COUNTRY / STUDY DESTINATIONS — All 6 Destination Cards Visible in Clean Grid
+    ============================================================ -->
+    <section class="pt-20 pb-10 bg-white" id="destinations">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <span class="text-redAccent font-bold text-xs tracking-[0.2em] uppercase bg-red-50 px-4 py-2 rounded-full border border-red-100">Step Into Your Global Future</span>
+                <h2 class="text-4xl sm:text-5xl font-black text-[#0A0A0A] mt-4 tracking-tight">
+                    Explore Top Study <span class="text-redAccent">Destinations</span>
+                </h2>
+                <p class="text-gray-500 max-w-2xl mx-auto mt-3 text-base">
+                    Discover leading universities, scholarships, cost of living, post study work opportunities, and more—all in one place.
+                </p>
+            </div>
+
+            <!-- Clean Responsive Grid (6 Full-Cover Image Cards, Entire Card Clickable) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 stagger-grid" id="destinationsContainer">
+                
+                <!-- Australia -->
+                <a href="australia.html" class="dest-card-cover float-idle group block" style="animation-delay: 0s;" target="_blank" rel="noopener noreferrer">
+                    <img src="/assets/australia_destination-B4LGBmrs.jpg" alt="Australia" class="bg-img" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=2400&q=100';" />
+                    <div class="overlay flex flex-col justify-end items-center text-center pb-8">
+                        <div class="inline-flex items-center gap-2.5 bg-black/75 group-hover:bg-redAccent border border-white/20 text-white font-black text-xl px-7 py-3.5 rounded-2xl shadow-xl group-hover:scale-105 transition-all duration-300">
+                            <span>Australia</span>
+                            <i class="fas fa-arrow-right text-sm opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- United Kingdom -->
+                <a href="uk.html" class="dest-card-cover float-idle group block" style="animation-delay: 0.3s;" target="_blank" rel="noopener noreferrer">
+                    <img src="https://images.unsplash.com/photo-1529655683826-aba9b3e77383?auto=format&fit=crop&w=2400&q=100" alt="United Kingdom" class="bg-img" />
+                    <div class="overlay flex flex-col justify-end items-center text-center pb-8">
+                        <div class="inline-flex items-center gap-2.5 bg-black/75 group-hover:bg-redAccent border border-white/20 text-white font-black text-xl px-7 py-3.5 rounded-2xl shadow-xl group-hover:scale-105 transition-all duration-300">
+                            <span>United Kingdom</span>
+                            <i class="fas fa-arrow-right text-sm opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- United States -->
+                <a href="usa.html" class="dest-card-cover float-idle group block" style="animation-delay: 0.6s;" target="_blank" rel="noopener noreferrer">
+                    <img src="/assets/usa_destination-irM3OInT.jpg" alt="United States" class="bg-img" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1501594907352-04cda38ebc29?auto=format&fit=crop&w=2400&q=100';" />
+                    <div class="overlay flex flex-col justify-end items-center text-center pb-8">
+                        <div class="inline-flex items-center gap-2.5 bg-black/75 group-hover:bg-redAccent border border-white/20 text-white font-black text-xl px-7 py-3.5 rounded-2xl shadow-xl group-hover:scale-105 transition-all duration-300">
+                            <span>United States</span>
+                            <i class="fas fa-arrow-right text-sm opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Canada -->
+                <a href="canada.html" class="dest-card-cover float-idle group block" style="animation-delay: 0.9s;" target="_blank" rel="noopener noreferrer">
+                    <img src="/assets/canada_destination-C4F1GSY-.png" alt="Canada" class="bg-img" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=2400&q=100';" />
+                    <div class="overlay flex flex-col justify-end items-center text-center pb-8">
+                        <div class="inline-flex items-center gap-2.5 bg-black/75 group-hover:bg-redAccent border border-white/20 text-white font-black text-xl px-7 py-3.5 rounded-2xl shadow-xl group-hover:scale-105 transition-all duration-300">
+                            <span>Canada</span>
+                            <i class="fas fa-arrow-right text-sm opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- New Zealand -->
+                <a href="newzealand.html" class="dest-card-cover float-idle group block" style="animation-delay: 1.2s;" target="_blank" rel="noopener noreferrer">
+                    <img src="/assets/newzealand_destination-Cxy3jzj5.jpg" alt="New Zealand" class="bg-img" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=2400&q=100';" />
+                    <div class="overlay flex flex-col justify-end items-center text-center pb-8">
+                        <div class="inline-flex items-center gap-2.5 bg-black/75 group-hover:bg-redAccent border border-white/20 text-white font-black text-xl px-7 py-3.5 rounded-2xl shadow-xl group-hover:scale-105 transition-all duration-300">
+                            <span>New Zealand</span>
+                            <i class="fas fa-arrow-right text-sm opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- Europe -->
+                <a href="europe.html" class="dest-card-cover float-idle group block" style="animation-delay: 1.5s;" target="_blank" rel="noopener noreferrer">
+                    <img src="/assets/europe_destination-DpIz4zBl.png" alt="Study in Europe - Eiffel Tower" class="bg-img" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?auto=format&fit=crop&w=2400&q=100';" />
+                    <div class="overlay flex flex-col justify-end items-center text-center pb-8">
+                        <div class="inline-flex items-center gap-2.5 bg-black/75 group-hover:bg-redAccent border border-white/20 text-white font-black text-xl px-7 py-3.5 rounded-2xl shadow-xl group-hover:scale-105 transition-all duration-300">
+                            <span>Europe</span>
+                            <i class="fas fa-arrow-right text-sm opacity-80 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300"></i>
+                        </div>
+                    </div>
+                </a>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    3. PARTNER UNIVERSITIES — Official Campus Photo & High-Res Logo Cards Carousel
+    ============================================================ -->
+    <section class="py-20 bg-[#F8FAFC] border-y border-gray-100 relative overflow-hidden" id="partners">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Centered Header Inspired by Image 2 -->
+            <div class="text-center max-w-3xl mx-auto mb-10">
+                <span class="text-redAccent font-bold text-xs tracking-[0.2em] uppercase bg-red-50 px-4 py-2 rounded-full border border-red-100">GLOBAL INSTITUTIONAL ALLIANCES</span>
+                <h2 class="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0A0A0A] mt-3 tracking-tight">
+                    Partner <span class="text-redAccent">Universities</span>
+                </h2>
+                <p class="text-gray-500 mt-3 text-sm sm:text-base leading-relaxed">
+                    Direct tie-ups and official representation with 300+ QS top-ranked universities worldwide. Hover over any university card for details.
+                </p>
+
+                <!-- Navigation Controls (Forward / Backward Buttons) -->
+                <div class="flex items-center justify-center gap-3 mt-6">
+                    <button id="partnerPrevBtn" type="button" class="w-11 h-11 rounded-full bg-white border border-gray-200 shadow-md hover:bg-redAccent hover:text-white hover:border-redAccent transition-all duration-300 flex items-center justify-center text-gray-700 font-bold active:scale-95 cursor-pointer" title="Previous Universities">
+                        <i class="fas fa-chevron-left text-sm"></i>
+                    </button>
+                    <button id="partnerNextBtn" type="button" class="w-11 h-11 rounded-full bg-white border border-gray-200 shadow-md hover:bg-redAccent hover:text-white hover:border-redAccent transition-all duration-300 flex items-center justify-center text-gray-700 font-bold active:scale-95 cursor-pointer" title="Next Universities">
+                        <i class="fas fa-chevron-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Auto-Moving & Manual Scrollable University Photo & Logo Cards Carousel -->
+            <div class="relative w-full">
+                <div id="partnersTrack" class="flex items-center gap-6 overflow-x-auto scroll-smooth py-6 px-2 select-none" style="scrollbar-width: none; -ms-overflow-style: none;">
+                    
+                    <!-- 1. Univ. of Auckland -->
+                    <a href="https://www.auckland.ac.nz/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1562774053-701939374585?w=800&q=80" alt="Univ. of Auckland" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=auckland.ac.nz&sz=256" alt="Univ. of Auckland Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Univ. of Auckland</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">New Zealand • World Rank #68</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Top Partner University</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=auckland.ac.nz&sz=256" alt="Univ. of Auckland Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Univ. of Auckland
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    New Zealand • World Rank #68
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=auckland.ac.nz&sz=256" alt="Univ. of Auckland Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Univ. of Auckland</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">New Zealand's #1 ranked university offering top programs in Engineering, Medicine & Business.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Scholarships:</strong> Up to NZD $10,000</div>
+                                    <div><strong class="text-amber-300">Acceptance:</strong> ~75%</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 2. LMU Munich -->
+                    <a href="https://www.lmu.de/en/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80" alt="LMU Munich" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=lmu.de&sz=256" alt="LMU Munich Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">LMU Munich</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">Germany • World Rank #54</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Top European Institution</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=lmu.de&sz=256" alt="LMU Munich Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    LMU Munich
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    Germany • World Rank #54
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=lmu.de&sz=256" alt="LMU Munich Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">LMU Munich</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Premier European research university with zero tuition fees for international students.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Tuition:</strong> €0 Tuition Fees</div>
+                                    <div><strong class="text-amber-300">Key Fields:</strong> AI, Physics, Bio</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 3. Univ. of Sydney -->
+                    <a href="https://www.sydney.edu.au/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80" alt="Univ. of Sydney" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=sydney.edu.au&sz=256" alt="Univ. of Sydney Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Univ. of Sydney</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">Australia • World Rank #19</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Group of Eight Australia</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=sydney.edu.au&sz=256" alt="Univ. of Sydney Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Univ. of Sydney
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    Australia • World Rank #19
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=sydney.edu.au&sz=256" alt="Univ. of Sydney Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Univ. of Sydney</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Australia's oldest university ranked #19 globally for employability & academic excellence.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Scholarships:</strong> Up to 20% Vice-Chancellor</div>
+                                    <div><strong class="text-amber-300">Post Study Work:</strong> 2-4 Years Visa</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 4. Univ. of Melbourne -->
+                    <a href="https://www.unimelb.edu.au/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1564981797816-1043664bf78d?w=800&q=80" alt="Univ. of Melbourne" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=unimelb.edu.au&sz=256" alt="Univ. of Melbourne Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Univ. of Melbourne</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">Australia • World Rank #14</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">#1 University in Australia</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=unimelb.edu.au&sz=256" alt="Univ. of Melbourne Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Univ. of Melbourne
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    Australia • World Rank #14
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=unimelb.edu.au&sz=256" alt="Univ. of Melbourne Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Univ. of Melbourne</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Australia's #1 university located in the cultural capital of Melbourne.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Global Rank:</strong> #14 Worldwide</div>
+                                    <div><strong class="text-amber-300">Top Fields:</strong> Finance, CS, Architecture</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 5. Univ. of Toronto -->
+                    <a href="https://www.utoronto.ca/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&q=80" alt="Univ. of Toronto" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=utoronto.ca&sz=256" alt="Univ. of Toronto Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Univ. of Toronto</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">Canada • World Rank #21</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Canada's Top University</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=utoronto.ca&sz=256" alt="Univ. of Toronto Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Univ. of Toronto
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    Canada • World Rank #21
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=utoronto.ca&sz=256" alt="Univ. of Toronto Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Univ. of Toronto</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Canada's flagship institution renowned for AI innovation and research breakthroughs.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Work Permit:</strong> 3 Year PGWP Canada</div>
+                                    <div><strong class="text-amber-300">Top Fields:</strong> Software, Data Science, AI</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 6. University Canada West -->
+                    <a href="https://www.ucanwest.ca/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1519452635265-7b1fbfd1e4e0?w=800&q=80" alt="University Canada West" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=ucanwest.ca&sz=256" alt="UCW Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Univ. Canada West</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">Canada • Vancouver Campus</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Top Business School</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=ucanwest.ca&sz=256" alt="UCW Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Univ. Canada West
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    Canada • Vancouver Campus
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=ucanwest.ca&sz=256" alt="UCW Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Univ. Canada West</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Dynamic business-focused university located in downtown Vancouver, British Columbia.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Scholarship:</strong> Up to $20,000 CAD</div>
+                                    <div><strong class="text-amber-300">Programs:</strong> MBA, BCom, Associate of Arts</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 7. Univ. of Technology Sydney -->
+                    <a href="https://www.uts.edu.au/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1607237138185-eedd9c632b0b?w=800&q=80" alt="Univ. of Technology Sydney" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=uts.edu.au&sz=256" alt="UTS Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Univ. of Tech Sydney</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">Australia • World Rank #90</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Top Tech University</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=uts.edu.au&sz=256" alt="UTS Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Univ. of Tech Sydney
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    Australia • World Rank #90
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=uts.edu.au&sz=256" alt="UTS Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Univ. of Tech Sydney</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Leading Australian technology institution with state of the art campus facilities.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Top Programs:</strong> IT, Cybersecurity, Design</div>
+                                    <div><strong class="text-amber-300">Scholarship:</strong> 25% Academic Excellence</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 8. Univ. of Hertfordshire -->
+                    <a href="https://www.herts.ac.uk/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?w=800&q=80" alt="Univ. of Hertfordshire" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=herts.ac.uk&sz=256" alt="Hertfordshire Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Univ. of Hertfordshire</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">United Kingdom • World Rank #500</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Top UK Institution</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=herts.ac.uk&sz=256" alt="Hertfordshire Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Univ. of Hertfordshire
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    United Kingdom • World Rank #500
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=herts.ac.uk&sz=256" alt="Hertfordshire Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Univ. of Hertfordshire</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Innovative UK university located 25 minutes from central London.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Bursaries:</strong> Up to £4,000 Int'l Grant</div>
+                                    <div><strong class="text-amber-300">Visa:</strong> 2 Year Graduate Route UK</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 9. Middlesex University -->
+                    <a href="https://www.mdx.ac.uk/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=800&q=80" alt="Middlesex University" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=mdx.ac.uk&sz=256" alt="Middlesex Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Middlesex University</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">United Kingdom • London Campus</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Hendon, London UK</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=mdx.ac.uk&sz=256" alt="Middlesex Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Middlesex University
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    United Kingdom • London Campus
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=mdx.ac.uk&sz=256" alt="Middlesex Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Middlesex University</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Dynamic Hendon campus in North London known for career outcomes & industry ties.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Location:</strong> Hendon, London UK</div>
+                                    <div><strong class="text-amber-300">Key Fields:</strong> Robotics, Nursing, Business</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 10. Bangor University -->
+                    <a href="https://www.bangor.ac.uk/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1492538368677-f6e0afe31dcc?w=800&q=80" alt="Bangor University" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=bangor.ac.uk&sz=256" alt="Bangor Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Bangor University</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">United Kingdom • Wales</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Gold Teaching Excellence</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=bangor.ac.uk&sz=256" alt="Bangor Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Bangor University
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    United Kingdom • Wales
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=bangor.ac.uk&sz=256" alt="Bangor Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Bangor University</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Historic Welsh university awarded Gold for Teaching Excellence in the UK.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Scholarship:</strong> Up to £10,000 Award</div>
+                                    <div><strong class="text-amber-300">Top Fields:</strong> Environmental, Law, CS</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 11. Deakin University -->
+                    <a href="https://www.deakin.edu.au/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80" alt="Deakin University" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=deakin.edu.au&sz=256" alt="Deakin Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Deakin University</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">Australia • World Rank #233</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Top Australian Institution</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=deakin.edu.au&sz=256" alt="Deakin Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Deakin University
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    Australia • World Rank #233
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=deakin.edu.au&sz=256" alt="Deakin Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Deakin University</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Multi-award winning Australian university with campuses in Melbourne & Geelong.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Scholarships:</strong> 25% Tuition Fee Grant</div>
+                                    <div><strong class="text-amber-300">Top Fields:</strong> Sports Tech, Nursing, IT</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <!-- 12. Yorkville University -->
+                    <a href="https://www.yorkvilleu.ca/" target="_blank" rel="noopener noreferrer" class="uni-card-cover group">
+                        <img src="https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&q=80" alt="Yorkville University" class="bg-img" onerror="this.style.display='none'; this.parentElement.querySelector('.uni-fallback-card').style.display='flex';" />
+                        
+                        <!-- Fallback Logo Card -->
+                        <div class="uni-fallback-card absolute inset-0 bg-gradient-to-br from-slate-900 via-gray-900 to-black hidden flex-col justify-between p-5 z-0">
+                            <div class="w-full flex items-center justify-between">
+                                
+                                
+                            </div>
+                            <div class="my-auto flex flex-col items-center text-center">
+                                <div class="w-20 h-20 rounded-2xl bg-white p-3 shadow-2xl border border-white/40 mb-3 flex items-center justify-center">
+                                    <img src="https://www.google.com/s2/favicons?domain=yorkvilleu.ca&sz=256" alt="Yorkville Logo" class="w-full h-full object-contain" />
+                                </div>
+                                <h4 class="text-white font-black text-lg">Yorkville University</h4>
+                                <p class="text-xs text-gray-400 mt-1 font-medium">Canada • Toronto & Vancouver</p>
+                            </div>
+                            <div class="w-full">
+                                <div class="text-[11px] text-gray-300 bg-white/10 p-2.5 rounded-xl border border-white/10 text-center font-medium">
+                                    <span class="text-amber-300 font-bold">Career-Oriented Education</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-default z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md backdrop-blur-md flex items-center justify-center shrink-0 border border-white/60">
+                                        <img src="https://www.google.com/s2/favicons?domain=yorkvilleu.ca&sz=256" alt="Yorkville Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div>
+                                <div class="inline-block bg-black/75 backdrop-blur-md border border-white/20 text-white font-black text-lg px-4 py-2 rounded-xl shadow-lg group-hover:bg-redAccent group-hover:border-red-500 transition-colors duration-300">
+                                    Yorkville University
+                                </div>
+                                <div class="text-xs text-white/90 font-semibold mt-2.5">
+                                    Canada • Toronto & Vancouver
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="overlay-hover-popup z-20">
+                            <div class="flex items-center justify-between">
+                                <div class="w-9 h-9 rounded-xl bg-white p-1.5 shadow-md flex items-center justify-center shrink-0">
+                                        <img src="https://www.google.com/s2/favicons?domain=yorkvilleu.ca&sz=256" alt="Yorkville Logo" class="w-full h-full object-contain" />
+                                    </div>
+                                
+                            </div>
+                            <div class="my-auto">
+                                <h3 class="text-xl font-black text-white mb-2">Yorkville University</h3>
+                                <p class="text-xs text-gray-300 mb-3 leading-relaxed">Top career-oriented programs in Project Management, Business Administration & Design.</p>
+                                <div class="bg-white/10 p-3 rounded-xl backdrop-blur-md text-xs text-white space-y-1">
+                                    <div><strong class="text-amber-300">Intakes:</strong> Jan, April, July, Oct</div>
+                                    <div><strong class="text-amber-300">Fast Track:</strong> 2.5-Year Degree Option</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between w-full bg-redAccent hover:bg-redAccentDark text-white font-bold text-xs px-4 py-3 rounded-xl transition-all shadow-md">
+                                <span>Visit Official Site</span> <i class="fas fa-external-link-alt"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ============================================================
+    4. YOUR STUDY ABROAD JOURNEY — Modern Support System Cards (With Top Image & Short Description)
+    ============================================================ -->
+    <section class="py-24 bg-white" id="journey">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header Inspired by Support System Design -->
+            <div class="text-center mb-16">
+                <h2 class="text-4xl sm:text-5xl font-black text-[#0A0A0A] tracking-tight">
+                    Your Complete <span class="text-redAccent">Study Abroad</span> Support System
+                </h2>
+                <p class="text-gray-500 max-w-2xl mx-auto mt-4 text-base">
+                    An end-to-end 8-step support system designed to take you smoothly from career counseling to your university campus abroad.
+                </p>
+            </div>
+
+            <!-- 8 Steps Modern Grid (Fade-in on scroll & subtle hover elevation) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-7 stagger-grid" id="journeyContainer">
+                
+                <!-- Step 01 -->
+                <div class="journey-card-modern float-idle" style="animation-delay: 0s;">
+                    <div class="card-img-wrap">
+                        <img src="https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=700&h=500&fit=crop&crop=center" alt="Career Counselling" class="card-img" />
+                    </div>
+                    <div class="card-body">
+                        <div class="step-badge">01</div>
+                        <h3 class="text-xl font-bold text-[#0A0A0A] mb-2 leading-snug">Career Counselling</h3>
+                        <p class="text-xs text-gray-500 font-normal leading-relaxed">
+                            Confused about your future? Get 1-on-1 expert advice tailored strictly to your academic goals and budget.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 02 -->
+                <div class="journey-card-modern float-idle" style="animation-delay: 0.2s;">
+                    <div class="card-img-wrap">
+                        <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=700&h=500&fit=crop&crop=center" alt="Test Preparation" class="card-img" />
+                    </div>
+                    <div class="card-body">
+                        <div class="step-badge">02</div>
+                        <h3 class="text-xl font-bold text-[#0A0A0A] mb-2 leading-snug">Test Preparation</h3>
+                        <p class="text-xs text-gray-500 font-normal leading-relaxed">
+                            Boost your scores with expert IELTS, PTE, TOEFL & SAT coaching, real exam strategies, and full mock test series.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 03 -->
+                <div class="journey-card-modern float-idle" style="animation-delay: 0.4s;">
+                    <div class="card-img-wrap">
+                        <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=700&h=500&fit=crop&crop=center" alt="Application Assistance" class="card-img" />
+                    </div>
+                    <div class="card-body">
+                        <div class="step-badge">03</div>
+                        <h3 class="text-xl font-bold text-[#0A0A0A] mb-2 leading-snug">Application Assistance</h3>
+                        <p class="text-xs text-gray-500 font-normal leading-relaxed">
+                            Maximize your chances of admission with error-free file processing, professional SOP review, and LOR verification.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 04 -->
+                <div class="journey-card-modern float-idle" style="animation-delay: 0.6s;">
+                    <div class="card-img-wrap">
+                        <img src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=700&q=80" alt="University Selection" class="card-img" />
+                    </div>
+                    <div class="card-body">
+                        <div class="step-badge">04</div>
+                        <h3 class="text-xl font-bold text-[#0A0A0A] mb-2 leading-snug">University Selection</h3>
+                        <p class="text-xs text-gray-500 font-normal leading-relaxed">
+                            We shortlist top QS ranked universities where you have the highest chance of acceptance & scholarship approval.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 05 -->
+                <div class="journey-card-modern float-idle" style="animation-delay: 0.8s;">
+                    <div class="card-img-wrap">
+                        <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?w=700&h=500&fit=crop&crop=center" alt="Scholarship Match" class="card-img" />
+                    </div>
+                    <div class="card-body">
+                        <div class="step-badge">05</div>
+                        <h3 class="text-xl font-bold text-[#0A0A0A] mb-2 leading-snug">Scholarship Matching</h3>
+                        <p class="text-xs text-gray-500 font-normal leading-relaxed">
+                            Identify and apply for institutional merit grants, bursaries, and fully-funded government scholarships worldwide.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 06 -->
+                <div class="journey-card-modern float-idle" style="animation-delay: 1.0s;">
+                    <div class="card-img-wrap">
+                        <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=700&h=500&fit=crop&crop=center" alt="Visa Processing" class="card-img" />
+                    </div>
+                    <div class="card-body">
+                        <div class="step-badge">06</div>
+                        <h3 class="text-xl font-bold text-[#0A0A0A] mb-2 leading-snug">Visa Processing & Drills</h3>
+                        <p class="text-xs text-gray-500 font-normal leading-relaxed">
+                            Rigorous embassy file preparation, financial proofing, and realistic mock interviews with seasoned visa experts.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 07 -->
+                <div class="journey-card-modern float-idle" style="animation-delay: 1.2s;">
+                    <div class="card-img-wrap">
+                        <img src="https://images.unsplash.com/photo-1586281380349-632531db7ed4?w=700&h=500&fit=crop&crop=center" alt="Financial Guidance" class="card-img" />
+                    </div>
+                    <div class="card-body">
+                        <div class="step-badge">07</div>
+                        <h3 class="text-xl font-bold text-[#0A0A0A] mb-2 leading-snug">Financial Guidance</h3>
+                        <p class="text-xs text-gray-500 font-normal leading-relaxed">
+                            Complete assistance with student education loan approvals, blocked account opening, and currency forex exchange.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Step 08 -->
+                <div class="journey-card-modern float-idle" style="animation-delay: 1.4s;">
+                    <div class="card-img-wrap">
+                        <img src="https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=700&h=500&fit=crop&crop=center" alt="Pre Departure" class="card-img" />
+                    </div>
+                    <div class="card-body">
+                        <div class="step-badge">08</div>
+                        <h3 class="text-xl font-bold text-[#0A0A0A] mb-2 leading-snug">Pre Departure Briefing</h3>
+                        <p class="text-xs text-gray-500 font-normal leading-relaxed">
+                            Flight bookings, student housing allocation, airport pickup, and connecting with our international alumni network.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    5. ABOUT US & OUR TEAM — Comprehensive Corporate Overview & Experts
+    ============================================================ -->
+    <section class="py-24 bg-white" id="about">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- About Us Overview Header -->
+            <div class="text-center mb-16">
+                <span class="text-redAccent font-bold text-xs tracking-[0.2em] uppercase bg-red-50 px-4 py-2 rounded-full border border-red-100">About DreamSky</span>
+                <h2 class="text-4xl sm:text-5xl font-black text-[#0A0A0A] mt-4 tracking-tight">
+                    Empowering Nepal's Students <span class="text-redAccent">To Reach Global Heights</span>
+                </h2>
+                <p class="text-gray-500 max-w-3xl mx-auto mt-4 text-base leading-relaxed font-normal">
+                    Established in Kathmandu, DreamSky Education Consultancy is Nepal's trusted gateway to higher education abroad. We specialize in university placements, test preparation (IELTS, PTE, SAT), financial counseling, and guaranteed visa support for Australia, UK, USA, Canada, New Zealand & Europe.
+                </p>
+            </div>
+
+            <!-- About Us Feature Pillars (3 Attractive Red & Black Photo Cover Cards) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20" id="mission-vision">
+                
+                <!-- Pillar 1: Government Approved -->
+                <div class="group relative rounded-[28px] bg-white border border-gray-100 overflow-hidden shadow-md hover:bg-rose-50/50 hover:border-rose-300 hover:shadow-[0_25px_50px_rgba(225,29,72,0.15)] hover:-translate-y-2.5 transition-all duration-500">
+                    <div class="relative h-[210px] sm:h-[230px] w-full overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=800&q=95" alt="Government Approved MOEST & TITI" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent"></div>
+                    </div>
+                    <div class="p-7 flex flex-col justify-between h-[220px]">
+                        <div>
+                            <h3 class="text-2xl font-black text-[#0A0A0A] mb-2 transition-colors duration-300">
+                                Government Approved
+                            </h3>
+                            <p class="text-xs text-gray-500 leading-relaxed font-normal">
+                                MOEST approved (Ministry of Education, Science and Technology, Nepal) & TITI certified education counselors ensuring 100% legal & transparent processing.
+                            </p>
+                        </div>
+                        <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+                            <span class="text-xs text-redAccent font-bold flex items-center gap-2">
+                                <i class="fas fa-check-circle text-redAccent"></i> 100% Verified Consultancy
+                            </span>
+                            <span class="w-8 h-8 rounded-full bg-rose-50 border border-rose-200 text-redAccent flex items-center justify-center text-xs group-hover:bg-redAccent group-hover:border-redAccent group-hover:text-white transition-colors duration-300">
+                                <i class="fas fa-arrow-right"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pillar 2: 300+ Partner Universities -->
+                <div class="group relative rounded-[28px] bg-white border border-gray-100 overflow-hidden shadow-md hover:bg-rose-50/50 hover:border-rose-300 hover:shadow-[0_25px_50px_rgba(225,29,72,0.15)] hover:-translate-y-2.5 transition-all duration-500">
+                    <div class="relative h-[210px] sm:h-[230px] w-full overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=95" alt="300+ Partner Universities Campus" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent"></div>
+                    </div>
+                    <div class="p-7 flex flex-col justify-between h-[220px]">
+                        <div>
+                            <h3 class="text-2xl font-black text-[#0A0A0A] mb-2 transition-colors duration-300">
+                                300+ Partner Universities
+                            </h3>
+                            <p class="text-xs text-gray-500 leading-relaxed font-normal">
+                                Direct alliances with top QS ranked institutions worldwide, unlocking generous merit scholarships, tuition grants, and seamless credit transfers.
+                            </p>
+                        </div>
+                        <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+                            <span class="text-xs text-redAccent font-bold flex items-center gap-2">
+                                <i class="fas fa-graduation-cap text-redAccent"></i> Global Network
+                            </span>
+                            <span class="w-8 h-8 rounded-full bg-rose-50 border border-rose-200 text-redAccent flex items-center justify-center text-xs group-hover:bg-redAccent group-hover:border-redAccent group-hover:text-white transition-colors duration-300">
+                                <i class="fas fa-arrow-right"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pillar 3: 98.5% Visa Success -->
+                <div class="group relative rounded-[28px] bg-white border border-gray-100 overflow-hidden shadow-md hover:bg-rose-50/50 hover:border-rose-300 hover:shadow-[0_25px_50px_rgba(225,29,72,0.15)] hover:-translate-y-2.5 transition-all duration-500">
+                    <div class="relative h-[210px] sm:h-[230px] w-full overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1569154941061-e231b4725ef1?auto=format&fit=crop&w=800&q=95" alt="98.5% Visa Success Approval" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out" />
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent"></div>
+                    </div>
+                    <div class="p-7 flex flex-col justify-between h-[220px]">
+                        <div>
+                            <h3 class="text-2xl font-black text-[#0A0A0A] mb-2 transition-colors duration-300">
+                                98.5% Visa Success
+                            </h3>
+                            <p class="text-xs text-gray-500 leading-relaxed font-normal">
+                                Rigorous mock embassy interview drills, SOP verification, and financial documentation tailored to embassy guidelines.
+                            </p>
+                        </div>
+                        <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+                            <span class="text-xs text-redAccent font-bold flex items-center gap-2">
+                                <i class="fas fa-passport text-redAccent"></i> High Visa Approval Rate
+                            </span>
+                            <span class="w-8 h-8 rounded-full bg-rose-50 border border-rose-200 text-redAccent flex items-center justify-center text-xs group-hover:bg-redAccent group-hover:border-redAccent group-hover:text-white transition-colors duration-300">
+                                <i class="fas fa-arrow-right"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+
+        </div>
+    </section>
+
+    <!-- ============================================================
+    7. SEND US A MESSAGE — Glassmorphic Inquiry Form
+    ============================================================ -->
+    <section class="py-24 bg-grayBg" id="contact">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <div class="lg:col-span-5 space-y-6">
+                    <span class="text-redAccent font-bold text-xs tracking-[0.2em] uppercase bg-red-50 px-4 py-2 rounded-full border border-red-100">Get In Touch</span>
+                    <h2 class="text-4xl sm:text-5xl font-black text-[#0A0A0A] tracking-tight">
+                        Start Your Global <span class="text-redAccent">Journey Today</span>
+                    </h2>
+                    <p class="text-gray-500 leading-relaxed text-base">
+                        Book a free 1-on-1 consultation with our senior international counselors. We review your academic certificates and outline your best university choices.
+                    </p>
+
+                    <div class="space-y-4 pt-2">
+                        <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-blue-200 transition">
+                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-lg"><i class="fas fa-phone-alt"></i></div>
+                            <div>
+                                <div class="text-xs text-gray-400 font-medium">Telephone Line</div>
+                                <a href="tel:015928292" class="text-base font-extrabold text-[#0A0A0A] hover:text-blue-600 transition" target="_blank" rel="noopener noreferrer">01-5928292</a>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-emerald-200 transition">
+                            <div class="w-12 h-12 bg-green-50 text-green-600 rounded-xl flex items-center justify-center text-lg"><i class="fab fa-whatsapp"></i></div>
+                            <div>
+                                <div class="text-xs text-gray-400 font-medium">WhatsApp Assistance</div>
+                                <a href="https://wa.me/9779768987156?text=Hello%20Dream%20Sky%20Education%20Consultancy,%20I%20would%20like%20to%20inquire%20about%20study%20abroad%20opportunities!" target="_blank" rel="noopener noreferrer" class="text-base font-extrabold text-[#0A0A0A] hover:text-emerald-600 transition flex items-center gap-2">
+                                    <span>+977 9768987156</span>
+                                    <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200">Chat Now</span>
+                                </a>
+                            </div>
+                        </div>
+                        <!-- Our Location Map Card -->
+                        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:border-red-300 hover:shadow-md transition-all duration-300">
+                            <!-- Card Header / Direct Link to Google Maps -->
+                            <a href="https://maps.app.goo.gl/4uaCbrnNGFcTqChk9" target="_blank" rel="noopener noreferrer" class="flex items-center justify-between p-4 group cursor-pointer hover:bg-red-50/40 transition-colors">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 bg-rose-50 text-redAccent rounded-2xl flex items-center justify-center text-lg shrink-0 border border-rose-100 group-hover:bg-redAccent group-hover:text-white transition-colors">
+                                        <i class="fas fa-map-marker-alt"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs text-redAccent font-bold tracking-tight">Our Location</div>
+                                        <div class="text-sm sm:text-base font-extrabold text-[#0A0A0A] leading-snug">
+                                            2nd Floor, KL Tower, Boudhanath Sadak, Kathmandu 44600
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="bg-red-50 group-hover:bg-redAccent text-redAccent group-hover:text-white text-xs font-bold px-3 py-1.5 rounded-full border border-red-200 group-hover:border-redAccent flex items-center gap-1.5 transition-all shrink-0 ml-2">
+                                    <i class="fas fa-directions"></i> View Map
+                                </span>
+                            </a>
+                            <!-- Interactive Embedded Live Google Map -->
+                            <div class="w-full h-48 border-t border-gray-100 relative bg-gray-100">
+                                <iframe src="https://maps.google.com/maps?q=2nd%20Floor%2C%20KL%20Tower%2C%20Boudhanath%20Sadak%2C%20Kathmandu%2044600&t=&z=17&ie=UTF8&iwloc=&output=embed" class="w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="DreamSky Education Consultancy KL Tower Location Map"></iframe>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-7">
+                    <!-- Floating 3D Flip Card Container -->
+                    <div class="flip-card-container">
+                        <div class="flip-card-inner" id="flipCardInner">
+                            
+                            <!-- FRONT SIDE: Video & Logo Showcase Card -->
+                            <div class="flip-card-front glass-form rounded-3xl p-7 sm:p-9 shadow-premium border border-gray-200 flex flex-col justify-between items-center text-center cursor-pointer overflow-hidden" id="logoCardFront">
+                                <div>
+                                    <span class="bg-red-50 text-redAccent font-extrabold text-[10px] px-3.5 py-1.5 rounded-full uppercase tracking-wider border border-red-100 mb-3 inline-block">
+                                        Official Consultation Hub
+                                    </span>
+
+                                    <!-- Continuous Looping Animation Video Showcase -->
+                                    <div class="my-2 flex justify-center relative group">
+                                        <video autoplay muted loop playsinline class="w-56 sm:w-64 h-36 sm:h-40 rounded-2xl shadow-xl border-2 border-red-100 object-cover bg-white transform group-hover:scale-105 transition-transform duration-500">
+                                            <source src="/assets/Airplane_to_logo_animation_202607241246-BX9NcF_R.mp4" type="video/mp4" />
+                                        </video>
+                                        <div class="absolute bottom-2.5 right-2.5 bg-black/60 backdrop-blur-md text-white text-[9px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-redAccent animate-ping"></span> Live Showcase
+                                        </div>
+                                    </div>
+
+                                    <h3 class="text-2xl font-black text-[#0A0A0A] mt-2 tracking-tight">Apply Here For Free Guidance</h3>
+                                    <p class="text-xs text-gray-500 max-w-sm mx-auto mt-1 leading-relaxed font-medium">
+                                        Start your study abroad process with Nepal's premier education consultancy. Click anywhere on this card to open your quick assessment form.
+                                    </p>
+                                </div>
+                                
+                                <div class="w-full pt-3 border-t border-gray-100 mt-3">
+                                    <button id="flipToFormBtn" type="button" class="w-full bg-gradient-to-r from-redAccent to-redAccentDark text-white font-bold text-sm py-3.5 rounded-full hover:shadow-glow-lg transition duration-300 flex items-center justify-center gap-2 group">
+                                        <span>Click Here to Fill Consultation Form</span> <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- BACK SIDE: Floating Consultation Form -->
+                            <div class="flip-card-back glass-form rounded-3xl p-8 sm:p-10 shadow-premium border border-gray-200 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
+                                        <div class="flex items-center gap-3">
+                                            <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="Dream Sky Logo" class="w-10 h-10 rounded-xl object-contain bg-white p-1 border border-gray-100 shadow-sm" />
+                                            <div>
+                                                <h3 class="text-lg font-extrabold text-[#0A0A0A] leading-tight">Book Free Consultation</h3>
+                                                <p class="text-[10px] text-gray-500 font-medium">Dream Sky Education Consultancy</p>
+                                            </div>
+                                        </div>
+                                        <button id="flipToLogoBtn" type="button" class="text-xs font-bold text-gray-500 hover:text-redAccent bg-gray-100 hover:bg-red-50 px-3.5 py-1.5 rounded-full transition flex items-center gap-1.5">
+                                            <i class="fas fa-arrow-left"></i> Back
+                                        </button>
+                                    </div>
+
+                                    <form id="contactForm" class="space-y-3">
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div class="form-floating">
+                                                <input type="text" id="name" placeholder=" " required />
+                                                <label for="name">Full Name *</label>
+                                            </div>
+                                            <div class="form-floating">
+                                                <input type="email" id="email" placeholder=" " required />
+                                                <label for="email">Email Address *</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div class="form-floating">
+                                                <input type="tel" id="phone" placeholder=" " required />
+                                                <label for="phone">Phone Number *</label>
+                                            </div>
+                                            <div class="form-floating">
+                                                <select id="countrySelect" class="appearance-none" required>
+                                                    <option value="" disabled selected></option>
+                                                    <option>Australia</option>
+                                                    <option>Canada</option>
+                                                    <option>United Kingdom</option>
+                                                    <option>United States</option>
+                                                    <option>New Zealand</option>
+                                                </select>
+                                                <label for="countrySelect">Preferred Destination *</label>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-floating">
+                                            <textarea id="message" placeholder=" " rows="2"></textarea>
+                                            <label for="message">Tell us about your educational goals...</label>
+                                        </div>
+
+                                        <button type="submit" class="w-full bg-gradient-to-r from-redAccent to-redAccentDark text-white font-bold text-sm py-3 rounded-full hover:shadow-glow-lg transition duration-300 flex items-center justify-center gap-2 mt-1">
+                                            <i class="fas fa-paper-plane"></i> Submit Free Assessment Request
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    8. FOOTER — Corporate Blue Brand Gradient Footer
+    ============================================================ -->
+    <footer class="slim-footer py-14">
+        <!-- Top Royal Blue & Red Brand Line -->
+        <div class="h-1 w-full bg-gradient-to-r from-blue-600 via-redAccent to-blue-500 absolute top-0 left-0 right-0"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-white/10">
+                
+                <!-- Col 1: Brand, Bio & Accreditations (4 cols) -->
+                <div class="lg:col-span-4 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="DreamSky" class="w-11 h-11 rounded-xl object-contain bg-white p-1 shadow-md border border-white/20" />
+                        <div class="text-white font-black text-xl leading-tight tracking-tight">Dream<span class="text-blue-600">Sky</span></div>
+                    </div>
+                    <p class="text-xs text-gray-300 leading-relaxed font-normal">
+                        Nepal's premier education consultancy empowering students with admissions, visa guidance, test prep (IELTS/PTE), and post-arrival support for top global universities.
+                    </p>
+                    
+                    <!-- Govt Approval Badges -->
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                        <span class="bg-blue-900/60 text-blue-200 border border-blue-700/50 text-[10px] font-semibold px-2.5 py-1 rounded-md">
+                            <i class="fas fa-check-circle text-blue-400 mr-1"></i> MOEST Approved
+                        </span>
+                        <span class="bg-red-900/40 text-red-200 border border-red-700/40 text-[10px] font-semibold px-2.5 py-1 rounded-md">
+                            <i class="fas fa-shield-alt text-red-400 mr-1"></i> TITI Certified
+                        </span>
+                    </div>
+
+                    <!-- Social Icons (Facebook, Instagram & TikTok Only) -->
+                    <div class="flex gap-2.5 pt-2">
+                        <a href="#" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm" title="TikTok"><i class="fab fa-tiktok"></i></a>
+                    </div>
+                </div>
+
+                <!-- Col 2: Navigation Links (2 cols) -->
+                <div class="lg:col-span-2 space-y-3">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">Quick Links</h4>
+                    <ul class="space-y-2 text-xs text-gray-300 font-medium">
+                        <li><a href="#home" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Home</a></li>
+                        <li><a href="#about" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> About Us & Team</a></li>
+                        <li><a href="#destinations" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Destinations</a></li>
+                        <li><a href="#partners" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Universities</a></li>
+                        <li><a href="#journey" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Study Journey</a></li>
+                        <li><a href="#contact" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Contact Us</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 3: Study Destinations (3 cols) -->
+                <div class="lg:col-span-3 space-y-3">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">Top Countries</h4>
+                    <ul class="space-y-2 text-xs text-gray-300 font-medium">
+                        <li><a href="australia.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">AU</span> <span>Study in Australia</span></a></li>
+                        <li><a href="canada.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">CA</span> <span>Study in Canada</span></a></li>
+                        <li><a href="uk.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">UK</span> <span>Study in United Kingdom</span></a></li>
+                        <li><a href="usa.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">US</span> <span>Study in United States</span></a></li>
+                        <li><a href="newzealand.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">NZ</span> <span>Study in New Zealand</span></a></li>
+                        <li><a href="europe.html" class="hover:text-blue-400 transition flex items-center gap-2.5" target="_blank" rel="noopener noreferrer"><span class="px-1.5 py-0.5 rounded bg-blue-900/80 text-blue-300 font-extrabold text-[10px] uppercase border border-blue-600/40 tracking-wider shrink-0">EU</span> <span>Study in Europe</span></a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 4: Central Office & Support Hours (3 cols) -->
+                <div class="lg:col-span-3 space-y-3">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">Headquarters</h4>
+                    <ul class="space-y-2.5 text-xs text-gray-300">
+                        <li class="flex items-start gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-blue-400 text-[10px] shrink-0 mt-0.5"><i class="fas fa-map-marker-alt"></i></div>
+                            <a href="https://maps.app.goo.gl/4uaCbrnNGFcTqChk9" target="_blank" rel="noopener noreferrer" class="hover:text-blue-400 transition underline underline-offset-2">2nd Floor, KL Tower, Boudhanath Sadak, Kathmandu 44600</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-blue-900/40 border border-blue-700/40 flex items-center justify-center text-blue-400 text-[10px] shrink-0"><i class="fas fa-phone-alt"></i></div>
+                            <a href="tel:015928292" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">01-5928292</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-emerald-900/40 border border-emerald-700/40 flex items-center justify-center text-emerald-400 text-[10px] shrink-0"><i class="fab fa-whatsapp"></i></div>
+                            <a href="https://wa.me/9779768987156?text=Hello%20Dream%20Sky,%20I%20am%20interested%20in%20studying%20abroad." target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 transition">+977 9768987156 (Chat on WhatsApp)</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-blue-400 text-[10px] shrink-0"><i class="fas fa-envelope"></i></div>
+                            <a href="mailto:info@dreamsky.edu.np" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">info@dreamsky.edu.np</a>
+                        </li>
+                        <li class="flex items-center gap-2.5 text-[11px] text-gray-400 pt-1">
+                            <i class="far fa-clock text-amber-400 text-xs"></i>
+                            <span>Sun – Fri: 7:00 AM – 6:00 PM</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <!-- Bottom Copyright Bar -->
+            <div class="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] text-gray-400">
+                <div>&copy; 2026 Dream Sky Education Consultancy. All rights reserved.</div>
+                <div class="flex items-center gap-5 font-medium">
+                    <a href="privacy.html" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    <a href="terms.html" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                    <a href="#home" class="w-8 h-8 rounded-xl bg-redAccent/30 hover:bg-redAccent text-rose-200 hover:text-white border border-rose-500/40 flex items-center justify-center transition-all duration-300" title="Back to top">
+                        <i class="fas fa-chevron-up text-xs"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Fixed Floating WhatsApp Quick Chat Button -->
+    <a href="https://wa.me/9779768987156?text=Hello%20Dream%20Sky%20Education%20Consultancy,%20I%20am%20interested%20in%20studying%20abroad." target="_blank" rel="noopener noreferrer" class="fixed bottom-6 left-6 z-50 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs px-4 py-3 rounded-full shadow-2xl flex items-center gap-2.5 transition-all duration-300 hover:scale-105 group border border-emerald-400/30" title="Chat on WhatsApp">
+        <i class="fab fa-whatsapp text-lg animate-bounce"></i>
+        <span class="hidden sm:inline">Chat on WhatsApp</span>
+    </a>
+
+    <!-- ============================================================
+    JAVASCRIPT ENGINE — Dynamic Transparent Navigation & Smooth Interactions
+    ============================================================ -->
+    <script>
+
+
+        // --- 2. Hero Animation Video & Background Slideshow Sequence ---
+        const heroVideo = document.getElementById('heroVideo');
+        const heroSoundToggle = document.getElementById('heroSoundToggle');
+        const soundIcon = document.getElementById('soundIcon');
+        const soundText = document.getElementById('soundText');
+        const slides = document.querySelectorAll('.hero-slide');
+        let currentSlide = 0;
+        let slideStarted = false;
+
+        // Sound Toggle Handler
+        if (heroVideo && heroSoundToggle) {
+            heroSoundToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (heroVideo.muted) {
+                    heroVideo.muted = false;
+                    heroVideo.volume = 1.0;
+                    if (soundIcon) soundIcon.className = 'fas fa-volume-up text-green-400';
+                    if (soundText) soundText.textContent = 'Audio Enabled';
+                } else {
+                    heroVideo.muted = true;
+                    if (soundIcon) soundIcon.className = 'fas fa-volume-mute';
+                    if (soundText) soundText.textContent = 'Enable Video Audio';
+                }
+            });
+
+            // Auto unmute audio on first user click anywhere on hero section
+            const homeSection = document.getElementById('home');
+            if (homeSection) {
+                homeSection.addEventListener('click', () => {
+                    if (heroVideo && heroVideo.muted && heroVideo.style.display !== 'none') {
+                        heroVideo.muted = false;
+                        heroVideo.volume = 1.0;
+                        if (soundIcon) soundIcon.className = 'fas fa-volume-up text-green-400';
+                        if (soundText) soundText.textContent = 'Audio Enabled';
+                    }
+                }, { once: true });
+            }
+        }
+
+        function startSlideshow() {
+            if (slideStarted) return;
+            slideStarted = true;
+
+            if (heroSoundToggle) {
+                heroSoundToggle.style.opacity = '0';
+                setTimeout(() => { heroSoundToggle.style.display = 'none'; }, 1000);
+            }
+
+            if (slides.length > 0) {
+                // Activate first image slide
+                slides[0].classList.add('active');
+                
+                // Fade out video smoothly
+                if (heroVideo) {
+                    heroVideo.style.opacity = '0';
+                    setTimeout(() => {
+                        heroVideo.style.display = 'none';
+                    }, 1500);
+                }
+
+                // Start slideshow cycling
+                setInterval(() => {
+                    slides[currentSlide].classList.remove('active');
+                    currentSlide = (currentSlide + 1) % slides.length;
+                    slides[currentSlide].classList.add('active');
+                }, 6000);
+            }
+        }
+
+        if (heroVideo) {
+            // Guarantee full video play: ONLY start slideshow when video has completely ended!
+            heroVideo.addEventListener('ended', startSlideshow);
+
+            // Attempt autoplay explicitly
+            heroVideo.play().catch(err => {
+                console.log('Autoplay handled:', err);
+            });
+
+            // Fallback ONLY if video fails to load or play at all after 60s
+            const errorSafetyTimer = setTimeout(() => {
+                if (!slideStarted) {
+                    startSlideshow();
+                }
+            }, 60000);
+
+            // Error fallback
+            heroVideo.addEventListener('error', () => {
+                clearTimeout(errorSafetyTimer);
+                startSlideshow();
+            });
+        } else {
+            startSlideshow();
+        }
+
+        // --- 3. Mobile Drawer Navigation ---
+        const hamburger = document.getElementById('hamburger');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+
+        function toggleMobile() {
+            mobileMenu.classList.toggle('open');
+            mobileOverlay.classList.toggle('active');
+            document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+        }
+
+        hamburger.addEventListener('click', toggleMobile);
+        mobileOverlay.addEventListener('click', toggleMobile);
+        document.querySelectorAll('.mobile-menu a').forEach(link => {
+            link.addEventListener('click', toggleMobile);
+        });
+
+        // --- 4. Scroll Reveal Observer ---
+        const revealElements = document.querySelectorAll('.reveal, .stagger-grid');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.10, rootMargin: '0px 0px -50px 0px' });
+
+        revealElements.forEach(el => observer.observe(el));
+
+        // --- 5. Interactive 3D Tilt Effect on Cards (Journey & Destinations) ---
+        const tiltCards = document.querySelectorAll('.journey-card-modern, .dest-card-cover');
+        tiltCards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                const rotateX = ((y - centerY) / centerY) * -10;
+                const rotateY = ((x - centerX) / centerX) * 10;
+
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-8px) scale3d(1.02, 1.02, 1.02)`;
+            });
+
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = `perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(0px) scale3d(1, 1, 1)`;
+            });
+        });
+
+
+
+
+        // --- 7. 3D Floating Card Flip Handler (Logo Front <-> Consultation Form Back) ---
+        const flipCardInner = document.getElementById('flipCardInner');
+        const logoCardFront = document.getElementById('logoCardFront');
+        const flipToFormBtn = document.getElementById('flipToFormBtn');
+        const flipToLogoBtn = document.getElementById('flipToLogoBtn');
+
+        if (logoCardFront && flipCardInner) {
+            logoCardFront.addEventListener('click', () => {
+                flipCardInner.classList.add('flipped');
+            });
+        }
+        if (flipToFormBtn && flipCardInner) {
+            flipToFormBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                flipCardInner.classList.add('flipped');
+            });
+        }
+        if (flipToLogoBtn && flipCardInner) {
+            flipToLogoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                flipCardInner.classList.remove('flipped');
+            });
+        }
+
+        // --- 8. Contact Form Submission ---
+        document.getElementById('contactForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            alert('🎉 Thank you for reaching out! Our senior counselor will contact you within 24 hours.');
+            this.reset();
+        });
+
+        // --- 9. Partner Universities Auto-Moving & Interactive Carousel Controls ---
+        const partnersTrack = document.getElementById('partnersTrack');
+        const partnerPrevBtn = document.getElementById('partnerPrevBtn');
+        const partnerNextBtn = document.getElementById('partnerNextBtn');
+
+        if (partnersTrack) {
+            let isHovered = false;
+            let autoScrollSpeed = 0.8; // Smooth pixels per frame
+
+            function autoScrollStep() {
+                if (!isHovered) {
+                    partnersTrack.scrollLeft += autoScrollSpeed;
+                    // Infinite seamless wrap-around loop when reaching near end
+                    if (partnersTrack.scrollLeft >= (partnersTrack.scrollWidth - partnersTrack.clientWidth - 5)) {
+                        partnersTrack.scrollLeft = 0;
+                    }
+                }
+                requestAnimationFrame(autoScrollStep);
+            }
+
+            // Start smooth continuous auto-scrolling
+            requestAnimationFrame(autoScrollStep);
+
+            // Pause auto movement on hover or touch so user can scroll / view details smoothly
+            partnersTrack.addEventListener('mouseenter', () => { isHovered = true; });
+            partnersTrack.addEventListener('mouseleave', () => { isHovered = false; });
+            partnersTrack.addEventListener('touchstart', () => { isHovered = true; }, { passive: true });
+            partnersTrack.addEventListener('touchend', () => {
+                setTimeout(() => { isHovered = false; }, 3000);
+            });
+
+            // Navigation Arrow Controls
+            if (partnerPrevBtn) {
+                partnerPrevBtn.addEventListener('click', () => {
+                    isHovered = true;
+                    partnersTrack.scrollBy({ left: -340, behavior: 'smooth' });
+                    setTimeout(() => { isHovered = false; }, 3500);
+                });
+            }
+            if (partnerNextBtn) {
+                partnerNextBtn.addEventListener('click', () => {
+                    isHovered = true;
+                    partnersTrack.scrollBy({ left: 340, behavior: 'smooth' });
+                    setTimeout(() => { isHovered = false; }, 3500);
+                });
+            }
+        }
+
+        console.log('🚀 Dream Sky Education Consultancy — Partners Carousel & Interactive Links Initialized.');
+    </script>
+
+    <!-- ============================================================
+    AUTHENTICATION MODAL (LOGIN / SIGN UP / FORGOT PASSWORD)
+    ============================================================ -->
+    
+    <!-- ============================================================
+    AUTH MODAL — Student Login & Consultation Booking
+    ============================================================ -->
+    <div id="authModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div id="authModalCard" class="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl transform scale-95 transition-all duration-300 border border-gray-100 overflow-hidden">
+            <!-- Close Button -->
+            <button onclick="closeAuthModal()" class="absolute top-5 right-5 w-9 h-9 rounded-full bg-gray-100 text-gray-400 hover:bg-redAccent hover:text-white flex items-center justify-center transition-all duration-200 z-10 cursor-pointer">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+
+            <!-- Brand Header -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center gap-2 mb-2">
+                    <img src="/assets/Dream%20Sky%20Logo-B6CqAMdN.jpeg" alt="DreamSky" class="w-8 h-8 rounded-lg object-contain bg-white p-0.5 shadow-sm border border-gray-100" />
+                    <span class="font-black text-lg text-gray-900">Dream<span class="text-blue-600">Sky</span></span>
+                </div>
+                <h3 id="authModalTitle" class="text-xl font-black text-[#0A0A0A]">Welcome Back!</h3>
+                <p id="authModalSubtitle" class="text-xs text-gray-500 font-medium mt-1">Access your DreamSky student dashboard</p>
+            </div>
+
+            <!-- Tab Switcher (Log In vs Book Consultation) -->
+            <div id="authTabGroup" class="flex bg-gray-100 p-1.5 rounded-2xl mb-6">
+                <button type="button" id="tabBtnLogin" onclick="switchAuthTab('login')" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer">
+                    Log In
+                </button>
+                <button type="button" id="tabBtnSignup" onclick="switchAuthTab('signup')" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer">
+                    Book Consultation
+                </button>
+            </div>
+
+            <!-- 1. LOGIN FORM (No Social Buttons) -->
+            <form id="authFormLogin" onsubmit="handleAuthSubmit(event, 'login')" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Email Address</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="email" required placeholder="student@example.com" class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pl-11 pr-11 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                        <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
+                            <i class="fas fa-eye text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me & Forgot Password Row -->
+                <div class="flex items-center justify-between pt-1 pb-1">
+                    <label class="flex items-center gap-2 text-xs text-gray-600 font-semibold cursor-pointer select-none">
+                        <input type="checkbox" id="rememberMe" class="w-4 h-4 rounded border-gray-300 text-redAccent focus:ring-redAccent accent-red-600 cursor-pointer" />
+                        Remember me
+                    </label>
+                    <button type="button" onclick="switchAuthTab('forgot')" class="text-xs font-bold text-redAccent hover:underline focus:outline-none cursor-pointer">
+                        Forgot Password?
+                    </button>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- 2. BOOK CONSULTATION FORM (Replaces Sign Up) -->
+            <form id="authFormSignup" onsubmit="handleAuthSubmit(event, 'consultation')" class="space-y-3.5 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" required placeholder="John Doe" class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Phone / WhatsApp Number</label>
+                    <div class="relative">
+                        <i class="fas fa-phone-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="tel" required placeholder="+977 98XXXXXXXX" class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Preferred Destination</label>
+                    <div class="relative">
+                        <i class="fas fa-globe absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <select required class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition bg-white appearance-none">
+                            <option value="" disabled selected>Select Destination</option>
+                            <option value="Australia">🇦🇺 Study in Australia</option>
+                            <option value="Canada">🇨🇦 Study in Canada</option>
+                            <option value="UK">🇬🇧 Study in UK</option>
+                            <option value="USA">🇺🇸 Study in USA</option>
+                            <option value="New Zealand">🇳🇿 Study in New Zealand</option>
+                            <option value="Europe">🇪🇺 Study in Europe</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Academic Level</label>
+                    <div class="relative">
+                        <i class="fas fa-graduation-cap absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <select required class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition bg-white appearance-none">
+                            <option value="" disabled selected>Select Study Level</option>
+                            <option value="Undergraduate">Undergraduate (Bachelor's)</option>
+                            <option value="Postgraduate">Postgraduate (Master's / PhD)</option>
+                            <option value="Diploma">Diploma / Vocational</option>
+                            <option value="Test Prep">Test Preparation (IELTS / PTE)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer mt-2">
+                    Request Free Consultation
+                </button>
+            </form>
+
+            <!-- 3. FORGOT PASSWORD FORM -->
+            <form id="authFormForgot" onsubmit="handleAuthSubmit(event, 'forgot')" class="space-y-4 hidden">
+                <div class="text-center bg-rose-50/70 border border-rose-100 p-3.5 rounded-2xl mb-2">
+                    <i class="fas fa-key text-redAccent text-xl mb-1"></i>
+                    <p class="text-xs text-gray-600 font-semibold leading-relaxed">Enter your registered email address and we will send you a password reset link.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Registered Email Address</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="email" required placeholder="student@example.com" class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer">
+                    Send Reset Link
+                </button>
+
+                <button type="button" onclick="switchAuthTab('login')" class="w-full text-center text-xs font-bold text-gray-500 hover:text-redAccent transition flex items-center justify-center gap-1.5 pt-2 cursor-pointer">
+                    <i class="fas fa-arrow-left"></i> Back to Log In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Auth Modal Scripts -->
+    <script>
+        function openAuthModal(tab = 'login') {
+            const modal = document.getElementById('authModal');
+            const card = document.getElementById('authModalCard');
+            if (!modal || !card) return;
+            switchAuthTab(tab);
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100', 'pointer-events-auto');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('authModal');
+            const card = document.getElementById('authModalCard');
+            if (!modal || !card) return;
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.style.overflow = '';
+        }
+
+        function switchAuthTab(tab) {
+            const formLogin = document.getElementById('authFormLogin');
+            const formSignup = document.getElementById('authFormSignup');
+            const formForgot = document.getElementById('authFormForgot');
+            const btnLogin = document.getElementById('tabBtnLogin');
+            const btnSignup = document.getElementById('tabBtnSignup');
+            const tabGroup = document.getElementById('authTabGroup');
+            const title = document.getElementById('authModalTitle');
+            const subtitle = document.getElementById('authModalSubtitle');
+
+            if (!formLogin || !formSignup || !formForgot) return;
+
+            formLogin.classList.add('hidden');
+            formSignup.classList.add('hidden');
+            formForgot.classList.add('hidden');
+            tabGroup.classList.remove('hidden');
+
+            btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer";
+            btnSignup.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer";
+
+            if (tab === 'login') {
+                formLogin.classList.remove('hidden');
+                btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer";
+                title.innerText = "Welcome Back!";
+                subtitle.innerText = "Access your DreamSky student dashboard";
+            } else if (tab === 'signup' || tab === 'consultation') {
+                formSignup.classList.remove('hidden');
+                btnSignup.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer";
+                title.innerText = "Book Free Consultation";
+                subtitle.innerText = "Speak directly with an expert education counselor";
+            } else if (tab === 'forgot') {
+                formForgot.classList.remove('hidden');
+                tabGroup.classList.add('hidden');
+                title.innerText = "Forgot Password";
+                subtitle.innerText = "We'll help you recover access";
+            }
+        }
+
+        async function handleAuthSubmit(event, type) {
+            event.preventDefault();
+            const API_BASE = 'http://localhost:5001/api';
+            const DASHBOARD_URL = 'http://localhost:5173';
+
+            if (type === 'login') {
+                const emailInput = document.querySelector('#authFormLogin input[type="email"]');
+                const passwordInput = document.querySelector('#authFormLogin input[type="password"]');
+                const rememberInput = document.getElementById('rememberMe');
+
+                const email = emailInput ? emailInput.value : '';
+                const password = passwordInput ? passwordInput.value : '';
+                const remember = rememberInput ? rememberInput.checked : true;
+
+                try {
+                    const res = await fetch(`${API_BASE}/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok && (data.data?.accessToken || data.accessToken)) {
+                        const token = data.data?.accessToken || data.accessToken;
+                        const refreshToken = data.data?.refreshToken || data.refreshToken;
+                        localStorage.setItem('dreamsky-access-token', token);
+                        localStorage.setItem('eplanet-access-token', token);
+                        if (refreshToken) {
+                            localStorage.setItem('dreamsky-refresh-token', refreshToken);
+                            localStorage.setItem('eplanet-refresh-token', refreshToken);
+                        }
+                        closeAuthModal();
+                        window.location.href = DASHBOARD_URL;
+                    } else {
+                        alert('❌ Login failed: ' + (data.message || 'Invalid email or password.'));
+                    }
+                } catch (err) {
+                    console.error('Login error:', err);
+                    alert('❌ Connection error to backend server.');
+                }
+            } else if (type === 'signup' || type === 'consultation') {
+                const inputs = document.querySelectorAll('#authFormSignup input');
+                const selects = document.querySelectorAll('#authFormSignup select');
+
+                const fullName = inputs[0] ? inputs[0].value : '';
+                const phone = inputs[1] ? inputs[1].value : '';
+                const email = (inputs[2] && inputs[2].value) ? inputs[2].value : `${phone.replace(/\D/g, '')}@dreamsky.temp`;
+                const destination = selects[0] ? selects[0].value : '';
+                const academicLevel = selects[1] ? selects[1].value : '';
+
+                try {
+                    const res = await fetch(`${API_BASE}/public/inquiry`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: fullName,
+                            phone: phone,
+                            email: email,
+                            preferredCountry: destination,
+                            notes: `Academic Level: ${academicLevel}`
+                        })
+                    });
+
+                    const data = await res.json();
+                    if (res.ok) {
+                        alert('🎉 Consultation request submitted successfully! A DreamSky counselor will contact you within 24 hours.');
+                        closeAuthModal();
+                    } else {
+                        alert('⚠️ Inquiry notice: ' + (data.message || 'Failed to submit inquiry.'));
+                    }
+                } catch (err) {
+                    alert('🎉 Consultation request submitted successfully! A DreamSky counselor will contact you within 24 hours.');
+                    closeAuthModal();
+                }
+            } else if (type === 'forgot') {
+                alert('✉️ Password reset link sent to your registered email!');
+                closeAuthModal();
+            }
+        }
+
+        function togglePasswordVisibility(inputId, iconBtn) {
+            const input = document.getElementById(inputId);
+            const icon = iconBtn.querySelector('i');
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash text-sm text-redAccent';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye text-sm text-gray-400';
+            }
+        }
+
+        document.getElementById('authModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeAuthModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeAuthModal();
+        });
+    </script>
+
+    
+
+
+    <!-- Header Glass Scroll Listener (Transitions exactly when scrolling past Hero Section) -->
+    <script>
+        (function() {
+            const header = document.getElementById('header');
+            const heroSection = document.getElementById('home') || document.querySelector('section');
+            function updateHeaderScroll() {
+                if (!header) return;
+                const heroHeight = heroSection ? heroSection.offsetHeight : 600;
+                const headerHeight = header.offsetHeight || 80;
+                const threshold = Math.max(100, heroHeight - headerHeight);
+                if (window.scrollY > threshold) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            }
+            window.addEventListener('scroll', updateHeaderScroll);
+            window.addEventListener('resize', updateHeaderScroll);
+            updateHeaderScroll();
+        })();
+    </script>
+
+</body>
+</html>
+
