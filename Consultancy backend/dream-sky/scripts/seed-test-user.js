@@ -8,7 +8,7 @@ const prisma = new PrismaClient({ adapter });
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "dreamskyadmission@gmail.com";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "dreamskyconsultancy@2025";
-const ADMIN_FIRST_NAME = process.env.ADMIN_FIRST_NAME || "Ashis";
+const ADMIN_FIRST_NAME = process.env.ADMIN_FIRST_NAME || "Ashish";
 const ADMIN_LAST_NAME = process.env.ADMIN_LAST_NAME || "Shrestha";
 
 async function seed() {

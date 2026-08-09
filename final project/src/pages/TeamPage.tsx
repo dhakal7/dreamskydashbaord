@@ -5,7 +5,7 @@ import { AuthModal } from '../components/modals/AuthModal';
 
 const teamMembers = [
   {
-    name: 'Ashis Shrestha',
+    name: 'Ashish Shrestha',
     role: 'Founder & CEO',
     image: '/ashis_shrestha.jpg',
     desc: 'Senior Education Consultant & Visionary leader with 15+ years guiding students globally.'

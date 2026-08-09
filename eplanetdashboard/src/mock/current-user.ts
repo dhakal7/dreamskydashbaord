@@ -10,7 +10,7 @@ const hq = branches[0]
 // without real auth wired in yet (Track A owns real auth — this is a mock only).
 export const demoUsers: Record<CurrentUser['role'], CurrentUser> = {
   super_admin: {
-    id: 'user-sa-1',     name: 'Ashis Shrestha', email: 'dreamskyadmission@gmail.com',
+    id: 'user-sa-1',     name: 'Ashish Shrestha', email: 'dreamskyadmission@gmail.com',
     role: 'super_admin', avatarColor: '#0F172A', branchId: hq.id, branchName: 'All Branches', linkedId: 'user-sa-1',
   },
   front_desk: {
