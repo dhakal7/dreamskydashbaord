@@ -32,7 +32,17 @@ const SettingsPage = lazy(() => import('@/features/settings/settings-page'))
 const UsersPage = lazy(() => import('@/features/users/users-page'))
 const ReceptionPage = lazy(() => import('@/features/reception/reception-page'))
 const ReferralsPage = lazy(() => import('@/features/referrals/referrals-page'))
-const LandingPage = lazy(() => import('@/features/website/landing-page'))
+const LandingPage = lazy(() => import('@/pages/website/HomePage').then((m) => ({ default: m.HomePage })))
+const AustraliaPage = lazy(() => import('@/pages/website/AustraliaPage').then((m) => ({ default: m.AustraliaPage })))
+const CanadaPage = lazy(() => import('@/pages/website/CanadaPage').then((m) => ({ default: m.CanadaPage })))
+const UKPage = lazy(() => import('@/pages/website/UKPage').then((m) => ({ default: m.UKPage })))
+const USAPage = lazy(() => import('@/pages/website/USAPage').then((m) => ({ default: m.USAPage })))
+const NewZealandPage = lazy(() => import('@/pages/website/NewZealandPage').then((m) => ({ default: m.NewZealandPage })))
+const EuropePage = lazy(() => import('@/pages/website/EuropePage').then((m) => ({ default: m.EuropePage })))
+const TeamPage = lazy(() => import('@/pages/website/TeamPage').then((m) => ({ default: m.TeamPage })))
+const MissionVisionPage = lazy(() => import('@/pages/website/MissionVisionPage').then((m) => ({ default: m.MissionVisionPage })))
+const PrivacyPage = lazy(() => import('@/pages/website/PrivacyPage').then((m) => ({ default: m.PrivacyPage })))
+const TermsPage = lazy(() => import('@/pages/website/TermsPage').then((m) => ({ default: m.TermsPage })))
 const ContactPage = lazy(() => import('@/features/website/contact-page'))
 const InquiryPage = lazy(() => import('@/features/website/inquiry-page'))
 const LoginPage = lazy(() => import('@/features/auth/login-page'))
@@ -52,24 +62,28 @@ function roleDashboard(roles: [keyof typeof dashboardPaths, ...Array<keyof typeo
 }
 
 export const router = createBrowserRouter([
-  {
-    path: '/website',
-    children: [
-      { index: true, element: <LandingPage /> },
-      { path: 'contact', element: <ContactPage /> },
-      { path: 'inquiry', element: <InquiryPage /> },
-    ],
-  },
+  { path: '/', element: <LandingPage /> },
+  { path: '/australia', element: <AustraliaPage /> },
+  { path: '/canada', element: <CanadaPage /> },
+  { path: '/uk', element: <UKPage /> },
+  { path: '/usa', element: <USAPage /> },
+  { path: '/newzealand', element: <NewZealandPage /> },
+  { path: '/europe', element: <EuropePage /> },
+  { path: '/team', element: <TeamPage /> },
+  { path: '/mission-vision', element: <MissionVisionPage /> },
+  { path: '/privacy', element: <PrivacyPage /> },
+  { path: '/terms', element: <TermsPage /> },
+  { path: '/website/contact', element: <ContactPage /> },
+  { path: '/website/inquiry', element: <InquiryPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/unauthorized', element: <UnauthorizedPage /> },
   {
-    path: '/',
+    path: '/dashboard',
     element: <ProtectedRoute><AppShell /></ProtectedRoute>,
     errorElement: <NotFoundPage />,
     children: [
       { index: true, element: <DashboardRedirect /> },
-      { path: 'dashboard', element: <DashboardRedirect /> },
-      { path: 'dashboard/super-admin', element: roleDashboard(['super_admin']) },
+      { path: 'super-admin', element: roleDashboard(['super_admin']) },
       { path: 'dashboard/frontdesk', element: roleDashboard(['front_desk']) },
       { path: 'dashboard/counselor', element: roleDashboard(['counselor']) },
       { path: 'dashboard/teacher', element: roleDashboard(['teacher']) },
