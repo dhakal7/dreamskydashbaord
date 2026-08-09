@@ -135,7 +135,7 @@ export const HeroSection: React.FC = () => {
                 </p>
               </div>
               <div className="text-right text-xs text-rose-200/90 font-bold tracking-wide mt-2 drop-shadow-sm">
-                — Ashis Shrestha, <span className="text-white/80 font-normal">Founder & CEO of DreamSky</span>
+                — Ashish Shrestha, <span className="text-white/80 font-normal">Founder & CEO of DreamSky</span>
               </div>
             </div>
           </div>

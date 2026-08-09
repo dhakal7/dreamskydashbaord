@@ -13,7 +13,7 @@ function buildUsers(): UserAccount[] {
   // Super admin
   accounts.push({
     id: 'user-sa-1',
-    name: 'Ashis Shrestha',
+    name: 'Ashish Shrestha',
     email: 'dreamskyadmission@gmail.com',
     role: 'super_admin',
     status: 'active',
