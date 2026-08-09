@@ -1,4 +1,3 @@
-import { useMemo } from 'react'
 import { NavLink } from 'react-router-dom'
 import { ChevronsLeft, LogOut } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -7,10 +6,6 @@ import { useUIStore } from '@/store/ui-store'
 import { useAuthStore } from '@/store/auth-store'
 import { getNavItems, type NavItem } from './nav-items'
 import { QuickNotificationComposer } from './quick-notification-composer'
-import { useStudents } from '@/hooks/use-students'
-import { adaptApiStudentToStudent } from '@/lib/student-adapter'
-import { getCounselorScopeId } from '@/lib/data-visibility'
-import { PersonAvatar } from '@/components/ui/avatar'
 import {
   Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from '@/components/ui/tooltip'

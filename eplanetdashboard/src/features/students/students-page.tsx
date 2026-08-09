@@ -16,7 +16,7 @@ import { StudentFormDialog } from './components/student-form-dialog'
 import { SavedViews } from '@/components/shared/saved-views'
 import type { Student } from '@/types'
 import { useAuthStore } from '@/store/auth-store'
-import { visibleStudents, getCounselorScopeId } from '@/lib/data-visibility'
+import { visibleStudents } from '@/lib/data-visibility'
 
 import { useStudents } from '@/hooks/use-students'
 import { adaptApiStudentToStudent } from '@/lib/student-adapter'
@@ -26,7 +26,6 @@ export default function StudentsPage() {
   const mockStudents = useStudentsStore((s) => s.students)
   const currentUser = useAuthStore((s) => s.currentUser)
   const mockMode = isMockMode()
-  const counselorScopeId = useMemo(() => getCounselorScopeId(currentUser), [currentUser])
 
   // Counselors see only their assigned students — filter server-side so the full
   // set is fetched, not just whatever happens to be in the first page.
