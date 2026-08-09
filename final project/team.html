@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Meet the Experts — DreamSky Education Consultancy</title>
+
+    <!-- Google Fonts & Font Awesome Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { 
+                        'sans': ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+                        'jakarta': ['"Plus Jakarta Sans"', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif'],
+                        'cursive': ['Caveat', 'Dancing Script', 'cursive'],
+                    },
+                    colors: {
+                        navy: '#0A0A0A',
+                        redAccent: '#DC2626',
+                        redAccentDark: '#B91C1C',
+                        grayBg: '#F8FAFC',
+                        cardBg: '#FFFFFF',
+                        darkCard: '#141414',
+                    },
+                    borderRadius: { 'xl': '20px', '2xl': '24px', '3xl': '32px' },
+                    boxShadow: {
+                        'soft': '0 10px 40px rgba(0,0,0,0.04)',
+                        'glow': '0 12px 40px rgba(220,38,38,0.18)',
+                        'glow-lg': '0 20px 60px rgba(220,38,38,0.25)',
+                        'glass': '0 8px 32px rgba(0,0,0,0.04)',
+                        'premium': '0 20px 60px rgba(0,0,0,0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #374151;
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            color: #0A0A0A;
+        }
+
+        /* --- Header & Glass Navigation --- */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+            box-shadow: 0 4px 25px rgba(0, 0, 0, 0.04);
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .glass-nav .nav-logo-text {
+            color: #0A0A0A;
+            transition: color 0.4s ease;
+        }
+        .glass-nav .nav-link {
+            position: relative;
+            font-weight: 500;
+            color: #374151;
+            transition: color 0.3s ease;
+        }
+        .glass-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #DC2626;
+            border-radius: 4px;
+            transition: width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .glass-nav .nav-link:hover {
+            color: #DC2626;
+        }
+        .glass-nav .nav-link:hover::after {
+            width: 100%;
+        }
+        .glass-nav .nav-login-btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            color: #FFFFFF;
+            transition: all 0.3s ease;
+        }
+        .glass-nav .nav-login-btn:hover {
+            background: rgba(255, 255, 255, 0.28);
+            border-color: rgba(255, 255, 255, 0.45);
+            color: #FFFFFF;
+            transform: translateY(-1px);
+        }
+        .glass-nav.scrolled .nav-login-btn {
+            background: #F3F4F6;
+            border-color: #E5E7EB;
+            color: #1F2937;
+        }
+        .glass-nav.scrolled .nav-login-btn:hover {
+            background: #FEF2F2;
+            border-color: #FECDD3;
+            color: #DC2626;
+        }
+
+        .glass-nav .nav-cta-btn {
+            background: #DC2626;
+            color: #FFFFFF;
+            box-shadow: 0 4px 20px rgba(220, 38, 38, 0.35);
+            transition: all 0.3s ease;
+        }
+        .glass-nav .nav-cta-btn:hover {
+            background: #B91C1C;
+            transform: translateY(-1px);
+        }
+
+        /* --- Mobile Navigation Drawer --- */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            max-width: 380px;
+            height: 100vh;
+            background: #FFFFFF;
+            padding: 90px 28px 40px;
+            transition: right 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+            box-shadow: -10px 0 60px rgba(0, 0, 0, 0.10);
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        .mobile-menu.open { right: 0; }
+        .mobile-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.50);
+            backdrop-filter: blur(4px);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            z-index: 999;
+        }
+        .mobile-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .stat-card-box {
+            background: rgba(254, 242, 242, 0.6);
+            border: 1px solid rgba(254, 226, 226, 0.8);
+            transition: all 0.3s ease;
+        }
+        .stat-card-box:hover {
+            background: rgba(254, 242, 242, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(220, 38, 38, 0.08);
+        }
+
+        .team-card-avatar {
+            position: relative;
+        }
+        .slim-footer {
+            background: linear-gradient(135deg, #050B18 0%, #0A162C 50%, #060B16 100%);
+            color: #FFFFFF;
+            border-top: 1px solid rgba(220, 38, 38, 0.20);
+            position: relative;
+        }
+    </style>
+</head>
+<body class="antialiased text-slate-900 bg-[#FFFDFD] selection:bg-rose-500 selection:text-white text-base">
+
+    <!-- ============================================================
+    MOBILE OVERLAY & DRAWER MENU
+    ============================================================ -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="Untitled-1.html#home" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition">Home</a>
+        <div class="border-b border-gray-100 py-3">
+            <div class="text-[#0A0A0A] font-bold text-sm mb-2 text-redAccent">About Us</div>
+            <div class="pl-4 space-y-2 text-xs font-semibold">
+                <a href="mission-vision.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">Mission and Vision</a>
+                <a href="team.html" class="block py-1 text-redAccent font-bold">Our Team</a>
+            </div>
+        </div>
+        <div class="border-b border-gray-100 py-3">
+            <div class="text-[#0A0A0A] font-bold text-sm mb-2 text-redAccent">Destinations</div>
+            <div class="pl-4 space-y-2 text-xs font-semibold">
+                <a href="australia.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇦🇺 Study in Australia</a>
+                <a href="canada.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇨🇦 Study in Canada</a>
+                <a href="uk.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇬🇧 Study in UK</a>
+                <a href="usa.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇺🇸 Study in USA</a>
+                <a href="newzealand.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇳🇿 Study in New Zealand</a>
+                <a href="europe.html" class="block py-1 text-gray-600 hover:text-redAccent" target="_blank" rel="noopener noreferrer">🇪🇺 Study in Europe</a>
+            </div>
+        </div>
+        <a href="Untitled-1.html#partners" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition" target="_blank" rel="noopener noreferrer">Universities</a>
+        <a href="Untitled-1.html#journey" class="block py-3.5 text-[#0A0A0A] font-semibold border-b border-gray-100 hover:text-redAccent transition" target="_blank" rel="noopener noreferrer">Study Journey</a>
+        <button onclick="openAuthModal('login'); document.getElementById('mobileMenu')?.classList.remove('open'); document.getElementById('mobileOverlay')?.classList.remove('active');" class="mt-4 w-full flex items-center justify-center gap-2 bg-rose-50 text-gray-900 border border-rose-200 font-bold py-3 rounded-full hover:bg-redAccent hover:text-white transition shadow-sm">
+            <i class="fas fa-user-circle text-base text-redAccent"></i> Login
+        </button>
+        <a href="Untitled-1.html#contact" class="mt-3 block w-full text-center bg-redAccent text-white font-semibold py-3.5 rounded-full hover:bg-redAccentDark transition shadow-md" target="_blank" rel="noopener noreferrer">Book Free Consultation</a>
+    </div>
+
+    <!-- ============================================================
+    HEADER — Glass Navigation with Interactive Hover Dropdowns
+    ============================================================ -->
+    <header class="fixed top-0 left-0 w-full z-50 glass-nav scrolled" id="header">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <a href="Untitled-1.html" class="flex items-center gap-3 group">
+                    <img src="./Dream Sky Logo.jpeg" alt="DreamSky" class="w-10 h-10 rounded-xl object-contain bg-white p-1 shadow-md border border-gray-100 group-hover:scale-105 transition-transform duration-300" />
+                    <div class="nav-logo-text font-bold text-xl leading-tight tracking-tight text-[#0A0A0A]">Dream<span class="text-blue-600">Sky</span></div>
+                </a>
+
+                <nav class="hidden xl:flex items-center gap-8">
+                    <a href="Untitled-1.html#home" class="nav-link text-sm py-1">Home</a>
+                    
+                    <!-- About Us Dropdown Menu -->
+                    <div class="relative group py-2">
+                        <a href="Untitled-1.html#about" class="nav-link text-sm py-1 text-redAccent inline-flex items-center gap-1.5 cursor-pointer" target="_blank" rel="noopener noreferrer">
+                            <span>About Us</span>
+                            <i class="fas fa-chevron-down text-[10px] opacity-80 group-hover:rotate-180 transition-transform duration-300"></i>
+                        </a>
+
+                        <!-- Dropdown Popup Card -->
+                        <div class="absolute top-full left-0 w-56 bg-white/95 backdrop-blur-xl rounded-2xl p-2 shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                            <a href="mission-vision.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <i class="fas fa-bullseye text-redAccent w-4 text-center group-hover/item:scale-110 transition-transform"></i>
+                                <span>Mission and Vision</span>
+                            </a>
+                            <a href="team.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-redAccent bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item">
+                                <i class="fas fa-users text-redAccent w-4 text-center group-hover/item:scale-110 transition-transform"></i>
+                                <span>Our Team</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Destinations Dropdown Menu -->
+                    <div class="relative group py-2">
+                        <a href="Untitled-1.html#destinations" class="nav-link text-sm py-1 inline-flex items-center gap-1.5 cursor-pointer hover:text-redAccent" target="_blank" rel="noopener noreferrer">
+                            <span>Destinations</span>
+                            <i class="fas fa-chevron-down text-[10px] opacity-80 group-hover:rotate-180 transition-transform duration-300"></i>
+                        </a>
+
+                        <!-- Dropdown Popup Card -->
+                        <div class="absolute top-full left-0 w-60 bg-white/95 backdrop-blur-xl rounded-2xl p-2 shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 z-50">
+                            <a href="australia.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇦🇺</span>
+                                <span>Study in Australia</span>
+                            </a>
+                            <a href="canada.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇨🇦</span>
+                                <span>Study in Canada</span>
+                            </a>
+                            <a href="uk.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇬🇧</span>
+                                <span>Study in UK</span>
+                            </a>
+                            <a href="usa.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇺🇸</span>
+                                <span>Study in USA</span>
+                            </a>
+                            <a href="newzealand.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇳🇿</span>
+                                <span>Study in New Zealand</span>
+                            </a>
+                            <a href="europe.html" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-bold text-gray-700 hover:text-redAccent hover:bg-rose-50/80 hover:translate-x-1 transition-all duration-200 group/item" target="_blank" rel="noopener noreferrer">
+                                <span class="text-base group-hover/item:scale-125 transition-transform">🇪🇺</span>
+                                <span>Study in Europe</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <a href="Untitled-1.html#partners" class="nav-link text-sm py-1" target="_blank" rel="noopener noreferrer">Universities</a>
+                    <a href="Untitled-1.html#journey" class="nav-link text-sm py-1" target="_blank" rel="noopener noreferrer">Journey</a>
+                    <a href="Untitled-1.html#contact" class="nav-link text-sm py-1" target="_blank" rel="noopener noreferrer">Contact</a>
+                </nav>
+
+                <div class="flex items-center gap-2.5">
+                    <button onclick="openAuthModal('login')" class="nav-login-btn hidden sm:inline-flex items-center gap-2 text-xs font-semibold px-5 py-2.5 rounded-full transition transform hover:-translate-y-0.5 shadow-md hover:shadow-lg cursor-pointer">
+                        <i class="fas fa-user-circle text-sm"></i> Login
+                    </button>
+                    <a href="Untitled-1.html#contact" class="nav-cta-btn hidden sm:inline-flex text-xs font-semibold px-5 py-2.5 rounded-full transition transform hover:-translate-y-0.5 shadow-md hover:shadow-lg" target="_blank" rel="noopener noreferrer">
+                        Book Consultation <i class="fas fa-arrow-right ml-2 my-auto group-hover:translate-x-1 transition-transform"></i>
+                    </a>
+                    <button class="xl:hidden p-2 text-gray-900 hover:text-redAccent hover:scale-110 transition focus:outline-none hamburger-icon" id="hamburger" aria-label="Toggle Navigation">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ============================================================
+    2. HERO SECTION — Team & Opportunities Showcase
+    ============================================================ -->
+    <section class="pt-24 sm:pt-28 pb-14 bg-gradient-to-br from-red-50/50 via-white to-rose-50/40 relative overflow-hidden">
+        <!-- Abstract Background Lines & Accents -->
+        <div class="absolute -right-24 -top-24 w-[500px] h-[500px] rounded-full bg-red-100/40 blur-3xl pointer-events-none"></div>
+        <div class="absolute left-10 bottom-10 w-72 h-72 rounded-full bg-blue-100/30 blur-3xl pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                
+                <!-- Left Hero Copy -->
+                <div class="lg:col-span-6 space-y-6">
+                    <h1 class="text-4xl sm:text-6xl font-black text-[#0A0A0A] tracking-tight leading-[1.12]">
+                        Meet the Experts <br />
+                        Building Your <br />
+                        <span class="text-redAccent">Global Future</span>
+                    </h1>
+
+                    <p class="text-gray-600 text-base sm:text-lg max-w-xl leading-relaxed font-normal">
+                        Our experienced counselors, visa specialists, and academic advisors guide students through every step—from choosing the right university to successfully arriving at their dream destination.
+                    </p>
+
+                    <p class="text-gray-700 text-sm sm:text-base max-w-xl leading-relaxed font-semibold border-l-4 border-redAccent pl-4 py-1.5 bg-red-50/60 rounded-r-xl">
+                        Our dedicated team is focused on making your abroad study journey smooth, transparent, and stress-free.
+                    </p>
+
+                    <div class="pt-2 flex flex-wrap items-center gap-4">
+                        <a href="Untitled-1.html#contact" class="bg-redAccent hover:bg-redAccentDark text-white font-extrabold text-sm px-8 py-4 rounded-full transition-all duration-300 shadow-lg shadow-redAccent/25 flex items-center gap-2" target="_blank" rel="noopener noreferrer">
+                            <span>Book a Free Consultation</span> <i class="fas fa-arrow-right text-xs"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right Hero Showcase Card (Extended Height to Fill Hero Gradient Section) -->
+                <div class="lg:col-span-6 flex justify-center relative">
+                    <div class="relative w-full max-w-lg lg:max-w-xl">
+                        
+                        <!-- Firm Solid Outer Card with Sharp Border & Bold Shadow -->
+                        <div class="relative z-10 bg-slate-900 rounded-3xl overflow-hidden border-4 border-slate-900 shadow-[0_25px_60px_rgba(0,0,0,0.35)] ring-1 ring-black/10">
+                            
+                            <!-- Rotating Image Container (Height Aligned to Bottom of Gradient Hero Section) -->
+                            <div id="team-hero-rotator" class="relative w-full h-[510px] sm:h-[570px] lg:h-[595px] overflow-hidden bg-slate-950">
+                                
+                                <!-- Slide 1: Ashis Shrestha (CEO) -->
+                                <div class="team-hero-slide opacity-100 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./ashis_shrestha.jpg" alt="Ashis Shrestha" class="w-full h-full object-cover object-top" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Ashis Shrestha</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">Chief Executive Officer — DreamSky Education</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 2: Amit Dhodari -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./amit_dhodari.jpg" alt="Amit Dhodari" class="w-full h-full object-cover object-top" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Amit Dhodari</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">IELTS/PTE Instructor & USA, Canada Counselor</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 3: Amisha Thapa -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./amisha_thapa.jpg" alt="Amisha Thapa" class="w-full h-full object-cover object-top" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Amisha Thapa</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">Documentation Officer & Front Desk Manager</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 4: Dipshikha Dawadi -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./dipshikha_dawadi.jpg" alt="Dipshikha Dawadi" class="w-full h-full object-cover object-top" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Dipshikha Dawadi</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">Education Counselor (Australia & New Zealand)</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 5: Santona Khatri -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./santona_khatri.png" alt="Santona Khatri" class="w-full h-full object-cover object-top" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Santona Khatri</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">Front Desk Officer & Student Support Desk</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 6: Student Life 1 -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./assets/student life/student1.jpg" alt="Vibrant Student Life" class="w-full h-full object-cover object-center" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Vibrant Campus Life</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">Global Student Community & Multicultural Campus Experience</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 7: Student Life Camp -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./assets/student life/camp.jpg" alt="Campus Orientation" class="w-full h-full object-cover object-center" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Orientation & Leadership</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">Student Induction Workshops & Career Guidance Seminars</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 8: Engineering Opportunity -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./assets/opportunities/engineer.jpg" alt="Engineering Programs" class="w-full h-full object-cover object-center" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Engineering & Tech Pathways</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">STEM Programs, Artificial Intelligence & Industrial Internships</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 9: Medical Opportunity -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./assets/opportunities/doctor.jpg" alt="Healthcare Programs" class="w-full h-full object-cover object-center" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Healthcare & Medical Sciences</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">Nursing, Public Health & Clinical Research Opportunities</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 10: Academic Collaboration -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./assets/student life/studentere.jpg" alt="Academic Collaboration" class="w-full h-full object-cover object-center" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Collaborative Learning</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">Global Research Projects & Interactive Classroom Discussions</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 11: Global Research -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./assets/opportunities/0bbd51b0158c6fd07bc44477a7886c53.jpg" alt="Post Graduate Research" class="w-full h-full object-cover object-center" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Higher Education & Research</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">Post-Graduate Fellowships & University Partnerships</p>
+                                    </div>
+                                </div>
+
+                                <!-- Slide 12: Australian Destination Life -->
+                                <div class="team-hero-slide opacity-0 absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out">
+                                    <img src="./assets/destinations/australia/heritage/australia_hero_fresh.jpg" alt="Australian Destinations" class="w-full h-full object-cover object-center" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=800&q=95';" />
+                                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent"></div>
+                                    <div class="absolute bottom-4 left-4 right-4 p-3.5 bg-slate-950/80 backdrop-blur-md border border-white/10 rounded-xl shadow-lg">
+                                        <h3 class="text-sm sm:text-base font-extrabold text-white leading-tight">Australian Campus Experience</h3>
+                                        <p class="text-xs text-rose-200/90 font-medium mt-0.5">World Class Infrastructure & Post-Study Work Visa Pathways</p>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <!-- Carousel Rotation Script -->
+                            <script>
+                                document.addEventListener("DOMContentLoaded", () => {
+                                    const slides = document.querySelectorAll('.team-hero-slide');
+                                    if (slides.length === 0) return;
+                                    let activeIdx = 0;
+                                    setInterval(() => {
+                                        slides[activeIdx].classList.remove('opacity-100');
+                                        slides[activeIdx].classList.add('opacity-0');
+                                        activeIdx = (activeIdx + 1) % slides.length;
+                                        slides[activeIdx].classList.remove('opacity-0');
+                                        slides[activeIdx].classList.add('opacity-100');
+                                    }, 3500);
+                                });
+                            </script>
+
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    3. EXECUTIVE LEADERSHIP CARD — Matches Reference Image 2nd Block
+    ============================================================ -->
+    <section class="py-20 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Container Card (Enlarged) -->
+            <div class="group rounded-[40px] bg-white border border-red-100 shadow-[0_25px_65px_rgba(220,38,38,0.08)] hover:border-red-300 hover:shadow-[0_35px_80px_rgba(220,38,38,0.16)] hover:-translate-y-1.5 transition-all duration-500 p-6 sm:p-10 lg:p-12 relative overflow-hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-stretch">
+                    
+                    <!-- Left Photo Card — Covers Top to Bottom with Little Spacing -->
+                    <div class="lg:col-span-5 flex flex-col">
+                        <div class="relative rounded-[32px] overflow-hidden shadow-2xl border-4 border-white group-hover:border-red-200 bg-slate-900 transition-all duration-500 h-full flex flex-col justify-between min-h-[480px] sm:min-h-[560px]">
+                            <img src="./ashis_shrestha.jpg" alt="Ashis Shrestha - CEO" class="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 ease-out absolute inset-0" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=800&q=95';" />
+                            
+                            <!-- Bottom Overlay Badge -->
+                            <div class="relative z-10 mt-auto p-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent text-white">
+                                <span class="bg-redAccent text-white font-black text-[10px] px-3.5 py-1 rounded-full uppercase tracking-wider shadow-md">CEO & FOUNDER</span>
+                                <h4 class="text-2xl font-black mt-2 text-white">Ashis Shrestha</h4>
+                                <p class="text-xs text-gray-300 font-medium">Dream Sky Education Consultancy</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right CEO Content & Stats -->
+                    <div class="lg:col-span-7 flex flex-col justify-between space-y-7">
+                        <div>
+                            <h2 class="text-4xl sm:text-5xl lg:text-6xl font-black text-[#0A0A0A] tracking-tight leading-tight">
+                                Chief Executive <span class="text-redAccent">Officer</span>
+                            </h2>
+                            <div class="mt-3">
+                                <h3 class="text-2xl sm:text-3xl font-black text-blue-600 tracking-tight">Ashis Shrestha</h3>
+                                <p class="text-xs sm:text-sm text-gray-500 font-bold mt-1">Founder & CEO, DreamSky Education</p>
+                            </div>
+                        </div>
+
+                        <p class="text-gray-600 text-base sm:text-lg lg:text-xl leading-relaxed font-normal">
+                            I bring a strong foundation in accounting and financial management into strategic leadership. Beginning my career in accounts, I developed sharp analytical skills, financial discipline, and operational precision—qualities which I now leverage to drive consultancy performance and student success. As CEO, I oversee operations, team performance, compliance, and student advisory services, ensuring streamlined processes and high visa success outcomes.
+                        </p>
+
+                        <!-- Quote Box with Cursive Signature -->
+                        <div class="p-5 rounded-2xl bg-red-50/40 border border-red-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <div class="flex items-start gap-3">
+                                <span class="text-redAccent text-3xl font-serif font-black leading-none">“</span>
+                                <p class="text-xs sm:text-sm font-semibold text-gray-700 italic">
+                                    Education changes lives. We simply open the doors.
+                                </p>
+                            </div>
+                            <span class="font-cursive text-3xl text-redAccent font-bold shrink-0 pr-2">
+                                Ashis Shrestha
+                            </span>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ============================================================
+    4. EXPERT COUNSELORS SECTION — Matches Reference Bottom Cards
+    ============================================================ -->
+    <section class="py-20 bg-slate-50/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Header -->
+            <div class="mb-16 text-center max-w-3xl mx-auto">
+                <span class="inline-block bg-red-50 text-redAccent border border-red-100 font-bold text-xs px-4 py-1.5 rounded-full uppercase tracking-wider mb-2">
+                    OUR LEADERSHIP TEAM
+                </span>
+                <h2 class="text-3xl sm:text-5xl font-black text-[#0A0A0A] tracking-tight">
+                    Meet Our <span class="text-redAccent">Team</span>
+                </h2>
+                <p class="text-gray-500 max-w-2xl mx-auto mt-2 text-sm sm:text-base font-normal">
+                    Our team of certified counselors and education specialists are here to guide you at every step.
+                </p>
+            </div>
+
+            <!-- Counselors Grid — 2 Rows Layout (Row 1: 3 Cards, Row 2: 2 Cards Centered) -->
+            <div class="max-w-6xl mx-auto">
+                
+                <!-- Row 1: 3 Staff Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+                    
+                    <!-- 1. Santona Khatri -->
+                    <div class="group bg-white rounded-[32px] border border-gray-100 p-8 sm:p-10 text-center shadow-lg hover:shadow-2xl hover:border-red-300 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="w-36 h-36 sm:w-40 sm:h-40 rounded-full mx-auto mb-6 relative overflow-hidden bg-slate-900 border-4 border-white shadow-xl ring-4 ring-red-100 group-hover:scale-105 transition-transform duration-500">
+                                <img src="./santona_khatri.png" alt="Santona Khatri" class="w-full h-full object-cover object-top" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=600&q=95';" />
+                            </div>
+                            <h4 class="text-xl sm:text-2xl font-black text-[#0A0A0A] tracking-tight">Santona Khatri</h4>
+                            <p class="text-xs font-extrabold text-redAccent tracking-wider uppercase mt-2 mb-8">Front Desk Officer</p>
+                        </div>
+
+                        <a href="tel:+9779768987159" class="w-full py-3.5 px-6 rounded-full border-2 border-red-200 text-redAccent hover:bg-redAccent hover:text-white font-black text-sm transition-all duration-300 flex items-center justify-center gap-2.5 shadow-sm hover:shadow-md" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-phone-alt text-xs"></i> <span>9768987159</span>
+                        </a>
+                    </div>
+
+                    <!-- 2. Amisha Thapa -->
+                    <div class="group bg-white rounded-[32px] border border-gray-100 p-8 sm:p-10 text-center shadow-lg hover:shadow-2xl hover:border-red-300 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="w-36 h-36 sm:w-40 sm:h-40 rounded-full mx-auto mb-6 relative overflow-hidden bg-slate-900 border-4 border-white shadow-xl ring-4 ring-red-100 group-hover:scale-105 transition-transform duration-500">
+                                <img src="./amisha_thapa.jpg" alt="Amisha Thapa" class="w-full h-full object-cover object-top" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?auto=format&fit=crop&w=600&q=95';" />
+                            </div>
+                            <h4 class="text-xl sm:text-2xl font-black text-[#0A0A0A] tracking-tight">Amisha Thapa</h4>
+                            <p class="text-xs font-extrabold text-redAccent tracking-wider uppercase mt-2 mb-8">Documentation Officer & Front Desk Manager</p>
+                        </div>
+
+                        <a href="tel:+9779768987158" class="w-full py-3.5 px-6 rounded-full border-2 border-red-200 text-redAccent hover:bg-redAccent hover:text-white font-black text-sm transition-all duration-300 flex items-center justify-center gap-2.5 shadow-sm hover:shadow-md" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-phone-alt text-xs"></i> <span>9768987158</span>
+                        </a>
+                    </div>
+
+                    <!-- 3. Amit Dhodari -->
+                    <div class="group bg-white rounded-[32px] border border-gray-100 p-8 sm:p-10 text-center shadow-lg hover:shadow-2xl hover:border-red-300 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="w-36 h-36 sm:w-40 sm:h-40 rounded-full mx-auto mb-6 relative overflow-hidden bg-slate-900 border-4 border-white shadow-xl ring-4 ring-red-100 group-hover:scale-105 transition-transform duration-500">
+                                <img src="./amit_dhodari.jpg" alt="Amit Dhodari" class="w-full h-full object-cover object-top" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=95';" />
+                            </div>
+                            <h4 class="text-xl sm:text-2xl font-black text-[#0A0A0A] tracking-tight">Amit Dhodari</h4>
+                            <p class="text-xs font-extrabold text-redAccent tracking-wider uppercase mt-2 mb-8">IELTS/PTE Instructor & USA, Canada Counselor</p>
+                        </div>
+
+                        <a href="tel:+9779768987160" class="w-full py-3.5 px-6 rounded-full border-2 border-red-200 text-redAccent hover:bg-redAccent hover:text-white font-black text-sm transition-all duration-300 flex items-center justify-center gap-2.5 shadow-sm hover:shadow-md" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-phone-alt text-xs"></i> <span>9768987160</span>
+                        </a>
+                    </div>
+
+                </div>
+
+                <!-- Row 2: 2 Staff Cards (Centered) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    
+                    <!-- 4. Vaibhav Jhosi -->
+                    <div class="group bg-white rounded-[32px] border border-gray-100 p-8 sm:p-10 text-center shadow-lg hover:shadow-2xl hover:border-red-300 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="w-36 h-36 sm:w-40 sm:h-40 rounded-full mx-auto mb-6 relative overflow-hidden bg-slate-100 border-4 border-white shadow-xl ring-4 ring-red-100 group-hover:scale-105 transition-transform duration-500 flex items-center justify-center">
+                                <svg class="w-24 h-24 sm:w-28 sm:h-28 text-slate-400 fill-current mt-3" viewBox="0 0 24 24">
+                                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                                </svg>
+                            </div>
+                            <h4 class="text-xl sm:text-2xl font-black text-[#0A0A0A] tracking-tight">Vaibhav Jhosi</h4>
+                            <p class="text-xs font-extrabold text-redAccent tracking-wider uppercase mt-2 mb-8">Counsellor (UK)</p>
+                        </div>
+
+                        <a href="tel:+9779768987161" class="w-full py-3.5 px-6 rounded-full border-2 border-red-200 text-redAccent hover:bg-redAccent hover:text-white font-black text-sm transition-all duration-300 flex items-center justify-center gap-2.5 shadow-sm hover:shadow-md" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-phone-alt text-xs"></i> <span>9768987161</span>
+                        </a>
+                    </div>
+
+                    <!-- 5. Dipshikha Dawadi -->
+                    <div class="group bg-white rounded-[32px] border border-gray-100 p-8 sm:p-10 text-center shadow-lg hover:shadow-2xl hover:border-red-300 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between">
+                        <div>
+                            <div class="w-36 h-36 sm:w-40 sm:h-40 rounded-full mx-auto mb-6 relative overflow-hidden bg-slate-900 border-4 border-white shadow-xl ring-4 ring-red-100 group-hover:scale-105 transition-transform duration-500">
+                                <img src="./dipshikha_dawadi.jpg" alt="Dipshikha Dawadi" class="w-full h-full object-cover object-top" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&w=600&q=95';" />
+                            </div>
+                            <h4 class="text-xl sm:text-2xl font-black text-[#0A0A0A] tracking-tight">Dipshikha Dawadi</h4>
+                            <p class="text-xs font-extrabold text-redAccent tracking-wider uppercase mt-2 mb-8">Counsellor (Australia & New Zealand)</p>
+                        </div>
+
+                        <a href="tel:+9779768987157" class="w-full py-3.5 px-6 rounded-full border-2 border-red-200 text-redAccent hover:bg-redAccent hover:text-white font-black text-sm transition-all duration-300 flex items-center justify-center gap-2.5 shadow-sm hover:shadow-md" target="_blank" rel="noopener noreferrer">
+                            <i class="fas fa-phone-alt text-xs"></i> <span>9768987157</span>
+                        </a>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+    5. FOOTER — Corporate Blue Brand Gradient Footer (Matches Landing Page 1:1)
+    ============================================================ -->
+    <footer class="slim-footer py-14">
+        <!-- Top Royal Blue & Red Brand Line -->
+        <div class="h-1 w-full bg-gradient-to-r from-blue-600 via-redAccent to-blue-500 absolute top-0 left-0 right-0"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 pb-12 border-b border-white/10">
+                
+                <!-- Col 1: Brand, Bio & Accreditations (4 cols) -->
+                <div class="lg:col-span-4 space-y-4">
+                    <div class="flex items-center gap-3">
+                        <img src="./Dream Sky Logo.jpeg" alt="DreamSky" class="w-11 h-11 rounded-xl object-contain bg-white p-1 shadow-md border border-white/20" />
+                        <div class="text-white font-black text-xl leading-tight tracking-tight">Dream<span class="text-blue-600">Sky</span></div>
+                    </div>
+                    <p class="text-xs text-gray-300 leading-relaxed font-normal">
+                        Nepal's premier education consultancy empowering students with admissions, visa guidance, test prep (IELTS/PTE), and post-arrival support for top global universities.
+                    </p>
+                    
+                    <!-- Govt Approval Badges -->
+                    <div class="flex flex-wrap items-center gap-2 pt-1">
+                        <span class="bg-blue-900/60 text-blue-200 border border-blue-700/50 text-[10px] font-semibold px-2.5 py-1 rounded-md">
+                            <i class="fas fa-check-circle text-blue-400 mr-1"></i> MOEST Approved
+                        </span>
+                        <span class="bg-red-900/40 text-red-200 border border-red-700/40 text-[10px] font-semibold px-2.5 py-1 rounded-md">
+                            <i class="fas fa-shield-alt text-red-400 mr-1"></i> TITI Certified
+                        </span>
+                    </div>
+
+                    <!-- Social Icons (Facebook, Instagram & TikTok Only) -->
+                    <div class="flex gap-2.5 pt-2">
+                        <a href="#" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center text-gray-300 hover:bg-redAccent hover:text-white transition-all duration-300 text-xs shadow-sm" title="TikTok"><i class="fab fa-tiktok"></i></a>
+                    </div>
+                </div>
+
+                <!-- Col 2: Navigation Links (2 cols) -->
+                <div class="lg:col-span-2 space-y-3">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">Quick Links</h4>
+                    <ul class="space-y-2 text-xs text-gray-300 font-medium">
+                        <li><a href="Untitled-1.html#home" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Home</a></li>
+                        <li><a href="mission-vision.html" class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Mission & Vision</a></li>
+                        <li><a href="team.html" class="hover:text-blue-400 transition flex items-center gap-1.5"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Our Team</a></li>
+                        <li><a href="Untitled-1.html#destinations" class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Destinations</a></li>
+                        <li><a href="Untitled-1.html#partners" class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Universities</a></li>
+                        <li><a href="Untitled-1.html#journey" class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Study Journey</a></li>
+                        <li><a href="Untitled-1.html#contact" class="hover:text-blue-400 transition flex items-center gap-1.5" target="_blank" rel="noopener noreferrer"><i class="fas fa-chevron-right text-[8px] text-blue-500"></i> Contact Us</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 3: Study Destinations (3 cols) -->
+                <div class="lg:col-span-3 space-y-3">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">Top Countries</h4>
+                    <ul class="space-y-2 text-xs text-gray-300 font-medium">
+                        <li><a href="australia.html" class="hover:text-blue-400 transition flex items-center gap-2" target="_blank" rel="noopener noreferrer">🇦🇺 Study in Australia</a></li>
+                        <li><a href="canada.html" class="hover:text-blue-400 transition flex items-center gap-2" target="_blank" rel="noopener noreferrer">🇨🇦 Study in Canada</a></li>
+                        <li><a href="uk.html" class="hover:text-blue-400 transition flex items-center gap-2" target="_blank" rel="noopener noreferrer">🇬🇧 Study in United Kingdom</a></li>
+                        <li><a href="usa.html" class="hover:text-blue-400 transition flex items-center gap-2" target="_blank" rel="noopener noreferrer">🇺🇸 Study in United States</a></li>
+                        <li><a href="newzealand.html" class="hover:text-blue-400 transition flex items-center gap-2" target="_blank" rel="noopener noreferrer">🇳🇿 Study in New Zealand</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 4: Central Office & Support Hours (3 cols) -->
+                <div class="lg:col-span-3 space-y-3">
+                    <h4 class="text-xs font-bold text-white uppercase tracking-wider border-b border-blue-500/30 pb-2 inline-block">Headquarters</h4>
+                    <ul class="space-y-2.5 text-xs text-gray-300">
+                        <li class="flex items-start gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-blue-400 text-[10px] shrink-0 mt-0.5"><i class="fas fa-map-marker-alt"></i></div>
+                            <a href="https://maps.app.goo.gl/4uaCbrnNGFcTqChk9" target="_blank" rel="noopener noreferrer" class="hover:text-blue-400 transition underline underline-offset-2">2nd Floor, KL Tower, Boudhanath Sadak, Kathmandu 44600</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-blue-900/40 border border-blue-700/40 flex items-center justify-center text-blue-400 text-[10px] shrink-0"><i class="fas fa-phone-alt"></i></div>
+                            <a href="tel:015928292" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">01-5928292</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-emerald-900/40 border border-emerald-700/40 flex items-center justify-center text-emerald-400 text-[10px] shrink-0"><i class="fab fa-whatsapp"></i></div>
+                            <a href="https://wa.me/9779768987156?text=Hello%20Dream%20Sky,%20I%20am%20interested%20in%20studying%20abroad." target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 transition">+977 9768987156 (Chat on WhatsApp)</a>
+                        </li>
+                        <li class="flex items-center gap-2.5">
+                            <div class="w-6 h-6 rounded-md bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-blue-400 text-[10px] shrink-0"><i class="fas fa-envelope"></i></div>
+                            <a href="mailto:info@dreamsky.edu.np" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">info@dreamsky.edu.np</a>
+                        </li>
+                        <li class="flex items-center gap-2.5 text-[11px] text-gray-400 pt-1">
+                            <i class="far fa-clock text-amber-400 text-xs"></i>
+                            <span>Sun – Fri: 7:00 AM – 6:00 PM</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <!-- Bottom Copyright Bar -->
+            <div class="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px] text-gray-400">
+                <div>&copy; 2026 Dream Sky Education Consultancy. All rights reserved.</div>
+                <div class="flex items-center gap-5 font-medium">
+                    <a href="privacy.html" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                    <a href="terms.html" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                    <a href="#" class="w-8 h-8 rounded-xl bg-redAccent/30 hover:bg-redAccent text-rose-200 hover:text-white border border-rose-500/40 flex items-center justify-center transition-all duration-300" title="Back to top">
+                        <i class="fas fa-arrow-up text-xs"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ============================================================
+    JAVASCRIPT ENGINE — Mobile Navigation & Interactions
+    ============================================================ -->
+    <script>
+        const hamburger = document.getElementById('hamburger');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+
+        function toggleMobile() {
+            if (mobileMenu && mobileOverlay) {
+                mobileMenu.classList.toggle('open');
+                mobileOverlay.classList.toggle('active');
+                document.body.style.overflow = mobileMenu.classList.contains('open') ? 'hidden' : '';
+            }
+        }
+
+        if (hamburger) hamburger.addEventListener('click', toggleMobile);
+        if (mobileOverlay) mobileOverlay.addEventListener('click', toggleMobile);
+        document.querySelectorAll('.mobile-menu a').forEach(link => {
+            link.addEventListener('click', toggleMobile);
+        });
+    </script>
+
+    <!-- ============================================================
+    AUTHENTICATION MODAL (LOGIN / SIGN UP / FORGOT PASSWORD)
+    ============================================================ -->
+    
+    <!-- ============================================================
+    AUTH MODAL — Student Login & Consultation Booking
+    ============================================================ -->
+    <div id="authModal" class="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/65 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div id="authModalCard" class="relative w-full max-w-md bg-white rounded-3xl p-6 sm:p-8 shadow-2xl transform scale-95 transition-all duration-300 border border-gray-100 overflow-hidden">
+            <!-- Close Button -->
+            <button onclick="closeAuthModal()" class="absolute top-5 right-5 w-9 h-9 rounded-full bg-gray-100 text-gray-400 hover:bg-redAccent hover:text-white flex items-center justify-center transition-all duration-200 z-10 cursor-pointer">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+
+            <!-- Brand Header -->
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center gap-2 mb-2">
+                    <img src="./Dream Sky Logo.jpeg" alt="DreamSky" class="w-8 h-8 rounded-lg object-contain bg-white p-0.5 shadow-sm border border-gray-100" />
+                    <span class="font-black text-lg text-gray-900">Dream<span class="text-blue-600">Sky</span></span>
+                </div>
+                <h3 id="authModalTitle" class="text-xl font-black text-[#0A0A0A]">Welcome Back!</h3>
+                <p id="authModalSubtitle" class="text-xs text-gray-500 font-medium mt-1">Access your DreamSky student dashboard</p>
+            </div>
+
+            <!-- Tab Switcher (Log In vs Book Consultation) -->
+            <div id="authTabGroup" class="flex bg-gray-100 p-1.5 rounded-2xl mb-6">
+                <button type="button" id="tabBtnLogin" onclick="switchAuthTab('login')" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer">
+                    Log In
+                </button>
+                <button type="button" id="tabBtnSignup" onclick="switchAuthTab('signup')" class="flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer">
+                    Book Consultation
+                </button>
+            </div>
+
+            <!-- 1. LOGIN FORM (No Social Buttons) -->
+            <form id="authFormLogin" onsubmit="handleAuthSubmit(event, 'login')" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Email Address</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="email" required placeholder="student@example.com" class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="password" id="loginPassword" required placeholder="••••••••" class="w-full pl-11 pr-11 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                        <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer">
+                            <i class="fas fa-eye text-sm"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me & Forgot Password Row -->
+                <div class="flex items-center justify-between pt-1 pb-1">
+                    <label class="flex items-center gap-2 text-xs text-gray-600 font-semibold cursor-pointer select-none">
+                        <input type="checkbox" id="rememberMe" class="w-4 h-4 rounded border-gray-300 text-redAccent focus:ring-redAccent accent-red-600 cursor-pointer" />
+                        Remember me
+                    </label>
+                    <button type="button" onclick="switchAuthTab('forgot')" class="text-xs font-bold text-redAccent hover:underline focus:outline-none cursor-pointer">
+                        Forgot Password?
+                    </button>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer">
+                    Sign In
+                </button>
+            </form>
+
+            <!-- 2. BOOK CONSULTATION FORM (Replaces Sign Up) -->
+            <form id="authFormSignup" onsubmit="handleAuthSubmit(event, 'consultation')" class="space-y-3.5 hidden">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Full Name</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="text" required placeholder="John Doe" class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Phone / WhatsApp Number</label>
+                    <div class="relative">
+                        <i class="fas fa-phone-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="tel" required placeholder="+977 98XXXXXXXX" class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Preferred Destination</label>
+                    <div class="relative">
+                        <i class="fas fa-globe absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <select required class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition bg-white appearance-none">
+                            <option value="" disabled selected>Select Destination</option>
+                            <option value="Australia">🇦🇺 Study in Australia</option>
+                            <option value="Canada">🇨🇦 Study in Canada</option>
+                            <option value="UK">🇬🇧 Study in UK</option>
+                            <option value="USA">🇺🇸 Study in USA</option>
+                            <option value="New Zealand">🇳🇿 Study in New Zealand</option>
+                            <option value="Europe">🇪🇺 Study in Europe</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Academic Level</label>
+                    <div class="relative">
+                        <i class="fas fa-graduation-cap absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <select required class="w-full pl-11 pr-4 py-2.5 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition bg-white appearance-none">
+                            <option value="" disabled selected>Select Study Level</option>
+                            <option value="Undergraduate">Undergraduate (Bachelor's)</option>
+                            <option value="Postgraduate">Postgraduate (Master's / PhD)</option>
+                            <option value="Diploma">Diploma / Vocational</option>
+                            <option value="Test Prep">Test Preparation (IELTS / PTE)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer mt-2">
+                    Request Free Consultation
+                </button>
+            </form>
+
+            <!-- 3. FORGOT PASSWORD FORM -->
+            <form id="authFormForgot" onsubmit="handleAuthSubmit(event, 'forgot')" class="space-y-4 hidden">
+                <div class="text-center bg-rose-50/70 border border-rose-100 p-3.5 rounded-2xl mb-2">
+                    <i class="fas fa-key text-redAccent text-xl mb-1"></i>
+                    <p class="text-xs text-gray-600 font-semibold leading-relaxed">Enter your registered email address and we will send you a password reset link.</p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 mb-1.5">Registered Email Address</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                        <input type="email" required placeholder="student@example.com" class="w-full pl-11 pr-4 py-3 rounded-2xl border border-gray-200 text-xs font-semibold text-gray-900 focus:outline-none focus:border-redAccent focus:ring-4 focus:ring-rose-500/10 transition" />
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 bg-redAccent text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-rose-600/25 hover:bg-redAccentDark transition duration-200 active:scale-[0.99] cursor-pointer">
+                    Send Reset Link
+                </button>
+
+                <button type="button" onclick="switchAuthTab('login')" class="w-full text-center text-xs font-bold text-gray-500 hover:text-redAccent transition flex items-center justify-center gap-1.5 pt-2 cursor-pointer">
+                    <i class="fas fa-arrow-left"></i> Back to Log In
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Auth Modal Scripts -->
+    <script>
+        function openAuthModal(tab = 'login') {
+            const modal = document.getElementById('authModal');
+            const card = document.getElementById('authModalCard');
+            if (!modal || !card) return;
+            switchAuthTab(tab);
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100', 'pointer-events-auto');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAuthModal() {
+            const modal = document.getElementById('authModal');
+            const card = document.getElementById('authModalCard');
+            if (!modal || !card) return;
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.remove('opacity-100', 'pointer-events-auto');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.style.overflow = '';
+        }
+
+        function switchAuthTab(tab) {
+            const formLogin = document.getElementById('authFormLogin');
+            const formSignup = document.getElementById('authFormSignup');
+            const formForgot = document.getElementById('authFormForgot');
+            const btnLogin = document.getElementById('tabBtnLogin');
+            const btnSignup = document.getElementById('tabBtnSignup');
+            const tabGroup = document.getElementById('authTabGroup');
+            const title = document.getElementById('authModalTitle');
+            const subtitle = document.getElementById('authModalSubtitle');
+
+            if (!formLogin || !formSignup || !formForgot) return;
+
+            formLogin.classList.add('hidden');
+            formSignup.classList.add('hidden');
+            formForgot.classList.add('hidden');
+            tabGroup.classList.remove('hidden');
+
+            btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer";
+            btnSignup.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 text-gray-500 hover:text-gray-900 cursor-pointer";
+
+            if (tab === 'login') {
+                formLogin.classList.remove('hidden');
+                btnLogin.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer";
+                title.innerText = "Welcome Back!";
+                subtitle.innerText = "Access your DreamSky student dashboard";
+            } else if (tab === 'signup' || tab === 'consultation') {
+                formSignup.classList.remove('hidden');
+                btnSignup.className = "flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 bg-white text-redAccent shadow-sm cursor-pointer";
+                title.innerText = "Book Free Consultation";
+                subtitle.innerText = "Speak directly with an expert education counselor";
+            } else if (tab === 'forgot') {
+                formForgot.classList.remove('hidden');
+                tabGroup.classList.add('hidden');
+                title.innerText = "Forgot Password";
+                subtitle.innerText = "We'll help you recover access";
+            }
+        }
+
+        function handleAuthSubmit(event, type) {
+            event.preventDefault();
+            const remember = document.getElementById('rememberMe')?.checked;
+            if (type === 'login') {
+                alert(`🎉 Logged in successfully! ${remember ? '(Remember Me is active)' : ''}`);
+            } else if (type === 'signup' || type === 'consultation') {
+                alert('🎉 Consultation request submitted successfully! A DreamSky counselor will contact you within 24 hours.');
+            } else if (type === 'forgot') {
+                alert('✉️ Password reset link sent to your registered email!');
+            }
+            closeAuthModal();
+        }
+
+        function togglePasswordVisibility(inputId, iconBtn) {
+            const input = document.getElementById(inputId);
+            const icon = iconBtn.querySelector('i');
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash text-sm text-redAccent';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye text-sm text-gray-400';
+            }
+        }
+
+        document.getElementById('authModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeAuthModal();
+        });
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') closeAuthModal();
+        });
+    </script>
+
+    
+
+
+    <!-- Header Glass Scroll Listener (Transitions exactly when scrolling past Hero Section) -->
+    <script>
+        (function() {
+            const header = document.getElementById('header');
+            const heroSection = document.getElementById('home') || document.querySelector('section');
+            function updateHeaderScroll() {
+                if (!header) return;
+                const heroHeight = heroSection ? heroSection.offsetHeight : 600;
+                const headerHeight = header.offsetHeight || 80;
+                const threshold = Math.max(100, heroHeight - headerHeight);
+                if (window.scrollY > threshold) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            }
+            window.addEventListener('scroll', updateHeaderScroll);
+            window.addEventListener('resize', updateHeaderScroll);
+            updateHeaderScroll();
+        })();
+    </script>
+
+</body>
+</html>
+
