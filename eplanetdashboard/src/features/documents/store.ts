@@ -33,7 +33,7 @@ export const useDocumentsStore = create<DocumentsState>((set) => ({
         status: 'pending_review',
         uploadedAt: new Date().toISOString(),
       }
-      return { documents: [...state.documents, newDoc] }
+      return { documents: [newDoc, ...state.documents] }
     }),
 
   deleteDocument: (id) =>
