@@ -1,5 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { Check, ChevronsUpDown, Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 
 interface StudentOption {
   id: string
@@ -23,13 +26,14 @@ export function SearchableStudentPicker({
   students,
   value,
   onChange,
-  placeholder = 'Search by name or student ID',
+  placeholder = 'Select student...',
   label,
   emptyMessage = 'No students found',
-  showDropdown = true,
-  autoSelectOnSearch = false,
 }: SearchableStudentPickerProps) {
+  const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
+
+  const selectedStudent = students.find((student) => student.id === value)
 
   const filteredStudents = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -41,58 +45,70 @@ export function SearchableStudentPicker({
     })
   }, [students, search])
 
-  const selectedStudent = students.find((student) => student.id === value)
-
-  useEffect(() => {
-    if (!autoSelectOnSearch || showDropdown) return
-
-    const query = search.trim()
-    if (!query) return
-
-    const match = filteredStudents[0]
-    if (match && match.id !== value) {
-      onChange(match.id)
-    }
-  }, [autoSelectOnSearch, showDropdown, search, filteredStudents, value, onChange])
-
   return (
-    <div className="space-y-2">
-      {label && <label className="text-xs font-medium text-muted-foreground">{label}</label>}
-      <Input
-        placeholder={placeholder}
-        value={search}
-        onChange={(event) => setSearch(event.target.value)}
-      />
-      {showDropdown && (
-        <div className="max-h-44 space-y-1 overflow-auto rounded-md border border-border/70 bg-background p-2">
-          {filteredStudents.length > 0 ? (
-            filteredStudents.map((student) => (
-              <button
-                key={student.id}
-                type="button"
-                onClick={() => {
-                  onChange(student.id)
-                  setSearch('')
-                }}
-                className={`flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm transition ${value === student.id ? 'bg-primary/10 text-primary' : 'hover:bg-muted'}`}
-              >
-                <span>
-                  <span className="block font-medium">{student.name}</span>
-                  <span className="text-xs text-muted-foreground">{student.studentId}</span>
-                </span>
-                {value === student.id && <span className="text-xs font-semibold">Selected</span>}
-              </button>
-            ))
-          ) : (
-            <p className="px-2 py-3 text-sm text-muted-foreground">{emptyMessage}</p>
-          )}
-        </div>
-      )}
-      {showDropdown && selectedStudent && !search && (
-        <p className="text-xs text-muted-foreground">
-          Selected: <span className="font-medium text-foreground">{selectedStudent.name}</span> ({selectedStudent.studentId})
-        </p>
-      )}
+    <div className="space-y-1">
+      {label && <label className="mb-1 block text-xs font-medium text-muted-foreground">{label}</label>}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="h-10 w-full justify-between px-3 font-normal shadow-soft bg-background hover:bg-accent/40"
+          >
+            {selectedStudent ? (
+              <span className="truncate">
+                <span className="font-medium text-foreground">{selectedStudent.name}</span>{' '}
+                <span className="text-xs text-muted-foreground">({selectedStudent.studentId})</span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground">{placeholder}</span>
+            )}
+            <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-[300px] p-2 shadow-elevated">
+          <div className="relative mb-2">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by name or ID..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 pl-8 text-xs"
+              autoFocus
+            />
+          </div>
+          <div className="max-h-56 space-y-0.5 overflow-y-auto">
+            {filteredStudents.length > 0 ? (
+              filteredStudents.map((student) => {
+                const isSelected = value === student.id
+                return (
+                  <button
+                    key={student.id}
+                    type="button"
+                    onClick={() => {
+                      onChange(student.id)
+                      setOpen(false)
+                      setSearch('')
+                    }}
+                    className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs transition ${
+                      isSelected ? 'bg-primary/10 font-medium text-primary' : 'hover:bg-accent'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-medium text-foreground">{student.name}</div>
+                      <div className="text-[11px] text-muted-foreground">{student.studentId}</div>
+                    </div>
+                    {isSelected && <Check className="size-4 text-primary" />}
+                  </button>
+                )
+              })
+            ) : (
+              <p className="px-2 py-3 text-center text-xs text-muted-foreground">{emptyMessage}</p>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
     </div>
   )
 }
