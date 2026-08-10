@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
 import {
   FileUp, Trash2, CheckCircle2, XCircle, MessageSquare,
@@ -72,10 +72,14 @@ export default function DocumentsPage() {
   const [expandedDoc, setExpandedDoc] = useState<string | null>(null)
   const [noteInputs, setNoteInputs] = useState<Record<string, string>>({})
 
-  const visible = visibleDocuments(currentUser, documents, students)
+  const visible = useMemo(() => {
+    const docs = visibleDocuments(currentUser, documents, students)
+    return [...docs].sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime())
+  }, [currentUser, documents, students])
+
   const visibleStudentsForUpload = visibleStudents(currentUser, students)
   const canManage = hasPermission(currentUser.role, 'documents.manage')
-  const selectedStudent = visibleStudentsForUpload.find((student) => student.id === targetStudentId) ?? visibleStudentsForUpload[0] ?? null
+  const selectedStudent = visibleStudentsForUpload.find((student) => student.id === targetStudentId) ?? null
 
   const handleUpload = () => {
     if (!fileName.trim() || !selectedStudent) return
@@ -156,15 +160,14 @@ export default function DocumentsPage() {
                 <p className="text-xs text-muted-foreground">Choose an image or drag it into the upload area, then select the student and document type.</p>
 
                 <div className="flex flex-wrap items-end gap-3">
-                  <div className="w-[220px]">
+                  <div className="w-[280px]">
                     <SearchableStudentPicker
-                      label="Student"
+                      label="Select Student"
                       students={visibleStudentsForUpload}
-                      value={selectedStudent?.id ?? ''}
+                      value={targetStudentId}
                       onChange={setTargetStudentId}
-                      placeholder="Search student"
-                      showDropdown={false}
-                      autoSelectOnSearch
+                      placeholder="Type student name or ID..."
+                      showDropdown={true}
                     />
                   </div>
                   <div className="min-w-[240px] flex-1">
@@ -223,7 +226,7 @@ export default function DocumentsPage() {
         />
       ) : (
         <div className="space-y-2">
-          {visible.map((doc) => {
+          {visible.map((doc: any) => {
             const isExpanded = expandedDoc === doc.id
             const notes = docNotes(doc.id)
 
