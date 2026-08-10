@@ -8,6 +8,7 @@ export interface UserAccount {
   id: string
   name: string
   email: string
+  phone?: string
   role: Role
   status: UserStatus
   branchId?: string
