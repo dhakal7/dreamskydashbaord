@@ -9,13 +9,10 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { MoreHorizontal, Shield, Ban, RotateCcw, Mail } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import {
-  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
-} from '@/components/ui/dialog'
+import { MoreHorizontal, Shield, Ban, RotateCcw, Pencil } from 'lucide-react'
 import { roleLabels } from '@/mock'
 import { useUsersStore } from '../store'
+import { EditUserDialog } from './edit-user-dialog'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 
@@ -51,6 +48,18 @@ export function getUserColumns(canManage: boolean): ColumnDef<UserAccount>[] {
               <span className="text-xs text-muted-foreground">{user.email}</span>
             </div>
           </div>
+        )
+      },
+    },
+    {
+      accessorKey: 'phone',
+      header: 'Phone',
+      cell: ({ row }) => {
+        const phone = row.getValue('phone') as string | undefined
+        return (
+          <span className="text-xs text-muted-foreground font-tabular">
+            {phone || '—'}
+          </span>
         )
       },
     },
@@ -108,16 +117,8 @@ export function getUserColumns(canManage: boolean): ColumnDef<UserAccount>[] {
 const allRoles: Role[] = ['super_admin', 'front_desk', 'counselor', 'teacher', 'student', 'referral_agent']
 
 function UserActionsDropdown({ user }: { user: UserAccount }) {
-  const { suspendUser, reactivateUser, changeUserRole, updateUserEmail } = useUsersStore()
-  const [emailDialogOpen, setEmailDialogOpen] = useState(false)
-  const [newEmail, setNewEmail] = useState(user.email)
-
-  const handleSaveEmail = () => {
-    if (newEmail.trim()) {
-      updateUserEmail(user.id, newEmail.trim())
-      setEmailDialogOpen(false)
-    }
-  }
+  const { suspendUser, reactivateUser, changeUserRole } = useUsersStore()
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   return (
     <>
@@ -130,9 +131,9 @@ function UserActionsDropdown({ user }: { user: UserAccount }) {
         <DropdownMenuContent align="end">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setEmailDialogOpen(true)}>
-            <Mail className="size-4" />
-            Edit Email
+          <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
+            <Pencil className="size-4" />
+            Edit Profile
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>Change Role</DropdownMenuSubTrigger>
@@ -164,29 +165,11 @@ function UserActionsDropdown({ user }: { user: UserAccount }) {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit Email Address</DialogTitle>
-            <DialogDescription>
-              Update the email address for <strong className="text-foreground">{user.name}</strong> to receive notifications and system emails.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-2">
-            <label className="text-xs font-medium text-muted-foreground block mb-1.5">New Email Address</label>
-            <Input
-              type="email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="counselor@example.com"
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEmailDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSaveEmail}>Save Email</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditUserDialog
+        user={user}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      />
     </>
   )
 }

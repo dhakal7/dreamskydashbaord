@@ -20,6 +20,7 @@ interface UsersState {
   reactivateUser: (id: string) => void
   changeUserRole: (id: string, role: Role) => void
   updateUserEmail: (id: string, email: string) => void
+  updateUserProfile: (id: string, updates: Partial<UserAccount>) => void
 }
 
 export const useUsersStore = create<UsersState>((set) => ({
@@ -87,6 +88,17 @@ export const useUsersStore = create<UsersState>((set) => ({
       return {
         users: state.users.map((u) =>
           u.id === id ? { ...u, email } : u
+        ),
+      }
+    }),
+
+  updateUserProfile: (id, updates) =>
+    set((state) => {
+      const user = state.users.find((u) => u.id === id)
+      toast.success(`Profile updated for ${updates.name ?? user?.name ?? 'User'}`)
+      return {
+        users: state.users.map((u) =>
+          u.id === id ? { ...u, ...updates } : u
         ),
       }
     }),
