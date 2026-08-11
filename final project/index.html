@@ -2748,8 +2748,8 @@
 
         async function handleAuthSubmit(event, type) {
             event.preventDefault();
-            const API_BASE = 'http://localhost:5001/api';
-            const DASHBOARD_URL = 'http://localhost:5173';
+            const API_BASE = (window.env && window.env.VITE_API_BASE_URL) || 'https://dreamsky-backend.onrender.com/api';
+            const DASHBOARD_URL = (window.env && window.env.VITE_DASHBOARD_URL) || 'https://dreamsky-bzkp.vercel.app';
 
             if (type === 'login') {
                 const emailInput = document.querySelector('#authFormLogin input[type="email"]');
