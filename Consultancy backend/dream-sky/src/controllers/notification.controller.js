@@ -135,6 +135,19 @@ const listNotifications = async (req, res, next) => {
   }
 };
 
+const sendDirectNotification = async (req, res, next) => {
+  try {
+    const { to, subject, body } = req.body;
+    if (!to || !subject || !body) {
+      throw new AppError("Fields `to`, `subject`, and `body` are required.", 400);
+    }
+    const result = await notificationService.sendDirectNotification({ to, subject, body });
+    sendSuccess(res, { message: "Notification email sent successfully.", data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   listTemplates,
   getTemplate,
@@ -142,4 +155,5 @@ module.exports = {
   updateTemplate,
   deleteTemplate,
   listNotifications,
+  sendDirectNotification,
 };

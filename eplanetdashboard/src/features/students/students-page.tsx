@@ -145,9 +145,11 @@ export default function StudentsPage() {
                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => toast.success(`Exported ${selected.length} students`)}>
                   <Download className="size-3.5" /> Export
                 </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs text-danger-500 hover:text-danger-600" onClick={() => deleteStudents(selected.map((s) => s.id))}>
-                  <Trash2 className="size-3.5" /> Delete
-                </Button>
+                {currentUser.role === 'super_admin' && (
+                  <Button variant="outline" size="sm" className="h-7 text-xs text-danger-500 hover:text-danger-600" onClick={() => deleteStudents(selected.map((s) => s.id))}>
+                    <Trash2 className="size-3.5" /> Delete
+                  </Button>
+                )}
               </>
             )}
           />

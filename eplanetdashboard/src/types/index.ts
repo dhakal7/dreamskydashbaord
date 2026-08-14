@@ -420,6 +420,7 @@ export interface CurrentUser {
   branchId: string
   branchName: string
   linkedId: string // id into the role-specific collection (counselor/teacher/student/agent)
+  mustChangePassword?: boolean
 }
 
 // ── Teacher / Class Module ──────────────────────────────────────────────

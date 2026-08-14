@@ -24,7 +24,7 @@ export function ReferralAgentDashboard() {
   ]
 
   function copyReferralLink() {
-    const link = `https://eplanetconsultancy.com/refer/${data.agent?.referralCode}`
+    const link = `https://dreamskyeducation.com/refer/${data.agent?.referralCode}`
     navigator.clipboard?.writeText(link)
     toast.success('Referral link copied to clipboard')
   }
@@ -52,7 +52,7 @@ export function ReferralAgentDashboard() {
           <div className="flex items-center gap-3 rounded-lg border border-dashed border-border bg-secondary/40 p-3">
             <Link2 className="size-4 shrink-0 text-muted-foreground" />
             <code className="min-w-0 flex-1 truncate text-[13px]">
-              eplanetconsultancy.com/refer/{data.agent?.referralCode}
+              dreamskyeducation.com/refer/{data.agent?.referralCode}
             </code>
             <Button variant="ghost" size="sm" onClick={copyReferralLink}>Copy</Button>
           </div>

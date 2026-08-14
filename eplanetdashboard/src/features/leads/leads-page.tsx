@@ -13,37 +13,34 @@ import { LeadFormDialog } from './components/lead-form-dialog'
 import { useAuthStore } from '@/store/auth-store'
 import { visibleLeads } from '@/lib/data-visibility'
 import { hasPermission } from '@/lib/rbac'
-
 import { isMockMode } from '@/lib/api-client'
-import { useChangePipelineStage } from '@/hooks/use-students'
+import { useLiveLeads, useMoveLiveLead } from '@/hooks/use-leads-live'
 import type { LeadStage } from '@/types'
 
 type ViewMode = 'table' | 'pipeline'
 
 export default function LeadsPage() {
-  const leads = useLeadsStore((s) => s.leads)
+  const mockLeads = useLeadsStore((s) => s.leads)
+  const moveMockLead = useLeadsStore((s) => s.moveLead)
   const currentUser = useAuthStore((s) => s.currentUser)
-  const moveLead = useLeadsStore((s) => s.moveLead)
-  const changePipelineStage = useChangePipelineStage()
   const [view, setView] = useState<ViewMode>('pipeline')
   const [filters, setFilters] = useState<LeadFilters>(defaultLeadFilters)
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false)
 
+  // Live mode: fetch LEAD/PROSPECT students from backend
+  const { leads: liveLeads } = useLiveLeads()
+  const moveLiveLead = useMoveLiveLead()
+
+  // Merge: use live data in real mode, mock data in mock mode
+  const leads = isMockMode() ? mockLeads : liveLeads
+
   const handleMove = (id: string, stage: LeadStage) => {
-    moveLead(id, stage)
-    if (!isMockMode()) {
-      const stageMap: Partial<Record<LeadStage, string>> = {
-        new: 'LEAD',
-        contacted: 'LEAD',
-        counseling: 'PROSPECT',
-        interested: 'PROSPECT',
-        completed: 'ENROLLED',
-      }
-      const backendStage = stageMap[stage] || 'LEAD'
-      changePipelineStage.mutate({ id, body: { stage: backendStage } })
+    if (isMockMode()) {
+      moveMockLead(id, stage)
+    } else {
+      moveLiveLead.mutate({ id, stage })
     }
   }
-
 
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase()

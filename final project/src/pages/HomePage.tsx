@@ -28,6 +28,15 @@ export const HomePage: React.FC = () => {
     setAuthModalState((prev) => ({ ...prev, isOpen: false }));
   };
 
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('login') === 'true') {
+      handleOpenAuthModal('login');
+      const cleanUrl = window.location.pathname + window.location.hash;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-white font-sans text-gray-700 antialiased selection:bg-redAccent selection:text-white">
       <Navbar onOpenAuthModal={handleOpenAuthModal} />

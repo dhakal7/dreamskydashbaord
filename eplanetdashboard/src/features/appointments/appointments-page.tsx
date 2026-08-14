@@ -16,7 +16,9 @@ import { counselors } from '@/mock'
 import type { Appointment, AppointmentStatus } from '@/types'
 import { useAuthStore } from '@/store/auth-store'
 import { visibleAppointments } from '@/lib/data-visibility'
-
+import { hasPermission } from '@/lib/rbac'
+import { isMockMode } from '@/lib/api-client'
+import { useAppointments } from '@/hooks/use-appointments'
 import { useAppointmentsStore } from './store'
 import { AppointmentDialog } from './components/appointment-dialog'
 import {
@@ -44,8 +46,32 @@ const statusOptions: { value: AppointmentStatus | 'all'; label: string }[] = [
 ]
 
 export default function AppointmentsPage() {
-  const appointments = useAppointmentsStore((s) => s.appointments)
+  const mockAppointments = useAppointmentsStore((s) => s.appointments)
   const currentUser = useAuthStore((s) => s.currentUser)
+  const canManage = hasPermission(currentUser.role, 'appointments.manage')
+
+  // Live mode: scope to counselor if role is counselor
+  const counselorId = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
+  const { data: apiData } = useAppointments({ counselorId, limit: 200 })
+
+  const appointments: Appointment[] = !isMockMode() && apiData?.appointments && apiData.appointments.length > 0
+    ? apiData.appointments.map((a) => ({
+        id: a.id,
+        title: `${(a.type ?? 'Appointment').replace(/_/g, ' ')} — ${a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Student'}`,
+        studentId: a.studentId,
+        studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown Student',
+        counselorId: a.counselorId ?? '',
+        counselorName: a.counselor ? `${a.counselor.firstName} ${a.counselor.lastName}` : 'Counselor',
+        counselorIds: a.counselorId ? [a.counselorId] : [],
+        counselorNames: a.counselor ? [`${a.counselor.firstName} ${a.counselor.lastName}`] : [],
+        type: (a.type?.toLowerCase() as Appointment['type']) ?? 'counseling',
+        status: (a.status?.toLowerCase() as AppointmentStatus) ?? 'scheduled',
+        start: a.datetime,
+        end: new Date(new Date(a.datetime).getTime() + (a.durationMin ?? 30) * 60000).toISOString(),
+        location: (a.meetingMode?.toLowerCase() as Appointment['location']) ?? 'branch_office',
+        notes: a.notes ?? '',
+      }))
+    : mockAppointments
 
   // View & navigation state
   const [view, setView] = useState<ViewMode>('month')
@@ -121,10 +147,12 @@ export default function AppointmentsPage() {
         title="Appointments"
         description="Schedule and manage counseling sessions, document reviews, and visa preparation meetings."
         actions={
-          <Button size="sm" onClick={() => openNewDialog()}>
-            <Plus className="size-3.5 mr-1" />
-            New Appointment
-          </Button>
+          canManage && (
+            <Button size="sm" onClick={() => openNewDialog()}>
+              <Plus className="size-3.5 mr-1" />
+              New Appointment
+            </Button>
+          )
         }
       />
 
@@ -266,7 +294,7 @@ export default function AppointmentsPage() {
 
       {/* ── Main Calendar Content ────────────────────────────────────── */}
       {hasNoResults ? (
-        <AppointmentsEmptyState onNew={() => openNewDialog()} />
+        <AppointmentsEmptyState onNew={canManage ? () => openNewDialog() : () => {}} />
       ) : (
         <>
           {view === 'month' && (
@@ -276,7 +304,7 @@ export default function AppointmentsPage() {
               selectedDate={selectedDate}
               onSelectDate={setSelectedDate}
               onSelectAppointment={openEditDialog}
-              onNewOnDate={openNewDialog}
+              onNewOnDate={canManage ? openNewDialog : () => {}}
             />
           )}
           {view === 'week' && (
@@ -284,7 +312,7 @@ export default function AppointmentsPage() {
               appointments={filtered}
               currentDate={currentDate}
               onSelectAppointment={openEditDialog}
-              onNewOnDate={openNewDialog}
+              onNewOnDate={canManage ? openNewDialog : () => {}}
             />
           )}
           {view === 'day' && (
@@ -292,7 +320,7 @@ export default function AppointmentsPage() {
               appointments={filtered}
               currentDate={currentDate}
               onSelectAppointment={openEditDialog}
-              onNewOnDate={openNewDialog}
+              onNewOnDate={canManage ? openNewDialog : () => {}}
             />
           )}
         </>

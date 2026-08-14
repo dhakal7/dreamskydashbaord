@@ -1425,7 +1425,14 @@
                         <li class="flex items-center gap-2.5 text-[11px] text-gray-400 pt-1"><i
                                 class="far fa-clock text-amber-400 text-xs"></i><span>Sun – Fri: 7:00 AM – 6:00
                                 PM</span></li>
-                    </ul>
+                    
+                        <!-- Embedded Map in Footer for all pages -->
+                        <li class="pt-2">
+                            <div class="w-full h-32 rounded-xl overflow-hidden border border-white/10 relative">
+                                <iframe src="https://maps.google.com/maps?q=2nd%20Floor%2C%20KL%20Tower%2C%20Boudhanath%20Sadak%2C%20Kathmandu%2044600&t=&z=17&ie=UTF8&iwloc=&output=embed" class="w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="DreamSky Location Map"></iframe>
+                            </div>
+                        </li>
+</ul>
                 </div>
             </div>
             <div class="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-400">
@@ -1653,6 +1660,10 @@
     <!-- Auth Modal Scripts -->
     <script>
         function openAuthModal(tab = 'login') {
+            if (tab === 'login') {
+                window.location.href = 'index.html?login=true';
+                return;
+            }
             const modal = document.getElementById('authModal');
             const card = document.getElementById('authModalCard');
             if (!modal || !card) return;

@@ -21,6 +21,8 @@ import { counselors, students } from '@/mock'
 import { useAuthStore } from '@/store/auth-store'
 import { visibleStudents } from '@/lib/data-visibility'
 import { useFollowUpsStore } from '../store'
+import { isMockMode } from '@/lib/api-client'
+import { useCreateFollowUp } from '@/hooks/use-followups'
 import type { FollowUp } from '@/types'
 
 const channels: FollowUp['channel'][] = ['call', 'email', 'whatsapp', 'in_person', 'sms']
@@ -34,7 +36,8 @@ interface FollowUpCreateDialogProps {
 
 export function FollowUpCreateDialog({ open, onOpenChange, initialStudentId }: FollowUpCreateDialogProps) {
   const currentUser = useAuthStore((s) => s.currentUser)
-  const addFollowUp = useFollowUpsStore((s) => s.addFollowUp)
+  const addFollowUpMock = useFollowUpsStore((s) => s.addFollowUp)
+  const createFollowUpApi = useCreateFollowUp()
 
   const availableStudents = useMemo(
     () => visibleStudents(currentUser, students),
@@ -88,10 +91,32 @@ export function FollowUpCreateDialog({ open, onOpenChange, initialStudentId }: F
   }
 
   const handleCreate = () => {
-    if (!studentId || !counselorId || !reminder.trim() || !date || !time) return
-    if (!selectedStudent || !selectedCounselor) return
+    if (!studentId || !reminder.trim() || !date || !time) return
 
-    addFollowUp({
+    const nextFollowUpAt = `${date}T${time}:00`
+
+    if (!isMockMode()) {
+      createFollowUpApi.mutate(
+        {
+          studentId,
+          channel: channel.toUpperCase(),
+          direction: 'OUTBOUND',
+          content: reminder.trim(),
+          nextFollowUpAt,
+        },
+        {
+          onSuccess: () => {
+            onOpenChange(false)
+            resetForm()
+          },
+        }
+      )
+      return
+    }
+
+    // Mock mode: write to Zustand store
+    if (!selectedStudent || !selectedCounselor) return
+    addFollowUpMock({
       studentId: selectedStudent.id,
       studentName: selectedStudent.name,
       counselorId: selectedCounselor.id,
@@ -103,7 +128,6 @@ export function FollowUpCreateDialog({ open, onOpenChange, initialStudentId }: F
       channel,
       notes: notes.trim() || undefined,
     })
-
     onOpenChange(false)
     resetForm()
   }

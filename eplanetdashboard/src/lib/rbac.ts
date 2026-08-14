@@ -9,6 +9,7 @@ export type Permission =
   | 'students.manage'
   | 'followups.view'
   | 'appointments.view'
+  | 'appointments.manage'
   | 'applications.view'
   | 'applications.manage'
   | 'visa.view'
@@ -34,7 +35,7 @@ export type Permission =
 export const rolePermissions: Record<Role, readonly Permission[]> = {
   super_admin: [
     'dashboard.view', 'leads.view', 'leads.manage', 'students.view', 'students.manage',
-    'followups.view', 'appointments.view', 'applications.view', 'applications.manage',
+    'followups.view', 'appointments.view', 'appointments.manage', 'applications.view', 'applications.manage',
     'visa.view', 'visa.manage', 'documents.view', 'documents.manage', 'universities.view',
     'countries.view', 'countries.manage', 'universities.view', 'universities.manage', 'courses.view', 'courses.manage',
     'classes.view', 'reports.view', 'settings.manage',
@@ -43,7 +44,7 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
   ],
   front_desk: [
     'dashboard.view', 'leads.view', 'leads.manage', 'leads.change-stage', 'students.view', 'students.manage',
-    'followups.view', 'appointments.view', 'applications.view', 'applications.manage',
+    'followups.view', 'appointments.view', 'appointments.manage', 'applications.view', 'applications.manage',
     'documents.view', 'documents.manage', 'events.view', 'events.manage', 'settings.manage',
   ],
   counselor: [

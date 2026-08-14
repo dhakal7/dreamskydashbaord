@@ -1,0 +1,15 @@
+{
+  "name": "eplanetcrm3",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n landing,dashboard,backend -c cyan,blue,green \"npm run dev:landing\" \"npm run dev:dashboard\" \"npm run dev:backend\"",
+    "dev:landing": "npm run dev --prefix \"final project\"",
+    "dev:dashboard": "npm run dev --prefix eplanetdashboard",
+    "dev:backend": "npm run dev --prefix \"Consultancy backend/dream-sky\"",
+    "install:all": "npm install --prefix \"final project\" && npm install --prefix eplanetdashboard && npm install --prefix \"Consultancy backend/dream-sky\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

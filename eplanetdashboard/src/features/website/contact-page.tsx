@@ -8,7 +8,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-background text-foreground">
       <header className="border-b border-border/70">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4 lg:px-8">
-          <Link to="/website" className="font-semibold">E-Planet Consultancy</Link>
+          <Link to="/website" className="font-semibold">Dream Sky Consultancy</Link>
           <Button variant="ghost" asChild>
             <Link to="/website/inquiry">Inquiry Form</Link>
           </Button>
@@ -20,7 +20,7 @@ export default function ContactPage() {
           <h1 className="text-2xl font-semibold">Get in touch</h1>
           <p className="mt-2 text-sm text-muted-foreground">Our advisors are ready to help with applications, visa planning, and university selection.</p>
           <div className="mt-6 space-y-3 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2"><Mail className="size-4 text-primary" /> hello@eplanetconsultancy.com</div>
+            <div className="flex items-center gap-2"><Mail className="size-4 text-primary" /> hello@dreamskyeducation.com</div>
             <div className="flex items-center gap-2"><Phone className="size-4 text-primary" /> +977 9800000000</div>
           </div>
         </Card>

@@ -41,5 +41,6 @@ router.delete(
 // ─── Notifications ────────────────────────────────────────────────────────────
 // SUPER_ADMIN sees all; other roles see only their own (enforced in controller)
 router.get("/", notificationController.listNotifications);
+router.post("/send", notificationController.sendDirectNotification);
 
 module.exports = router;

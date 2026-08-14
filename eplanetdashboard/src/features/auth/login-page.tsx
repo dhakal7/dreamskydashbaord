@@ -11,6 +11,8 @@ import { dashboardPaths } from '@/lib/rbac'
 import { demoUsers } from '@/mock/current-user'
 import { isMockMode, tokenStore } from '@/lib/api-client'
 
+const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'http://localhost:5174'
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -23,6 +25,11 @@ export default function LoginPage() {
 
   if (isAuthenticated) {
     return <Navigate to={dashboardPaths[useAuthStore.getState().currentUser.role]} replace />
+  }
+
+  if (!isAuthenticated) {
+    window.location.href = `${LANDING_URL}?login=true`
+    return null
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {

@@ -63,7 +63,7 @@ export const useNotificationsStore = create<NotificationsState>()(
       },
     }),
     {
-      name: 'eplanet-notifications-store',
+      name: 'dreamsky-notifications-store',
     }
   )
 )

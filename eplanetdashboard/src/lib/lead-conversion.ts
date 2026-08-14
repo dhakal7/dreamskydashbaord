@@ -75,7 +75,7 @@ export async function convertLeadToStudent(leadId: string): Promise<LeadConversi
   // ── LOCAL STORE: keep the UI consistent in both modes ──────────────────────────
   const addStudent = useStudentsStore.getState().addStudent
   const addCommission = useCommissionStore.getState().addCommission
-  const portalPassword = `Eplanet@${(lead.phone.replace(/\D/g, '').slice(-4) || '0000')}`
+  const portalPassword = `DreamSky@${(lead.phone.replace(/\D/g, '').slice(-4) || '0000')}`
   const newStudent = addStudent({
     name: lead.name,
     email: lead.email,
@@ -141,8 +141,10 @@ export async function convertLeadToStudent(leadId: string): Promise<LeadConversi
     }
   }
 
-  // Mark the lead as completed
-  leadsState.moveLead(leadId, 'completed')
+  // Remove the lead from the leads list entirely — they are now a student.
+  // In mock mode this keeps the stores in sync.
+  // In real mode the lead was never in the backend, so only the local store needs updating.
+  leadsState.removeLead(leadId)
 
   return {
     studentId: backendStudentId ?? newStudent.id,

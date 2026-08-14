@@ -22,7 +22,7 @@ import {
 import { useAuthStore } from '@/store/auth-store'
 import { visibleDocuments, visibleStudents } from '@/lib/data-visibility'
 import { hasPermission } from '@/lib/rbac'
-import { students } from '@/mock'
+import { useStudentsStore } from '@/features/students/store'
 import { useDocumentsStore, type AddDocumentData } from './store'
 import { useDocumentNotesStore } from './document-notes-store'
 import type { DocumentType } from '@/types'
@@ -44,6 +44,7 @@ import { useDocuments } from '@/hooks/use-documents'
 
 export default function DocumentsPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
+  const students = useStudentsStore((s) => s.students)
   const { documents: mockDocuments, addDocument, deleteDocument, updateDocumentStatus } = useDocumentsStore()
   const { data: apiDocData } = useDocuments()
   const { addNote, deleteNote, getNotesForDocument } = useDocumentNotesStore()

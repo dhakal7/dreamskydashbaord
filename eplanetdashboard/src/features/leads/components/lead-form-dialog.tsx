@@ -14,6 +14,8 @@ import {
 } from '@/components/ui/select'
 import { countries, counselors, createReferralAgent, referralAgents } from '@/mock'
 import { useLeadsStore } from '../store'
+import { isMockMode } from '@/lib/api-client'
+import { useCreateLiveLead } from '@/hooks/use-leads-live'
 import type { Lead, LeadSource, StudyLevel, Priority } from '@/types'
 
 // ── Zod Schema ───────────────────────────────────────────────────────────────
@@ -58,6 +60,7 @@ interface LeadFormDialogProps {
 export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialogProps) {
   const addLead = useLeadsStore((s) => s.addLead)
   const updateLead = useLeadsStore((s) => s.updateLead)
+  const createLiveLead = useCreateLiveLead()
   const [agentQuery, setAgentQuery] = useState('')
 
   const {
@@ -148,7 +151,32 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
         referralAgentId: resolvedAgent?.id ?? leadToEdit.referralAgentId,
         referralAgentName: resolvedAgent?.name ?? agentQuery.trim() ?? leadToEdit.referralAgentName,
       })
+      setAgentQuery('')
+      onOpenChange(false)
+      reset()
+    } else if (!isMockMode()) {
+      // Live mode: create a student record with stage=LEAD in the backend
+      const nameParts = data.name.trim().split(/\s+/)
+      createLiveLead.mutate(
+        {
+          firstName: nameParts[0] || 'Unknown',
+          lastName: nameParts.slice(1).join(' ') || '',
+          email: data.email,
+          phone: data.phone,
+          source: data.source,
+          assignedCounselorId: primaryCounselor?.id,
+          notes: data.address ? `Address: ${data.address}` : undefined,
+        },
+        {
+          onSuccess: () => {
+            setAgentQuery('')
+            onOpenChange(false)
+            reset()
+          },
+        }
+      )
     } else {
+      // Mock mode: add to local Zustand store only
       addLead({
         name: data.name,
         email: data.email,
@@ -170,10 +198,10 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
         referralAgentName: resolvedAgent?.name ?? (agentQuery.trim() || undefined),
         notes: '',
       })
+      setAgentQuery('')
+      onOpenChange(false)
+      reset()
     }
-    setAgentQuery('')
-    onOpenChange(false)
-    reset()
   }
 
   function handleClose() {

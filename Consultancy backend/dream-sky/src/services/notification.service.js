@@ -206,8 +206,17 @@ async function listNotifications(query = {}) {
   });
 }
 
+/**
+ * Send a direct custom notification email to a specific email address.
+ */
+async function sendDirectNotification({ to, subject, body }) {
+  const result = await sendNotificationEmail({ to, subject, body });
+  return { success: true, messageId: result?.messageId };
+}
+
 module.exports = {
   sendNotification,
+  sendDirectNotification,
   listTemplates,
   getTemplateById,
   createTemplate,

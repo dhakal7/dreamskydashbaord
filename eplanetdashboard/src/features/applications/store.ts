@@ -7,9 +7,10 @@ import { applicationStageMeta } from '@/components/shared/status-badges'
 interface ApplicationsState {
   applications: Application[]
   moveApplication: (id: string, stage: ApplicationStage) => void
+  addApplication: (data: Omit<Application, 'id' | 'applicationRef' | 'submittedDate' | 'lastUpdate'>) => void
 }
 
-export const useApplicationsStore = create<ApplicationsState>((set) => ({
+export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
   applications: seedApplications,
   moveApplication: (id, stage) =>
     set((state) => {
@@ -25,4 +26,18 @@ export const useApplicationsStore = create<ApplicationsState>((set) => ({
       }
       return { applications: state.applications }
     }),
+  addApplication: (data) => {
+    const current = get().applications
+    const nextNum = current.length + 1
+    const todayStr = new Date().toISOString().split('T')[0]
+    const newApp: Application = {
+      ...data,
+      id: `app-${String(nextNum).padStart(3, '0')}`,
+      applicationRef: `EPC-APP-${String(nextNum).padStart(5, '0')}`,
+      submittedDate: todayStr,
+      lastUpdate: todayStr,
+    }
+    set({ applications: [...current, newApp] })
+    toast.success(`Application created for ${newApp.studentName}`)
+  },
 }))

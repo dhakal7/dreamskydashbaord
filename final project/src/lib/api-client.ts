@@ -1,5 +1,16 @@
-const BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL ?? 'http://localhost:5001/api';
-const DASHBOARD_URL = (import.meta as any).env?.VITE_DASHBOARD_URL ?? 'http://localhost:5173';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL || 'http://localhost:5173';
+export const LANDING_URL = import.meta.env.VITE_LANDING_URL || 'http://localhost:5174';
+
+/** Maps a normalised frontend role key to its dashboard path. */
+const ROLE_PATHS: Record<string, string> = {
+  super_admin:    '/dashboard/super-admin',
+  counselor:      '/dashboard/counselor',
+  front_desk:     '/dashboard/frontdesk',
+  teacher:        '/dashboard/teacher',
+  student:        '/dashboard/student',
+  referral_agent: '/dashboard/referral',
+};
 
 export const ACCESS_TOKEN_KEY = 'dreamsky-access-token';
 export const REFRESH_TOKEN_KEY = 'dreamsky-refresh-token';
@@ -101,7 +112,31 @@ export const api = {
   }
 };
 
+/** Redirect to root of dashboard (fallback). */
 export const redirectToDashboard = () => {
   window.location.href = DASHBOARD_URL;
 };
 
+/**
+ * Redirect to the role-specific dashboard page.
+ * @param role  Normalised frontend role key (e.g. 'super_admin', 'student')
+ */
+export const redirectToDashboardRole = (role: string) => {
+  const path = ROLE_PATHS[role] ?? '/';
+  const token = tokenStore.getAccess() || '';
+  const refresh = tokenStore.getRefresh() || '';
+  const userStr = localStorage.getItem(USER_KEY) || sessionStorage.getItem(USER_KEY) || '';
+
+  const params = new URLSearchParams();
+  if (token) params.set('accessToken', token);
+  if (refresh) params.set('refreshToken', refresh);
+  if (userStr) params.set('user', userStr);
+
+  const queryString = params.toString();
+  const separator = path.includes('?') ? '&' : '?';
+  const finalUrl = queryString
+    ? `${DASHBOARD_URL}${path}${separator}${queryString}`
+    : `${DASHBOARD_URL}${path}`;
+
+  window.location.href = finalUrl;
+};

@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/auth-store'
 import { toast } from 'sonner'
 import CommissionSetupPanel from './components/commission-setup-panel'
 import { RoleSettingsPanel } from './components/role-settings-panels'
+import { api, isMockMode } from '@/lib/api-client'
 
 /* ── Profile Section (Staff & Admin only) ────────────────────────────── */
 
@@ -60,17 +61,51 @@ function StaffProfileSection() {
 /* ── Password Section (all roles) ────────────────────────────────────── */
 
 function PasswordSection() {
+  const logout = useAuthStore((s) => s.logout)
   const [showPassword, setShowPassword] = useState(false)
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [loading, setLoading] = useState(false)
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    setCurrentPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
-    toast.success('Password updated successfully')
+    if (!currentPassword) {
+      toast.error('Current password is required')
+      return
+    }
+    if (newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters')
+      return
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match')
+      return
+    }
+
+    setLoading(true)
+    try {
+      if (!isMockMode()) {
+        await api.post('/auth/change-password', {
+          currentPassword: currentPassword.trim(),
+          newPassword: newPassword.trim(),
+        })
+
+        toast.success('Password updated successfully! Logging out to re-authenticate.')
+        setTimeout(() => {
+          logout()
+        }, 1500)
+      } else {
+        setCurrentPassword('')
+        setNewPassword('')
+        setConfirmPassword('')
+        toast.success('Password updated successfully (Mock Mode)')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to update password. Please check your current password.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -92,11 +127,13 @@ function PasswordSection() {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="Enter current password"
+                disabled={loading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                disabled={loading}
               >
                 {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
@@ -110,6 +147,7 @@ function PasswordSection() {
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="Enter new password"
+                disabled={loading}
               />
             </div>
             <div className="space-y-1.5">
@@ -119,15 +157,16 @@ function PasswordSection() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Confirm new password"
+                disabled={loading}
               />
             </div>
           </div>
           <div className="flex justify-end pt-1">
             <Button
               type="submit"
-              disabled={!currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
+              disabled={loading || !currentPassword || !newPassword || !confirmPassword || newPassword !== confirmPassword}
             >
-              Update Password
+              {loading ? 'Updating…' : 'Update Password'}
             </Button>
           </div>
         </form>

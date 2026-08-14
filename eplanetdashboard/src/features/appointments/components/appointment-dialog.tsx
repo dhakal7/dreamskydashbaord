@@ -22,6 +22,10 @@ import { appointmentStatusMeta } from '@/components/shared/status-badges'
 import { students, counselors } from '@/mock'
 import { useAppointmentsStore } from '../store'
 import type { Appointment } from '@/types'
+import { useAuthStore } from '@/store/auth-store'
+import { hasPermission } from '@/lib/rbac'
+import { isMockMode } from '@/lib/api-client'
+import { useCreateAppointment, useUpdateAppointment, useChangeAppointmentStatus } from '@/hooks/use-appointments'
 
 // ── Zod Schema ───────────────────────────────────────────────────────────────
 
@@ -75,9 +79,15 @@ export function AppointmentDialog({
   open,
   onOpenChange,
 }: AppointmentDialogProps) {
-  const addAppointment = useAppointmentsStore((s) => s.addAppointment)
-  const updateAppointment = useAppointmentsStore((s) => s.updateAppointment)
-  const cancelAppointment = useAppointmentsStore((s) => s.cancelAppointment)
+  const addAppointmentMock = useAppointmentsStore((s) => s.addAppointment)
+  const updateAppointmentMock = useAppointmentsStore((s) => s.updateAppointment)
+  const cancelAppointmentMock = useAppointmentsStore((s) => s.cancelAppointment)
+  const createAppointmentApi = useCreateAppointment()
+  const updateAppointmentApi = useUpdateAppointment()
+  const changeStatusApi = useChangeAppointmentStatus()
+
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const canManage = hasPermission(currentUser.role, 'appointments.manage')
 
   const isEditing = appointment !== null
 
@@ -128,17 +138,55 @@ export function AppointmentDialog({
   }, [open, appointment, defaultDate, reset])
 
   function onSubmit(data: FormData) {
-    const student = students.find((s) => s.id === data.studentId)!
+    const student = students.find((s) => s.id === data.studentId)
     const selectedCounselors = counselors.filter((c) => data.counselorIds.includes(c.id))
     const primaryCounselor = selectedCounselors[0]
     const start = `${data.date}T${data.startTime}:00`
     const end = `${data.date}T${data.endTime}:00`
     const type = data.type
+    const durationMin = Math.max(
+      1,
+      Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000)
+    )
 
+    if (!isMockMode()) {
+      if (isEditing) {
+        updateAppointmentApi.mutate(
+          {
+            id: appointment.id,
+            body: {
+              studentId: data.studentId,
+              counselorId: primaryCounselor?.id,
+              type: type.toUpperCase(),
+              datetime: start,
+              durationMin,
+              meetingMode: data.location.toUpperCase(),
+            },
+          },
+          { onSuccess: () => onOpenChange(false) }
+        )
+      } else {
+        createAppointmentApi.mutate(
+          {
+            studentId: data.studentId,
+            counselorId: primaryCounselor?.id,
+            type: type.toUpperCase(),
+            datetime: start,
+            durationMin,
+            meetingMode: data.location.toUpperCase(),
+          },
+          { onSuccess: () => onOpenChange(false) }
+        )
+      }
+      return
+    }
+
+    // Mock mode: update local Zustand store
+    const studentName = student?.name ?? 'Student'
     if (isEditing) {
-      updateAppointment(appointment.id, {
-        studentId: student.id,
-        studentName: student.name,
+      updateAppointmentMock(appointment.id, {
+        studentId: data.studentId,
+        studentName,
         counselorId: primaryCounselor?.id ?? '',
         counselorName: primaryCounselor?.name ?? '',
         counselorIds: selectedCounselors.map((c) => c.id),
@@ -147,12 +195,12 @@ export function AppointmentDialog({
         start,
         end,
         location: data.location,
-        title: `${type.replace('_', ' ')} — ${student.name}`,
+        title: `${type.replace('_', ' ')} — ${studentName}`,
       })
     } else {
-      addAppointment({
-        studentId: student.id,
-        studentName: student.name,
+      addAppointmentMock({
+        studentId: data.studentId,
+        studentName,
         counselorId: primaryCounselor?.id ?? '',
         counselorName: primaryCounselor?.name ?? '',
         counselorIds: selectedCounselors.map((c) => c.id),
@@ -162,7 +210,7 @@ export function AppointmentDialog({
         end,
         location: data.location,
         status: 'scheduled',
-        title: `${type.replace('_', ' ')} — ${student.name}`,
+        title: `${type.replace('_', ' ')} — ${studentName}`,
       })
     }
     onOpenChange(false)
@@ -170,8 +218,15 @@ export function AppointmentDialog({
 
   function handleCancel() {
     if (appointment) {
-      cancelAppointment(appointment.id)
-      onOpenChange(false)
+      if (!isMockMode()) {
+        changeStatusApi.mutate(
+          { id: appointment.id, status: 'CANCELLED' },
+          { onSuccess: () => onOpenChange(false) }
+        )
+      } else {
+        cancelAppointmentMock(appointment.id)
+        onOpenChange(false)
+      }
     }
   }
 
@@ -217,6 +272,7 @@ export function AppointmentDialog({
                     value={field.value}
                     onChange={field.onChange}
                     placeholder="Search student by name or ID"
+                    disabled={!canManage}
                   />
                 )}
               />
@@ -241,7 +297,8 @@ export function AppointmentDialog({
                         <PopoverTrigger asChild>
                           <button
                             type="button"
-                            className="flex h-10 w-full items-center justify-between rounded-md border border-border/70 bg-background px-3 text-left text-sm shadow-soft"
+                            disabled={!canManage}
+                            className="flex h-10 w-full items-center justify-between rounded-md border border-border/70 bg-background px-3 text-left text-sm shadow-soft disabled:opacity-75 disabled:cursor-not-allowed"
                           >
                             <span className="truncate text-foreground">
                               {selectedCounselors.length > 0
@@ -294,7 +351,7 @@ export function AppointmentDialog({
                   name="type"
                   control={control}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={!canManage}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -313,7 +370,7 @@ export function AppointmentDialog({
                   name="location"
                   control={control}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={!canManage}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -343,6 +400,7 @@ export function AppointmentDialog({
                 type="date"
                 className={`h-9 text-sm ${errors.date ? 'border-danger-500' : ''}`}
                 {...register('date')}
+                disabled={!canManage}
               />
               {errors.date && (
                 <p className="text-[11px] text-danger-600 flex items-center gap-1">
@@ -359,6 +417,7 @@ export function AppointmentDialog({
                   type="time"
                   className={`h-9 text-sm ${errors.startTime ? 'border-danger-500' : ''}`}
                   {...register('startTime')}
+                  disabled={!canManage}
                 />
                 {errors.startTime && (
                   <p className="text-[11px] text-danger-600 flex items-center gap-1">
@@ -372,6 +431,7 @@ export function AppointmentDialog({
                   type="time"
                   className={`h-9 text-sm ${errors.endTime ? 'border-danger-500' : ''}`}
                   {...register('endTime')}
+                  disabled={!canManage}
                 />
                 {errors.endTime && (
                   <p className="text-[11px] text-danger-600 flex items-center gap-1">
@@ -384,25 +444,33 @@ export function AppointmentDialog({
 
           {/* Footer */}
           <DialogFooter className="border-t border-border/60 bg-muted/30 px-6 py-4">
-            {isCancellable && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="mr-auto text-danger-600 border-danger-200 hover:bg-danger-50 hover:border-danger-400"
-                onClick={handleCancel}
-              >
-                <X className="size-3.5 mr-1" />
-                Cancel Appointment
+            {!canManage ? (
+              <Button type="button" size="sm" onClick={() => onOpenChange(false)}>
+                Close
               </Button>
+            ) : (
+              <>
+                {isCancellable && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mr-auto text-danger-600 border-danger-200 hover:bg-danger-50 hover:border-danger-400"
+                    onClick={handleCancel}
+                  >
+                    <X className="size-3.5 mr-1" />
+                    Cancel Appointment
+                  </Button>
+                )}
+                <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                  Discard
+                </Button>
+                <Button type="submit" size="sm" disabled={isSubmitting}>
+                  <Plus className="size-3.5 mr-1" />
+                  {isEditing ? 'Save Changes' : 'Schedule Appointment'}
+                </Button>
+              </>
             )}
-            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-              Discard
-            </Button>
-            <Button type="submit" size="sm" disabled={isSubmitting}>
-              <Plus className="size-3.5 mr-1" />
-              {isEditing ? 'Save Changes' : 'Schedule Appointment'}
-            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

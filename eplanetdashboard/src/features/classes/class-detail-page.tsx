@@ -24,6 +24,9 @@ import { useAttendanceStore } from './attendance-store'
 import { useClassMaterialsStore, type AddMaterialData } from './materials-store'
 import { StudentClassProfileDialog } from './components/student-class-profile-dialog'
 import type { StudentPresence } from './attendance-store'
+import { isMockMode } from '@/lib/api-client'
+import { useClass, useMarkAttendance, useClassContent } from '@/hooks/use-classes'
+import { classApi } from '@/api/class-api'
 import dayjs from 'dayjs'
 
 const tabs = [
@@ -36,11 +39,37 @@ export default function ClassDetailPage() {
   const { id } = useParams<{ id: string }>()
   const role = useAuthStore((s) => s.currentUser.role)
   const linkedId = useAuthStore((s) => s.currentUser.linkedId)
-  const submitAttendance = useAttendanceStore((s) => s.submitAttendance)
-  const addMaterial = useClassMaterialsStore((s) => s.addMaterial)
+  const submitAttendanceMock = useAttendanceStore((s) => s.submitAttendance)
+  const addMaterialMock = useClassMaterialsStore((s) => s.addMaterial)
+  const markAttendanceApi = useMarkAttendance()
+
+  // Live mode: fetch class from backend; mock mode: read from mock store
+  const { data: liveClass } = useClass(id!)
+  const { data: liveContent } = useClassContent(id!)
 
   const classList = getClassesForRole(role, linkedId)
-  const cls = classList.find((c) => c.id === id)
+  const mockCls = classList.find((c) => c.id === id)
+
+  // Build the class object: live takes priority, fall back to mock
+  const cls = !isMockMode() && liveClass
+    ? {
+        id: liveClass.id,
+        name: liveClass.name,
+        subject: (liveClass.subject ?? 'IELTS') as any,
+        teacherId: liveClass.teacherId,
+        teacherName: liveClass.teacher
+          ? `${liveClass.teacher.firstName} ${liveClass.teacher.lastName}`
+          : 'Teacher',
+        schedule: liveClass.schedule ?? 'TBD',
+        room: 'Room 101',
+        startDate: liveClass.startDate ?? liveClass.createdAt,
+        endDate: liveClass.endDate ?? liveClass.createdAt,
+        capacity: liveClass.capacity,
+        enrolledCount: liveClass.enrollments?.length ?? 0,
+        status: (liveClass.status?.toLowerCase() ?? 'ongoing') as any,
+        nextSessionAt: liveClass.startDate ?? liveClass.createdAt,
+      }
+    : mockCls
 
   const today = dayjs().format('YYYY-MM-DD')
   const [todayPresence, setTodayPresence] = useState<Record<string, boolean>>({})
@@ -68,15 +97,33 @@ export default function ClassDetailPage() {
   const handleSubmitAttendance = () => {
     if (!cls) return
 
-    const roster = getClassEnrollments(cls.id)
-    const presenceList: StudentPresence[] = roster.map((e) => ({
-      studentId: e.studentId,
-      present: todayPresence[e.studentId] ?? false,
-    }))
-
-    submitAttendance(cls.id, cls.name, today, presenceList)
-    setTodayPresence({})
-    toast.success('Attendance submitted successfully')
+    if (!isMockMode()) {
+      // Live mode: get roster from live class enrollments
+      const liveRoster = liveClass?.enrollments ?? []
+      const records = liveRoster.map((e) => ({
+        studentId: e.studentId,
+        status: (todayPresence[e.studentId] ?? false) ? 'PRESENT' : 'ABSENT',
+      }))
+      markAttendanceApi.mutate(
+        { classId: cls.id, body: { records, date: today } },
+        {
+          onSuccess: () => {
+            setTodayPresence({})
+            toast.success('Attendance submitted successfully')
+          },
+        }
+      )
+    } else {
+      // Mock mode: write to local store
+      const roster = getClassEnrollments(cls.id)
+      const presenceList: StudentPresence[] = roster.map((e) => ({
+        studentId: e.studentId,
+        present: todayPresence[e.studentId] ?? false,
+      }))
+      submitAttendanceMock(cls.id, cls.name, today, presenceList)
+      setTodayPresence({})
+      toast.success('Attendance submitted successfully')
+    }
   }
 
   const handleOpenStudentProfile = (studentId: string, studentName: string) => {
@@ -87,20 +134,36 @@ export default function ClassDetailPage() {
   const handleAddMaterial = async () => {
     if (!cls || !newMaterialTitle.trim()) return
     setIsUploadingMaterial(true)
-    await addMaterial(cls.id, {
-      title: newMaterialTitle.trim(),
-      type: newMaterialType as AddMaterialData['type'],
-      dueDate: newMaterialDueDate || undefined,
-      file: newMaterialFile || undefined,
-    })
-    setNewMaterialTitle('')
-    setNewMaterialType('material')
-    setNewMaterialDueDate('')
-    setNewMaterialFile(null)
-    setNewMaterialFileName('')
-    setIsUploadingMaterial(false)
-    setMaterialDialogOpen(false)
-    toast.success('Material added successfully')
+    try {
+      if (!isMockMode()) {
+        // Live mode: call backend API to create class content
+        await classApi.createContent(cls.id, {
+          title: newMaterialTitle.trim(),
+          type: newMaterialType.toUpperCase(),
+          description: newMaterialDueDate ? `Due: ${newMaterialDueDate}` : undefined,
+        })
+        toast.success('Material added successfully')
+      } else {
+        // Mock mode: write to local store
+        await addMaterialMock(cls.id, {
+          title: newMaterialTitle.trim(),
+          type: newMaterialType as AddMaterialData['type'],
+          dueDate: newMaterialDueDate || undefined,
+          file: newMaterialFile || undefined,
+        })
+        toast.success('Material added successfully')
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add material')
+    } finally {
+      setNewMaterialTitle('')
+      setNewMaterialType('material')
+      setNewMaterialDueDate('')
+      setNewMaterialFile(null)
+      setNewMaterialFileName('')
+      setIsUploadingMaterial(false)
+      setMaterialDialogOpen(false)
+    }
   }
 
   const handleMaterialFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,10 +192,33 @@ export default function ClassDetailPage() {
     )
   }
 
-  const roster = getClassEnrollments(cls.id)
-  const attendance = getClassAttendance(cls.id)
-  const materials = getClassMaterials(cls.id)
-  const enrollmentPct = cls.capacity > 0 ? Math.round((cls.enrolledCount / cls.capacity) * 100) : 0
+  const roster = !isMockMode() && liveClass?.enrollments
+    ? liveClass.enrollments.map((e) => ({
+        id: e.id,
+        classId: cls?.id ?? '',
+        studentId: e.studentId,
+        studentName: e.student ? `${e.student.firstName} ${e.student.lastName}` : 'Student',
+        enrolledAt: e.enrolledAt,
+        attendancePct: 0,
+        progress: 75,
+      }))
+    : getClassEnrollments(cls?.id ?? '')
+  const attendance = getClassAttendance(cls?.id ?? '')
+  const materials = !isMockMode() && liveContent
+    ? liveContent.map((c) => ({
+        id: c.id,
+        classId: c.classId,
+        title: c.title,
+        type: (c.type?.toLowerCase() as any) ?? 'material',
+        uploadedAt: c.createdAt,
+        dueDate: undefined,
+        fileUrl: c.url ?? undefined,
+        fileName: c.title,
+        fileSize: undefined,
+        fileType: undefined,
+      }))
+    : getClassMaterials(cls?.id ?? '')
+  const enrollmentPct = cls && cls.capacity > 0 ? Math.round((cls.enrolledCount / cls.capacity) * 100) : 0
 
   return (
     <>

@@ -1,4 +1,5 @@
 const prisma = require("../prisma");
+const { sendEventNotificationEmail } = require("./email.service");
 
 const EVERYONE_TOKEN = "EVERYONE";
 
@@ -39,20 +40,39 @@ async function generateEventReminders(tx, eventId, eventDatetime) {
     const scheduledFor = computeReminderDate(eventDatetime, offset);
     if (scheduledFor <= now) continue;
 
-    await tx.eventReminder.upsert({
-      where: { eventId_offset: { eventId, offset } },
-      create: {
+    await tx.eventReminder.create({
+      data: {
         eventId,
         offset,
         scheduledFor,
         status: "PENDING",
       },
-      update: {
-        scheduledFor,
-        status: "PENDING",
-        sentAt: null,
-      },
     });
+  }
+}
+
+/**
+ * Dispatch event announcement email to audience users
+ */
+async function dispatchEventEmails(event) {
+  try {
+    const users = await prisma.user.findMany({
+      where: { status: "ACTIVE" },
+      select: { email: true, firstName: true, lastName: true },
+    });
+    for (const user of users) {
+      if (!user.email) continue;
+      sendEventNotificationEmail({
+        to: user.email,
+        recipientName: `${user.firstName} ${user.lastName}`.trim(),
+        eventTitle: event.title,
+        datetime: event.datetime.toLocaleString(),
+        location: event.location,
+        description: event.description,
+      }).catch((err) => console.error("[event.service] Email notification failed:", err.message));
+    }
+  } catch (err) {
+    console.error("[event.service] Failed to fetch users for event notification:", err.message);
   }
 }
 
@@ -104,6 +124,10 @@ async function createEvent(data, currentUser) {
     where: { id: createdEvent.id },
     include: { branch: true, reminders: true },
   });
+
+  if (isSuperAdmin && result) {
+    dispatchEventEmails(result);
+  }
 
   return { event: result };
 }
@@ -273,6 +297,10 @@ async function approveEvent(id, currentUser) {
     where: { id: result.id },
     include: { branch: true, reminders: true },
   });
+
+  if (event) {
+    dispatchEventEmails(event);
+  }
 
   return { event };
 }

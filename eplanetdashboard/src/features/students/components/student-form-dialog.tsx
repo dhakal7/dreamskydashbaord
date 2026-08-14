@@ -16,8 +16,9 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 import { countries } from '@/mock'
+import { isMockMode } from '@/lib/api-client'
 import { useStudentsStore } from '../store'
-import { CreatableSelect } from '@/components/ui/creatable-select'
+import { useCreateStudent } from '@/hooks/use-students'
 
 // ── Zod schema ──────────────────────────────────────────────────────────────
 
@@ -48,8 +49,6 @@ const formSchema = z.object({
   nationality: z.string().min(1, 'Nationality is required'),
   passportNumber: z.string().min(1, 'Passport number is required'),
   address: z.string().min(1, 'Address is required'),
-  processingType: z.enum(['self', 'partner_consultancy']),
-  partnerConsultancyName: z.string().optional(),
   // Step 2: Academic Background
   academics: z.array(academicSchema).min(1, 'At least one academic record is required'),
   // Step 3: English Test
@@ -80,7 +79,7 @@ const steps = [
 
 // Fields to validate per step
 const stepFields: (keyof FormData)[][] = [
-  ['name', 'email', 'phone', 'dob', 'gender', 'nationality', 'passportNumber', 'address', 'processingType'],
+  ['name', 'email', 'phone', 'dob', 'gender', 'nationality', 'passportNumber', 'address'],
   ['academics'],
   ['englishTestType'],
   ['preferredCountries', 'preferredLevel', 'budgetUsd'],
@@ -94,14 +93,16 @@ interface StudentFormDialogProps {
 
 export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps) {
   const [currentStep, setCurrentStep] = useState(0)
-  const { addStudent, partnerConsultancies, addPartnerConsultancy } = useStudentsStore()
   const navigate = useNavigate()
+
+  const { addStudent } = useStudentsStore()
+  const createStudent = useCreateStudent()
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
       name: '', email: '', phone: '', dob: '', gender: 'male', nationality: 'Nepali',
-      passportNumber: '', address: '', processingType: 'self', partnerConsultancyName: '',
+      passportNumber: '', address: '',
       academics: [{ level: '', institution: '', board: '', gpaOrPercentage: '', passedYear: '' }],
       englishTestType: 'None', overallScore: undefined, listening: undefined,
       reading: undefined, writing: undefined, speaking: undefined, testDate: '',
@@ -131,53 +132,73 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
     setCurrentStep((s) => Math.max(s - 1, 0))
   }
 
-  function onSubmit(data: FormData) {
+  async function onSubmit(data: FormData) {
     const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]
-    let partnerName = data.partnerConsultancyName
-    if (data.processingType === 'partner_consultancy' && partnerName) {
-      addPartnerConsultancy(partnerName)
+
+    if (isMockMode()) {
+      // ── Mock path: write directly to Zustand store ──
+      const newStudent = addStudent({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        photoColor: pick(['#2563EB', '#7C3AED', '#0EA5E9', '#16A34A', '#D97706', '#DB2777']),
+        dob: data.dob,
+        gender: data.gender,
+        nationality: data.nationality,
+        passportNumber: data.passportNumber,
+        address: data.address,
+        // Always SELF on creation — can be changed from the student profile
+        processingType: 'self',
+        status: 'active',
+        counselorId: 'cnslr-1',
+        counselorName: 'Sristi Baral',
+        preferredCountries: data.preferredCountries,
+        preferredLevel: data.preferredLevel,
+        budgetUsd: data.budgetUsd,
+        englishTest: {
+          type: data.englishTestType,
+          overallScore: data.overallScore,
+          listening: data.listening,
+          reading: data.reading,
+          writing: data.writing,
+          speaking: data.speaking,
+          testDate: data.testDate,
+        },
+        academics: data.academics,
+        parents: data.parents,
+        tags: [],
+      })
+      onOpenChange(false)
+      setCurrentStep(0)
+      form.reset()
+      navigate(`/students/${newStudent.id}`)
+      return
     }
 
-    const newStudent = addStudent({
-      name: data.name,
+    // ── Live path: call backend API ──
+    const nameParts = data.name.trim().split(' ')
+    const firstName = nameParts[0]
+    const lastName = nameParts.slice(1).join(' ') || firstName
+
+    await createStudent.mutateAsync({
+      firstName,
+      lastName,
       email: data.email,
-      phone: data.phone,
-      photoColor: pick(['#2563EB', '#7C3AED', '#0EA5E9', '#16A34A', '#D97706', '#DB2777']),
-      dob: data.dob,
-      gender: data.gender,
-      nationality: data.nationality,
-      passportNumber: data.passportNumber,
-      address: data.address,
-      processingType: data.processingType,
-      partnerConsultancyName: data.processingType === 'partner_consultancy' ? partnerName : undefined,
-      status: 'active',
-      counselorId: 'cnslr-1',
-      counselorName: 'Sristi Baral',
-      preferredCountries: data.preferredCountries,
-      preferredLevel: data.preferredLevel,
-      budgetUsd: data.budgetUsd,
-      englishTest: {
-        type: data.englishTestType,
-        overallScore: data.overallScore,
-        listening: data.listening,
-        reading: data.reading,
-        writing: data.writing,
-        speaking: data.speaking,
-        testDate: data.testDate,
-      },
-      academics: data.academics,
-      parents: data.parents,
-      tags: [],
+      phone: data.phone || undefined,
+      nationality: data.nationality || undefined,
+      // Always SELF on creation — counselor sets B2B from the student profile later
+      processingType: 'SELF',
+      academicBackground: { records: data.academics },
     })
+
     onOpenChange(false)
     setCurrentStep(0)
     form.reset()
-    navigate(`/students/${newStudent.id}`)
+    navigate('/students')
   }
 
   const watchTestType = form.watch('englishTestType')
   const watchCountries = form.watch('preferredCountries')
-  const watchProcessingType = form.watch('processingType')
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -267,44 +288,6 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
                   <Input {...form.register('address')} placeholder="Baneshwor, Kathmandu" />
                 </FieldWrap>
 
-                <FieldWrap label="Processing Path / Source">
-                  <Controller control={form.control} name="processingType" render={({ field }) => (
-                    <Select value={field.value} onValueChange={(val) => {
-                      field.onChange(val)
-                      if (val === 'self') {
-                        form.setValue('partnerConsultancyName', '')
-                      }
-                    }}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="self">Self (Dream Sky Internal)</SelectItem>
-                        <SelectItem value="partner_consultancy">Other Partner Consultancy (B2B)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )} />
-                </FieldWrap>
-
-                {watchProcessingType === 'partner_consultancy' && (
-                  <FieldWrap label="Partner Consultancy Name" error={errors.partnerConsultancyName?.message}>
-                    <Controller
-                      control={form.control}
-                      name="partnerConsultancyName"
-                      render={({ field }) => (
-                        <CreatableSelect
-                          options={partnerConsultancies.map((p) => ({ label: p.name, value: p.name }))}
-                          value={field.value}
-                          onChange={(val, isNew) => {
-                            field.onChange(val)
-                            if (isNew) {
-                              addPartnerConsultancy(val)
-                            }
-                          }}
-                          placeholder="Select or type new consultancy..."
-                        />
-                      )}
-                    />
-                  </FieldWrap>
-                )}
               </div>
             </div>
           )}

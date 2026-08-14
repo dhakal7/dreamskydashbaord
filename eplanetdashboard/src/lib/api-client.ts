@@ -38,9 +38,9 @@ interface DreamSkyEnvelope<T> {
 
 // ─── Token storage keys ───────────────────────────────────────────────────────
 
-const ACCESS_TOKEN_KEY = 'eplanet-access-token'
-const REFRESH_TOKEN_KEY = 'eplanet-refresh-token'
-const REMEMBER_KEY = 'eplanet-remember-me'
+const ACCESS_TOKEN_KEY = 'dreamsky-access-token'
+const REFRESH_TOKEN_KEY = 'dreamsky-refresh-token'
+const REMEMBER_KEY = 'dreamsky-remember-me'
 
 /**
  * Token storage honouring the login "remember me" preference:

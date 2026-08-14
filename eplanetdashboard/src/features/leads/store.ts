@@ -10,6 +10,8 @@ interface LeadsState {
   addLead: (data: Omit<Lead, 'id' | 'createdAt' | 'lastContact' | 'nextFollowUp' | 'value'>) => Lead
   moveLead: (id: string, stage: LeadStage) => void
   updateLead: (id: string, data: Partial<Lead>) => void
+  /** Permanently remove a lead from the list — used after converting a lead to a student. */
+  removeLead: (id: string) => void
 }
 
 export const useLeadsStore = create<LeadsState>()(
@@ -57,9 +59,14 @@ export const useLeadsStore = create<LeadsState>()(
           toast.success(`Lead details updated successfully`)
           return { leads: updated }
         }),
+
+      removeLead: (id) =>
+        set((state) => ({
+          leads: state.leads.filter((l) => l.id !== id),
+        })),
     }),
     {
-      name: 'eplanet-leads-store',
+      name: 'dreamsky-leads-store',
     }
   )
 )

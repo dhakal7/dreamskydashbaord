@@ -335,7 +335,7 @@ function StaffReportsView() {
       { metric: 'Applications', value: stats[2].value },
       { metric: 'Visa Processing', value: stats[3].value },
     ]
-    exportCsv('eplanet-reports.csv', rows)
+    exportCsv('dreamsky-reports.csv', rows)
     toast.success('Report downloaded')
   }
 

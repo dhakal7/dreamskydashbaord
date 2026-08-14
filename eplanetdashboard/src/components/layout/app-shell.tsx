@@ -6,8 +6,26 @@ import { Topbar } from './topbar'
 import { MobileNav } from './mobile-nav'
 import { CommandPalette } from './command-palette'
 import { PageLoader } from '@/components/shared/page-loader'
+import { useAuthStore } from '@/store/auth-store'
+import { ForceChangePassword } from '@/components/auth/force-change-password'
 
 export function AppShell() {
+  const currentUser = useAuthStore((s) => s.currentUser)
+
+  if (currentUser?.mustChangePassword) {
+    return (
+      <>
+        <ForceChangePassword />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            className: 'rounded-lg border border-border bg-card text-card-foreground shadow-elevated text-sm',
+          }}
+        />
+      </>
+    )
+  }
+
   return (
     <div className="flex h-svh w-full overflow-hidden bg-background text-foreground">
       <div className="hidden lg:flex">
