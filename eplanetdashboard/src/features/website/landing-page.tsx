@@ -10,7 +10,7 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4 lg:px-8">
           <div className="flex items-center gap-2 font-semibold">
             <GraduationCap className="size-4 text-primary" />
-            E-Planet Consultancy
+            Dream Sky Consultancy
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" asChild>

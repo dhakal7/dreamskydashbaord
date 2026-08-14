@@ -1,0 +1,22 @@
+# Node dependencies & logs
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Legacy and local backup directories / temporary sheets
+Dreamsky/
+eplanetbackend/
+legacy_html/
+*.xlsx
+
+# IDE / AI tool configs
+.vscode/
+.idea/
+.claude/
+.windsurf/
+.agents/

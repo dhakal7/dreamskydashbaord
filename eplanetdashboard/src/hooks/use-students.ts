@@ -52,6 +52,11 @@ export function useStudents(params: StudentsListParams = {}) {
             isActive: s.status !== 'inactive' && s.status !== 'dropped',
             createdAt: s.createdAt,
             updatedAt: s.createdAt,
+            processingType: (s.processingType === 'partner_consultancy' ? 'PARTNER_CONSULTANCY' : 'SELF') as 'SELF' | 'PARTNER_CONSULTANCY',
+            partnerConsultancyId: s.partnerConsultancyId ?? null,
+            partnerConsultancy: s.partnerConsultancyName
+              ? { id: s.partnerConsultancyId ?? '', name: s.partnerConsultancyName }
+              : null,
           })),
           pagination: {
             page: 1,
@@ -95,6 +100,11 @@ export function useStudent(id: string) {
             isActive: s.status !== 'inactive' && s.status !== 'dropped',
             createdAt: s.createdAt,
             updatedAt: s.createdAt,
+            processingType: (s.processingType === 'partner_consultancy' ? 'PARTNER_CONSULTANCY' : 'SELF') as 'SELF' | 'PARTNER_CONSULTANCY',
+            partnerConsultancyId: s.partnerConsultancyId ?? null,
+            partnerConsultancy: s.partnerConsultancyName
+              ? { id: s.partnerConsultancyId ?? '', name: s.partnerConsultancyName }
+              : null,
           }
         })()
       : undefined,
@@ -135,7 +145,31 @@ export function useCreateStudent() {
   })
 }
 
+// ─── Update mutation ──────────────────────────────────────────────────────────
+
+export function useUpdateStudent() {
+  const queryClient = useQueryClient()
+  const mockUpdate = useStudentsStore((s) => s.updateStudent)
+
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: import('@/api/student-api').UpdateStudentBody }) => {
+      if (isMockMode()) {
+        mockUpdate(id, body as never)
+        return Promise.resolve(null as never)
+      }
+      return studentApi.update(id, body)
+    },
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: studentKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
+      toast.success('Student updated')
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
 // ─── Change pipeline stage mutation ───────────────────────────────────────────
+
 
 export function useChangePipelineStage() {
   const queryClient = useQueryClient()

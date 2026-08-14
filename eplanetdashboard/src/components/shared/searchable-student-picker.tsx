@@ -20,6 +20,7 @@ interface SearchableStudentPickerProps {
   emptyMessage?: string
   showDropdown?: boolean
   autoSelectOnSearch?: boolean
+  disabled?: boolean
 }
 
 export function SearchableStudentPicker({
@@ -29,6 +30,7 @@ export function SearchableStudentPicker({
   placeholder = 'Select student...',
   label,
   emptyMessage = 'No students found',
+  disabled = false,
 }: SearchableStudentPickerProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -55,6 +57,7 @@ export function SearchableStudentPicker({
             role="combobox"
             aria-expanded={open}
             className="h-10 w-full justify-between px-3 font-normal shadow-soft bg-background hover:bg-accent/40"
+            disabled={disabled}
           >
             {selectedStudent ? (
               <span className="truncate">

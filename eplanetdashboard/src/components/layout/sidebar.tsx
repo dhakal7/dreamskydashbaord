@@ -19,6 +19,11 @@ export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?:
   const navItems = getNavItems(role)
   const isCollapsed = collapsed && !mobile
 
+  async function handleLogout() {
+    await logout()
+    // logout() redirects to landing page via window.location.href
+  }
+
   return (
     <TooltipProvider delayDuration={200}>
       <aside
@@ -31,7 +36,7 @@ export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?:
           <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white shadow-soft ring-1 ring-border/70">
             <img
               src="/WhatsApp Image 2026-07-23 at 21.17.04.jpeg"
-              alt="E-Planet logo"
+              alt="Dream Sky logo"
               className="h-full w-full object-cover"
             />
           </div>
@@ -56,7 +61,7 @@ export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?:
             <QuickNotificationComposer />
           )}
           <button
-            onClick={logout}
+            onClick={handleLogout}
             className={cn(
               'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-sidebar-foreground/80 transition-colors hover:bg-danger-50 hover:text-danger-600 dark:hover:bg-danger-500/10',
               isCollapsed && 'justify-center'

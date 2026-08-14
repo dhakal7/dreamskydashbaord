@@ -8,11 +8,21 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { CreatableSelect } from '@/components/ui/creatable-select'
+import { isMockMode } from '@/lib/api-client'
 import { useStudentsStore } from '../../store'
+import { useUpdateStudent } from '@/hooks/use-students'
+import { usePartnerConsultancies, useCreateOrFindPartnerConsultancy } from '@/hooks/use-partner-consultancies'
 import type { Student } from '@/types'
 
 export function PersonalTab({ student }: { student: Student }) {
-  const { updateStudent, partnerConsultancies, addPartnerConsultancy } = useStudentsStore()
+  const { updateStudent, addPartnerConsultancy } = useStudentsStore()
+  const updateStudentLive = useUpdateStudent()
+  const createOrFindPartner = useCreateOrFindPartnerConsultancy()
+
+  // Partner list: live API or mock store
+  const { data: livePartners = [] } = usePartnerConsultancies()
+  const mockPartners = useStudentsStore((s) => s.partnerConsultancies)
+  const partnerConsultancies = isMockMode() ? mockPartners : livePartners
 
   const [isEditingProcessing, setIsEditingProcessing] = useState(false)
   const [processingType, setProcessingType] = useState<'self' | 'partner_consultancy'>(
@@ -31,19 +41,30 @@ export function PersonalTab({ student }: { student: Student }) {
     { label: 'Address', value: student.address },
   ]
 
-  const handleSaveProcessing = () => {
-    let finalPartnerName = partnerName
-    if (processingType === 'partner_consultancy' && partnerName.trim()) {
-      addPartnerConsultancy(partnerName.trim())
-      finalPartnerName = partnerName.trim()
+  const handleSaveProcessing = async () => {
+    const finalPartnerName =
+      processingType === 'partner_consultancy' ? partnerName.trim() : ''
+
+    if (isMockMode()) {
+      // ── Mock path ──
+      if (finalPartnerName) addPartnerConsultancy(finalPartnerName)
+      updateStudent(student.id, {
+        processingType,
+        partnerConsultancyName: processingType === 'partner_consultancy' ? finalPartnerName : undefined,
+      })
     } else {
-      finalPartnerName = ''
+      // ── Live path ──
+      if (finalPartnerName) createOrFindPartner.mutate(finalPartnerName)
+      await updateStudentLive.mutateAsync({
+        id: student.id,
+        body: {
+          processingType: processingType === 'partner_consultancy' ? 'PARTNER_CONSULTANCY' : 'SELF',
+          partnerConsultancyName:
+            processingType === 'partner_consultancy' && finalPartnerName ? finalPartnerName : undefined,
+        },
+      })
     }
 
-    updateStudent(student.id, {
-      processingType,
-      partnerConsultancyName: processingType === 'partner_consultancy' ? finalPartnerName : undefined,
-    })
     setIsEditingProcessing(false)
   }
 

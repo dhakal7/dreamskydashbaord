@@ -91,7 +91,7 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. vaibhav.joshi@eplanet.com"
+              placeholder="e.g. vaibhav.joshi@dreamsky.com"
             />
           </div>
 

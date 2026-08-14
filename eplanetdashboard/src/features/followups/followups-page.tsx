@@ -13,7 +13,8 @@ import type { ColumnDef } from '@tanstack/react-table'
 import type { FollowUp } from '@/types'
 import { useAuthStore } from '@/store/auth-store'
 import { visibleFollowUps } from '@/lib/data-visibility'
-
+import { isMockMode } from '@/lib/api-client'
+import { useFollowUps } from '@/hooks/use-followups'
 import { useFollowUpsStore } from './store'
 import { FollowUpFiltersBar, defaultFollowUpFilters, type FollowUpFilters } from './components/followup-filters'
 import { FollowUpCreateDialog } from './components/followup-create-dialog'
@@ -33,8 +34,30 @@ const channelIcons = {
 
 export default function FollowUpsPage() {
   const location = useLocation()
-  const followUps = useFollowUpsStore((s) => s.followUps)
+  const mockFollowUps = useFollowUpsStore((s) => s.followUps)
   const currentUser = useAuthStore((s) => s.currentUser)
+
+  // Live mode: scope to counselor's own follow-ups
+  const authorId = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
+  const { data: apiData } = useFollowUps({ authorId, limit: 200 })
+
+  const followUps: FollowUp[] = !isMockMode() && apiData?.followUps && apiData.followUps.length > 0
+    ? apiData.followUps.map((f) => ({
+        id: f.id,
+        studentId: f.studentId,
+        studentName: f.student ? `${f.student.firstName} ${f.student.lastName}` : 'Student',
+        counselorId: f.authorId ?? '',
+        counselorName: f.author ? `${f.author.firstName} ${f.author.lastName}` : 'Counselor',
+        reminder: f.content,
+        priority: 'medium' as FollowUp['priority'],
+        status: f.nextFollowUpAt && new Date(f.nextFollowUpAt) > new Date() ? 'pending' : 'completed' as FollowUp['status'],
+        date: f.nextFollowUpAt ? f.nextFollowUpAt.slice(0, 10) : f.createdAt.slice(0, 10),
+        time: f.nextFollowUpAt ? f.nextFollowUpAt.slice(11, 16) : '09:00',
+        channel: (f.channel?.toLowerCase() as FollowUp['channel']) ?? 'call',
+        notes: '',
+      }))
+    : mockFollowUps
+
   const [view, setView] = useState<ViewMode>('calendar')
   const [filters, setFilters] = useState<FollowUpFilters>(defaultFollowUpFilters)
   const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUp | null>(null)

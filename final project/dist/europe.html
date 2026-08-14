@@ -1352,7 +1352,14 @@
                         <li class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-md bg-emerald-900/40 border border-emerald-700/40 flex items-center justify-center text-emerald-400 text-[10px] shrink-0"><i class="fab fa-whatsapp"></i></div><a href="https://wa.me/9779768987156?text=Hello%20Dream%20Sky,%20I%20am%20interested%20in%20studying%20abroad." target="_blank" rel="noopener noreferrer" class="hover:text-emerald-400 transition">+977 9768987156 (Chat on WhatsApp)</a></li>
                         <li class="flex items-center gap-2.5"><div class="w-6 h-6 rounded-md bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-blue-400 text-[10px] shrink-0"><i class="fas fa-envelope"></i></div><a href="mailto:info@dreamsky.edu.np" class="hover:text-white transition" target="_blank" rel="noopener noreferrer">info@dreamsky.edu.np</a></li>
                         <li class="flex items-center gap-2.5 text-[11px] text-gray-400 pt-1"><i class="far fa-clock text-amber-400 text-xs"></i><span>Sun – Fri: 7:00 AM – 6:00 PM</span></li>
-                    </ul>
+                    
+                        <!-- Embedded Map in Footer for all pages -->
+                        <li class="pt-2">
+                            <div class="w-full h-32 rounded-xl overflow-hidden border border-white/10 relative">
+                                <iframe src="https://maps.google.com/maps?q=2nd%20Floor%2C%20KL%20Tower%2C%20Boudhanath%20Sadak%2C%20Kathmandu%2044600&t=&z=17&ie=UTF8&iwloc=&output=embed" class="w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="DreamSky Location Map"></iframe>
+                            </div>
+                        </li>
+</ul>
                 </div>
             </div>
             <div class="pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-400">
@@ -1578,6 +1585,10 @@
     <!-- Auth Modal Scripts -->
     <script>
         function openAuthModal(tab = 'login') {
+            if (tab === 'login') {
+                window.location.href = 'index.html?login=true';
+                return;
+            }
             const modal = document.getElementById('authModal');
             const card = document.getElementById('authModalCard');
             if (!modal || !card) return;

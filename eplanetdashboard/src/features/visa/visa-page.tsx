@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PlaneTakeoff, CheckCircle2, Clock, XCircle, FileStack } from 'lucide-react'
+import { PlaneTakeoff, CheckCircle2, Clock, XCircle, FileStack, Plus } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
+import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { PersonAvatar } from '@/components/ui/avatar'
@@ -22,6 +23,8 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { countries } from '@/mock'
 import type { VisaCase, VisaStatus } from '@/types'
 import { useVisaCases } from '@/hooks/use-visa'
+import { hasPermission } from '@/lib/rbac'
+import { VisaFormDialog } from './components/visa-form-dialog'
 
 
 
@@ -52,6 +55,8 @@ export default function VisaPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<VisaStatus | 'all'>('all')
   const [countryFilter, setCountryFilter] = useState('all')
+  const canManage = hasPermission(currentUser.role, 'visa.manage')
+  const [formOpen, setFormOpen] = useState(false)
 
   const visible = visibleVisaCases(currentUser, visaCases, students)
 
@@ -82,6 +87,13 @@ export default function VisaPage() {
       <PageHeader
         title="Visa Processing"
         description="Track visa applications from medical exams through embassy decision."
+        actions={
+          canManage && (
+            <Button size="sm" onClick={() => setFormOpen(true)}>
+              <Plus className="mr-1 size-4" /> Start Visa Process
+            </Button>
+          )
+        }
       />
 
       {/* KPI Stats */}
@@ -215,6 +227,8 @@ export default function VisaPage() {
           })}
         </div>
       )}
+
+      <VisaFormDialog open={formOpen} onOpenChange={setFormOpen} />
     </div>
   )
 }

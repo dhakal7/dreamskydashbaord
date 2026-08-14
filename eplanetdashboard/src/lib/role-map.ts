@@ -20,6 +20,7 @@ import type { Role } from '@/types'
 export type BackendRole =
   | 'SUPER_ADMIN'
   | 'BRANCH_ADMIN'
+  | 'ADMIN'
   | 'COUNSELOR'
   | 'FRONT_DESK'
   | 'TEACHER'
@@ -29,6 +30,7 @@ export type BackendRole =
 const backendToFrontend: Record<BackendRole, Role> = {
   SUPER_ADMIN: 'super_admin',
   BRANCH_ADMIN: 'super_admin', // Open Decision #1 — map to dedicated role once dashboard exists
+  ADMIN: 'super_admin',
   COUNSELOR: 'counselor',
   FRONT_DESK: 'front_desk',
   TEACHER: 'teacher',
@@ -46,8 +48,22 @@ const frontendToBackend: Record<Role, BackendRole> = {
 }
 
 /** Map a backend Role enum string to the frontend Role type. */
-export function toFrontendRole(backendRole: BackendRole): Role {
-  return backendToFrontend[backendRole] ?? 'student'
+export function toFrontendRole(backendRole: string | BackendRole | null | undefined): Role {
+  const normalized = String(backendRole ?? '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '_')
+
+  if (normalized in backendToFrontend) {
+    return backendToFrontend[normalized as BackendRole]
+  }
+
+  if (normalized === 'ADMIN') {
+    return 'super_admin'
+  }
+
+  console.warn(`[role-map] Unrecognized backend role "${backendRole}". Defaulting to super_admin.`)
+  return 'super_admin'
 }
 
 /** Map a frontend Role type to the backend Role enum string. */

@@ -946,9 +946,12 @@
         </div>
     </div>
 
-    <!-- Auth Modal Scripts -->
     <script>
         function openAuthModal(tab = 'login') {
+            if (tab === 'login') {
+                window.location.href = 'index.html?login=true';
+                return;
+            }
             const modal = document.getElementById('authModal');
             const card = document.getElementById('authModalCard');
             if (!modal || !card) return;

@@ -69,7 +69,7 @@ function generatePlaceholderEmail(fullName, phone) {
         .replace(/\.+/g, ".");
     const cleanPh = phone ? cleanPhone(phone) : null;
     const suffix = cleanPh || Math.random().toString(36).substring(2, 8);
-    return `${cleanName}.${suffix}@no-email.eplanet.com`;
+    return `${cleanName}.${suffix}@no-email.dreamsky.com`;
 }
 
 // Helper: Standard clean email checker

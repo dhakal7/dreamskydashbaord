@@ -18,6 +18,53 @@ import { useStudentsStore } from '@/features/students/store'
 import { api, isMockMode, tokenStore } from '@/lib/api-client'
 import { toFrontendRole, type BackendRole } from '@/lib/role-map'
 
+// Synchronously parse and store query params for cross-origin SSO on app boot before React renders
+if (typeof window !== 'undefined') {
+  const params = new URLSearchParams(window.location.search)
+  const token = params.get('accessToken')
+  const refresh = params.get('refreshToken')
+  const userStr = params.get('user')
+
+  if (token) {
+    localStorage.setItem('dreamsky-remember-me', 'true')
+    localStorage.setItem('dreamsky-access-token', token)
+
+    if (refresh) {
+      localStorage.setItem('dreamsky-refresh-token', refresh)
+    }
+
+    if (userStr) {
+      localStorage.setItem('dreamsky-user', userStr)
+    }
+
+    localStorage.setItem('dreamsky-authenticated', 'true')
+
+    // Normalize role as fallback
+    try {
+      const parsedUser = JSON.parse(userStr || '{}')
+      const rawRole = (parsedUser.role || '').toUpperCase()
+      let feRole = 'student'
+      if (rawRole.includes('ADMIN')) feRole = 'super_admin'
+      else if (rawRole.includes('COUNSELOR')) feRole = 'counselor'
+      else if (rawRole.includes('TEACHER')) feRole = 'teacher'
+      else if (rawRole.includes('FRONT_DESK')) feRole = 'front_desk'
+      else if (rawRole.includes('REFERRAL')) feRole = 'referral_agent'
+      else feRole = rawRole.toLowerCase()
+
+      localStorage.setItem('dreamsky-demo-role', feRole)
+    } catch {
+      // Safe to ignore
+    }
+
+    // Clean URL query parameters synchronously
+    const cleanUrl = window.location.pathname + window.location.hash
+    window.history.replaceState({}, document.title, cleanUrl)
+  }
+}
+
+/** URL of the public landing page — users are sent here after logout. */
+const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'http://localhost:5174'
+
 // ─── Backend response shape (from sanitizeUser) ───────────────────────────────
 
 interface BackendUser {
@@ -57,6 +104,8 @@ function toCurrentUser(backendUser: BackendUser): CurrentUser {
   const linkedId =
     frontendRole === 'referral_agent' && backendUser.referralAgentProfileId
       ? backendUser.referralAgentProfileId
+      : frontendRole === 'student' && backendUser.studentId
+      ? backendUser.studentId
       : backendUser.id
 
   return {
@@ -68,6 +117,7 @@ function toCurrentUser(backendUser: BackendUser): CurrentUser {
     branchId: backendUser.branchId ?? '',
     branchName: backendUser.branchName ?? '',
     linkedId,
+    mustChangePassword: backendUser.mustChangePassword,
   }
 }
 
@@ -88,7 +138,7 @@ interface AuthState {
 
 // ─── Mock-mode helpers (unchanged from original) ──────────────────────────────
 
-const demoPassword = 'eplanet-demo'
+const demoPassword = 'dreamsky-demo'
 
 // Mock mode keeps its "authenticated" flag + demo role in the storage that
 // matches the login remember-me preference (localStorage = remember, sessionStorage = no).
@@ -101,7 +151,7 @@ function getStudentLoginUser(email: string, password: string): CurrentUser | nul
     .getState()
     .students.find((s) => s.email.toLowerCase() === email.trim().toLowerCase())
   if (!student) return null
-  const expected = student.portalPassword ?? `Eplanet@${(student.studentId.replace(/\D/g, '').slice(-4) || '0000')}`
+  const expected = student.portalPassword ?? `DreamSky@${(student.studentId.replace(/\D/g, '').slice(-4) || '0000')}`
   if (password !== expected) return null
   return {
     id: `student-auth-${student.id}`,
@@ -112,14 +162,18 @@ function getStudentLoginUser(email: string, password: string): CurrentUser | nul
     branchId: demoUsers.super_admin.branchId,
     branchName: demoUsers.super_admin.branchName,
     linkedId: student.id,
+    mustChangePassword: true,
   }
 }
 
 function getInitialRole(): Role {
   if (typeof window === 'undefined') return 'super_admin'
   const stored =
-    (window.sessionStorage.getItem('eplanet-demo-role') as Role | null) ??
-    (window.localStorage.getItem('eplanet-demo-role') as Role | null)
+    (window.sessionStorage.getItem('dreamsky-demo-role') as Role | null) ??
+    (window.localStorage.getItem('dreamsky-demo-role') as Role | null)
+  // IMPORTANT: return the stored role exactly as-is; never silently promote or
+  // demote a role. Default to super_admin only when nothing is stored so the
+  // admin dashboard is accessible out-of-the-box in mock/demo mode.
   return stored && demoUsers[stored] ? stored : 'super_admin'
 }
 
@@ -128,8 +182,8 @@ function getInitialUser(): CurrentUser {
   const role = getInitialRole()
 
   const storedUserStr =
-    window.sessionStorage.getItem('eplanet-user') ||
-    window.localStorage.getItem('eplanet-user') ||
+    window.sessionStorage.getItem('dreamsky-user') ||
+    window.localStorage.getItem('dreamsky-user') ||
     window.sessionStorage.getItem('dreamsky-user') ||
     window.localStorage.getItem('dreamsky-user')
 
@@ -147,7 +201,7 @@ function getInitialUser(): CurrentUser {
             status: parsed.status || 'ACTIVE',
             branchId: parsed.branchId || null,
             branchName: parsed.branchName || null,
-            mustChangePassword: false,
+            mustChangePassword: parsed.mustChangePassword ?? false,
             studentId: parsed.studentId || null,
             referralAgentProfileId: parsed.referralAgentProfileId || null,
           })
@@ -174,10 +228,14 @@ function getInitialUser(): CurrentUser {
 
 function getInitialAuthenticated(): boolean {
   if (typeof window === 'undefined') return false
+  if (isMockMode()) {
+    const isLoggedOut = window.localStorage.getItem('dreamsky-logged-out') === 'true' || window.sessionStorage.getItem('dreamsky-logged-out') === 'true'
+    return !isLoggedOut
+  }
   const hasToken = !!tokenStore.getAccess()
   const hasAuthFlag =
-    window.sessionStorage.getItem('eplanet-authenticated') === 'true' ||
-    window.localStorage.getItem('eplanet-authenticated') === 'true'
+    window.sessionStorage.getItem('dreamsky-authenticated') === 'true' ||
+    window.localStorage.getItem('dreamsky-authenticated') === 'true'
   return hasToken || hasAuthFlag
 }
 
@@ -198,17 +256,19 @@ export const useAuthStore = create<AuthState>((set) => ({
         (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
       )
       if (demoUser && password === demoPassword) {
-        mockStorage().setItem('eplanet-authenticated', 'true')
-        mockStorage().setItem('eplanet-demo-role', demoUser.role)
-        mockStorage().setItem('eplanet-user', JSON.stringify(demoUser))
+        mockStorage().removeItem('dreamsky-logged-out')
+        mockStorage().setItem('dreamsky-authenticated', 'true')
+        mockStorage().setItem('dreamsky-demo-role', demoUser.role)
+        mockStorage().setItem('dreamsky-user', JSON.stringify(demoUser))
         set({ currentUser: demoUser, isAuthenticated: true })
         return true
       }
       const studentUser = getStudentLoginUser(email, password)
       if (studentUser) {
-        mockStorage().setItem('eplanet-authenticated', 'true')
-        mockStorage().setItem('eplanet-demo-role', 'student')
-        mockStorage().setItem('eplanet-user', JSON.stringify(studentUser))
+        mockStorage().removeItem('dreamsky-logged-out')
+        mockStorage().setItem('dreamsky-authenticated', 'true')
+        mockStorage().setItem('dreamsky-demo-role', 'student')
+        mockStorage().setItem('dreamsky-user', JSON.stringify(studentUser))
         set({ currentUser: studentUser, isAuthenticated: true })
         return true
       }
@@ -224,8 +284,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       })
       tokenStore.setAccess(accessToken)
       tokenStore.setRefresh(refreshToken)
-      localStorage.setItem('eplanet-authenticated', 'true')
-      localStorage.setItem('eplanet-user', JSON.stringify(user))
+      localStorage.setItem('dreamsky-authenticated', 'true')
+      localStorage.setItem('dreamsky-user', JSON.stringify(user))
       const currentUser = toCurrentUser(user)
       set({ currentUser, isAuthenticated: true, isLoading: false })
       return true
@@ -248,23 +308,34 @@ export const useAuthStore = create<AuthState>((set) => ({
       }
       tokenStore.clearAll()
     } else {
-      window.localStorage.removeItem('eplanet-authenticated')
-      window.sessionStorage.removeItem('eplanet-authenticated')
-      window.localStorage.removeItem('eplanet-demo-role')
-      window.sessionStorage.removeItem('eplanet-demo-role')
-      window.localStorage.removeItem('eplanet-user')
-      window.sessionStorage.removeItem('eplanet-user')
+      // Clear all mock-mode auth flags so landing page login is required again
+      window.localStorage.setItem('dreamsky-logged-out', 'true')
+      window.sessionStorage.setItem('dreamsky-logged-out', 'true')
+      window.localStorage.removeItem('dreamsky-authenticated')
+      window.sessionStorage.removeItem('dreamsky-authenticated')
+      window.localStorage.removeItem('dreamsky-demo-role')
+      window.sessionStorage.removeItem('dreamsky-demo-role')
       window.localStorage.removeItem('dreamsky-user')
       window.sessionStorage.removeItem('dreamsky-user')
+      // Also clear real-mode token keys so landing page doesn't auto-restore
+      window.localStorage.removeItem('dreamsky-access-token')
+      window.localStorage.removeItem('dreamsky-refresh-token')
+      window.sessionStorage.removeItem('dreamsky-access-token')
+      window.sessionStorage.removeItem('dreamsky-refresh-token')
     }
     set({ isAuthenticated: false })
+    // Redirect to landing page — the cross-app auth hub
+    window.location.href = LANDING_URL
   },
 
   // ── setRole (mock only) ────────────────────────────────────────────────────
   setRole: (role) => {
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem('eplanet-demo-role', role)
-      window.sessionStorage.setItem('eplanet-demo-role', role)
+      window.localStorage.removeItem('dreamsky-logged-out')
+      window.sessionStorage.removeItem('dreamsky-logged-out')
+      window.localStorage.setItem('dreamsky-demo-role', role)
+      window.sessionStorage.setItem('dreamsky-demo-role', role)
+      window.localStorage.setItem('dreamsky-user', JSON.stringify(demoUsers[role]))
     }
     set({ currentUser: demoUsers[role], isAuthenticated: true })
   },
@@ -275,8 +346,8 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     if (isMockMode()) {
       const isAuth =
-        window.sessionStorage.getItem('eplanet-authenticated') === 'true' ||
-        window.localStorage.getItem('eplanet-authenticated') === 'true' ||
+        window.sessionStorage.getItem('dreamsky-authenticated') === 'true' ||
+        window.localStorage.getItem('dreamsky-authenticated') === 'true' ||
         !!token
       if (isAuth) {
         set({ currentUser: getInitialUser(), isAuthenticated: true })
@@ -289,12 +360,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const user = await api.get<BackendUser>('/auth/me')
       const currentUser = toCurrentUser(user)
-      localStorage.setItem('eplanet-user', JSON.stringify(user))
+      localStorage.setItem('dreamsky-user', JSON.stringify(user))
       set({ currentUser, isAuthenticated: true, isLoading: false })
     } catch {
       // Check if token exists along with stored user details before clearing session
       const storedUserStr =
-        localStorage.getItem('eplanet-user') || sessionStorage.getItem('eplanet-user')
+        localStorage.getItem('dreamsky-user') || sessionStorage.getItem('dreamsky-user')
       if (token && storedUserStr) {
         set({ currentUser: getInitialUser(), isAuthenticated: true, isLoading: false })
       } else {

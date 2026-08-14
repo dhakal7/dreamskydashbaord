@@ -9,6 +9,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { StudentStatusBadge } from '@/components/shared/status-badges'
+import { useAuthStore } from '@/store/auth-store'
+import { useStudentsStore } from '../store'
+import { toast } from 'sonner'
 
 export const studentColumns: ColumnDef<Student, any>[] = [
   {
@@ -100,21 +103,36 @@ export const studentColumns: ColumnDef<Student, any>[] = [
     id: 'actions',
     header: '',
     enableSorting: false,
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem>View profile</DropdownMenuItem>
-          <DropdownMenuItem>Edit details</DropdownMenuItem>
-          <DropdownMenuItem>Log a call</DropdownMenuItem>
-          <DropdownMenuItem>Send email</DropdownMenuItem>
-          <DropdownMenuItem destructive>Delete student</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ row }) => {
+      const student = row.original
+      const currentUser = useAuthStore.getState().currentUser
+      const isAdmin = currentUser.role === 'super_admin'
+
+      const handleDelete = () => {
+        useStudentsStore.getState().deleteStudents([student.id])
+        toast.success(`Student ${student.name} deleted successfully`)
+      }
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem>View profile</DropdownMenuItem>
+            <DropdownMenuItem>Edit details</DropdownMenuItem>
+            <DropdownMenuItem>Log a call</DropdownMenuItem>
+            <DropdownMenuItem>Send email</DropdownMenuItem>
+            {isAdmin && (
+              <DropdownMenuItem destructive onClick={handleDelete}>
+                Delete student
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
   },
 ]

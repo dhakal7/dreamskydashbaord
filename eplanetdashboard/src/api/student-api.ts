@@ -27,6 +27,10 @@ export interface ApiStudent {
   isActive: boolean
   createdAt: string
   updatedAt: string
+  // B2B Partner fields
+  processingType: 'SELF' | 'PARTNER_CONSULTANCY'
+  partnerConsultancyId: string | null
+  partnerConsultancy: { id: string; name: string } | null
   // Populated relations (from controller includes)
   assignedCounselor?: { id: string; firstName: string; lastName: string } | null
   stageHistory?: ApiPipelineHistory[]
@@ -79,6 +83,12 @@ export interface CreateStudentBody {
   notes?: string
   academicBackground?: Record<string, unknown>
   financialBackground?: Record<string, unknown>
+  /** 'SELF' = DreamSky handles directly, 'PARTNER_CONSULTANCY' = referred to B2B partner */
+  processingType?: 'SELF' | 'PARTNER_CONSULTANCY'
+  /** ID of an existing PartnerConsultancy record */
+  partnerConsultancyId?: string
+  /** Name of partner — backend will auto-create if not found */
+  partnerConsultancyName?: string
 }
 
 export interface UpdateStudentBody extends Partial<CreateStudentBody> {}

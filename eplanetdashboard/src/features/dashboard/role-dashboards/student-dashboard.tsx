@@ -4,19 +4,21 @@ import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ApplicationStageBadge } from '@/components/shared/status-badges'
-import { FileStack, PlaneTakeoff, FolderKanban, Wallet, Bell, ChevronRight } from 'lucide-react'
+import { FileStack, PlaneTakeoff, FolderKanban, Wallet, Bell, ChevronRight, MessageSquare } from 'lucide-react'
 import { RoleStatCards } from './shared'
 import { getStudentDashboard } from '../role-selectors'
 import { formatCurrency } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth-store'
 import { useAppointmentsStore } from '@/features/appointments/store'
 import { useDocumentsStore } from '@/features/documents/store'
+import { useDocumentNotesStore } from '@/features/documents/document-notes-store'
 
 export function StudentDashboard() {
   const linkedId = useAuthStore((s) => s.currentUser.linkedId)
   const data = getStudentDashboard(linkedId)
   const appointments = useAppointmentsStore((s) => s.appointments)
   const { documents } = useDocumentsStore()
+  const { getNotesForDocument } = useDocumentNotesStore()
   const totalTuition = data.applications.reduce((s, a) => s + a.tuitionUsd, 0)
   const myDocuments = documents.filter((d) => d.studentId === linkedId)
   const myAppointments = appointments
@@ -107,17 +109,35 @@ export function StudentDashboard() {
             {myDocuments.length === 0 && (
               <EmptyState icon={FolderKanban} title="No documents uploaded" description="Upload documents via the Documents page." className="py-8" />
             )}
-            {myDocuments.slice(0, 5).map((document) => (
-              <div key={document.id} className="flex items-center gap-3 rounded-lg border border-border/70 p-2.5">
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-medium">{document.fileName}</p>
-                  <p className="text-xs text-muted-foreground">{document.type.replace('_', ' ')} · {dayjs(document.uploadedAt).format('MMM D')}</p>
+            {myDocuments.slice(0, 5).map((document) => {
+              const notes = getNotesForDocument(document.id)
+              return (
+                <div key={document.id} className="rounded-lg border border-border/70 p-2.5 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[13px] font-medium">{document.fileName}</p>
+                      <p className="text-xs text-muted-foreground">{document.type.replace('_', ' ')} · {dayjs(document.uploadedAt).format('MMM D')}</p>
+                    </div>
+                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${document.status === 'verified' ? 'bg-green-50 text-green-700' : document.status === 'pending_review' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+                      {document.status}
+                    </span>
+                  </div>
+                  {notes.length > 0 && (
+                    <div className="bg-secondary/40 rounded-lg p-2 text-xs space-y-1 border border-border/60">
+                      <p className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                        <MessageSquare className="size-3 text-muted-foreground/80" /> Feedback ({notes.length})
+                      </p>
+                      {notes.map((note) => (
+                        <div key={note.id} className="text-muted-foreground text-[11px] leading-relaxed">
+                          <span className="font-medium text-foreground">{note.authorName} ({note.authorRole.replace('_', ' ')}):</span>{' '}
+                          {note.message}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${document.status === 'verified' ? 'bg-green-50 text-green-700' : document.status === 'pending_review' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
-                  {document.status}
-                </span>
-              </div>
-            ))}
+              )
+            })}
           </CardContent>
         </Card>
 

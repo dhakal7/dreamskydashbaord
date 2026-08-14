@@ -14,7 +14,7 @@ export const demoUsers: Record<CurrentUser['role'], CurrentUser> = {
     role: 'super_admin', avatarColor: '#0F172A', branchId: hq.id, branchName: 'All Branches', linkedId: 'user-sa-1',
   },
   front_desk: {
-    id: 'user-fd-1', name: 'Puja Shrestha', email: 'puja.shrestha@eplanetconsultancy.com',
+    id: 'user-fd-1', name: 'Puja Shrestha', email: 'puja.shrestha@dreamsky.com',
     role: 'front_desk', avatarColor: '#DB2777', branchId: hq.id, branchName: hq.name, linkedId: 'user-fd-1',
   },
   counselor: {

@@ -2,12 +2,13 @@ const { Router } = require("express");
 const router = Router();
 
 // ─── Health Check ─────────────────────────────────────────────────
-router.get("/health", (req, res) => {
-    res.json({ success: true, status: "ok", message: "Dream Sky API is healthy 🚀" });
+router.get(["/", "/health"], (req, res) => {
+    res.json({ success: true, status: "ok", message: "Dream Sky API is live & healthy 🚀" });
 });
 
 // ─── Module Routers ───────────────────────────────────────────────
 router.use("/auth", require("./auth.routes"));
+router.use("/users", require("./user.routes"));
 router.use("/students", require("./student.routes"));
 router.use("/follow-ups", require("./followup.routes"));
 router.use("/appointments", require("./appointment.routes"));

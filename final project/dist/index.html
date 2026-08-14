@@ -2290,7 +2290,14 @@
                             <i class="far fa-clock text-amber-400 text-xs"></i>
                             <span>Sun – Fri: 7:00 AM – 6:00 PM</span>
                         </li>
-                    </ul>
+                    
+                        <!-- Embedded Map in Footer for all pages -->
+                        <li class="pt-2">
+                            <div class="w-full h-32 rounded-xl overflow-hidden border border-white/10 relative">
+                                <iframe src="https://maps.google.com/maps?q=2nd%20Floor%2C%20KL%20Tower%2C%20Boudhanath%20Sadak%2C%20Kathmandu%2044600&t=&z=17&ie=UTF8&iwloc=&output=embed" class="w-full h-full border-0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="DreamSky Location Map"></iframe>
+                            </div>
+                        </li>
+</ul>
                 </div>
 
             </div>
@@ -2764,8 +2771,8 @@
 
         async function handleAuthSubmit(event, type) {
             event.preventDefault();
-            const API_BASE = (window.env && window.env.VITE_API_BASE_URL) || 'https://dreamsky-backend.onrender.com/api';
-            const DASHBOARD_URL = (window.env && window.env.VITE_DASHBOARD_URL) || 'https://dreamsky-bzkp.vercel.app';
+            const API_BASE = (window.env && window.env.VITE_API_BASE_URL) || 'http://localhost:5001/api';
+            const DASHBOARD_URL = (window.env && window.env.VITE_DASHBOARD_URL) || 'http://localhost:5173';
 
             if (type === 'login') {
                 const emailInput = document.getElementById('loginEmail') || document.querySelector('#authFormLogin input[type="email"]');
@@ -2787,14 +2794,41 @@
                     if (res.ok && (data.data?.accessToken || data.accessToken)) {
                         const token = data.data?.accessToken || data.accessToken;
                         const refreshToken = data.data?.refreshToken || data.refreshToken;
+                        const userPayload = data.data?.user || data.user;
                         localStorage.setItem('dreamsky-access-token', token);
-                        localStorage.setItem('eplanet-access-token', token);
+                        localStorage.setItem('dreamsky-access-token', token);
+                        localStorage.setItem('dreamsky-authenticated', 'true');
+                        sessionStorage.setItem('dreamsky-authenticated', 'true');
                         if (refreshToken) {
                             localStorage.setItem('dreamsky-refresh-token', refreshToken);
-                            localStorage.setItem('eplanet-refresh-token', refreshToken);
+                            localStorage.setItem('dreamsky-refresh-token', refreshToken);
+                        }
+                        if (userPayload) {
+                            localStorage.setItem('dreamsky-user', JSON.stringify(userPayload));
+                            localStorage.setItem('dreamsky-user', JSON.stringify(userPayload));
+                            sessionStorage.setItem('dreamsky-user', JSON.stringify(userPayload));
+                            sessionStorage.setItem('dreamsky-user', JSON.stringify(userPayload));
                         }
                         closeAuthModal();
-                        window.location.href = DASHBOARD_URL;
+                        
+                        // Map role to target dashboard path
+                        let rolePath = '/';
+                        if (userPayload && userPayload.role) {
+                            const rawRole = String(userPayload.role).toUpperCase();
+                            if (rawRole.includes('ADMIN')) rolePath = '/dashboard/super-admin';
+                            else if (rawRole.includes('COUNSELOR')) rolePath = '/dashboard/counselor';
+                            else if (rawRole.includes('TEACHER')) rolePath = '/dashboard/teacher';
+                            else if (rawRole.includes('FRONT_DESK')) rolePath = '/dashboard/frontdesk';
+                            else if (rawRole.includes('REFERRAL')) rolePath = '/dashboard/referral';
+                        }
+
+                        // Pass tokens via query parameters for cross-origin SSO handoff
+                        const params = new URLSearchParams();
+                        params.set('accessToken', token);
+                        if (refreshToken) params.set('refreshToken', refreshToken);
+                        if (userPayload) params.set('user', JSON.stringify(userPayload));
+
+                        window.location.href = DASHBOARD_URL + rolePath + '?' + params.toString();
                     } else {
                         alert('❌ Login failed: ' + (data.message || 'Invalid email or password.'));
                     }
@@ -2861,6 +2895,16 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') closeAuthModal();
         });
+
+        // Auto open login modal if ?login=true query parameter is present (SSO helper)
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('login') === 'true') {
+                openAuthModal('login');
+                const cleanUrl = window.location.pathname + window.location.hash;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+        })();
     </script>
 
     

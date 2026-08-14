@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import type { Role, UserAccount, UserStatus } from '@/types'
 import { userAccounts } from '@/mock'
 import { toast } from 'sonner'
+import { api, isMockMode } from '@/lib/api-client'
 
 export interface InviteUserData {
   name: string
@@ -15,7 +16,7 @@ let nextId = userAccounts.length + 1
 
 interface UsersState {
   users: UserAccount[]
-  inviteUser: (data: InviteUserData) => void
+  inviteUser: (data: InviteUserData) => Promise<void>
   suspendUser: (id: string) => void
   reactivateUser: (id: string) => void
   changeUserRole: (id: string, role: Role) => void
@@ -26,27 +27,48 @@ interface UsersState {
 export const useUsersStore = create<UsersState>((set) => ({
   users: [...userAccounts],
 
-  inviteUser: (data) =>
-    set((state) => {
-      const id = `user-${String(nextId).padStart(3, '0')}`
-      nextId++
-      const now = new Date().toISOString()
-      const newUser: UserAccount = {
-        id,
-        name: data.name,
-        email: data.email,
-        role: data.role,
-        status: 'invited',
-        branchId: data.branchId,
-        branchName: data.branchName,
-        avatarColor: '#6B7280',
-        lastLoginAt: now,
-        createdAt: now,
-        linkedId: id,
+  inviteUser: async (data) => {
+    const nameParts = data.name.trim().split(/\s+/)
+    const firstName = nameParts[0] || 'Staff'
+    const lastName = nameParts.slice(1).join(' ') || 'Member'
+
+    let createdId: string | null = null
+
+    if (!isMockMode()) {
+      try {
+        const res: any = await api.post('/users/invite', {
+          email: data.email,
+          firstName,
+          lastName,
+          role: data.role.toUpperCase(),
+          branchId: data.branchId,
+        })
+        createdId = res?.id || res?.data?.id
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to send invitation email')
+        throw err
       }
-      toast.success(`Invitation sent to ${data.name}`)
-      return { users: [...state.users, newUser] }
-    }),
+    }
+
+    const id = createdId || `user-${String(nextId).padStart(3, '0')}`
+    if (!createdId) nextId++
+    const now = new Date().toISOString()
+    const newUser: UserAccount = {
+      id,
+      name: data.name,
+      email: data.email,
+      role: data.role,
+      status: 'invited',
+      branchId: data.branchId,
+      branchName: data.branchName,
+      avatarColor: '#6B7280',
+      lastLoginAt: now,
+      createdAt: now,
+      linkedId: id,
+    }
+    toast.success(`Invitation emailed to ${data.email}`)
+    set((state) => ({ users: [...state.users, newUser] }))
+  },
 
   suspendUser: (id) =>
     set((state) => {

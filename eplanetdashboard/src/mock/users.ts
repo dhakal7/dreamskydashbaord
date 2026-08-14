@@ -1,7 +1,6 @@
 import type { UserAccount } from '@/types'
 import { counselors } from './reference'
-import { teachers, frontDeskStaff, referralAgents } from './staff'
-import { students } from './entities'
+import { frontDeskStaff } from './staff'
 import { branches } from './branches'
 
 const hq = branches[0]
@@ -42,23 +41,6 @@ function buildUsers(): UserAccount[] {
     })
   })
 
-  // Teachers
-  teachers.forEach((t, i) => {
-    accounts.push({
-      id: `user-t-${i + 1}`,
-      name: t.name,
-      email: t.email,
-      role: 'teacher',
-      status: 'active',
-      branchId: t.branchId,
-      branchName: branches.find((b) => b.id === t.branchId)?.name,
-      avatarColor: t.avatarColor,
-      lastLoginAt: new Date(now.getTime() - (i + 2) * 3600_000).toISOString(),
-      createdAt: new Date(now.getTime() - (150 + i * 30) * 86400_000).toISOString(),
-      linkedId: t.id,
-    })
-  })
-
   // Front desk
   frontDeskStaff.forEach((fd, i) => {
     accounts.push({
@@ -73,38 +55,6 @@ function buildUsers(): UserAccount[] {
       lastLoginAt: new Date(now.getTime() - (i + 3) * 3600_000).toISOString(),
       createdAt: new Date(now.getTime() - (100 + i * 20) * 86400_000).toISOString(),
       linkedId: fd.id,
-    })
-  })
-
-  // Referral agents
-  referralAgents.forEach((ra, i) => {
-    accounts.push({
-      id: `user-ra-${i + 1}`,
-      name: ra.name,
-      email: ra.email,
-      role: 'referral_agent',
-      status: i === 3 ? 'suspended' : 'active',
-      avatarColor: ra.avatarColor,
-      lastLoginAt: new Date(now.getTime() - (i + 1) * 5 * 3600_000).toISOString(),
-      createdAt: new Date(now.getTime() - (300 + i * 10) * 86400_000).toISOString(),
-      linkedId: ra.id,
-    })
-  })
-
-  // A handful of student accounts (first 5)
-  students.slice(0, 5).forEach((s, i) => {
-    accounts.push({
-      id: `user-s-${i + 1}`,
-      name: s.name,
-      email: s.email,
-      role: 'student',
-      status: 'active',
-      branchId: hq.id,
-      branchName: hq.name,
-      avatarColor: s.photoColor,
-      lastLoginAt: new Date(now.getTime() - (i + 1) * 12 * 3600_000).toISOString(),
-      createdAt: new Date(now.getTime() - (50 + i * 5) * 86400_000).toISOString(),
-      linkedId: s.id,
     })
   })
 

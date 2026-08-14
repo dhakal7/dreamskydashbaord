@@ -15,7 +15,7 @@ interface UIState {
 
 function getInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'light'
-  const stored = window.localStorage.getItem('eplanet-theme') as Theme | null
+  const stored = window.localStorage.getItem('dreamsky-theme') as Theme | null
   if (stored) return stored
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
@@ -33,7 +33,7 @@ function applyTheme(theme: Theme) {
   document.head.appendChild(disableTransitions)
 
   document.documentElement.classList.toggle('dark', theme === 'dark')
-  window.localStorage.setItem('eplanet-theme', theme)
+  window.localStorage.setItem('dreamsky-theme', theme)
 
   // Force synchronous reflow so theme colors apply instantly
   void document.body.offsetHeight

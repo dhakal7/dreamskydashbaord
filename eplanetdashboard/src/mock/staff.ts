@@ -7,7 +7,7 @@ const subjectPool: Teacher['subjects'] = ['IELTS', 'PTE', 'TOEFL', 'Spoken Engli
 export const teachers: Teacher[] = teacherNames.map((name, i) => ({
   id: `tchr-${i + 1}`,
   name,
-  email: `${name.toLowerCase().replace(' ', '.')}@eplanetconsultancy.com`,
+  email: `${name.toLowerCase().replace(' ', '.')}@dreamsky.com`,
   avatarColor: ['#0891B2', '#7C3AED', '#D97706', '#16A34A'][i],
   subjects: [subjectPool[i % subjectPool.length], subjectPool[(i + 2) % subjectPool.length]],
   classesHandled: randInt(2, 5),
@@ -16,8 +16,8 @@ export const teachers: Teacher[] = teacherNames.map((name, i) => ({
 }))
 
 export const frontDeskStaff = [
-  { id: 'fd-1', name: 'Puja Shrestha', email: 'puja@eplanetconsultancy.com', role: 'Front Desk', branchId: 'br-1' },
-  { id: 'fd-2', name: 'Sanjila Bhatta', email: 'sanjila@eplanetconsultancy.com', role: 'Front Desk', branchId: 'br-2' },
+  { id: 'fd-1', name: 'Santona Khatri', email: 'santona.khatri@dreamsky.com', role: 'Front Desk', branchId: 'br-1' },
+  { id: 'fd-2', name: 'Amisha Thapa', email: 'amisha.thapa@dreamsky.com', role: 'Front Desk', branchId: 'br-1' },
 ] as const
 
 const agentNames = [

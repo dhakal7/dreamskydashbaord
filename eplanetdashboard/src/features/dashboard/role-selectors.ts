@@ -1,10 +1,17 @@
 import dayjs from 'dayjs'
 import {
-  students, leads, followUps, applications, visaCases, studentDocuments,
+  students, leads, followUps,
   counselors, teachers, classes, enrollments, attendanceRecords,
-  referralAgents, referrals, counselorCommissions, agentCommissions,
+  referralAgents, referrals, agentCommissions,
 } from '@/mock'
 import type { LeadStage } from '@/types'
+import { useStudentsStore } from '@/features/students/store'
+import { useDocumentsStore } from '@/features/documents/store'
+import { useApplicationsStore } from '@/features/applications/store'
+import { useVisaStore } from '@/features/visa/store'
+import { useLeadsStore } from '@/features/leads/store'
+import { useFollowUpsStore } from '@/features/followups/store'
+import { useCommissionStore } from '@/features/commissions/store'
 
 // ── Front Desk — operational queue across the whole client dataset ─────
 
@@ -34,10 +41,16 @@ export function getFeeCollectionQueue(limit = 6) {
 
 export function getCounselorDashboard(counselorId: string) {
   const counselor = counselors.find((c) => c.id === counselorId)
-  const myStudents = students.filter((s) => s.counselorId === counselorId)
-  const myLeads = leads.filter((l) => l.counselorId === counselorId)
-  const myFollowUps = followUps.filter((f) => f.counselorId === counselorId && f.status === 'pending')
-  const myCommissions = counselorCommissions.filter((c) => c.earnerId === counselorId)
+  
+  const activeStudents = useStudentsStore.getState().students
+  const activeLeads = useLeadsStore.getState().leads
+  const activeFollowUps = useFollowUpsStore.getState().followUps
+  const activeCommissions = useCommissionStore.getState().commissions
+
+  const myStudents = activeStudents.filter((s) => s.counselorId === counselorId)
+  const myLeads = activeLeads.filter((l) => l.counselorId === counselorId)
+  const myFollowUps = activeFollowUps.filter((f) => f.counselorId === counselorId && f.status === 'pending')
+  const myCommissions = activeCommissions.filter((c) => c.earnerId === counselorId)
 
   const stageCounts = new Map<LeadStage, number>()
   myLeads.forEach((l) => stageCounts.set(l.stage, (stageCounts.get(l.stage) ?? 0) + 1))
@@ -96,10 +109,15 @@ export function getTeacherDashboard(teacherId: string) {
 // ── Student — own record only ───────────────────────────────────────────
 
 export function getStudentDashboard(studentId: string) {
-  const student = students.find((s) => s.id === studentId)
-  const myApplications = applications.filter((a) => a.studentId === studentId)
-  const myVisaCase = visaCases.find((v) => v.studentId === studentId)
-  const myDocuments = studentDocuments.filter((d) => d.studentId === studentId)
+  const activeStudents = useStudentsStore.getState().students
+  const activeApplications = useApplicationsStore.getState().applications
+  const activeVisaCases = useVisaStore.getState().visaCases
+  const activeDocuments = useDocumentsStore.getState().documents
+
+  const student = activeStudents.find((s) => s.id === studentId) || students.find((s) => s.id === studentId)
+  const myApplications = activeApplications.filter((a) => a.studentId === studentId)
+  const myVisaCase = activeVisaCases.find((v) => v.studentId === studentId)
+  const myDocuments = activeDocuments.filter((d) => d.studentId === studentId)
   const myClasses = enrollments.filter((e) => e.studentId === studentId)
 
   return {

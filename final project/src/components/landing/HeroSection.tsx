@@ -26,7 +26,7 @@ export const HeroSection: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: any;
     if (isVideoEnded) {
       interval = setInterval(() => {
         setCurrentSlide((prev) => (prev + 1) % slideImages.length);

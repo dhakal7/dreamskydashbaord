@@ -14,6 +14,7 @@ import { visibleApplications } from '@/lib/data-visibility'
 import { hasPermission } from '@/lib/rbac'
 import type { Application } from '@/types'
 import { useApplications } from '@/hooks/use-applications'
+import { ApplicationFormDialog } from './components/application-form-dialog'
 
 
 
@@ -25,6 +26,7 @@ export default function ApplicationsPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const canManage = hasPermission(currentUser.role, 'applications.manage')
   const [filters, setFilters] = useState<ApplicationFilters>(defaultApplicationFilters)
+  const [formOpen, setFormOpen] = useState(false)
 
   const applications: Application[] = apiAppData?.applications && apiAppData.applications.length > 0
     ? apiAppData.applications.map((app) => ({
@@ -80,7 +82,7 @@ export default function ApplicationsPage() {
         description="Track applications from submission through university review to offer and acceptance."
         actions={
           canManage ? (
-            <Button size="sm">
+            <Button size="sm" onClick={() => setFormOpen(true)}>
               <Plus className="mr-1 size-4" /> Add Application
             </Button>
           ) : undefined
@@ -150,6 +152,8 @@ export default function ApplicationsPage() {
           }
         />
       </div>
+
+      <ApplicationFormDialog open={formOpen} onOpenChange={setFormOpen} />
     </div>
   )
 }

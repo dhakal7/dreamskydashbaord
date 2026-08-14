@@ -8,27 +8,30 @@ const app = express();
 
 // ─── Security Middleware ───────────────────────────────────────────
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    max: process.env.NODE_ENV === "development" ? 10000 : 100, // High limit in dev mode
+    standardHeaders: true,
+    legacyHeaders: false,
     message: {
         success: false,
         code: "RATE_LIMIT_EXCEEDED",
         message: "Too many requests from this IP, please try again after 15 minutes"
     }
 });
-app.use("/api", limiter);
+app.use(["/api", "/"], limiter);
 
 // ─── Core Middleware ───────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ─── Routes ───────────────────────────────────────────────────────
-app.use("/api", router);
+app.use(["/api", "/"], router);
 
 // ─── 404 Handler ──────────────────────────────────────────────────
 app.use((req, res) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { api, tokenStore, redirectToDashboard } from '../../lib/api-client';
+import { api, tokenStore, redirectToDashboardRole } from '../../lib/api-client';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -75,7 +75,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'logi
           let feRole = 'student';
           if (lowerEmail.includes('admin') || lowerEmail.includes('dreamskyadmission')) {
             feRole = 'super_admin';
-          } else if (lowerEmail.includes('counselor') || lowerEmail.includes('sita')) {
+          } else if (lowerEmail.includes('counselor') || lowerEmail.includes('sita') || lowerEmail.includes('dipshikha') || lowerEmail.includes('dawadi')) {
             feRole = 'counselor';
           } else if (lowerEmail.includes('teacher') || lowerEmail.includes('ram')) {
             feRole = 'teacher';
@@ -86,7 +86,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'logi
           }
 
           // If api error returned structured message from server, show error unless password is demo password
-          if (apiErr.response?.data?.message && loginPassword !== 'eplanet-demo' && !loginPassword.startsWith('demo')) {
+          if (apiErr.response?.data?.message && loginPassword !== 'dreamsky-demo' && !loginPassword.startsWith('demo')) {
             throw apiErr;
           }
 
@@ -106,22 +106,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'logi
           if (refreshToken) tokenStore.setRefresh(refreshToken, rememberMe);
           if (user) tokenStore.setUser(user, rememberMe);
 
-          // Populate eplanet dashboard localStorage & sessionStorage keys
-          localStorage.setItem('eplanet-authenticated', 'true');
-          sessionStorage.setItem('eplanet-authenticated', 'true');
+          // ── Populate DreamSky dashboard localStorage & sessionStorage keys ──
+          // These are read by auth-store.ts on the dashboard side to auto-login.
+          localStorage.setItem('dreamsky-authenticated', 'true');
+          sessionStorage.setItem('dreamsky-authenticated', 'true');
 
-          localStorage.setItem('eplanet-access-token', accessToken);
+          // ── IMPORTANT: clear logged-out flag so dashboard lets the user in ──
+          localStorage.removeItem('dreamsky-logged-out');
+          sessionStorage.removeItem('dreamsky-logged-out');
+
           localStorage.setItem('dreamsky-access-token', accessToken);
-          sessionStorage.setItem('eplanet-access-token', accessToken);
+          localStorage.setItem('dreamsky-access-token', accessToken);
+          sessionStorage.setItem('dreamsky-access-token', accessToken);
           sessionStorage.setItem('dreamsky-access-token', accessToken);
 
           if (refreshToken) {
-            localStorage.setItem('eplanet-refresh-token', refreshToken);
             localStorage.setItem('dreamsky-refresh-token', refreshToken);
-            sessionStorage.setItem('eplanet-refresh-token', refreshToken);
+            localStorage.setItem('dreamsky-refresh-token', refreshToken);
+            sessionStorage.setItem('dreamsky-refresh-token', refreshToken);
             sessionStorage.setItem('dreamsky-refresh-token', refreshToken);
           }
 
+          // ── Normalise role to frontend key ──
           let feRole = 'student';
           if (user?.role) {
             const rawRole = String(user.role).toUpperCase();
@@ -133,15 +139,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, initialTab = 'logi
             else feRole = rawRole.toLowerCase();
           }
 
-          localStorage.setItem('eplanet-demo-role', feRole);
-          sessionStorage.setItem('eplanet-demo-role', feRole);
+          localStorage.setItem('dreamsky-demo-role', feRole);
+          sessionStorage.setItem('dreamsky-demo-role', feRole);
 
           const userStr = JSON.stringify(user);
-          localStorage.setItem('eplanet-user', userStr);
+          localStorage.setItem('dreamsky-user', userStr);
           localStorage.setItem('dreamsky-user', userStr);
 
           onClose();
-          redirectToDashboard();
+          // ── Redirect directly to the user's role-specific dashboard ──
+          redirectToDashboardRole(feRole);
         } else {
           setErrorMessage('Invalid login response from server.');
         }

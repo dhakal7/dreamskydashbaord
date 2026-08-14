@@ -83,9 +83,22 @@ export const Footer: React.FC = () => {
                   <div className="w-6 h-6 rounded-md bg-blue-900/60 border border-blue-700/50 flex items-center justify-center text-blue-400 text-[10px] shrink-0"><i className="fas fa-envelope"></i></div>
                   <a href="mailto:info@dreamsky.edu.np" target="_blank" rel="noopener noreferrer" className="hover:text-white transition">info@dreamsky.edu.np</a>
                 </li>
-                <li className="flex items-center gap-2.5 text-[11px] text-gray-400 pt-1">
+                <li className="flex items-center gap-2.5 text-[11px] text-gray-400 pt-1 pb-2">
                   <i className="far fa-clock text-amber-400 text-xs"></i>
                   <span>Sun – Fri: 7:00 AM – 6:00 PM</span>
+                </li>
+                {/* Embedded Map in Footer for all pages */}
+                <li className="pt-2">
+                  <div className="w-full h-32 rounded-xl overflow-hidden border border-white/10 relative">
+                    <iframe 
+                      src="https://maps.google.com/maps?q=2nd%20Floor%2C%20KL%20Tower%2C%20Boudhanath%20Sadak%2C%20Kathmandu%2044600&t=&z=17&ie=UTF8&iwloc=&output=embed" 
+                      className="w-full h-full border-0" 
+                      allowFullScreen 
+                      loading="lazy" 
+                      referrerPolicy="no-referrer-when-downgrade" 
+                      title="DreamSky Location Map"
+                    />
+                  </div>
                 </li>
               </ul>
             </div>

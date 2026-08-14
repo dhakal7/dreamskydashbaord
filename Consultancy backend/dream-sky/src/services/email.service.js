@@ -61,6 +61,67 @@ const sendWelcomeStudentEmail = ({ to, studentName, tempPassword }) => {
     return sendMail({ to, subject, text, html: welcomeHtml(studentName, to, tempPassword) });
 };
 
+const staffInvitationHtml = (staffName, email, role, tempPassword) => `
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+  <div style="background:#2563eb;padding:20px 28px">
+    <h2 style="color:#ffffff;margin:0;font-size:20px">DreamSky Staff Invitation</h2>
+  </div>
+  <div style="padding:28px">
+    <p style="font-size:15px;color:#111827">Hello <strong>${staffName}</strong>,</p>
+    <p style="font-size:15px;color:#374151;line-height:1.6">
+      You have been invited to join the DreamSky Education Consultancy team as <strong>${role.replace(/_/g, " ")}</strong>.
+      Below are your temporary credentials to access the CRM portal.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px">
+      <tr>
+        <td style="padding:10px 14px;background:#f9fafb;border:1px solid #e5e7eb;color:#6b7280">Login Email</td>
+        <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:600">${email}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;background:#f9fafb;border:1px solid #e5e7eb;color:#6b7280">Temporary Password</td>
+        <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:600">${tempPassword}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;background:#f9fafb;border:1px solid #e5e7eb;color:#6b7280">Assigned Role</td>
+        <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:600">${role}</td>
+      </tr>
+    </table>
+    <p style="font-size:14px;color:#6b7280;line-height:1.5">
+      Please sign in to your dashboard and change your password immediately.
+    </p>
+  </div>
+</div>`;
+
+const sendStaffInvitationEmail = ({ to, staffName, role, tempPassword }) => {
+    const subject = "Invitation to Join DreamSky Education Consultancy CRM";
+    const text = `Hello ${staffName},\n\nYou have been invited to join DreamSky as ${role}.\n\nLogin Email: ${to}\nTemporary Password: ${tempPassword}\n\nPlease sign in and update your password.\n\nDreamSky Team`;
+    return sendMail({ to, subject, text, html: staffInvitationHtml(staffName, to, role, tempPassword) });
+};
+
+const sendEventNotificationEmail = ({ to, recipientName, eventTitle, datetime, location, description }) => {
+    const subject = `Event Announcement: ${eventTitle}`;
+    const text = `Hi ${recipientName},\n\nYou are invited to the upcoming event: ${eventTitle}\n\nDate & Time: ${datetime}\nLocation: ${location || "TBD"}\nDetails: ${description || ""}\n\nDreamSky Team`;
+    const html = `
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+  <div style="background:#dc2626;padding:20px 28px">
+    <h2 style="color:#ffffff;margin:0;font-size:20px">DreamSky Event Announcement</h2>
+  </div>
+  <div style="padding:28px">
+    <p style="font-size:15px;color:#111827">Hi <strong>${recipientName}</strong>,</p>
+    <p style="font-size:15px;color:#374151;line-height:1.6">
+      You are invited to an upcoming event hosted by DreamSky Education Consultancy:
+    </p>
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:16px;margin:16px 0">
+      <h3 style="margin:0 0 8px 0;color:#111827">${eventTitle}</h3>
+      <p style="margin:4px 0;font-size:14px;color:#4b5563"><strong>Date & Time:</strong> ${datetime}</p>
+      <p style="margin:4px 0;font-size:14px;color:#4b5563"><strong>Location:</strong> ${location || "Online / TBD"}</p>
+      ${description ? `<p style="margin:8px 0 0 0;font-size:14px;color:#6b7280">${description}</p>` : ""}
+    </div>
+  </div>
+</div>`;
+    return sendMail({ to, subject, text, html });
+};
+
 const sendNotificationEmail = ({ to, subject, body }) =>
     sendMail({
         to,
@@ -69,4 +130,11 @@ const sendNotificationEmail = ({ to, subject, body }) =>
         html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px"><p style="color:#374151;font-size:15px;line-height:1.6">${body.replace(/\n/g, "<br/>")}</p></div>`,
     });
 
-module.exports = { sendMail, sendWelcomeStudentEmail, sendNotificationEmail, isConfigured };
+module.exports = {
+    sendMail,
+    sendWelcomeStudentEmail,
+    sendStaffInvitationEmail,
+    sendEventNotificationEmail,
+    sendNotificationEmail,
+    isConfigured
+};
