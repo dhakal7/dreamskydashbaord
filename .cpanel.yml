@@ -2,3 +2,5 @@
 deployment:
   tasks:
     - /bin/cp -R eplanetdashboard/dist/. /home4/dreamsky/public_html/
+    - /bin/bash -c "cp -R 'Consultancy backend/dream-sky/.' /home4/dreamsky/backend/"
+
