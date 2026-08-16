@@ -6,6 +6,9 @@ const router = require("./routes");
 
 const app = express();
 
+// ─── Trust Proxy (required for LiteSpeed/cPanel reverse proxy) ────
+app.set("trust proxy", 1);
+
 // ─── Security Middleware ───────────────────────────────────────────
 app.use(helmet());
 app.use(cors({
