@@ -1,0 +1,34 @@
+name: Deploy to Babal Host
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  web-deploy:
+    name: Build & Deploy Frontend to Babal Host
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build React Dashboard
+        run: |
+          cd eplanetdashboard
+          npm ci
+          npm run build
+
+      - name: FTP Deploy to Babal Host
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./eplanetdashboard/dist/
+          server-dir: /public_html/
