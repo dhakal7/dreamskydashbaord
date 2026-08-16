@@ -1,0 +1,8 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/$USER/public_html
+    - cd eplanetdashboard
+    - npm install
+    - npm run build
+    - /bin/cp -R dist/* $DEPLOYPATH/
