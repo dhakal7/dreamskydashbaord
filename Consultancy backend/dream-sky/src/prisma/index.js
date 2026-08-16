@@ -7,11 +7,13 @@ const { Pool } = require("pg");
 const globalForPrisma = global;
 
 const getClient = () => {
+    // Only enable SSL for actual remote cloud databases, NOT for local PostgreSQL
     const isRemoteDb = Boolean(
-        process.env.DATABASE_URL?.includes("supabase") || 
-        process.env.DATABASE_URL?.includes("sslmode") || 
+        process.env.DATABASE_URL?.includes("supabase") ||
         process.env.DATABASE_URL?.includes("render.com") ||
-        process.env.NODE_ENV === "production"
+        process.env.DATABASE_URL?.includes("neon.tech") ||
+        process.env.DATABASE_URL?.includes("neon.com") ||
+        process.env.DB_USE_SSL === "true"
     );
     
     const pool = new Pool({
