@@ -1,7 +1,4 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/$USER/public_html
-    - export DASHBOARDPATH=eplanetdashboard/dist
-    - /bin/cp -R $DASHBOARDPATH/* $DEPLOYPATH/
-    - /bin/cp $DASHBOARDPATH/.htaccess $DEPLOYPATH/ 2>/dev/null || true
+    - /bin/cp -R eplanetdashboard/dist/. /home4/dreamsky/public_html/
