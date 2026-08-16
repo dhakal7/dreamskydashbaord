@@ -62,9 +62,6 @@ if (typeof window !== 'undefined') {
   }
 }
 
-/** URL of the public landing page — users are sent here after logout. */
-const LANDING_URL = import.meta.env.VITE_LANDING_URL ?? 'http://localhost:5174'
-
 // ─── Backend response shape (from sanitizeUser) ───────────────────────────────
 
 interface BackendUser {
@@ -134,6 +131,8 @@ interface AuthState {
   setRole: (role: Role) => void
   /** restoreSession() re-hydrates real-mode auth from stored tokens on app boot. */
   restoreSession: () => Promise<void>
+  /** clearMustChangePassword() marks password change complete for current session and storage. */
+  clearMustChangePassword: (newPassword?: string) => void
 }
 
 // ─── Mock-mode helpers (unchanged from original) ──────────────────────────────
@@ -153,6 +152,8 @@ function getStudentLoginUser(email: string, password: string): CurrentUser | nul
   if (!student) return null
   const expected = student.portalPassword ?? `DreamSky@${(student.studentId.replace(/\D/g, '').slice(-4) || '0000')}`
   if (password !== expected) return null
+  const studentWithAuth = student as typeof student & { portalPassword?: string; mustChangePassword?: boolean }
+  const hasChangedPassword = Boolean(studentWithAuth.portalPassword) || studentWithAuth.mustChangePassword === false
   return {
     id: `student-auth-${student.id}`,
     name: student.name,
@@ -162,7 +163,7 @@ function getStudentLoginUser(email: string, password: string): CurrentUser | nul
     branchId: demoUsers.super_admin.branchId,
     branchName: demoUsers.super_admin.branchName,
     linkedId: student.id,
-    mustChangePassword: true,
+    mustChangePassword: !hasChangedPassword,
   }
 }
 
@@ -171,9 +172,6 @@ function getInitialRole(): Role {
   const stored =
     (window.sessionStorage.getItem('dreamsky-demo-role') as Role | null) ??
     (window.localStorage.getItem('dreamsky-demo-role') as Role | null)
-  // IMPORTANT: return the stored role exactly as-is; never silently promote or
-  // demote a role. Default to super_admin only when nothing is stored so the
-  // admin dashboard is accessible out-of-the-box in mock/demo mode.
   return stored && demoUsers[stored] ? stored : 'super_admin'
 }
 
@@ -215,6 +213,7 @@ function getInitialUser(): CurrentUser {
             branchId: parsed.branchId || '',
             branchName: parsed.branchName || '',
             linkedId: parsed.linkedId || parsed.id || 'user-1',
+            mustChangePassword: parsed.mustChangePassword ?? false,
           }
         }
       }
@@ -228,15 +227,25 @@ function getInitialUser(): CurrentUser {
 
 function getInitialAuthenticated(): boolean {
   if (typeof window === 'undefined') return false
+  const isLoggedOut =
+    window.localStorage.getItem('dreamsky-logged-out') === 'true' ||
+    window.sessionStorage.getItem('dreamsky-logged-out') === 'true'
+
+  if (isLoggedOut) return false
+
   if (isMockMode()) {
-    const isLoggedOut = window.localStorage.getItem('dreamsky-logged-out') === 'true' || window.sessionStorage.getItem('dreamsky-logged-out') === 'true'
-    return !isLoggedOut
+    const hasMockAuth =
+      window.sessionStorage.getItem('dreamsky-authenticated') === 'true' ||
+      (tokenStore.getRemember() && window.localStorage.getItem('dreamsky-authenticated') === 'true')
+    return hasMockAuth
   }
+
   const hasToken = !!tokenStore.getAccess()
   const hasAuthFlag =
     window.sessionStorage.getItem('dreamsky-authenticated') === 'true' ||
     window.localStorage.getItem('dreamsky-authenticated') === 'true'
-  return hasToken || hasAuthFlag
+
+  return hasToken && hasAuthFlag
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -324,8 +333,35 @@ export const useAuthStore = create<AuthState>((set) => ({
       window.sessionStorage.removeItem('dreamsky-refresh-token')
     }
     set({ isAuthenticated: false })
-    // Redirect to landing page — the cross-app auth hub
-    window.location.href = LANDING_URL
+    // Redirect to dashboard login page
+    window.location.href = '/login'
+  },
+
+  clearMustChangePassword: (newPassword?: string) => {
+    const currentUser = useAuthStore.getState().currentUser
+    if (!currentUser) return
+    const updatedUser = { ...currentUser, mustChangePassword: false }
+
+    if (typeof window !== 'undefined') {
+      const storage = mockStorage()
+      storage.setItem('dreamsky-user', JSON.stringify(updatedUser))
+
+      if (currentUser.role === 'student' && currentUser.linkedId) {
+        useStudentsStore.setState((prev) => ({
+          students: prev.students.map((s) =>
+            s.id === currentUser.linkedId
+              ? {
+                  ...s,
+                  mustChangePassword: false,
+                  ...(newPassword ? { portalPassword: newPassword } : {}),
+                }
+              : s,
+          ),
+        }))
+      }
+    }
+
+    set({ currentUser: updatedUser })
   },
 
   // ── setRole (mock only) ────────────────────────────────────────────────────
@@ -345,17 +381,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     const token = tokenStore.getAccess()
 
     if (isMockMode()) {
-      const isAuth =
-        window.sessionStorage.getItem('dreamsky-authenticated') === 'true' ||
-        window.localStorage.getItem('dreamsky-authenticated') === 'true' ||
-        !!token
+      const isAuth = getInitialAuthenticated()
       if (isAuth) {
         set({ currentUser: getInitialUser(), isAuthenticated: true })
+      } else {
+        set({ isAuthenticated: false })
       }
       return
     }
 
-    if (!token) return
+    if (!token) {
+      set({ isAuthenticated: false })
+      return
+    }
+
     set({ isLoading: true })
     try {
       const user = await api.get<BackendUser>('/auth/me')
@@ -363,14 +402,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem('dreamsky-user', JSON.stringify(user))
       set({ currentUser, isAuthenticated: true, isLoading: false })
     } catch {
-      // Check if token exists along with stored user details before clearing session
-      const storedUserStr =
-        localStorage.getItem('dreamsky-user') || sessionStorage.getItem('dreamsky-user')
-      if (token && storedUserStr) {
-        set({ currentUser: getInitialUser(), isAuthenticated: true, isLoading: false })
-      } else {
-        set({ isAuthenticated: false, isLoading: false })
-      }
+      tokenStore.clearAll()
+      set({ isAuthenticated: false, isLoading: false })
     }
   },
 }))

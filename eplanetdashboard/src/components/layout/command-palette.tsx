@@ -11,7 +11,6 @@ const quickActions = [
   { id: 'leads', label: 'Open leads', path: '/leads', shortcut: 'G L' },
   { id: 'reports', label: 'Open reports', path: '/reports', shortcut: 'G R' },
   { id: 'settings', label: 'Open settings', path: '/settings', shortcut: 'G , ' },
-  { id: 'website', label: 'Open public website', path: '/website', shortcut: 'G W' },
 ]
 
 export function CommandPalette() {
