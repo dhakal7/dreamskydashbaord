@@ -45,20 +45,11 @@ export function ForceChangePassword() {
           currentPassword: currentPassword.trim(),
           newPassword: newPassword.trim(),
         })
-
-        toast.success('Password changed successfully! Please log in with your new password.')
-        
-        // Log out which clears tokens and redirects to the landing page log in
-        setTimeout(() => {
-          logout()
-        }, 1500)
-      } else {
-        // Mock Mode: simulate change password success
-        toast.success('Password changed successfully! Logging out to re-authenticate.')
-        setTimeout(() => {
-          logout()
-        }, 1500)
       }
+
+      // Update state and storage so mustChangePassword is false
+      useAuthStore.getState().clearMustChangePassword(newPassword.trim())
+      toast.success('Password updated successfully! Welcome to your dashboard.')
     } catch (err: any) {
       toast.error(err.message || 'Failed to update password. Please check your credentials.')
     } finally {

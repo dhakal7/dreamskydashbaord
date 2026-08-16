@@ -32,9 +32,6 @@ const SettingsPage = lazy(() => import('@/features/settings/settings-page'))
 const UsersPage = lazy(() => import('@/features/users/users-page'))
 const ReceptionPage = lazy(() => import('@/features/reception/reception-page'))
 const ReferralsPage = lazy(() => import('@/features/referrals/referrals-page'))
-const LandingPage = lazy(() => import('@/features/website/landing-page'))
-const ContactPage = lazy(() => import('@/features/website/contact-page'))
-const InquiryPage = lazy(() => import('@/features/website/inquiry-page'))
 const LoginPage = lazy(() => import('@/features/auth/login-page'))
 
 function protectedPage(element: React.ReactNode, permission: Permission) {
@@ -52,14 +49,7 @@ function roleDashboard(roles: [keyof typeof dashboardPaths, ...Array<keyof typeo
 }
 
 export const router = createBrowserRouter([
-  {
-    path: '/website',
-    children: [
-      { index: true, element: <LandingPage /> },
-      { path: 'contact', element: <ContactPage /> },
-      { path: 'inquiry', element: <InquiryPage /> },
-    ],
-  },
+  { path: '/website/*', element: <Navigate to="/login" replace /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/unauthorized', element: <UnauthorizedPage /> },
   {
