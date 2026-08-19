@@ -32,7 +32,7 @@ const sanitizeUser = (user) => ({
     status: user.status,
     branchId: user.branchId ?? null,
     branchName: user.branch?.name ?? null,
-    mustChangePassword: user.mustChangePassword,
+    mustChangePassword: false,
     studentId: user.studentId ?? null,
     // Only set for REFERRAL_AGENT — counselor/teacher/front_desk use user.id directly.
     referralAgentProfileId: user.role === "REFERRAL_AGENT"
