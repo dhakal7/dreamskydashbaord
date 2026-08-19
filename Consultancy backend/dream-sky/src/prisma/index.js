@@ -6,7 +6,9 @@ const { Pool } = require("pg");
 const globalForPrisma = global;
 
 const getClient = () => {
-    const dbUrl = process.env.DATABASE_URL || "postgresql://dreamsky_database:DreamskyPass2026@localhost/dreamsky_DreamSky?schema=public";
+    const dbUrl = process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("dreamsky_dreamsky")
+        ? process.env.DATABASE_URL
+        : "postgresql://dreamsky_database:DreamskyPass2026@127.0.0.1:5432/dreamsky_DreamSky?schema=public";
 
     const isRemoteDb = Boolean(
         dbUrl.includes("supabase") ||
