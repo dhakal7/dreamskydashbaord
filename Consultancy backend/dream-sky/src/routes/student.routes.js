@@ -26,7 +26,7 @@ router.get("/:id", studentController.getOne);
 
 router.put(
     "/:id",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
     studentController.update
 );
 
