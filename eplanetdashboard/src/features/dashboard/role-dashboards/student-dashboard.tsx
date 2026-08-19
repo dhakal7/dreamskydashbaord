@@ -152,7 +152,6 @@ export function StudentDashboard() {
               <EmptyState icon={FolderKanban} title="No documents uploaded" description="Your counselor will upload your documents here for review." className="py-8" />
             )}
             {myDocuments.slice(0, 5).map((doc) => {
-              const notes = getNotesForDocument(doc.id)
               const title = doc.customName || doc.fileName || doc.type.replace(/_/g, ' ')
               const isVerified = doc.status === 'verified'
               const isChangesRequested = doc.status === 'changes_requested'
