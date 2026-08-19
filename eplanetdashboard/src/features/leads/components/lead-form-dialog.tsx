@@ -167,11 +167,11 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
         {
           firstName: nameParts[0] || 'Unknown',
           lastName: nameParts.slice(1).join(' ') || '',
-          email: data.email,
-          phone: data.phone,
+          email: data.email || '',
+          phone: data.phone || '',
           source: data.source,
           assignedCounselorId: primaryCounselor?.id,
-          notes: `Interested Countries: ${data.interestedCountries.join(', ')} | Address: ${data.address}`,
+          notes: `Interested Countries: ${data.interestedCountries.join(', ')} | Address: ${data.address || 'N/A'}`,
         },
         {
           onSuccess: () => {
@@ -185,8 +185,8 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
       // Mock mode: add to local Zustand store only
       addLead({
         name: data.name,
-        email: data.email,
-        phone: data.phone,
+        email: data.email || '',
+        phone: data.phone || '',
         photoColor: '#2563EB',
         source: data.source,
         stage: 'new',
