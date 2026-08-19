@@ -346,18 +346,71 @@ export interface VisaCase {
 
 // ── Documents ────────────────────────────────────────────────────────────
 
+export type DocumentCategory =
+  | 'identity'
+  | 'academic'
+  | 'english_test'
+  | 'finance'
+  | 'visa'
+  | 'other'
+
+export type DocumentStatus =
+  | 'uploaded'
+  | 'pending_student_review'
+  | 'changes_requested'
+  | 're_uploaded'
+  | 'verified'
+  | 'rejected'
+  | 'pending_review'
+  | 'pending'
+
+export interface DocumentVersion {
+  id: string
+  documentId: string
+  versionNumber: number
+  fileUrl: string
+  originalName: string
+  mimeType?: string
+  fileSizeKb: number
+  uploadedBy: string
+  uploadedAt: string
+  status: DocumentStatus
+  notes?: string
+}
+
 export interface StudentDocument {
   id: string
   studentId: string
-  studentName: string
-  type: DocumentType
+  studentName?: string
+  category: DocumentCategory
+  type: string
+  customName?: string
   fileName: string
   previewUrl?: string
   fileSizeKb: number
   version: number
   uploadedAt: string
   uploadedBy: string
-  status: 'pending_review' | 'verified' | 'rejected'
+  status: DocumentStatus
+  reviewComment?: string
+  reviewedAt?: string
+  versions?: DocumentVersion[]
+  notes?: string
+}
+
+export interface StudentDocumentProfile {
+  studentId: string
+  studentName: string
+  applicationId: string
+  passportNumber: string
+  assignedCounselor: string
+  totalDocuments: number
+  verifiedDocuments: number
+  pendingDocuments: number
+  changesRequestedDocuments: number
+  completionPercentage: number
+  lastUpdated: string
+  documents: StudentDocument[]
 }
 
 // ── Activity / Timeline ─────────────────────────────────────────────────

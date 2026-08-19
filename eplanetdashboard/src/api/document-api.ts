@@ -1,96 +1,102 @@
 /**
- * document-api.ts  — Phase F3
- *
- * Axios wrappers for dream-sky /documents endpoints.
- * File uploads use FormData (multipart/form-data).
+ * document-api.ts — Real REST API client for dream-sky /documents endpoints.
  */
 
 import { api } from '@/lib/api-client'
 import axiosInstance from '@/lib/api-client'
-
-export interface ApiDocument {
-  id: string
-  studentId: string
-  uploadedById: string | null
-  type: string
-  status: string
-  originalName: string
-  storagePath: string
-  mimeType: string
-  sizeBytes: number
-  notes: string | null
-  expiresAt: string | null
-  createdAt: string
-  updatedAt: string
-  student?: { id: string; firstName: string; lastName: string }
-  uploadedBy?: { id: string; firstName: string; lastName: string } | null
-}
-
-export interface DocumentListParams {
-  page?: number
-  limit?: number
-  studentId?: string
-  type?: string
-  status?: string
-}
-
-export interface DocumentListResponse {
-  documents: ApiDocument[]
-  total: number
-  page: number
-  limit: number
-}
+import type { StudentDocumentProfile, StudentDocument } from '@/types'
 
 export interface UploadDocumentBody {
   file: File
   studentId: string
+  category?: string
   type: string
+  customName?: string
   notes?: string
-  expiresAt?: string
+  expiryDate?: string
+}
+
+export interface ReplaceDocumentBody {
+  file: File
+  notes?: string
+  customName?: string
 }
 
 export const documentApi = {
-  list(params?: DocumentListParams): Promise<DocumentListResponse> {
-    return api.get('/documents', { params })
-  },
-
-  getOne(id: string): Promise<ApiDocument> {
-    return api.get(`/documents/${id}`)
+  /**
+   * GET /documents/student-profiles
+   * Returns list of student profiles with document counts and document records.
+   */
+  listStudentProfiles(search?: string): Promise<StudentDocumentProfile[]> {
+    return api.get('/documents/student-profiles', { params: { search } })
   },
 
   /**
-   * POST /documents/upload
-   * Sends multipart/form-data — uses axiosInstance directly so we can set
-   * the Content-Type boundary automatically (don't set it manually, Axios/browser does it).
+   * GET /documents
    */
-  upload(body: UploadDocumentBody): Promise<ApiDocument> {
+  list(params?: { studentId?: string; category?: string; type?: string; status?: string }): Promise<{ documents: StudentDocument[] }> {
+    return api.get('/documents', { params })
+  },
+
+  getOne(id: string): Promise<StudentDocument> {
+    return api.get(`/documents/${id}`)
+  },
+
+  getHistory(id: string): Promise<StudentDocument> {
+    return api.get(`/documents/${id}/history`)
+  },
+
+  /**
+   * POST /documents/upload (multipart/form-data)
+   */
+  upload(body: UploadDocumentBody): Promise<StudentDocument> {
     const form = new FormData()
     form.append('file', body.file)
     form.append('studentId', body.studentId)
     form.append('type', body.type)
+    if (body.category) form.append('category', body.category)
+    if (body.customName) form.append('customName', body.customName)
     if (body.notes) form.append('notes', body.notes)
-    if (body.expiresAt) form.append('expiresAt', body.expiresAt)
+    if (body.expiryDate) form.append('expiryDate', body.expiryDate)
+
     return axiosInstance.post('/documents/upload', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
-    }) as Promise<ApiDocument>
+    }) as Promise<StudentDocument>
   },
 
   /**
-   * GET /documents/:id/download
-   * Returns a Blob — consumer is responsible for creating an object URL.
+   * POST /documents/:id/replace (multipart/form-data)
    */
+  replace(id: string, body: ReplaceDocumentBody): Promise<StudentDocument> {
+    const form = new FormData()
+    form.append('file', body.file)
+    if (body.notes) form.append('notes', body.notes)
+    if (body.customName) form.append('customName', body.customName)
+
+    return axiosInstance.post(`/documents/${id}/replace`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }) as Promise<StudentDocument>
+  },
+
+  /**
+   * POST /documents/:id/review (Student approval / Request changes)
+   */
+  review(id: string, action: 'APPROVE' | 'REQUEST_CHANGES', comment?: string): Promise<StudentDocument> {
+    return api.post(`/documents/${id}/review`, { action, comment })
+  },
+
+  rename(id: string, customName: string): Promise<StudentDocument> {
+    return api.patch(`/documents/${id}/rename`, { customName })
+  },
+
+  verify(id: string, notes?: string): Promise<StudentDocument> {
+    return api.patch(`/documents/${id}/verify`, { status: 'VERIFIED', notes })
+  },
+
   download(id: string): Promise<Blob> {
     return axiosInstance.get(`/documents/${id}/download`, {
       responseType: 'blob',
     }) as Promise<Blob>
-  },
-
-  verify(id: string, notes?: string): Promise<ApiDocument> {
-    return api.patch(`/documents/${id}/verify`, { status: 'VERIFIED', notes })
-  },
-
-  update(id: string, body: { notes?: string; expiresAt?: string; type?: string }): Promise<ApiDocument> {
-    return api.put(`/documents/${id}`, body)
   },
 
   remove(id: string): Promise<void> {

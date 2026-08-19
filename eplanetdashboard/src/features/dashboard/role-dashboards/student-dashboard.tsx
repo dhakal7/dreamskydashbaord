@@ -1,10 +1,16 @@
+import { useState } from 'react'
 import dayjs from 'dayjs'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
+} from '@/components/ui/dialog'
 import { EmptyState } from '@/components/shared/empty-state'
-import { ApplicationStageBadge } from '@/components/shared/status-badges'
-import { FileStack, PlaneTakeoff, FolderKanban, Wallet, Bell, ChevronRight, MessageSquare } from 'lucide-react'
+import { ApplicationStageBadge, DocumentStatusBadge } from '@/components/shared/status-badges'
+import { FileStack, PlaneTakeoff, FolderKanban, Wallet, Bell, ChevronRight, MessageSquare, CheckCircle2, AlertTriangle, Download } from 'lucide-react'
 import { RoleStatCards } from './shared'
 import { getStudentDashboard } from '../role-selectors'
 import { formatCurrency } from '@/lib/utils'
@@ -12,15 +18,23 @@ import { useAuthStore } from '@/store/auth-store'
 import { useAppointmentsStore } from '@/features/appointments/store'
 import { useDocumentsStore } from '@/features/documents/store'
 import { useDocumentNotesStore } from '@/features/documents/document-notes-store'
+import { useReviewDocument, useDownloadDocument } from '@/hooks/use-documents'
+import type { StudentDocument } from '@/types'
 
 export function StudentDashboard() {
   const linkedId = useAuthStore((s) => s.currentUser.linkedId)
   const data = getStudentDashboard(linkedId)
   const appointments = useAppointmentsStore((s) => s.appointments)
-  const { documents } = useDocumentsStore()
+  const { documents, updateDocumentStatus } = useDocumentsStore()
   const { getNotesForDocument } = useDocumentNotesStore()
+  const reviewMutation = useReviewDocument()
+  const downloadFn = useDownloadDocument()
+
+  const [requestDoc, setRequestDoc] = useState<StudentDocument | null>(null)
+  const [requestComment, setRequestComment] = useState('')
+
   const totalTuition = data.applications.reduce((s, a) => s + a.tuitionUsd, 0)
-  const myDocuments = documents.filter((d) => d.studentId === linkedId)
+  const myDocuments = documents.filter((d) => d.studentId === linkedId || !linkedId)
   const myAppointments = appointments
     .filter((a) => a.studentId === linkedId)
     .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
@@ -38,6 +52,33 @@ export function StudentDashboard() {
     },
     { label: 'Est. Tuition', value: formatCurrency(totalTuition), icon: Wallet, color: '#D97706' },
   ]
+
+  const handleApprove = (doc: StudentDocument) => {
+    reviewMutation.mutate(
+      { id: doc.id, action: 'APPROVE' },
+      {
+        onSuccess: () => {
+          updateDocumentStatus(doc.id, 'verified')
+        },
+      }
+    )
+  }
+
+  const handleRequestChangesSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!requestDoc || !requestComment.trim()) return
+
+    reviewMutation.mutate(
+      { id: requestDoc.id, action: 'REQUEST_CHANGES', comment: requestComment.trim() },
+      {
+        onSuccess: () => {
+          updateDocumentStatus(requestDoc.id, 'changes_requested')
+          setRequestDoc(null)
+          setRequestComment('')
+        },
+      }
+    )
+  }
 
   return (
     <div className="space-y-5">
@@ -95,45 +136,75 @@ export function StudentDashboard() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        {/* ── My Documents (Student Review System) ── */}
         <Card>
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <div>
-              <CardTitle>Documents</CardTitle>
-              <CardDescription>{myDocuments.length} uploaded</CardDescription>
+              <CardTitle>My Documents</CardTitle>
+              <CardDescription>{myDocuments.length} total uploaded by staff</CardDescription>
             </div>
             <Link to="/documents" className="flex items-center gap-1 text-xs font-medium text-primary hover:underline">
               View all <ChevronRight className="size-3" />
             </Link>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             {myDocuments.length === 0 && (
-              <EmptyState icon={FolderKanban} title="No documents uploaded" description="Upload documents via the Documents page." className="py-8" />
+              <EmptyState icon={FolderKanban} title="No documents uploaded" description="Your counselor will upload your documents here for review." className="py-8" />
             )}
-            {myDocuments.slice(0, 5).map((document) => {
-              const notes = getNotesForDocument(document.id)
+            {myDocuments.slice(0, 5).map((doc) => {
+              const notes = getNotesForDocument(doc.id)
+              const title = doc.customName || doc.fileName || doc.type.replace(/_/g, ' ')
+              const isVerified = doc.status === 'verified'
+              const isChangesRequested = doc.status === 'changes_requested'
+
               return (
-                <div key={document.id} className="rounded-lg border border-border/70 p-2.5 space-y-2">
-                  <div className="flex items-center gap-3">
+                <div key={doc.id} className="rounded-xl border border-border/80 p-3 space-y-2 bg-accent/10">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13px] font-medium">{document.fileName}</p>
-                      <p className="text-xs text-muted-foreground">{document.type.replace('_', ' ')} · {dayjs(document.uploadedAt).format('MMM D')}</p>
-                    </div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${document.status === 'verified' ? 'bg-green-50 text-green-700' : document.status === 'pending_review' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
-                      {document.status}
-                    </span>
-                  </div>
-                  {notes.length > 0 && (
-                    <div className="bg-secondary/40 rounded-lg p-2 text-xs space-y-1 border border-border/60">
-                      <p className="font-semibold text-[10px] text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                        <MessageSquare className="size-3 text-muted-foreground/80" /> Feedback ({notes.length})
+                      <p className="truncate text-sm font-semibold">{title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(doc.category || 'document').toUpperCase()} · v{doc.version || 1} · {dayjs(doc.uploadedAt).format('MMM D, YYYY')}
                       </p>
-                      {notes.map((note) => (
-                        <div key={note.id} className="text-muted-foreground text-[11px] leading-relaxed">
-                          <span className="font-medium text-foreground">{note.authorName} ({note.authorRole.replace('_', ' ')}):</span>{' '}
-                          {note.message}
-                        </div>
-                      ))}
                     </div>
+                    <DocumentStatusBadge status={doc.status} className="shrink-0 text-[10px]" />
+                  </div>
+
+                  {/* Student Review Actions */}
+                  {!isVerified && (
+                    <div className="pt-2 border-t border-border/50 flex items-center justify-between gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs px-2 gap-1 text-muted-foreground hover:text-foreground"
+                        onClick={() => downloadFn(doc.id, doc.fileName || `${doc.type}.pdf`)}
+                      >
+                        <Download className="size-3" /> Preview
+                      </Button>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs px-2.5 text-destructive border-destructive/30 hover:bg-destructive/10"
+                          onClick={() => setRequestDoc(doc)}
+                        >
+                          <AlertTriangle className="size-3 mr-1" /> Request Changes
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs px-2.5 gap-1 bg-green-600 hover:bg-green-700 text-white"
+                          onClick={() => handleApprove(doc)}
+                        >
+                          <CheckCircle2 className="size-3" /> Approve
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {isChangesRequested && doc.reviewComment && (
+                    <p className="text-[11px] text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">
+                      <span className="font-semibold">Your Request:</span> "{doc.reviewComment}"
+                    </p>
                   )}
                 </div>
               )
@@ -150,20 +221,52 @@ export function StudentDashboard() {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Progress</span>
-                  <span className="font-medium font-tabular">{data.visaCase.progress}%</span>
+                  <span className="font-medium">Progress</span>
+                  <span className="font-bold text-primary">{data.visaCase.progress}%</span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-secondary">
-                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${data.visaCase.progress}%` }} />
-                </div>
-                <div className="rounded-lg border border-border/70 bg-muted/20 p-3 text-xs text-muted-foreground">
-                  Next step: {data.visaCase.checklist.find((item) => item.status === 'not_started' || item.status === 'in_progress')?.step.replace(/_/g, ' ') ?? 'All complete'}
+                <div className="h-2 rounded-full bg-accent overflow-hidden">
+                  <div className="h-full bg-primary transition-all duration-300" style={{ width: `${data.visaCase.progress}%` }} />
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
       </div>
+
+      {/* ── Request Changes Dialog Modal ── */}
+      {requestDoc && (
+        <Dialog open={Boolean(requestDoc)} onOpenChange={(op) => !op && setRequestDoc(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Request Document Correction</DialogTitle>
+              <DialogDescription>
+                Specify what needs correction in <span className="font-semibold text-foreground">{requestDoc.customName || requestDoc.fileName || requestDoc.type}</span>. Your counselor will receive a notification to re-upload.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleRequestChangesSubmit} className="space-y-4 py-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">Reason / Feedback *</label>
+                <Input
+                  value={requestComment}
+                  onChange={(e) => setRequestComment(e.target.value)}
+                  placeholder="e.g. The passport image is blurred or missing the expiration date page."
+                  required
+                />
+              </div>
+
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setRequestDoc(null)}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="destructive" disabled={!requestComment.trim() || reviewMutation.isPending}>
+                  {reviewMutation.isPending ? 'Submitting...' : 'Submit Request'}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

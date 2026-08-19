@@ -41,21 +41,58 @@ enum PipelineStage {
   LOST
 }
 
-enum DocumentType {
-  PASSPORT
-  TRANSCRIPT
+enum DocumentCategory {
+  IDENTITY
+  ACADEMIC
   ENGLISH_TEST
-  BANK_STATEMENT
-  OFFER_LETTER
+  FINANCE
   VISA
   OTHER
 }
 
+enum DocumentType {
+  PASSPORT
+  CITIZENSHIP
+  BIRTH_CERTIFICATE
+  NATIONAL_ID
+  SEE_CERTIFICATE
+  PLUS_TWO_CERTIFICATE
+  BACHELORS_CERTIFICATE
+  TRANSCRIPT
+  CHARACTER_CERTIFICATE
+  IELTS
+  PTE
+  TOEFL
+  DUOLINGO
+  BANK_STATEMENT
+  BANK_CERTIFICATE
+  INCOME_CERTIFICATE
+  TAX_CLEARANCE
+  SPONSORSHIP_LETTER
+  AFFIDAVIT
+  LOAN_LETTER
+  PROPERTY_VALUATION
+  VISA_APPLICATION
+  VISA_DOCUMENTS
+  OFFER_LETTER
+  COE
+  CV
+  SOP
+  RECOMMENDATION
+  FINANCIAL
+  VISA_LETTER
+  OTHER
+}
+
 enum DocumentStatus {
-  PENDING
+  UPLOADED
+  PENDING_STUDENT_REVIEW
+  CHANGES_REQUESTED
+  RE_UPLOADED
   VERIFIED
   REJECTED
   EXPIRED
+  PENDING
 }
 
 enum CommunicationChannel {
@@ -292,6 +329,8 @@ model User {
   appointments         Appointment[]        @relation("CounselorAppointments")
   uploadedDocuments    Document[]           @relation("DocumentUploader")
   verifiedDocuments    Document[]           @relation("DocumentVerifier")
+  reviewedDocuments    Document[]           @relation("DocumentReviewer")
+  uploadedVersions     DocumentVersion[]    @relation("VersionUploader")
   receivedCommissions  Commission[]         @relation("RecipientUser")
   taughtClasses        Class[]              @relation("ClassTeacher")
   createdEvents        Event[]              @relation("CreatedEvents")
@@ -345,6 +384,8 @@ model ReferralAgentProfile {
 
 model Student {
   id                  String        @id @default(cuid())
+  studentCode         String?       @unique
+  passportNumber      String?
   firstName           String
   lastName            String
   email               String?       @unique
@@ -406,26 +447,51 @@ model TestScore {
 }
 
 model Document {
-  id             String         @id @default(cuid())
+  id             String           @id @default(cuid())
   studentId      String
+  category       DocumentCategory @default(OTHER)
   type           DocumentType
-  status         DocumentStatus @default(PENDING)
+  customName     String?
+  status         DocumentStatus   @default(UPLOADED)
   fileUrl        String
   originalName   String?
   mimeType       String?
   fileSize       Int?
+  currentVersion Int              @default(1)
   uploadedById   String?
   verifiedById   String?
+  reviewedById   String?
+  reviewComment  String?
+  reviewedAt     DateTime?
   expiryDate     DateTime?
-  acknowledged   Boolean        @default(false)
+  acknowledged   Boolean          @default(false)
   acknowledgedAt DateTime?
   notes          String?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
 
-  student    Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  uploadedBy User?   @relation("DocumentUploader", fields: [uploadedById], references: [id])
-  verifiedBy User?   @relation("DocumentVerifier", fields: [verifiedById], references: [id])
+  student    Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  uploadedBy User?             @relation("DocumentUploader", fields: [uploadedById], references: [id])
+  verifiedBy User?             @relation("DocumentVerifier", fields: [verifiedById], references: [id])
+  reviewedBy User?             @relation("DocumentReviewer", fields: [reviewedById], references: [id])
+  versions   DocumentVersion[]
+}
+
+model DocumentVersion {
+  id           String         @id @default(cuid())
+  documentId   String
+  versionNumber Int
+  fileUrl      String
+  originalName String?
+  mimeType     String?
+  fileSize     Int?
+  uploadedById String?
+  status       DocumentStatus @default(UPLOADED)
+  notes        String?
+  createdAt    DateTime       @default(now())
+
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  uploadedBy User?    @relation("VersionUploader", fields: [uploadedById], references: [id])
 }
 
 model CommunicationLog {

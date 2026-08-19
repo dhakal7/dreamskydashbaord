@@ -1,35 +1,82 @@
 /**
- * use-documents.ts  — Phase F3
+ * use-documents.ts — TanStack Query hooks for real document REST APIs.
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { isMockMode } from '@/lib/api-client'
-import { documentApi, type DocumentListParams, type UploadDocumentBody } from '@/api/document-api'
+import { documentApi, type UploadDocumentBody, type ReplaceDocumentBody } from '@/api/document-api'
 
 export const documentKeys = {
   all: ['documents'] as const,
+  profiles: (search?: string) => [...documentKeys.all, 'profiles', search ?? ''] as const,
   lists: () => [...documentKeys.all, 'list'] as const,
-  list: (p: DocumentListParams) => [...documentKeys.lists(), p] as const,
   detail: (id: string) => [...documentKeys.all, 'detail', id] as const,
+  history: (id: string) => [...documentKeys.all, 'history', id] as const,
 }
 
-export function useDocuments(params: DocumentListParams = {}) {
+export function useStudentDocumentProfiles(search?: string) {
   return useQuery({
-    queryKey: documentKeys.list(params),
-    queryFn: () => documentApi.list(params),
+    queryKey: documentKeys.profiles(search),
+    queryFn: () => documentApi.listStudentProfiles(search),
     enabled: !isMockMode(),
+  })
+}
+
+export function useDocumentHistory(id: string | null) {
+  return useQuery({
+    queryKey: documentKeys.history(id ?? ''),
+    queryFn: () => documentApi.getHistory(id!),
+    enabled: Boolean(id) && !isMockMode(),
   })
 }
 
 export function useUploadDocument() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: UploadDocumentBody) => {
-      if (isMockMode()) return Promise.resolve(null as never)
-      return documentApi.upload(body)
+    mutationFn: (body: UploadDocumentBody) => documentApi.upload(body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: documentKeys.all })
+      toast.success('Document uploaded successfully')
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: documentKeys.lists() }); toast.success('Document uploaded') },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useReplaceDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: ReplaceDocumentBody }) => documentApi.replace(id, body),
+    onSuccess: (_d, { id }) => {
+      qc.invalidateQueries({ queryKey: documentKeys.all })
+      qc.invalidateQueries({ queryKey: documentKeys.history(id) })
+      toast.success('Document replaced with new version')
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useReviewDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, action, comment }: { id: string; action: 'APPROVE' | 'REQUEST_CHANGES'; comment?: string }) =>
+      documentApi.review(id, action, comment),
+    onSuccess: (_d, { action }) => {
+      qc.invalidateQueries({ queryKey: documentKeys.all })
+      toast.success(action === 'APPROVE' ? 'Document approved and verified' : 'Change request submitted to counselor')
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useRenameDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, customName }: { id: string; customName: string }) => documentApi.rename(id, customName),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: documentKeys.all })
+      toast.success('Document renamed')
+    },
     onError: (err: Error) => toast.error(err.message),
   })
 }
@@ -37,26 +84,17 @@ export function useUploadDocument() {
 export function useVerifyDocument() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes?: string }) => {
-      if (isMockMode()) return Promise.resolve(null as never)
-      return documentApi.verify(id, notes)
-    },
+    mutationFn: ({ id, notes }: { id: string; notes?: string }) => documentApi.verify(id, notes),
     onSuccess: (_d, { id }) => {
-      qc.invalidateQueries({ queryKey: documentKeys.detail(id) })
-      qc.invalidateQueries({ queryKey: documentKeys.lists() })
+      qc.invalidateQueries({ queryKey: documentKeys.all })
       toast.success('Document verified')
     },
     onError: (err: Error) => toast.error(err.message),
   })
 }
 
-/**
- * useDownloadDocument — triggers a browser file download.
- * Designed to be called imperatively (not as a query), so it returns a plain function.
- */
 export function useDownloadDocument() {
   return async (id: string, filename: string) => {
-    if (isMockMode()) { toast.info('Download not available in mock mode'); return }
     try {
       const blob = await documentApi.download(id)
       const url = URL.createObjectURL(blob)
