@@ -48,7 +48,7 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
     'documents.view', 'documents.manage', 'classes.view', 'events.view', 'events.manage', 'settings.manage',
   ],
   counselor: [
-    'dashboard.view', 'leads.view', 'students.view', 'students.manage',
+    'dashboard.view', 'leads.view', 'leads.change-stage', 'students.view', 'students.manage',
     'followups.view', 'appointments.view', 'applications.view', 'applications.manage',
     'visa.view', 'visa.manage', 'documents.view', 'documents.manage', 'classes.view',
     'commissions.view', 'events.view', 'reports.view', 'settings.manage',
