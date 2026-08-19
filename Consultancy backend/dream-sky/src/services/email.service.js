@@ -162,6 +162,14 @@ const sendFeeDueEmail = ({ to, studentName, feeCategory, dueAmount, currency = "
     return sendMail({ to, subject, text, html });
 };
 
+const sendNotificationEmail = ({ to, subject, body }) =>
+    sendMail({
+        to,
+        subject,
+        text: body,
+        html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px"><p style="color:#374151;font-size:15px;line-height:1.6">${body.replace(/\n/g, "<br/>")}</p></div>`,
+    });
+
 module.exports = {
     sendMail,
     sendWelcomeStudentEmail,
@@ -171,4 +179,5 @@ module.exports = {
     sendFeeDueEmail,
     isConfigured
 };
+
 
