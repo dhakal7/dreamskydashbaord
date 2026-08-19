@@ -37,12 +37,27 @@ export const leadColumns: ColumnDef<Lead, any>[] = [
   {
     accessorKey: 'interestedCountry',
     header: 'Interest',
-    cell: ({ row }) => (
-      <div className="text-[13px]">
-        <p>{row.original.interestedCountry}</p>
-        <p className="text-xs capitalize text-muted-foreground">{row.original.interestedLevel}</p>
-      </div>
-    ),
+    cell: ({ row }) => {
+      const countriesList = row.original.interestedCountries && row.original.interestedCountries.length > 0
+        ? row.original.interestedCountries
+        : row.original.interestedCountry ? row.original.interestedCountry.split(',').map(s => s.trim()) : []
+      return (
+        <div className="text-[13px]">
+          <div className="flex flex-wrap gap-1">
+            {countriesList.length > 0 ? (
+              countriesList.map((c) => (
+                <Badge key={c} variant="outline" className="text-[10px] py-0 font-normal">
+                  {c}
+                </Badge>
+              ))
+            ) : (
+              <p>{row.original.interestedCountry}</p>
+            )}
+          </div>
+          <p className="text-[11px] capitalize text-muted-foreground mt-0.5">{row.original.interestedLevel}</p>
+        </div>
+      )
+    },
   },
   {
     accessorKey: 'stage',

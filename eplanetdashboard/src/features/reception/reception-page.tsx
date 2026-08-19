@@ -18,6 +18,8 @@ import { LeadFormDialog } from '@/features/leads/components/lead-form-dialog'
 import { followUps } from '@/mock'
 import type { AppointmentStatus } from '@/types'
 
+import { FeeManagementPanel } from './components/fee-management-panel'
+
 export default function ReceptionPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const allAppointments = useAppointmentsStore((s) => s.appointments)
@@ -56,7 +58,7 @@ export default function ReceptionPage() {
     <div className="space-y-5">
       <PageHeader
         title="Reception"
-        description="Walk-in desk — appointments, check-ins, and new leads."
+        description="Walk-in desk — appointments, check-ins, fee collections, and new leads."
       />
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr] xl:items-start">
@@ -135,7 +137,7 @@ export default function ReceptionPage() {
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <p className="text-xs text-muted-foreground mb-3">
-                Register a new visitor as a lead with full details.
+                Register a new visitor as a lead with multi-country selection.
               </p>
               <Button className="w-full gap-1.5" onClick={() => setLeadDialogOpen(true)}>
                 <UserPlus className="size-3.5" />
@@ -185,6 +187,9 @@ export default function ReceptionPage() {
           </Card>
         </div>
       </div>
+
+      {/* ── Fee Management Panel for Frontdesk Officers ──────────────── */}
+      <FeeManagementPanel />
 
       <LeadFormDialog open={leadDialogOpen} onOpenChange={setLeadDialogOpen} />
     </div>

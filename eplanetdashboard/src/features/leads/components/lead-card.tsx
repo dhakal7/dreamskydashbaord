@@ -98,7 +98,11 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
         <PersonAvatar name={lead.name} color={lead.photoColor} className="size-8" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[13px] font-semibold">{lead.name}</p>
-          <p className="truncate text-[11px] text-muted-foreground">{lead.interestedCountry} · {lead.interestedLevel}</p>
+          <p className="truncate text-[11px] text-muted-foreground">
+            {lead.interestedCountries && lead.interestedCountries.length > 0
+              ? lead.interestedCountries.join(', ')
+              : lead.interestedCountry} · {lead.interestedLevel}
+          </p>
         </div>
 
         <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>

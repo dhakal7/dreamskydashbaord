@@ -253,6 +253,7 @@ export interface Lead {
     counselorName: string
   }>
   interestedCountry: string
+  interestedCountries?: string[]
   interestedLevel: StudyLevel
   budgetUsd?: number
   address?: string
@@ -563,3 +564,26 @@ export interface Commission {
   generatedAt: string
   paidAt?: string
 }
+
+// ── Fee Management ────────────────────────────────────────────────────────
+
+export type FeePaymentStatus = 'FULL_PAID' | 'DUE' | 'UNPAID'
+
+export interface StudentFeeRecord {
+  id: string
+  studentId: string
+  studentName: string
+  studentEmail: string
+  studentPhone: string
+  feeCategory: 'Application Fee' | 'Tuition Fee' | 'Class Fee' | 'Processing Fee' | 'Registration Fee'
+  totalAmount: number
+  paidAmount: number
+  dueAmount: number
+  currency: string
+  status: FeePaymentStatus
+  dueDate: string
+  lastPaymentDate?: string
+  lastReminderSentAt?: string
+  notes?: string
+}
+
