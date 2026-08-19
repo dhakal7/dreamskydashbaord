@@ -9,6 +9,7 @@ import { AppointmentDialog } from '@/features/appointments/components/appointmen
 import { LeadFormDialog } from '@/features/leads/components/lead-form-dialog'
 import { FeeManagementPanel } from '@/features/reception/components/fee-management-panel'
 import { ClassAttendanceWidget } from '../components/class-attendance-widget'
+import { ClassEnrollmentPanel } from '../components/class-enrollment-panel'
 
 export function FrontDeskDashboard() {
   const { data } = useFrontDeskStats()
@@ -29,7 +30,7 @@ export function FrontDeskDashboard() {
     <div className="space-y-5">
       <PageHeader
         title="Front Desk Overview"
-        description="Daily operational hub — walk-in lead capture, appointment check-ins, fee collections, and student class attendance."
+        description="Daily operational hub — walk-in lead capture, class admissions, appointment check-ins, fee collections, and student attendance."
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => setApptDialogOpen(true)}>
@@ -43,6 +44,9 @@ export function FrontDeskDashboard() {
       />
 
       <RoleStatCards stats={stats} />
+
+      {/* Class Section & Student Admissions for Front Desk Officer */}
+      <ClassEnrollmentPanel />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <TodaysAppointmentsPanel />
