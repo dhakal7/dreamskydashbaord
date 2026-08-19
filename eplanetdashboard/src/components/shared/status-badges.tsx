@@ -151,14 +151,7 @@ export function FollowUpStatusBadge({ status, className }: { status: FollowUpSta
   )
 }
 
-export function DocumentStatusBadge({ status, className }: { status: StudentDocument['status']; className?: string }) {
-  const meta = documentStatusMeta[status]
-  return (
-    <Badge variant={meta.variant} className={cn(className)}>
-      {meta.label}
-    </Badge>
-  )
-}
+
 
 export const classStatusMeta: Record<ClassSession['status'], { label: string; variant: 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'slate' }> = {
   upcoming: { label: 'Upcoming', variant: 'info' },

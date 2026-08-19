@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
 import {
-  FolderKanban, Upload, Eye, Download, Edit2, Replace, History, Trash2, CheckCircle2, AlertCircle, Sparkles, MessageSquare, Plus, FileText, ChevronRight
+  FolderKanban, Eye, Download, Edit2, Replace, History, Trash2, AlertCircle, Plus, FileText
 } from 'lucide-react'
 import {
   Dialog,
@@ -16,12 +16,11 @@ import { Progress } from '@/components/ui/progress'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { DocumentStatusBadge } from '@/components/shared/status-badges'
 import { PersonAvatar } from '@/components/ui/avatar'
-import { DocumentUploadDialog, TYPE_OPTIONS_BY_CATEGORY } from './document-upload-dialog'
+import { DocumentUploadDialog } from './document-upload-dialog'
 import { VersionHistoryDialog } from './version-history-dialog'
 import { useDownloadDocument, useReplaceDocument, useRenameDocument } from '@/hooks/use-documents'
 import type { StudentDocumentProfile, StudentDocument, DocumentCategory } from '@/types'
 import { Input } from '@/components/ui/input'
-import { toast } from 'sonner'
 
 interface StudentDocumentProfileDialogProps {
   profile: StudentDocumentProfile | null
@@ -91,8 +90,6 @@ export function StudentDocumentProfileDialog({
     visa: { total: docsByCategory.visa.length, verified: docsByCategory.visa.filter((d) => d.status === 'verified').length },
     other: { total: docsByCategory.other.length, verified: docsByCategory.other.filter((d) => d.status === 'verified').length },
   }
-
-  const activeDocs = docsByCategory[activeCategory] || []
 
   const handleReplaceSubmit = (e: React.FormEvent) => {
     e.preventDefault()
