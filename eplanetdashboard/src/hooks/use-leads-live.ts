@@ -134,7 +134,13 @@ export function useMoveLiveLead() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: studentKeys.lists() })
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => {
+      if (err.message && err.message.includes('already at this stage')) {
+        qc.invalidateQueries({ queryKey: studentKeys.lists() })
+        return
+      }
+      toast.error(err.message)
+    },
   })
 }
 

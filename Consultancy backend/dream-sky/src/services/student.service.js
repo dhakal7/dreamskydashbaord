@@ -248,8 +248,7 @@ const changePipelineStage = async (id, { stage, reasonCode }, changedById) => {
     const student = await prisma.student.findUnique({ where: { id } });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
 
-    if (student.currentStage === stage)
-        throw AppError.badRequest("Student is already at this stage.", "SAME_STAGE");
+    if (student.currentStage === stage) return student;
 
     if (!isValidTransition(student.currentStage, stage))
         throw AppError.badRequest(
