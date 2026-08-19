@@ -122,13 +122,45 @@ const sendEventNotificationEmail = ({ to, recipientName, eventTitle, datetime, l
     return sendMail({ to, subject, text, html });
 };
 
-const sendNotificationEmail = ({ to, subject, body }) =>
-    sendMail({
-        to,
-        subject,
-        text: body,
-        html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px"><p style="color:#374151;font-size:15px;line-height:1.6">${body.replace(/\n/g, "<br/>")}</p></div>`,
-    });
+const sendFeeDueEmail = ({ to, studentName, feeCategory, dueAmount, currency = "NPR", dueDate, notes }) => {
+    const subject = `Fee Payment Reminder Notice — ${feeCategory} Due (${currency} ${dueAmount.toLocaleString()})`;
+    const text = `Hi ${studentName},\n\nThis is a friendly reminder from DreamSky Education Consultancy regarding your pending ${feeCategory}.\n\nFee Category: ${feeCategory}\nDue Amount: ${currency} ${dueAmount}\nDue Date: ${dueDate || 'Immediate'}\n${notes ? `Notes: ${notes}\n` : ''}\nPlease clear your due balance at the front desk or via online bank transfer at your earliest convenience.\n\nThank you,\nFront Desk Team\nDreamSky Education Consultancy`;
+    const html = `
+<div style="font-family:Arial,Helvetica,sans-serif;max-width:580px;margin:0 auto;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
+  <div style="background:#d97706;padding:22px 28px">
+    <h2 style="color:#ffffff;margin:0;font-size:20px">DreamSky Education Consultancy</h2>
+    <p style="color:#fef3c7;margin:4px 0 0 0;font-size:13px font-weight:500">Official Fee Due Reminder</p>
+  </div>
+  <div style="padding:28px">
+    <p style="font-size:15px;color:#111827">Dear <strong>${studentName}</strong>,</p>
+    <p style="font-size:14px;color:#374151;line-height:1.6">
+      This is an official notice regarding an outstanding fee balance associated with your account.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:20px 0;font-size:14px">
+      <tr style="background:#f9fafb">
+        <td style="padding:10px 14px;border:1px solid #e5e7eb;color:#6b7280">Fee Description</td>
+        <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:600;color:#111827">${feeCategory}</td>
+      </tr>
+      <tr>
+        <td style="padding:10px 14px;border:1px solid #e5e7eb;color:#6b7280">Outstanding Balance</td>
+        <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:700;color:#dc2626">${currency} ${dueAmount.toLocaleString()}</td>
+      </tr>
+      <tr style="background:#f9fafb">
+        <td style="padding:10px 14px;border:1px solid #e5e7eb;color:#6b7280">Payment Due Date</td>
+        <td style="padding:10px 14px;border:1px solid #e5e7eb;font-weight:600;color:#111827">${dueDate || 'Immediate'}</td>
+      </tr>
+    </table>
+    ${notes ? `<p style="font-size:13px;color:#4b5563;background:#fffbeb;padding:12px;border-left:4px solid #f59e0b;border-radius:4px"><strong>Note from Front Desk:</strong> ${notes}</p>` : ''}
+    <p style="font-size:14px;color:#374151;line-height:1.5">
+      Kindly visit our Front Desk or process an online transfer to settle your due fee promptly.
+    </p>
+    <p style="font-size:13px;color:#9ca3af;margin-top:24px;border-top:1px dashed #e5e7eb;padding-top:12px">
+      If you have already completed this payment, please disregard this automated notification or submit your receipt copy to the front desk officer.
+    </p>
+  </div>
+</div>`;
+    return sendMail({ to, subject, text, html });
+};
 
 module.exports = {
     sendMail,
@@ -136,5 +168,7 @@ module.exports = {
     sendStaffInvitationEmail,
     sendEventNotificationEmail,
     sendNotificationEmail,
+    sendFeeDueEmail,
     isConfigured
 };
+

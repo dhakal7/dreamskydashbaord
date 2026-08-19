@@ -25,7 +25,7 @@ const formSchema = z.object({
   email: z.string().email('Valid email is required'),
   phone: z.string().min(7, 'Phone is required'),
   source: z.enum(['website', 'facebook', 'referral_agent', 'walk_in', 'education_fair', 'google_ads', 'instagram']),
-  interestedCountry: z.string().min(1, 'Country is required'),
+  interestedCountries: z.array(z.string()).min(1, 'At least one country is required'),
   interestedLevel: z.enum(['foundation', 'diploma', 'bachelor', 'master', 'phd']),
   address: z.string().min(2, 'Address is required'),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
@@ -77,7 +77,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
       email: '',
       phone: '',
       source: 'website',
-      interestedCountry: '',
+      interestedCountries: [],
       interestedLevel: 'bachelor',
       address: '',
       priority: 'medium',
@@ -87,12 +87,15 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
 
   useEffect(() => {
     if (open && leadToEdit) {
+      const existingCountries = leadToEdit.interestedCountries && leadToEdit.interestedCountries.length > 0
+        ? leadToEdit.interestedCountries
+        : (leadToEdit.interestedCountry ? leadToEdit.interestedCountry.split(',').map((c) => c.trim()) : [])
       reset({
         name: leadToEdit.name,
         email: leadToEdit.email,
         phone: leadToEdit.phone,
         source: leadToEdit.source || 'website',
-        interestedCountry: leadToEdit.interestedCountry || '',
+        interestedCountries: existingCountries,
         interestedLevel: leadToEdit.interestedLevel || 'bachelor',
         address: leadToEdit.address || '',
         priority: leadToEdit.priority || 'medium',
@@ -105,7 +108,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
         email: '',
         phone: '',
         source: 'website',
-        interestedCountry: '',
+        interestedCountries: [],
         interestedLevel: 'bachelor',
         address: '',
         priority: 'medium',
@@ -116,7 +119,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
   }, [open, leadToEdit, reset])
 
   const selectedSource = watch('source')
-  const selectedCountryName = watch('interestedCountry')
+  const selectedCountries = watch('interestedCountries') || []
   const showAgentField = selectedSource === 'referral_agent'
 
   const suggestedAgents = useMemo(() => {
@@ -130,8 +133,10 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
     const primaryCounselor = selectedCounselors[0]
     const resolvedAgent = showAgentField ? createReferralAgent(agentQuery) : null
 
+    const primaryCountry = data.interestedCountries.join(', ')
+
     const assignments = selectedCounselors.map((counselor) => ({
-      country: data.interestedCountry,
+      country: primaryCountry,
       counselorId: counselor.id,
       counselorName: counselor.name,
     }))
@@ -142,7 +147,8 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
         email: data.email,
         phone: data.phone,
         source: data.source,
-        interestedCountry: data.interestedCountry,
+        interestedCountry: primaryCountry,
+        interestedCountries: data.interestedCountries,
         interestedLevel: data.interestedLevel,
         address: data.address,
         priority: data.priority,
@@ -165,7 +171,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
           phone: data.phone,
           source: data.source,
           assignedCounselorId: primaryCounselor?.id,
-          notes: data.address ? `Address: ${data.address}` : undefined,
+          notes: `Interested Countries: ${data.interestedCountries.join(', ')} | Address: ${data.address}`,
         },
         {
           onSuccess: () => {
@@ -186,11 +192,12 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
         stage: 'new',
         counselorId: primaryCounselor?.id ?? '',
         counselorName: primaryCounselor?.name ?? 'Unassigned',
-        selectedCountry: data.interestedCountry,
+        selectedCountry: primaryCountry,
         selectedCounselorId: primaryCounselor?.id ?? '',
         selectedCounselorName: primaryCounselor?.name ?? 'Unassigned',
         countryCounselorAssignments: assignments,
-        interestedCountry: data.interestedCountry,
+        interestedCountry: primaryCountry,
+        interestedCountries: data.interestedCountries,
         interestedLevel: data.interestedLevel,
         address: data.address,
         priority: data.priority,
@@ -222,7 +229,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
             {leadToEdit ? `Edit Lead Details: ${leadToEdit.name}` : 'Capture a New Lead'}
           </DialogTitle>
           <DialogDescription>
-            {leadToEdit ? 'Update contact info, email, phone, and lead parameters.' : "Enter the prospect's details to add them to the pipeline."}
+            {leadToEdit ? 'Update contact info, email, phone, and target countries.' : "Enter the prospect's details and select interested countries."}
           </DialogDescription>
         </DialogHeader>
 
@@ -343,34 +350,60 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
               )}
             </div>
 
-            {/* Interested Country + Level */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Interested Country</label>
-                <Controller
-                  name="interestedCountry"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className={errors.interestedCountry ? 'border-danger-500' : ''}>
-                        <SelectValue placeholder="Select country…" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {countries.map((c) => (
-                          <SelectItem key={c.id} value={c.name}>
-                            {c.flag} {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.interestedCountry && (
-                  <p className="text-[11px] text-danger-600 flex items-center gap-1">
-                    <AlertTriangle className="size-3" />{errors.interestedCountry.message}
-                  </p>
+            {/* Interested Countries (Multi-select) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-foreground">
+                  Interested Countries <span className="text-muted-foreground font-normal">(Select multiple)</span>
+                </label>
+                {selectedCountries.length > 0 && (
+                  <span className="text-[11px] text-primary font-medium">
+                    {selectedCountries.length} selected
+                  </span>
                 )}
               </div>
+
+              <Controller
+                name="interestedCountries"
+                control={control}
+                render={({ field }) => (
+                  <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/70 bg-muted/20 p-2.5 sm:grid-cols-3">
+                    {countries.map((c) => {
+                      const isChecked = (field.value ?? []).includes(c.name)
+                      return (
+                        <label
+                          key={c.id}
+                          className={`flex items-center gap-2 rounded-md border p-2 text-xs font-medium cursor-pointer transition-colors ${
+                            isChecked
+                              ? 'border-primary bg-primary/10 text-primary font-semibold'
+                              : 'border-border/60 bg-background hover:bg-muted/50'
+                          }`}
+                        >
+                          <Checkbox
+                            checked={isChecked}
+                            onCheckedChange={(val) => {
+                              const next = val
+                                ? [...(field.value ?? []), c.name]
+                                : (field.value ?? []).filter((name: string) => name !== c.name)
+                              field.onChange(next)
+                            }}
+                          />
+                          <span className="truncate">{c.flag} {c.name}</span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+              />
+              {errors.interestedCountries && (
+                <p className="text-[11px] text-danger-600 flex items-center gap-1">
+                  <AlertTriangle className="size-3" />{errors.interestedCountries.message}
+                </p>
+              )}
+            </div>
+
+            {/* Interested Level + Priority */}
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">Interested Level</label>
                 <Controller
@@ -388,37 +421,36 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                   )}
                 />
               </div>
-            </div>
 
-            {/* Priority */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-foreground">Priority</label>
-              <Controller
-                name="priority"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.keys(priorityLabels) as Priority[]).map((p) => (
-                        <SelectItem key={p} value={p}>{priorityLabels[p]}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">Priority</label>
+                <Controller
+                  name="priority"
+                  control={control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {(Object.keys(priorityLabels) as Priority[]).map((p) => (
+                          <SelectItem key={p} value={p}>{priorityLabels[p]}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
             </div>
 
             {/* Counselor Assignment */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-foreground">Assign Counselors for Selected Country</label>
+              <label className="text-xs font-semibold text-foreground">Assign Counselors</label>
               <Controller
                 name="counselorIds"
                 control={control}
                 render={({ field }) => (
                   <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
                     <p className="mb-2 text-[11px] text-muted-foreground">
-                      Select one or more counselors for {selectedCountryName || 'the selected country'}.
+                      Select one or more counselors for {selectedCountries.length > 0 ? selectedCountries.join(', ') : 'the selected countries'}.
                     </p>
                     <div className="space-y-2">
                       {counselors.map((c) => {

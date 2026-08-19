@@ -45,7 +45,7 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
   front_desk: [
     'dashboard.view', 'leads.view', 'leads.manage', 'leads.change-stage', 'students.view', 'students.manage',
     'followups.view', 'appointments.view', 'appointments.manage', 'applications.view', 'applications.manage',
-    'documents.view', 'documents.manage', 'events.view', 'events.manage', 'settings.manage',
+    'documents.view', 'documents.manage', 'classes.view', 'events.view', 'events.manage', 'settings.manage',
   ],
   counselor: [
     'dashboard.view', 'leads.view', 'students.view', 'students.manage',

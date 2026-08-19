@@ -45,7 +45,7 @@ const byRole: Record<Role, (keyof typeof all)[]> = {
     'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa',
     'documents', 'universities', 'countries', 'courses', 'classes', 'reports', 'commissionRules', 'events', 'users', 'settings',
   ],
-  front_desk: ['dashboard', 'leads', 'students', 'followUps', 'appointments', 'documents', 'settings'],
+  front_desk: ['dashboard', 'reception', 'leads', 'students', 'followUps', 'appointments', 'classes', 'documents', 'settings'],
   counselor: [
     'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa',
     'documents', 'classes', 'materials', 'commissions', 'events', 'reports', 'settings',

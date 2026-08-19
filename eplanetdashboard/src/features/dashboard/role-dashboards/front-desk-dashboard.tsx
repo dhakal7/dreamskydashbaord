@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
-import { CalendarClock, Plus } from 'lucide-react'
+import { CalendarClock, Plus, UserPlus, Wallet, CalendarCheck } from 'lucide-react'
 import { RoleStatCards } from './shared'
 import { TodaysAppointmentsPanel, UpcomingFollowUpsPanel } from '../components/panels'
 import { useFrontDeskStats, ZERO_FRONT_DESK, useTodayAppointments } from '../hooks/use-dashboard-stats'
 import { AppointmentDialog } from '@/features/appointments/components/appointment-dialog'
 import { LeadFormDialog } from '@/features/leads/components/lead-form-dialog'
-import { UserPlus, Wallet, CalendarCheck } from 'lucide-react'
+import { FeeManagementPanel } from '@/features/reception/components/fee-management-panel'
+import { ClassAttendanceWidget } from '../components/class-attendance-widget'
 
 export function FrontDeskDashboard() {
   const { data } = useFrontDeskStats()
@@ -27,8 +28,8 @@ export function FrontDeskDashboard() {
   return (
     <div className="space-y-5">
       <PageHeader
-        title="Front Desk"
-        description="Today's overview — walk-in clients, leads, and appointments."
+        title="Front Desk Overview"
+        description="Daily operational hub — walk-in lead capture, appointment check-ins, fee collections, and student class attendance."
         actions={
           <>
             <Button variant="outline" size="sm" onClick={() => setApptDialogOpen(true)}>
@@ -48,6 +49,12 @@ export function FrontDeskDashboard() {
         <UpcomingFollowUpsPanel />
       </div>
 
+      {/* Class Attendance Widget for Frontdesk Officer */}
+      <ClassAttendanceWidget />
+
+      {/* Fee & Payment Collection Section for Frontdesk Officer */}
+      <FeeManagementPanel />
+
       <AppointmentDialog
         appointment={null}
         open={apptDialogOpen}
@@ -61,3 +68,4 @@ export function FrontDeskDashboard() {
     </div>
   )
 }
+
