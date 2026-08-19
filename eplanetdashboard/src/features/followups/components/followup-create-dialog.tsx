@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Mail, Phone } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -153,6 +153,19 @@ export function FollowUpCreateDialog({ open, onOpenChange, initialStudentId }: F
             placeholder="Search student by name or ID"
             emptyMessage="No students available"
           />
+          {selectedStudent && (
+            selectedStudent.email ? (
+              <div className="flex items-center gap-2 rounded-md bg-emerald-500/10 p-2.5 text-[11px] text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <Mail className="size-3.5 shrink-0 text-emerald-500" />
+                <span>Automated follow-up notification will be emailed to <strong>{selectedStudent.email}</strong>.</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 rounded-md bg-amber-500/10 p-2.5 text-[11px] text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                <Phone className="size-3.5 shrink-0 text-amber-500" />
+                <span><strong>No email registered:</strong> Frontdesk officer must manually call {selectedStudent.phone ? <strong>{selectedStudent.phone}</strong> : 'the student'} to remind about this follow-up.</span>
+              </div>
+            )
+          )}
 
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground">Counselor</label>

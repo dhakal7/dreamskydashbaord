@@ -347,7 +347,7 @@ model Student {
   id                  String        @id @default(cuid())
   firstName           String
   lastName            String
-  email               String        @unique
+  email               String?       @unique
   phone               String?
   dateOfBirth         DateTime?
   nationality         String?

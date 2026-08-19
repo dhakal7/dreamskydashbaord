@@ -71,8 +71,11 @@ const provisionPortalAndSendWelcome = async (student) => {
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
 const createStudent = async (data) => {
-    const existing = await prisma.student.findUnique({ where: { email: data.email.toLowerCase().trim() } });
-    if (existing) throw AppError.conflict("A student with this email already exists.", "DUPLICATE_EMAIL");
+    const studentEmail = data.email && data.email.trim() ? data.email.toLowerCase().trim() : null;
+    if (studentEmail) {
+        const existing = await prisma.student.findFirst({ where: { email: studentEmail } });
+        if (existing) throw AppError.conflict("A student with this email already exists.", "DUPLICATE_EMAIL");
+    }
 
     let partnerConsultancyId = data.partnerConsultancyId || null;
     const processingType = data.processingType === "PARTNER_CONSULTANCY" ? "PARTNER_CONSULTANCY" : "SELF";
@@ -90,7 +93,7 @@ const createStudent = async (data) => {
         data: {
             firstName: data.firstName.trim(),
             lastName: data.lastName.trim(),
-            email: data.email.toLowerCase().trim(),
+            email: studentEmail,
             phone: data.phone?.trim() || null,
             dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
             nationality: data.nationality?.trim() || null,

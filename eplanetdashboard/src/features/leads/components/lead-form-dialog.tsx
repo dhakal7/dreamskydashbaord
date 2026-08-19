@@ -22,12 +22,12 @@ import type { Lead, LeadSource, StudyLevel, Priority } from '@/types'
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name is required'),
-  email: z.string().email('Valid email is required'),
-  phone: z.string().min(7, 'Phone is required'),
+  email: z.string().email('Invalid email format').optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')),
   source: z.enum(['website', 'facebook', 'referral_agent', 'walk_in', 'education_fair', 'google_ads', 'instagram']),
   interestedCountries: z.array(z.string()).min(1, 'At least one country is required'),
   interestedLevel: z.enum(['foundation', 'diploma', 'bachelor', 'master', 'phd']),
-  address: z.string().min(2, 'Address is required'),
+  address: z.string().optional().or(z.literal('')),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
   counselorIds: z.array(z.string()).min(1, 'At least one counselor is required'),
 })
