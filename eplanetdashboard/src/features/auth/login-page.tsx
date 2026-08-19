@@ -50,7 +50,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md p-6 sm:p-8">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white shadow-soft ring-1 ring-border/70">
-            <img src="/WhatsApp Image 2026-07-23 at 21.17.04.jpeg" alt="DreamSky logo" className="h-full w-full object-cover" />
+            <img src="/dreamsky-logo.jpeg" alt="DreamSky logo" className="h-full w-full object-cover" />
           </div>
           <div>
             <h1 className="text-xl font-semibold">Sign in to DreamSky</h1>
