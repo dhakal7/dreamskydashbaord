@@ -175,8 +175,46 @@ export function useCreateLiveLead() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: studentKeys.lists() })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Lead added successfully')
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to add lead'),
+  })
+}
+
+// ── Mutation: update an existing lead in the backend ─────────────────────────
+
+export interface UpdateLeadBody {
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+  source?: LeadSource
+  assignedCounselorId?: string
+  notes?: string
+}
+
+export function useUpdateLiveLead() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: UpdateLeadBody }) => {
+      if (isMockMode()) return null
+      return studentApi.update(id, {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        source: data.source ? SOURCE_TO_BACKEND[data.source] : undefined,
+        assignedCounselorId: data.assignedCounselorId,
+        notes: data.notes,
+      })
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: studentKeys.lists() })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Lead updated successfully')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to update lead'),
   })
 }
