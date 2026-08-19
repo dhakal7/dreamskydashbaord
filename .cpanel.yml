@@ -1,6 +1,9 @@
 ---
 deployment:
   tasks:
+    - export PATH=$PATH:/usr/local/bin
+    - cd eplanetdashboard && npm install && npm run build
     - /bin/cp -R eplanetdashboard/dist/. /home4/dreamsky/public_html/
+    - cd "Consultancy backend/dream-sky" && npm install && npx prisma generate && npx prisma db push
     - /bin/bash -c "cp -R 'Consultancy backend/dream-sky/.' /home4/dreamsky/backend/"
-
+    - touch /home4/dreamsky/backend/tmp/restart.txt
