@@ -14,9 +14,16 @@ const path = require('path');
 const bcrypt = require('bcryptjs');
 const prisma = require('../src/prisma');
 
-// Helper to resolve JSON paths
-const rootDir = path.resolve(__dirname, '../..');
-const getJsonPath = (filename) => path.join(rootDir, filename);
+// Helper to resolve JSON paths across directory structures
+const getJsonPath = (filename) => {
+  const candidate1 = path.join(__dirname, '..', filename);
+  if (fs.existsSync(candidate1)) return candidate1;
+  const candidate2 = path.join(__dirname, '../..', filename);
+  if (fs.existsSync(candidate2)) return candidate2;
+  const candidate3 = path.join(process.cwd(), filename);
+  if (fs.existsSync(candidate3)) return candidate3;
+  return candidate1;
+};
 
 function parseName(fullName) {
   if (!fullName || typeof fullName !== 'string') {
