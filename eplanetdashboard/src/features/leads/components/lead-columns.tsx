@@ -19,7 +19,11 @@ export const leadColumns: ColumnDef<Lead, any>[] = [
         <PersonAvatar name={row.original.name} color={row.original.photoColor} className="size-8" />
         <div className="min-w-0">
           <p className="truncate text-[13px] font-medium">{row.original.name}</p>
-          <p className="truncate text-xs text-muted-foreground">{row.original.email}</p>
+          {(!row.original.email || row.original.email.includes('@no-email') || row.original.email.includes('eplanet') || !row.original.email.includes('@')) ? (
+            <p className="truncate text-[11px] font-medium text-amber-600 dark:text-amber-400">Email Missing</p>
+          ) : (
+            <p className="truncate text-xs text-muted-foreground">{row.original.email}</p>
+          )}
         </div>
       </div>
     ),

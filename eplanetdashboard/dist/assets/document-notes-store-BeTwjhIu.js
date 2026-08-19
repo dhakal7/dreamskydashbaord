@@ -1,1 +1,0 @@
-import{H as e}from"./card-DEVbFvpn.js";var t=1,n=e((e,n)=>({notes:[],addNote:n=>e(e=>{let r=`note-${String(t).padStart(3,`0`)}`;t++;let i={...n,id:r,createdAt:new Date().toISOString()};return{notes:[...e.notes,i]}}),deleteNote:t=>e(e=>({notes:e.notes.filter(e=>e.id!==t)})),getNotesForDocument:e=>n().notes.filter(t=>t.documentId===e)}));export{n as t};
