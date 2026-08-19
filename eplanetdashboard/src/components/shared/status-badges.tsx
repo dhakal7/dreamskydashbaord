@@ -70,10 +70,28 @@ export const studentStatusMeta: Record<Student['status'], { label: string; varia
   dropped: { label: 'Dropped', variant: 'danger' },
 }
 
-export const documentStatusMeta: Record<StudentDocument['status'], { label: string; variant: 'warning' | 'success' | 'danger' }> = {
-  pending_review: { label: 'Pending Review', variant: 'warning' },
+export const documentStatusMeta: Record<StudentDocument['status'], { label: string; variant: 'warning' | 'success' | 'danger' | 'info' | 'secondary' | 'slate' }> = {
+  uploaded: { label: 'Uploaded', variant: 'info' },
+  pending_student_review: { label: 'Pending Student Review', variant: 'warning' },
+  changes_requested: { label: 'Changes Requested', variant: 'danger' },
+  re_uploaded: { label: 'Re-uploaded', variant: 'secondary' },
   verified: { label: 'Verified', variant: 'success' },
   rejected: { label: 'Rejected', variant: 'danger' },
+  pending_review: { label: 'Pending Review', variant: 'warning' },
+  pending: { label: 'Pending', variant: 'slate' },
+}
+
+export function DocumentStatusBadge({ status, className }: { status: StudentDocument['status']; className?: string }) {
+  const normalizedStatus = (status || 'pending').toLowerCase() as StudentDocument['status']
+  const meta = documentStatusMeta[normalizedStatus] ?? {
+    label: normalizedStatus.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+    variant: 'slate' as const,
+  }
+  return (
+    <Badge variant={meta.variant} className={cn(className)}>
+      {meta.label}
+    </Badge>
+  )
 }
 
 export function PriorityBadge({ priority, className }: { priority: Priority; className?: string }) {
