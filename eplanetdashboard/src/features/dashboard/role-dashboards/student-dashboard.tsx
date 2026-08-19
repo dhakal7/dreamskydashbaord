@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/shared/empty-state'
 import { ApplicationStageBadge, DocumentStatusBadge } from '@/components/shared/status-badges'
-import { FileStack, PlaneTakeoff, FolderKanban, Wallet, Bell, ChevronRight, MessageSquare, CheckCircle2, AlertTriangle, Download } from 'lucide-react'
+import { FileStack, PlaneTakeoff, FolderKanban, Wallet, Bell, ChevronRight, CheckCircle2, AlertTriangle, Download } from 'lucide-react'
 import { RoleStatCards } from './shared'
 import { getStudentDashboard } from '../role-selectors'
 import { formatCurrency } from '@/lib/utils'

@@ -81,11 +81,19 @@ export function useRenameDocument() {
   })
 }
 
+export function useDocuments(params: { studentId?: string; category?: string; type?: string; status?: string } = {}) {
+  return useQuery({
+    queryKey: [...documentKeys.lists(), params],
+    queryFn: () => documentApi.list(params),
+    enabled: !isMockMode(),
+  })
+}
+
 export function useVerifyDocument() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, notes }: { id: string; notes?: string }) => documentApi.verify(id, notes),
-    onSuccess: (_d, { id }) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: documentKeys.all })
       toast.success('Document verified')
     },

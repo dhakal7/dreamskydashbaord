@@ -1,11 +1,9 @@
 import { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
-import {
-  Search, Upload, FolderKanban, CheckCircle2, Clock, AlertTriangle, ChevronRight, User, Plus, Filter, FileCheck
-} from 'lucide-react'
+import { Search, Upload, FolderKanban, ChevronRight, Plus } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
@@ -15,11 +13,9 @@ import { StudentDocumentProfileDialog } from './student-document-profile-dialog'
 import { useStudentDocumentProfiles, useDocuments } from '@/hooks/use-documents'
 import { useStudentsStore } from '@/features/students/store'
 import { useDocumentsStore } from './store'
-import { useAuthStore } from '@/store/auth-store'
 import type { StudentDocumentProfile, StudentDocument } from '@/types'
 
 export default function DocumentsPage() {
-  const currentUser = useAuthStore((s) => s.currentUser)
   const students = useStudentsStore((s) => s.students)
   const { documents: mockDocs, deleteDocument: deleteMockDoc } = useDocumentsStore()
 
@@ -59,7 +55,7 @@ export default function DocumentsPage() {
 
     // Group documents by student ID
     const docsByStudentId = new Map<string, StudentDocument[]>()
-    docsToUse.forEach((d) => {
+    docsToUse.forEach((d: StudentDocument) => {
       const existing = docsByStudentId.get(d.studentId) || []
       existing.push(d)
       docsByStudentId.set(d.studentId, existing)

@@ -1,5 +1,5 @@
 import dayjs from 'dayjs'
-import { History, Download, FileText, CheckCircle2, Clock } from 'lucide-react'
+import { History, Download, Clock } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { DocumentStatusBadge } from '@/components/shared/status-badges'
 import { useDocumentHistory, useDownloadDocument } from '@/hooks/use-documents'
-import type { StudentDocument, DocumentVersion } from '@/types'
+import type { DocumentVersion } from '@/types'
 
 interface VersionHistoryDialogProps {
   documentId: string | null
@@ -28,7 +28,7 @@ export function VersionHistoryDialog({ documentId, open, onOpenChange }: Version
         documentId: v.documentId,
         versionNumber: v.versionNumber,
         fileUrl: v.fileUrl,
-        originalName: v.originalName || doc.originalName || doc.fileName || 'document',
+        originalName: v.originalName || (doc as any).originalName || doc.fileName || 'document',
         mimeType: v.mimeType,
         fileSizeKb: v.fileSize ? Math.round(v.fileSize / 1024) : 0,
         uploadedBy: v.uploadedBy ? `${v.uploadedBy.firstName} ${v.uploadedBy.lastName}` : 'Counselor',

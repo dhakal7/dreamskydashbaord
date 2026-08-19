@@ -232,20 +232,25 @@ export const visaCases: VisaCase[] = importedData.visaCases && importedData.visa
 // ── Documents (with fallback) ───────────────────────────────────────────
 const docTypes: StudentDocument['type'][] = ['passport', 'citizenship', 'academic', 'cv', 'sop', 'recommendation', 'financial', 'offer_letter', 'visa_letter']
 export const studentDocuments: StudentDocument[] = importedData.studentDocuments && importedData.studentDocuments.length > 0
-  ? (importedData.studentDocuments as StudentDocument[])
+  ? (importedData.studentDocuments as any[]).map((d) => ({
+      ...d,
+      category: d.category || (d.type === 'passport' || d.type === 'citizenship' ? 'identity' : d.type === 'academic' ? 'academic' : d.type === 'financial' ? 'finance' : 'other'),
+    }))
   : Array.from({ length: 140 }).map((_, i) => {
       const student = pick(students)
       const type = pick(docTypes)
+      const category = type === 'passport' || type === 'citizenship' ? 'identity' : type === 'academic' ? 'academic' : type === 'financial' ? 'finance' : 'other'
       return {
         id: `doc-${pad(i + 1, 3)}`,
         studentId: student.id,
         studentName: student.name,
+        category,
         type,
         fileName: `${type}_${student.studentId}.pdf`,
         fileSizeKb: randInt(120, 4800),
         version: randInt(1, 3),
         uploadedAt: daysAgo(randInt(0, 120)),
         uploadedBy: student.counselorName,
-        status: pick(['pending_review', 'verified', 'verified', 'rejected']),
+        status: pick(['verified', 'pending_review', 'changes_requested', 're_uploaded']),
       }
     })
