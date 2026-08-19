@@ -159,7 +159,7 @@ async function seed() {
                 role: u.role,
                 status: u.status,
                 branchId: u.branchId,
-                mustChangePassword: true
+                mustChangePassword: false
             },
             create: {
                 id: u.id,
@@ -170,7 +170,7 @@ async function seed() {
                 role: u.role,
                 status: u.status,
                 branchId: u.branchId,
-                mustChangePassword: true
+                mustChangePassword: false
             }
         });
         console.log(`User created/updated: ${user.email} | Role: ${user.role}`);
