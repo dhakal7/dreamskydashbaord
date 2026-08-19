@@ -6,12 +6,7 @@ const { Pool } = require("pg");
 const globalForPrisma = global;
 
 const getClient = () => {
-    let dbUrl = process.env.DATABASE_URL || "postgresql://dreamsky_database:DreamskyPass2026@127.0.0.1:5432/dreamsky_DreamSky?schema=public";
-    
-    // Auto-fix stale user/password if old credentials persist in .env or shell cache
-    if (dbUrl.includes("dreamsky_dreamsky")) {
-        dbUrl = dbUrl.replace("dreamsky_dreamsky", "dreamsky_database").replace(/:[^@]+@/, ":DreamskyPass2026@");
-    }
+    const dbUrl = process.env.DATABASE_URL || "postgresql://dreamsky_database:DreamskyPass2026@localhost/dreamsky_DreamSky?schema=public";
 
     const isRemoteDb = Boolean(
         dbUrl.includes("supabase") ||
