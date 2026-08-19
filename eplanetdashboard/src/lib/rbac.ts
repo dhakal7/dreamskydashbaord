@@ -23,6 +23,7 @@ export type Permission =
   | 'universities.manage'
   | 'courses.manage'
   | 'classes.view'
+  | 'classes.manage'
   | 'reports.view'
   | 'settings.manage'
   | 'commissions.view'
@@ -38,14 +39,14 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
     'followups.view', 'appointments.view', 'appointments.manage', 'applications.view', 'applications.manage',
     'visa.view', 'visa.manage', 'documents.view', 'documents.manage', 'universities.view',
     'countries.view', 'countries.manage', 'universities.view', 'universities.manage', 'courses.view', 'courses.manage',
-    'classes.view', 'reports.view', 'settings.manage',
+    'classes.view', 'classes.manage', 'reports.view', 'settings.manage',
     'commissions.view', 'commission-rules.manage', 'events.view', 'events.manage',
     'users.view', 'users.manage',
   ],
   front_desk: [
     'dashboard.view', 'leads.view', 'leads.manage', 'leads.change-stage', 'students.view', 'students.manage',
     'followups.view', 'appointments.view', 'appointments.manage', 'applications.view', 'applications.manage',
-    'documents.view', 'documents.manage', 'classes.view', 'events.view', 'events.manage', 'settings.manage',
+    'documents.view', 'documents.manage', 'classes.view', 'classes.manage', 'events.view', 'events.manage', 'settings.manage',
   ],
   counselor: [
     'dashboard.view', 'leads.view', 'leads.change-stage', 'students.view', 'students.manage',

@@ -23,7 +23,7 @@ router.get(
 // ─── Class CRUD ───────────────────────────────────────────────────────────────
 router.post(
   "/",
-  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "TEACHER"),
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "TEACHER", "FRONT_DESK"),
   classController.createClass
 );
 
@@ -41,33 +41,33 @@ router.get(
 
 router.put(
   "/:id",
-  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "TEACHER"),
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "TEACHER", "FRONT_DESK"),
   classController.updateClass
 );
 
 router.delete(
   "/:id",
-  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "TEACHER"),
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "TEACHER", "FRONT_DESK"),
   classController.deleteClass
 );
 
 // ─── Enrollments ──────────────────────────────────────────────────────────────
 router.post(
   "/:classId/enroll",
-  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
   classController.enrollStudent
 );
 
 router.post(
   "/:classId/unenroll",
-  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
   classController.unenrollStudent
 );
 
 // ─── Attendance ───────────────────────────────────────────────────────────────
 router.post(
   "/:classId/attendance",
-  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "TEACHER"),
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "TEACHER", "FRONT_DESK"),
   classController.markAttendance
 );
 
