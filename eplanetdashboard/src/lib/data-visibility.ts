@@ -35,12 +35,8 @@ export function getCounselorScopeId(user: CurrentUser): string | null {
 export function canViewStudent(user: CurrentUser, student: Student) {
   if (isSuperAdmin(user)) return true
   if (user.role === 'student') return student.id === user.linkedId
-  if (user.role === 'counselor') {
-    const scopeId = getCounselorScopeId(user)
-    return student.counselorId === scopeId || student.counselorId === user.linkedId
-  }
-  // No branches: front desk, teachers and referral agents share the client dataset.
-  return user.role === 'front_desk' || user.role === 'teacher' || user.role === 'referral_agent'
+  // All staff roles (front_desk, counselor, teacher, referral_agent) can view student profiles
+  return user.role === 'front_desk' || user.role === 'counselor' || user.role === 'teacher' || user.role === 'referral_agent'
 }
 
 export function canViewLead(user: CurrentUser, _lead: Lead) {
