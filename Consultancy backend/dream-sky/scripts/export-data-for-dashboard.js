@@ -1,11 +1,7 @@
 require("dotenv").config();
-const { PrismaClient } = require("@prisma/client");
-const { PrismaPg } = require("@prisma/adapter-pg");
 const fs = require("fs");
 const path = require("path");
-
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+const prisma = require("../src/prisma");
 
 async function run() {
     const outputPath = path.resolve(__dirname, "../../../eplanetdashboard/src/mock/imported-data.json");
