@@ -16,7 +16,7 @@ import { counselors, createReferralAgent, referralAgents } from '@/mock'
 import { useCountriesStore } from '@/features/countries/store'
 import { useLeadsStore } from '../store'
 import { isMockMode } from '@/lib/api-client'
-import { useCreateLiveLead } from '@/hooks/use-leads-live'
+import { useCreateLiveLead, useUpdateLiveLead } from '@/hooks/use-leads-live'
 import type { Lead, LeadSource, StudyLevel, Priority } from '@/types'
 
 // ── Zod Schema ───────────────────────────────────────────────────────────────
@@ -63,6 +63,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
   const addLead = useLeadsStore((s) => s.addLead)
   const updateLead = useLeadsStore((s) => s.updateLead)
   const createLiveLead = useCreateLiveLead()
+  const updateLiveLead = useUpdateLiveLead()
   const [agentQuery, setAgentQuery] = useState('')
 
   const {
@@ -144,24 +145,49 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
     }))
 
     if (leadToEdit) {
-      updateLead(leadToEdit.id, {
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        source: data.source,
-        interestedCountry: primaryCountry,
-        interestedCountries: data.interestedCountries,
-        interestedLevel: data.interestedLevel,
-        address: data.address,
-        priority: data.priority,
-        counselorId: primaryCounselor?.id ?? leadToEdit.counselorId,
-        counselorName: primaryCounselor?.name ?? leadToEdit.counselorName,
-        referralAgentId: resolvedAgent?.id ?? leadToEdit.referralAgentId,
-        referralAgentName: resolvedAgent?.name ?? agentQuery.trim() ?? leadToEdit.referralAgentName,
-      })
-      setAgentQuery('')
-      onOpenChange(false)
-      reset()
+      if (!isMockMode()) {
+        const nameParts = data.name.trim().split(/\s+/)
+        updateLiveLead.mutate(
+          {
+            id: leadToEdit.id,
+            data: {
+              firstName: nameParts[0] || 'Unknown',
+              lastName: nameParts.slice(1).join(' ') || '',
+              email: data.email || '',
+              phone: data.phone || '',
+              source: data.source,
+              assignedCounselorId: primaryCounselor?.id,
+              notes: `Interested Countries: ${data.interestedCountries.join(', ')} | Address: ${data.address || 'N/A'}`,
+            },
+          },
+          {
+            onSuccess: () => {
+              setAgentQuery('')
+              onOpenChange(false)
+              reset()
+            },
+          }
+        )
+      } else {
+        updateLead(leadToEdit.id, {
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          source: data.source,
+          interestedCountry: primaryCountry,
+          interestedCountries: data.interestedCountries,
+          interestedLevel: data.interestedLevel,
+          address: data.address,
+          priority: data.priority,
+          counselorId: primaryCounselor?.id ?? leadToEdit.counselorId,
+          counselorName: primaryCounselor?.name ?? leadToEdit.counselorName,
+          referralAgentId: resolvedAgent?.id ?? leadToEdit.referralAgentId,
+          referralAgentName: resolvedAgent?.name ?? agentQuery.trim() ?? leadToEdit.referralAgentName,
+        })
+        setAgentQuery('')
+        onOpenChange(false)
+        reset()
+      }
     } else if (!isMockMode()) {
       // Live mode: create a student record with stage=LEAD in the backend
       const nameParts = data.name.trim().split(/\s+/)
