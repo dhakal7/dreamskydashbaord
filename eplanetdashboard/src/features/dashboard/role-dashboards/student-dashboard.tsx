@@ -17,7 +17,6 @@ import { formatCurrency } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth-store'
 import { useAppointmentsStore } from '@/features/appointments/store'
 import { useDocumentsStore } from '@/features/documents/store'
-import { useDocumentNotesStore } from '@/features/documents/document-notes-store'
 import { useReviewDocument, useDownloadDocument } from '@/hooks/use-documents'
 import type { StudentDocument } from '@/types'
 
@@ -26,7 +25,6 @@ export function StudentDashboard() {
   const data = getStudentDashboard(linkedId)
   const appointments = useAppointmentsStore((s) => s.appointments)
   const { documents, updateDocumentStatus } = useDocumentsStore()
-  const { getNotesForDocument } = useDocumentNotesStore()
   const reviewMutation = useReviewDocument()
   const downloadFn = useDownloadDocument()
 
