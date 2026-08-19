@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import dayjs from 'dayjs'
 import {
-  CalendarClock, MapPin, Monitor, Phone, X, Plus, AlertTriangle,
+  CalendarClock, MapPin, Monitor, Phone, X, Plus, AlertTriangle, Mail,
 } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -281,6 +281,22 @@ export function AppointmentDialog({
                   <AlertTriangle className="size-3" />{errors.studentId.message}
                 </p>
               )}
+              {(() => {
+                const selId = watch('studentId')
+                const selStu = students.find((s) => s.id === selId)
+                if (!selStu) return null
+                return selStu.email ? (
+                  <div className="mt-1 flex items-center gap-2 rounded-md bg-emerald-500/10 p-2.5 text-[11px] text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    <Mail className="size-3.5 shrink-0 text-emerald-500" />
+                    <span>Automated appointment email will be sent to <strong>{selStu.email}</strong>.</span>
+                  </div>
+                ) : (
+                  <div className="mt-1 flex items-center gap-2 rounded-md bg-amber-500/10 p-2.5 text-[11px] text-amber-700 dark:text-amber-300 border border-amber-500/20">
+                    <Phone className="size-3.5 shrink-0 text-amber-500" />
+                    <span><strong>No email registered:</strong> Frontdesk officer must manually call {selStu.phone ? <strong>{selStu.phone}</strong> : 'the student'} to confirm this appointment.</span>
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Counselors Picker */}
