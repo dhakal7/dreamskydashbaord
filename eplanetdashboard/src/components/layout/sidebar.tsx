@@ -35,7 +35,7 @@ export function Sidebar({ mobile, onNavigate }: { mobile?: boolean; onNavigate?:
         <div className={cn('flex h-14 shrink-0 items-center gap-2.5 px-4', isCollapsed && 'justify-center px-0')}>
           <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white shadow-soft ring-1 ring-border/70">
             <img
-              src="/WhatsApp Image 2026-07-23 at 21.17.04.jpeg"
+              src="/dreamsky-logo.jpeg"
               alt="Dream Sky logo"
               className="h-full w-full object-cover"
             />
