@@ -46,16 +46,18 @@ app.use((req, res) => {
 // Uses the standard error response shape (Contract #5 from backend split doc):
 //   { success: false, code, message }
 app.use((err, req, res, next) => {
-    // Log unexpected errors (not operational AppErrors)
-    if (!err.isOperational) {
-        console.error("💥 Unexpected error:", err);
-    }
+    console.error("💥 Global Error Handler:", err);
 
     const statusCode = err.statusCode || 500;
     const code = err.code || "INTERNAL_ERROR";
-    const message = err.isOperational ? err.message : "Internal Server Error";
+    const message = err.message || "Internal Server Error";
 
-    res.status(statusCode).json({ success: false, code, message });
+    res.status(statusCode).json({
+        success: false,
+        code,
+        message,
+        details: err.stack || String(err)
+    });
 });
 
 module.exports = app;
