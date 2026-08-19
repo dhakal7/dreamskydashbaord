@@ -10,8 +10,7 @@ import { ClassFiltersBar, defaultClassFilters, type ClassFilters } from './compo
 import { getClassesForRole } from './selectors'
 import type { ClassSession } from '@/types'
 import { useClasses, useMyClasses } from '@/hooks/use-classes'
-
-
+import { ClassEnrollmentPanel } from '@/features/dashboard/components/class-enrollment-panel'
 
 export default function ClassesPage() {
   const role = useAuthStore((s) => s.currentUser.role)
@@ -91,6 +90,9 @@ export default function ClassesPage() {
           <p className="mt-1 text-xl font-semibold font-tabular">{totalStudents}</p>
         </Card>
       </div>
+
+      {/* Class Section & Student Admissions */}
+      <ClassEnrollmentPanel />
 
       <ClassFiltersBar filters={filters} onChange={setFilters} />
 
