@@ -12,7 +12,8 @@ import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { countries, counselors, createReferralAgent, referralAgents } from '@/mock'
+import { counselors, createReferralAgent, referralAgents } from '@/mock'
+import { useCountriesStore } from '@/features/countries/store'
 import { useLeadsStore } from '../store'
 import { isMockMode } from '@/lib/api-client'
 import { useCreateLiveLead } from '@/hooks/use-leads-live'
@@ -58,6 +59,7 @@ interface LeadFormDialogProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialogProps) {
+  const countries = useCountriesStore((s) => s.countries)
   const addLead = useLeadsStore((s) => s.addLead)
   const updateLead = useLeadsStore((s) => s.updateLead)
   const createLiveLead = useCreateLiveLead()
@@ -388,7 +390,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                               field.onChange(next)
                             }}
                           />
-                          <span className="truncate">{c.flag} {c.name}</span>
+                          <span className="truncate">{c.flag || '🌐'} {c.name}</span>
                         </label>
                       )
                     })}

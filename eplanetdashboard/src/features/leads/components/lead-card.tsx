@@ -45,7 +45,7 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
 
   const canChangeStage = hasPermission(currentUser.role, 'leads.change-stage')
   const canManageLeads = hasPermission(currentUser.role, 'leads.manage')
-  const isMissingEmail = !lead.email || lead.email.includes('@no-email') || !lead.email.includes('@')
+  const isMissingEmail = !lead.email || lead.email.includes('@no-email') || lead.email.includes('eplanet') || !lead.email.includes('@')
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: lead.id,
@@ -298,7 +298,7 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
 })
 
 export function LeadCardOverlay({ lead }: { lead: Lead }) {
-  const isMissingEmail = !lead.email || lead.email.includes('@no-email') || !lead.email.includes('@')
+  const isMissingEmail = !lead.email || lead.email.includes('@no-email') || lead.email.includes('eplanet') || !lead.email.includes('@')
   return (
     <Card className="group relative select-none p-3 shadow-elevated z-50 bg-background border-primary rotate-1 pointer-events-none w-72">
       <div className="flex items-start gap-2.5">

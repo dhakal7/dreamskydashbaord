@@ -67,10 +67,10 @@ async function main() {
     where: { name: 'E-Planet Head Office' },
     update: {},
     create: {
-      name: 'E-Planet Head Office',
+      name: 'DreamSky Head Office',
       address: 'Kathmandu, Nepal',
       phone: '01-4000000',
-      email: 'info@eplanetcrm.com',
+      email: 'info@dreamsky.com.np',
     },
   });
 
@@ -150,7 +150,7 @@ async function main() {
 
       if (!email || email === '*' || !email.includes('@')) {
         const phoneSlug = phone || id || Math.floor(Math.random() * 100000);
-        email = `student_${phoneSlug}@eplanetcrm.internal`;
+        email = `student_${phoneSlug}@dreamsky.internal`;
       }
 
       const counselorName = item['Counselor Assigned'] ? item['Counselor Assigned'].trim().toLowerCase() : '';
@@ -244,7 +244,7 @@ async function main() {
       const phone = parsePhone(row['Contact no.']);
       const email = row['Email Address'] && row['Email Address'].includes('@')
         ? row['Email Address'].trim()
-        : `student_${phone || Math.floor(Math.random() * 100000)}@eplanetcrm.internal`;
+        : `student_${phone || Math.floor(Math.random() * 100000)}@dreamsky.internal`;
 
       const { firstName, lastName } = parseName(studentName);
 
@@ -297,7 +297,7 @@ async function main() {
       if (!studentName || !dateStr) continue;
 
       const { firstName, lastName } = parseName(studentName);
-      const email = `student_${phone || Math.floor(Math.random() * 100000)}@eplanetcrm.internal`;
+      const email = `student_${phone || Math.floor(Math.random() * 100000)}@dreamsky.internal`;
 
       const student = await prisma.student.upsert({
         where: { email },
