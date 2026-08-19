@@ -724,7 +724,7 @@ model Event {
   location       String?
   branchId       String?
   createdById    String?
-  audienceRoles  Json?
+  audienceRoles  String[]
   approvalStatus EventApprovalStatus @default(REQUESTED)
   approvedById   String?
   approvedAt     DateTime?
