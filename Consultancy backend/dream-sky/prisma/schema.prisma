@@ -319,7 +319,7 @@ model CounselorProfile {
 model TeacherProfile {
   id        String   @id @default(cuid())
   userId    String   @unique
-  subjects  String[]
+  subjects  Json?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -583,7 +583,7 @@ model Course {
   scholarships       Json?
   deadlines          Json?
   entryRequirements  Json?
-  intakeDates        DateTime[]
+  intakeDates        Json?
   seatCapacity       Int?
   seatsRemaining     Int?
   isActive           Boolean  @default(true)
@@ -724,7 +724,7 @@ model Event {
   location       String?
   branchId       String?
   createdById    String?
-  audienceRoles  String[]
+  audienceRoles  Json?
   approvalStatus EventApprovalStatus @default(REQUESTED)
   approvedById   String?
   approvedAt     DateTime?

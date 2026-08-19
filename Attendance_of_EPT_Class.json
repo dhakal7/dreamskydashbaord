@@ -1,0 +1,332 @@
+[
+  {
+    "SN": 1,
+    "DATE": "2026-02-13",
+    "STUDENT NAME": "Pemba Lama",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9868971634,
+    "TIMING": "08:00-09:00 AM",
+    "ATTENDANCE": "Absent",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 2,
+    "DATE": "2026-03-21",
+    "STUDENT NAME": "Thimsang Lama",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9803065420,
+    "TIMING": "07:00-08:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 3,
+    "DATE": "2026-03-30",
+    "STUDENT NAME": "Ang Damu Sherpa",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9703422286,
+    "TIMING": "07:00-08:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 4,
+    "DATE": "2026-04-05",
+    "STUDENT NAME": "Nisha Bhattrai",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9860912881,
+    "TIMING": "07:00-08:00 AM",
+    "ATTENDANCE": "Absent",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 5,
+    "DATE": "2026-03-31",
+    "STUDENT NAME": "Samjana Roka",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9766894564,
+    "TIMING": "07:00-08:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 6,
+    "DATE": "2026-04-07",
+    "STUDENT NAME": "Krishna Pudasaini",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9860437684,
+    "TIMING": "08:00-09:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 7,
+    "DATE": "2026-04-13",
+    "STUDENT NAME": "Yubraj Tamang",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9764624228,
+    "TIMING": "08:00-09:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 8,
+    "DATE": "2026-04-15",
+    "STUDENT NAME": "Sneha Tiwari",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9749848645,
+    "TIMING": "09:00-10:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 9,
+    "DATE": "2026-04-17",
+    "STUDENT NAME": "Aditi Khadka",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9802329622,
+    "TIMING": "08:00-09:00 AM",
+    "ATTENDANCE": "Leave",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 10,
+    "DATE": "2026-04-19",
+    "STUDENT NAME": "Thilen Sherpa",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9845680696,
+    "TIMING": "08:00-09:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 11,
+    "DATE": "2026-04-19",
+    "STUDENT NAME": "Sangita Panta",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9861143017,
+    "TIMING": "09:00-10:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 12,
+    "DATE": "2026-04-17",
+    "STUDENT NAME": "Yaban Budathoki",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9862698586,
+    "TIMING": "09:00-10:00 AM",
+    "ATTENDANCE": "Leave",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 13,
+    "DATE": "2026-04-19",
+    "STUDENT NAME": "Tilak Khatri",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9745696069,
+    "TIMING": "07:00-08:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 14,
+    "DATE": "2026-04-26",
+    "STUDENT NAME": "Sajala Gautam",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9766847707,
+    "TIMING": "09:00-10:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 14,
+    "DATE": "2026-03-23",
+    "STUDENT NAME": "Bibisha Baniya",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9846024451,
+    "TIMING": "09:00-10:00 AM",
+    "ATTENDANCE": "Leave",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 15,
+    "DATE": "2026-04-22",
+    "STUDENT NAME": "Sajala Gautam",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9766847707,
+    "TIMING": "10:00-11:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 17,
+    "DATE": "2026-04-27",
+    "STUDENT NAME": "Susma Pudasaini",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9863811046,
+    "TIMING": "09:00-10:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-27"
+  },
+  {
+    "SN": 18,
+    "DATE": "2026-04-27",
+    "STUDENT NAME": "Jenisha Lamichhane",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9825023502,
+    "TIMING": "07:00-08:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-04-30"
+  },
+  {
+    "SN": 19,
+    "DATE": "2026-04-27",
+    "STUDENT NAME": "Mandira Kharel",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9828864301,
+    "TIMING": "07:00-08:00 AM",
+    "ATTENDANCE": "Absent",
+    "ATTENDANCE DATE": "2026-04-30"
+  },
+  {
+    "SN": 20,
+    "DATE": "2026-04-27",
+    "STUDENT NAME": "Puja Tamang",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9806393765,
+    "TIMING": "08:00-09:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-05-03"
+  },
+  {
+    "SN": 21,
+    "DATE": "2026-05-03",
+    "STUDENT NAME": "Kavya Basnet",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9768439280,
+    "TIMING": "08:00-09:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-05-04"
+  },
+  {
+    "SN": 22,
+    "DATE": "2026-05-16",
+    "STUDENT NAME": "Rajib Khadka",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9866551668,
+    "TIMING": "10:00-11:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-05-24"
+  },
+  {
+    "SN": 23,
+    "DATE": "2026-05-26",
+    "STUDENT NAME": "Ronak Shrestha",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9762344939,
+    "TIMING": "10:00-11:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-05-26"
+  },
+  {
+    "SN": 24,
+    "DATE": "2026-05-26",
+    "STUDENT NAME": "Pratibha Lama",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9845062130,
+    "TIMING": "08:00-09:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-05-27"
+  },
+  {
+    "SN": 25,
+    "DATE": "2026-05-29",
+    "STUDENT NAME": "Roshan Shah",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9818185661,
+    "TIMING": "08:00-09:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-05-28"
+  },
+  {
+    "SN": 26,
+    "DATE": "2026-06-09",
+    "STUDENT NAME": "Urgen Sonam Sherpa",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 9767564069,
+    "TIMING": "09:00-10:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-06-09"
+  },
+  {
+    "SN": 27,
+    "DATE": "2026-06-09",
+    "STUDENT NAME": "Siddhant Rai",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": 986907606,
+    "TIMING": "08:00-09:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-06-15"
+  },
+  {
+    "SN": 28,
+    "DATE": "2026-06-07",
+    "STUDENT NAME": "Ashal Parajuli",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": null,
+    "TIMING": null,
+    "ATTENDANCE": null,
+    "ATTENDANCE DATE": null
+  },
+  {
+    "SN": 29,
+    "DATE": "2026-06-12",
+    "STUDENT NAME": "Siddhant Rai",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": null,
+    "TIMING": null,
+    "ATTENDANCE": null,
+    "ATTENDANCE DATE": null
+  },
+  {
+    "SN": 30,
+    "DATE": null,
+    "STUDENT NAME": "Sandesh Lama",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": null,
+    "TIMING": null,
+    "ATTENDANCE": null,
+    "ATTENDANCE DATE": null
+  },
+  {
+    "SN": 31,
+    "DATE": null,
+    "STUDENT NAME": "Asmita Tamang",
+    "EPT CLASS": "PTE",
+    "CONTACT NUMBER": null,
+    "TIMING": null,
+    "ATTENDANCE": null,
+    "ATTENDANCE DATE": null
+  },
+  {
+    "SN": 32,
+    "DATE": "2026-07-17",
+    "STUDENT NAME": "Chorten Dolma",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": null,
+    "TIMING": null,
+    "ATTENDANCE": null,
+    "ATTENDANCE DATE": null
+  },
+  {
+    "SN": 33,
+    "DATE": "2026-07-17",
+    "STUDENT NAME": "Angela Basnet",
+    "EPT CLASS": "IELTS",
+    "CONTACT NUMBER": 9761674669,
+    "TIMING": "09:00-10:00 AM",
+    "ATTENDANCE": "Present",
+    "ATTENDANCE DATE": "2026-07-17"
+  }
+]
