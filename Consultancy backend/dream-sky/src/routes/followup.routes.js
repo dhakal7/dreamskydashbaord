@@ -10,7 +10,7 @@ router.use(requireAuth);
 // ─── Dashboard (must be before /:id to avoid route conflict) ──────────────────
 router.get(
     "/dashboard",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
     followUpController.dashboard
 );
 
@@ -34,7 +34,7 @@ router.get("/:id", followUpController.getOne);
 
 router.put(
     "/:id",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
     followUpController.update
 );
 

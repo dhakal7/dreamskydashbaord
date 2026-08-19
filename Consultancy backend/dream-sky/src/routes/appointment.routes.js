@@ -10,7 +10,7 @@ router.use(requireAuth);
 // ─── Dashboard (before /:id) ──────────────────────────────────────────────────
 router.get(
     "/dashboard",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
     appointmentController.dashboard
 );
 
@@ -31,7 +31,7 @@ router.get("/:id", appointmentController.getOne);
 
 router.put(
     "/:id",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
     appointmentController.update
 );
 
@@ -44,7 +44,7 @@ router.delete(
 // ─── Status change ────────────────────────────────────────────────────────────
 router.patch(
     "/:id/status",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
     appointmentController.changeStatus
 );
 
