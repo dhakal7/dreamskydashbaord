@@ -1,23 +1,13 @@
 const prisma = require("../prisma");
 const bcrypt = require("bcryptjs");
 
-const usersToSeed = [
+const realStaffUsers = [
     {
         id: "user-sa-1",
         email: "dreamskyadmission@gmail.com",
         firstName: "Ashish",
         lastName: "Shrestha",
         password: "dreamskyconsultancy@2025",
-        role: "SUPER_ADMIN",
-        status: "ACTIVE",
-        branchId: "br-1"
-    },
-    {
-        id: "user-sa-demo",
-        email: "admin@dreamsky.edu.np",
-        firstName: "System",
-        lastName: "Administrator",
-        password: "dreamsky-demo",
         role: "SUPER_ADMIN",
         status: "ACTIVE",
         branchId: "br-1"
@@ -53,16 +43,6 @@ const usersToSeed = [
         branchId: "br-1"
     },
     {
-        id: "user-counselor-demo",
-        email: "counselor@dreamsky.edu.np",
-        firstName: "Anjali",
-        lastName: "Sharma",
-        password: "dreamsky-demo",
-        role: "COUNSELOR",
-        status: "ACTIVE",
-        branchId: "br-1"
-    },
-    {
         id: "fd-1",
         email: "santona.khatri@dreamsky.com",
         firstName: "Santona",
@@ -81,46 +61,6 @@ const usersToSeed = [
         role: "FRONT_DESK",
         status: "ACTIVE",
         branchId: "br-1"
-    },
-    {
-        id: "user-fd-demo",
-        email: "frontdesk@dreamsky.edu.np",
-        firstName: "Frontdesk",
-        lastName: "Officer",
-        password: "dreamsky-demo",
-        role: "FRONT_DESK",
-        status: "ACTIVE",
-        branchId: "br-1"
-    },
-    {
-        id: "user-teacher-demo",
-        email: "teacher@dreamsky.edu.np",
-        firstName: "Bikash",
-        lastName: "Gurung",
-        password: "dreamsky-demo",
-        role: "TEACHER",
-        status: "ACTIVE",
-        branchId: "br-1"
-    },
-    {
-        id: "user-student-demo",
-        email: "student@dreamsky.edu.np",
-        firstName: "Aarav",
-        lastName: "Sharma",
-        password: "dreamsky-demo",
-        role: "STUDENT",
-        status: "ACTIVE",
-        branchId: "br-1"
-    },
-    {
-        id: "user-referral-demo",
-        email: "referral@dreamsky.edu.np",
-        firstName: "Rohan",
-        lastName: "Adhikari",
-        password: "dreamsky-demo",
-        role: "REFERRAL_AGENT",
-        status: "ACTIVE",
-        branchId: "br-1"
     }
 ];
 
@@ -133,7 +73,23 @@ const autoSeedUsers = async () => {
             create: { id: "br-1", name: "Chabahil Branch", isActive: true }
         }).catch(() => {});
 
-        for (const u of usersToSeed) {
+        // Purge old demo users from database if present
+        await prisma.user.deleteMany({
+            where: {
+                email: {
+                    in: [
+                        "admin@dreamsky.edu.np",
+                        "counselor@dreamsky.edu.np",
+                        "frontdesk@dreamsky.edu.np",
+                        "teacher@dreamsky.edu.np",
+                        "student@dreamsky.edu.np",
+                        "referral@dreamsky.edu.np"
+                    ]
+                }
+            }
+        }).catch(() => {});
+
+        for (const u of realStaffUsers) {
             const hash = await bcrypt.hash(u.password, 12);
             await prisma.user.upsert({
                 where: { email: u.email },
@@ -158,9 +114,9 @@ const autoSeedUsers = async () => {
                     branchId: u.branchId,
                     mustChangePassword: false
                 }
-            }).catch((err) => console.error(`Auto-seed user error [${u.email}]:`, err.message));
+            }).catch((err) => console.error(`Staff user sync error [${u.email}]:`, err.message));
         }
-        console.log("✅ Auto-seeder completed user sync.");
+        console.log("✅ Auto-seeder completed real staff user sync.");
     } catch (err) {
         console.error("Auto-seeder error:", err.message);
     }
