@@ -34,8 +34,8 @@ export async function convertLeadToStudent(leadId: string): Promise<LeadConversi
   }
 
   const currentUser = useAuthStore.getState().currentUser
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'front_desk') {
-    console.warn('[lead-conversion] Only front desk (and super admin) can register leads as permanent students')
+  if (currentUser.role !== 'super_admin' && currentUser.role !== 'front_desk' && currentUser.role !== 'counselor') {
+    console.warn('[lead-conversion] Only front desk, counselors, and super admin can register leads as permanent students')
     return null
   }
 
