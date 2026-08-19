@@ -1,26 +1,14 @@
 require("dotenv").config();
-const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
-
 const prisma = require("../src/prisma");
 
-const usersToSeed = [
+const realStaffUsers = [
     {
         id: "user-sa-1",
         email: "dreamskyadmission@gmail.com",
         firstName: "Ashish",
         lastName: "Shrestha",
         password: "dreamskyconsultancy@2025",
-        role: "SUPER_ADMIN",
-        status: "ACTIVE",
-        branchId: "br-1"
-    },
-    {
-        id: "user-sa-demo",
-        email: "admin@dreamsky.edu.np",
-        firstName: "System",
-        lastName: "Administrator",
-        password: "dreamsky-demo",
         role: "SUPER_ADMIN",
         status: "ACTIVE",
         branchId: "br-1"
@@ -56,16 +44,6 @@ const usersToSeed = [
         branchId: "br-1"
     },
     {
-        id: "user-counselor-demo",
-        email: "counselor@dreamsky.edu.np",
-        firstName: "Anjali",
-        lastName: "Sharma",
-        password: "dreamsky-demo",
-        role: "COUNSELOR",
-        status: "ACTIVE",
-        branchId: "br-1"
-    },
-    {
         id: "fd-1",
         email: "santona.khatri@dreamsky.com",
         firstName: "Santona",
@@ -84,51 +62,11 @@ const usersToSeed = [
         role: "FRONT_DESK",
         status: "ACTIVE",
         branchId: "br-1"
-    },
-    {
-        id: "user-fd-demo",
-        email: "frontdesk@dreamsky.edu.np",
-        firstName: "Frontdesk",
-        lastName: "Officer",
-        password: "dreamsky-demo",
-        role: "FRONT_DESK",
-        status: "ACTIVE",
-        branchId: "br-1"
-    },
-    {
-        id: "user-teacher-demo",
-        email: "teacher@dreamsky.edu.np",
-        firstName: "Bikash",
-        lastName: "Gurung",
-        password: "dreamsky-demo",
-        role: "TEACHER",
-        status: "ACTIVE",
-        branchId: "br-1"
-    },
-    {
-        id: "user-student-demo",
-        email: "student@dreamsky.edu.np",
-        firstName: "Aarav",
-        lastName: "Sharma",
-        password: "dreamsky-demo",
-        role: "STUDENT",
-        status: "ACTIVE",
-        branchId: "br-1"
-    },
-    {
-        id: "user-referral-demo",
-        email: "referral@dreamsky.edu.np",
-        firstName: "Rohan",
-        lastName: "Adhikari",
-        password: "dreamsky-demo",
-        role: "REFERRAL_AGENT",
-        status: "ACTIVE",
-        branchId: "br-1"
     }
 ];
 
 async function seed() {
-    console.log("Starting production user seeding...");
+    console.log("Starting real staff user seeding...");
 
     // 1. Ensure the default branch (br-1) exists
     const defaultBranch = await prisma.branch.upsert({
@@ -142,12 +80,24 @@ async function seed() {
     });
     console.log("Default branch ready:", defaultBranch.name);
 
-    // Clean up mock users not in the active seed list (disabled to preserve FK integrity)
-    // const activeEmails = usersToSeed.map((u) => u.email);
-    // const deleteResult = await prisma.user.deleteMany({ where: { email: { notIn: activeEmails } } });
+    // 2. Purge old demo users
+    await prisma.user.deleteMany({
+        where: {
+            email: {
+                in: [
+                    "admin@dreamsky.edu.np",
+                    "counselor@dreamsky.edu.np",
+                    "frontdesk@dreamsky.edu.np",
+                    "teacher@dreamsky.edu.np",
+                    "student@dreamsky.edu.np",
+                    "referral@dreamsky.edu.np"
+                ]
+            }
+        }
+    }).catch(() => {});
 
-    // 2. Seed/upsert users
-    for (const u of usersToSeed) {
+    // 3. Seed real staff users
+    for (const u of realStaffUsers) {
         const hash = await bcrypt.hash(u.password, 12);
         const user = await prisma.user.upsert({
             where: { email: u.email },
@@ -173,14 +123,17 @@ async function seed() {
                 mustChangePassword: false
             }
         });
-        console.log(`User created/updated: ${user.email} | Role: ${user.role}`);
+        console.log(`Synced staff user: ${user.email} (${user.role})`);
     }
 
-    console.log("Production user seeding completed successfully.");
-    await prisma.$disconnect();
+    console.log("All real staff accounts synced successfully.");
 }
 
-seed().catch((e) => {
-    console.error("Seeding failed:", e);
-    process.exit(1);
-});
+seed()
+    .catch((e) => {
+        console.error("Seeding error:", e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });
