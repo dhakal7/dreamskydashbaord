@@ -137,7 +137,7 @@ export default function DocumentsPage() {
       </Card>
 
       {/* ── Student Profile Cards Grid (Student-Centric Primary View) ── */}
-      {isLoading ? (
+      {isLoading && profiles.length === 0 ? (
         <div className="py-16 text-center text-sm text-muted-foreground">Loading student document profiles...</div>
       ) : profiles.length === 0 ? (
         <EmptyState
