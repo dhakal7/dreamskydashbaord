@@ -139,6 +139,7 @@ export function useCreateStudent() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Student created')
     },
     onError: (err: Error) => toast.error(err.message),
@@ -162,6 +163,7 @@ export function useUpdateStudent() {
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: studentKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Student updated')
     },
     onError: (err: Error) => toast.error(err.message),
@@ -187,6 +189,7 @@ export function useChangePipelineStage() {
     onSuccess: (_data, { id }) => {
       queryClient.invalidateQueries({ queryKey: studentKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
     },
     onError: (err: Error) => toast.error(err.message),
   })

@@ -42,6 +42,7 @@ export function useCreateFollowUp() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: followUpKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Follow-up logged')
     },
     onError: (err: Error) => toast.error(err.message),
@@ -57,6 +58,7 @@ export function useUpdateFollowUp() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: followUpKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Follow-up updated')
     },
     onError: (err: Error) => toast.error(err.message),
