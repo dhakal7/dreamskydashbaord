@@ -2,19 +2,7 @@ require("dotenv").config();
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 
-// We can instantiate PrismaClient directly or use pg adapter if required.
-// Let's import the database client just like in the app src/prisma.js or fallback to direct client.
-let prisma;
-try {
-    const { PrismaPg } = require("@prisma/adapter-pg");
-    const { Pool } = require("pg");
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-    const adapter = new PrismaPg(pool);
-    prisma = new PrismaClient({ adapter });
-} catch (e) {
-    // Fallback to default direct client
-    prisma = new PrismaClient();
-}
+const prisma = require("../src/prisma");
 
 const usersToSeed = [
     {
@@ -23,6 +11,16 @@ const usersToSeed = [
         firstName: "Ashish",
         lastName: "Shrestha",
         password: "dreamskyconsultancy@2025",
+        role: "SUPER_ADMIN",
+        status: "ACTIVE",
+        branchId: "br-1"
+    },
+    {
+        id: "user-sa-demo",
+        email: "admin@dreamsky.edu.np",
+        firstName: "System",
+        lastName: "Administrator",
+        password: "dreamsky-demo",
         role: "SUPER_ADMIN",
         status: "ACTIVE",
         branchId: "br-1"
@@ -58,6 +56,16 @@ const usersToSeed = [
         branchId: "br-1"
     },
     {
+        id: "user-counselor-demo",
+        email: "counselor@dreamsky.edu.np",
+        firstName: "Anjali",
+        lastName: "Sharma",
+        password: "dreamsky-demo",
+        role: "COUNSELOR",
+        status: "ACTIVE",
+        branchId: "br-1"
+    },
+    {
         id: "fd-1",
         email: "santona.khatri@dreamsky.com",
         firstName: "Santona",
@@ -74,6 +82,46 @@ const usersToSeed = [
         lastName: "Thapa",
         password: "dreamskyfrontdesk@2025",
         role: "FRONT_DESK",
+        status: "ACTIVE",
+        branchId: "br-1"
+    },
+    {
+        id: "user-fd-demo",
+        email: "frontdesk@dreamsky.edu.np",
+        firstName: "Frontdesk",
+        lastName: "Officer",
+        password: "dreamsky-demo",
+        role: "FRONT_DESK",
+        status: "ACTIVE",
+        branchId: "br-1"
+    },
+    {
+        id: "user-teacher-demo",
+        email: "teacher@dreamsky.edu.np",
+        firstName: "Bikash",
+        lastName: "Gurung",
+        password: "dreamsky-demo",
+        role: "TEACHER",
+        status: "ACTIVE",
+        branchId: "br-1"
+    },
+    {
+        id: "user-student-demo",
+        email: "student@dreamsky.edu.np",
+        firstName: "Aarav",
+        lastName: "Sharma",
+        password: "dreamsky-demo",
+        role: "STUDENT",
+        status: "ACTIVE",
+        branchId: "br-1"
+    },
+    {
+        id: "user-referral-demo",
+        email: "referral@dreamsky.edu.np",
+        firstName: "Rohan",
+        lastName: "Adhikari",
+        password: "dreamsky-demo",
+        role: "REFERRAL_AGENT",
         status: "ACTIVE",
         branchId: "br-1"
     }
@@ -94,14 +142,9 @@ async function seed() {
     });
     console.log("Default branch ready:", defaultBranch.name);
 
-    // Clean up mock users not in the active seed list
-    const activeEmails = usersToSeed.map((u) => u.email);
-    const deleteResult = await prisma.user.deleteMany({
-        where: {
-            email: { notIn: activeEmails }
-        }
-    });
-    console.log(`Cleaned up ${deleteResult.count} old mock user accounts.`);
+    // Clean up mock users not in the active seed list (disabled to preserve FK integrity)
+    // const activeEmails = usersToSeed.map((u) => u.email);
+    // const deleteResult = await prisma.user.deleteMany({ where: { email: { notIn: activeEmails } } });
 
     // 2. Seed/upsert users
     for (const u of usersToSeed) {
