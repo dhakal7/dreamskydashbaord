@@ -18,7 +18,7 @@ import { DocumentStatusBadge } from '@/components/shared/status-badges'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { DocumentUploadDialog } from './document-upload-dialog'
 import { VersionHistoryDialog } from './version-history-dialog'
-import { useDownloadDocument, useReplaceDocument, useRenameDocument } from '@/hooks/use-documents'
+import { useDownloadDocument, useReplaceDocument, useRenameDocument, useDeleteDocument } from '@/hooks/use-documents'
 import type { StudentDocumentProfile, StudentDocument, DocumentCategory } from '@/types'
 import { Input } from '@/components/ui/input'
 
@@ -57,6 +57,7 @@ export function StudentDocumentProfileDialog({
   const downloadFn = useDownloadDocument()
   const replaceMutation = useReplaceDocument()
   const renameMutation = useRenameDocument()
+  const deleteMutation = useDeleteDocument()
 
   if (!profile) return null
 
@@ -302,17 +303,20 @@ export function StudentDocumentProfileDialog({
                                 >
                                   <History className="size-3.5" />
                                 </Button>
-                                {onDeleteDocument && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    title="Delete"
-                                    onClick={() => onDeleteDocument(doc.id)}
-                                  >
-                                    <Trash2 className="size-3.5" />
-                                  </Button>
-                                )}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  title="Delete Document"
+                                  onClick={() => {
+                                    if (confirm(`Are you sure you want to delete "${doc.customName || doc.fileName || doc.type}"?`)) {
+                                      if (onDeleteDocument) onDeleteDocument(doc.id)
+                                      deleteMutation.mutate(doc.id)
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </Button>
                               </div>
                             </div>
                           </div>
