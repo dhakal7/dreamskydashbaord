@@ -7,23 +7,29 @@ async function main() {
     console.log("  EXPLICIT POSTGRESQL SCHEMA MIGRATION    ");
     console.log("==========================================");
 
-    const connectionStrings = [
+    // Read passwords & users from environment or default cPanel patterns
+    const pass = process.env.DATABASE_URL?.match(/:([^:@]+)@/)?.[1] || "DreamskyPass2026";
+    
+    const candidates = [
         process.env.DATABASE_URL,
-        "postgresql://dreamsky:DreamskyPass2026@127.0.0.1:5432/dreamsky_DreamSky?schema=public",
-        "postgresql://dreamsky_database:DreamskyPass2026@127.0.0.1:5432/dreamsky_DreamSky?schema=public",
-        "postgresql://postgres:postgres@127.0.0.1:5432/dreamsky_DreamSky?schema=public",
+        `postgresql://dreamsky:${pass}@127.0.0.1:5432/dreamsky_DreamSky?schema=public`,
+        `postgresql://dreamsky_database:${pass}@127.0.0.1:5432/dreamsky_DreamSky?schema=public`,
+        `postgresql://postgres:postgres@127.0.0.1:5432/dreamsky_DreamSky?schema=public`,
+        `postgresql://dreamsky_admin:${pass}@127.0.0.1:5432/dreamsky_DreamSky?schema=public`
     ].filter(Boolean);
 
     let pool = null;
-    for (const connStr of connectionStrings) {
+    let connectedUrl = "";
+    for (const connStr of candidates) {
         try {
-            const testPool = new Pool({ connectionString: connStr, connectionTimeoutMillis: 3000 });
+            const testPool = new Pool({ connectionString: connStr, connectionTimeoutMillis: 2000 });
             await testPool.query("SELECT 1");
             pool = testPool;
+            connectedUrl = connStr;
             console.log(`   ✅ Connected using: ${connStr.replace(/:[^:@]+@/, ":****@")}`);
             break;
         } catch (e) {
-            // try next connection string
+            // try next
         }
     }
 
@@ -32,6 +38,14 @@ async function main() {
             connectionString: "postgresql://dreamsky_database:DreamskyPass2026@127.0.0.1:5432/dreamsky_DreamSky?schema=public",
         });
     }
+
+    // Query current table owner
+    try {
+        const ownerRes = await pool.query("SELECT tableowner FROM pg_tables WHERE tablename = 'Student'");
+        if (ownerRes.rows.length > 0) {
+            console.log(`   ℹ️ Table 'Student' is owned by: '${ownerRes.rows[0].tableowner}'`);
+        }
+    } catch (e) {}
 
     const runSql = async (label, sql) => {
         try {
@@ -42,14 +56,15 @@ async function main() {
         }
     };
 
-    // 1. Grant permissions if needed
-    await runSql("Table Permissions", `GRANT ALL ON ALL TABLES IN SCHEMA public TO PUBLIC;`);
+    // Try reassigning table ownership to dreamsky_database if logged in as table owner
+    await runSql("Transfer Student ownership to dreamsky_database", `ALTER TABLE "Student" OWNER TO "dreamsky_database";`);
+    await runSql("Transfer Document ownership to dreamsky_database", `ALTER TABLE "Document" OWNER TO "dreamsky_database";`);
 
-    // 2. Add columns to Student table
+    // Add columns to Student table
     await runSql("Student.studentCode column", `ALTER TABLE "Student" ADD COLUMN IF NOT EXISTS "studentCode" TEXT;`);
     await runSql("Student.passportNumber column", `ALTER TABLE "Student" ADD COLUMN IF NOT EXISTS "passportNumber" TEXT;`);
 
-    // 3. Add columns to Document table (TEXT type for zero enum mismatch risk)
+    // Add columns to Document table
     await runSql("Document.category column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'other';`);
     await runSql("Document.customName column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "customName" TEXT;`);
     await runSql("Document.reviewComment column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "reviewComment" TEXT;`);
@@ -57,7 +72,7 @@ async function main() {
     await runSql("Document.reviewedAt column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "reviewedAt" TIMESTAMP(3);`);
     await runSql("Document.currentVersion column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "currentVersion" INTEGER DEFAULT 1;`);
 
-    // 4. Create DocumentVersion table
+    // Create DocumentVersion table
     await runSql("DocumentVersion table", `
         CREATE TABLE IF NOT EXISTS "DocumentVersion" (
             "id" TEXT NOT NULL PRIMARY KEY,
@@ -75,7 +90,7 @@ async function main() {
     `);
 
     console.log("\n==========================================");
-    console.log("  DATABASE SCHEMA SUCCESSFULLY MIGRATED!  ");
+    console.log("  DATABASE DIAGNOSTIC & MIGRATION COMPLETE ");
     console.log("==========================================");
     await pool.end();
 }
