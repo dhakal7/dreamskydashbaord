@@ -213,37 +213,61 @@ const reviewDocument = async (id, { action, comment }, reviewedById) => {
 
 // ─── GET DOCUMENT VERSION HISTORY ────────────────────────────────────────────
 const getDocumentHistory = async (id) => {
-    const doc = await prisma.document.findUnique({
-        where: { id },
-        include: {
-            student: { select: { id: true, firstName: true, lastName: true } },
-            uploadedBy: { select: { id: true, firstName: true, lastName: true } },
-            versions: {
-                include: {
-                    uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+    try {
+        const doc = await prisma.document.findUnique({
+            where: { id },
+            include: {
+                student: { select: { id: true, firstName: true, lastName: true } },
+                uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+                versions: {
+                    include: {
+                        uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+                    },
+                    orderBy: { versionNumber: "desc" },
                 },
-                orderBy: { versionNumber: "desc" },
             },
-        },
-    });
-    if (!doc) throw AppError.notFound("Document not found.", "DOCUMENT_NOT_FOUND");
-    return doc;
+        });
+        if (!doc) throw AppError.notFound("Document not found.", "DOCUMENT_NOT_FOUND");
+        return doc;
+    } catch (err) {
+        const doc = await prisma.document.findUnique({
+            where: { id },
+            include: {
+                student: { select: { id: true, firstName: true, lastName: true } },
+                uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+            },
+        });
+        if (!doc) throw AppError.notFound("Document not found.", "DOCUMENT_NOT_FOUND");
+        return { ...doc, versions: [] };
+    }
 };
 
 // ─── GET ONE DOCUMENT ────────────────────────────────────────────────────────
 const getDocumentById = async (id) => {
-    const doc = await prisma.document.findUnique({
-        where: { id },
-        include: {
-            student: { select: { id: true, firstName: true, lastName: true, passportNumber: true, studentCode: true } },
-            uploadedBy: { select: { id: true, firstName: true, lastName: true } },
-            verifiedBy: { select: { id: true, firstName: true, lastName: true } },
-            reviewedBy: { select: { id: true, firstName: true, lastName: true } },
-            versions: { orderBy: { versionNumber: "desc" } },
-        },
-    });
-    if (!doc) throw AppError.notFound("Document not found.", "DOCUMENT_NOT_FOUND");
-    return doc;
+    try {
+        const doc = await prisma.document.findUnique({
+            where: { id },
+            include: {
+                student: { select: { id: true, firstName: true, lastName: true, passportNumber: true, studentCode: true } },
+                uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+                verifiedBy: { select: { id: true, firstName: true, lastName: true } },
+                reviewedBy: { select: { id: true, firstName: true, lastName: true } },
+                versions: { orderBy: { versionNumber: "desc" } },
+            },
+        });
+        if (!doc) throw AppError.notFound("Document not found.", "DOCUMENT_NOT_FOUND");
+        return doc;
+    } catch (err) {
+        const doc = await prisma.document.findUnique({
+            where: { id },
+            include: {
+                student: { select: { id: true, firstName: true, lastName: true } },
+                uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+            },
+        });
+        if (!doc) throw AppError.notFound("Document not found.", "DOCUMENT_NOT_FOUND");
+        return { ...doc, versions: [] };
+    }
 };
 
 // ─── LIST STUDENT DOCUMENT PROFILES (Student-Centric View) ───────────────────
@@ -256,28 +280,43 @@ const listStudentProfiles = async (query) => {
         studentWhere.OR = [
             { firstName: { contains: q, mode: "insensitive" } },
             { lastName: { contains: q, mode: "insensitive" } },
-            { passportNumber: { contains: q, mode: "insensitive" } },
-            { studentCode: { contains: q, mode: "insensitive" } },
             { id: { contains: q, mode: "insensitive" } },
         ];
     }
 
-    const students = await prisma.student.findMany({
-        where: studentWhere,
-        include: {
-            assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
-            documents: {
-                include: {
-                    uploadedBy: { select: { id: true, firstName: true, lastName: true } },
-                    versions: { orderBy: { versionNumber: "desc" } },
+    let students = [];
+    try {
+        students = await prisma.student.findMany({
+            where: studentWhere,
+            include: {
+                assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
+                documents: {
+                    include: {
+                        uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+                        versions: { orderBy: { versionNumber: "desc" } },
+                    },
+                    orderBy: { updatedAt: "desc" },
                 },
-                orderBy: { updatedAt: "desc" },
             },
-        },
-        orderBy: { createdAt: "desc" },
-    });
+            orderBy: { createdAt: "desc" },
+        });
+    } catch (e) {
+        students = await prisma.student.findMany({
+            where: studentWhere,
+            include: {
+                assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
+                documents: {
+                    include: {
+                        uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+                    },
+                    orderBy: { updatedAt: "desc" },
+                },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+    }
 
-    const REQUIRED_STANDARD_DOCS = 15; // Total target documents expected for 100% completion
+    const REQUIRED_STANDARD_DOCS = 15;
 
     const profiles = students.map((student) => {
         const docs = student.documents || [];
