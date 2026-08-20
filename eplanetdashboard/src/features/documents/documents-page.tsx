@@ -61,9 +61,16 @@ export default function DocumentsPage() {
       docsByStudentId.set(d.studentId, existing)
     })
 
-    // Filter students by search query
+    // Filter students: Only show registered students or students with uploaded documents (excluding pure leads)
     const q = searchQuery.toLowerCase().trim()
     const matchingStudents = students.filter((s) => {
+      const sDocs = docsByStudentId.get(s.id) || []
+      const hasDocs = sDocs.length > 0
+      const isRegisteredStudent = (s as any).stage !== 'lead' && (s as any).stage !== 'inquiry' && (s as any).status !== 'lead'
+
+      // Skip inquiry leads who have zero documents
+      if (!hasDocs && !isRegisteredStudent) return false
+
       if (!q) return true
       return (
         s.name.toLowerCase().includes(q) ||
