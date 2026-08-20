@@ -5,7 +5,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { isMockMode } from '@/lib/api-client'
-import { classApi, type ClassListParams, type AttendanceBody } from '@/api/class-api'
+import { classApi, type ClassListParams, type AttendanceBody, type ApiClass } from '@/api/class-api'
 
 export const classKeys = {
   all: ['classes'] as const,
@@ -46,6 +46,51 @@ export function useClassContent(classId: string) {
     queryKey: classKeys.content(classId),
     queryFn: () => classApi.listContent(classId),
     enabled: !isMockMode() && !!classId,
+  })
+}
+
+export function useCreateClass() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: Partial<ApiClass>) => {
+      if (isMockMode()) return Promise.resolve(data as any)
+      return classApi.create(data as any)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: classKeys.all })
+      toast.success('Class created successfully')
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useUpdateClass() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<ApiClass> }) => {
+      if (isMockMode()) return Promise.resolve(data as any)
+      return classApi.update(id, data)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: classKeys.all })
+      toast.success('Class updated successfully')
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useDeleteClass() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isMockMode()) return Promise.resolve()
+      return classApi.remove(id)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: classKeys.all })
+      toast.success('Class deleted successfully')
+    },
+    onError: (err: Error) => toast.error(err.message),
   })
 }
 

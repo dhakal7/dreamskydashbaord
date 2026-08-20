@@ -11,7 +11,15 @@ import {
 import { Link } from 'react-router-dom'
 import { ClassStatusBadge } from '@/components/shared/status-badges'
 
-export const classColumns: ColumnDef<ClassSession, any>[] = [
+export const getClassColumns = ({
+  onView,
+  onEdit,
+  onDelete,
+}: {
+  onView?: (cls: ClassSession) => void
+  onEdit?: (cls: ClassSession) => void
+  onDelete?: (cls: ClassSession) => void
+} = {}): ColumnDef<ClassSession, any>[] => [
   {
     accessorKey: 'name',
     header: 'Class',
@@ -87,7 +95,7 @@ export const classColumns: ColumnDef<ClassSession, any>[] = [
     id: 'actions',
     header: '',
     enableSorting: false,
-    cell: () => (
+    cell: ({ row }) => (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
@@ -95,11 +103,13 @@ export const classColumns: ColumnDef<ClassSession, any>[] = [
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem>View details</DropdownMenuItem>
-          <DropdownMenuItem>Edit class</DropdownMenuItem>
-          <DropdownMenuItem destructive>Archive class</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onView?.(row.original)}>View details</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onEdit?.(row.original)}>Edit class</DropdownMenuItem>
+          <DropdownMenuItem destructive onClick={() => onDelete?.(row.original)}>Delete class</DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     ),
   },
 ]
+
+export const classColumns = getClassColumns()
