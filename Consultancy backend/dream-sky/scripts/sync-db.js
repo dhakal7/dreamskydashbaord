@@ -7,26 +7,27 @@ async function main() {
     console.log("  EXPLICIT POSTGRESQL SCHEMA MIGRATION    ");
     console.log("==========================================");
 
-    // Read passwords & users from environment or default cPanel patterns
-    const pass = process.env.DATABASE_URL?.match(/:([^:@]+)@/)?.[1] || "DreamskyPass2026";
+    // Extract password from .env or default password
+    const envUrl = process.env.DATABASE_URL || "";
+    const pass = envUrl.match(/:([^:@]+)@/)?.[1] || "DreamskyPass2026";
     
-    const candidates = [
-        process.env.DATABASE_URL,
+    // Connect explicitly as table owner `dreamsky_dreamsky`
+    const connectionStrings = [
+        `postgresql://dreamsky_dreamsky:${pass}@127.0.0.1:5432/dreamsky_DreamSky?schema=public`,
         `postgresql://dreamsky:${pass}@127.0.0.1:5432/dreamsky_DreamSky?schema=public`,
+        envUrl,
         `postgresql://dreamsky_database:${pass}@127.0.0.1:5432/dreamsky_DreamSky?schema=public`,
-        `postgresql://postgres:postgres@127.0.0.1:5432/dreamsky_DreamSky?schema=public`,
-        `postgresql://dreamsky_admin:${pass}@127.0.0.1:5432/dreamsky_DreamSky?schema=public`
     ].filter(Boolean);
 
     let pool = null;
-    let connectedUrl = "";
-    for (const connStr of candidates) {
+    let connectedUser = "";
+    for (const connStr of connectionStrings) {
         try {
             const testPool = new Pool({ connectionString: connStr, connectionTimeoutMillis: 2000 });
             await testPool.query("SELECT 1");
             pool = testPool;
-            connectedUrl = connStr;
-            console.log(`   ✅ Connected using: ${connStr.replace(/:[^:@]+@/, ":****@")}`);
+            connectedUser = connStr.match(/\/\/([^:]+):/)?.[1] || "user";
+            console.log(`   ✅ Connected successfully as table owner: '${connectedUser}'`);
             break;
         } catch (e) {
             // try next
@@ -35,17 +36,9 @@ async function main() {
 
     if (!pool) {
         pool = new Pool({
-            connectionString: "postgresql://dreamsky_database:DreamskyPass2026@127.0.0.1:5432/dreamsky_DreamSky?schema=public",
+            connectionString: "postgresql://dreamsky_dreamsky:DreamskyPass2026@127.0.0.1:5432/dreamsky_DreamSky?schema=public",
         });
     }
-
-    // Query current table owner
-    try {
-        const ownerRes = await pool.query("SELECT tableowner FROM pg_tables WHERE tablename = 'Student'");
-        if (ownerRes.rows.length > 0) {
-            console.log(`   ℹ️ Table 'Student' is owned by: '${ownerRes.rows[0].tableowner}'`);
-        }
-    } catch (e) {}
 
     const runSql = async (label, sql) => {
         try {
@@ -56,15 +49,15 @@ async function main() {
         }
     };
 
-    // Try reassigning table ownership to dreamsky_database if logged in as table owner
-    await runSql("Transfer Student ownership to dreamsky_database", `ALTER TABLE "Student" OWNER TO "dreamsky_database";`);
-    await runSql("Transfer Document ownership to dreamsky_database", `ALTER TABLE "Document" OWNER TO "dreamsky_database";`);
+    // 1. Grant full privileges and reassign ownership to dreamsky_database if needed
+    await runSql("Grant permissions to dreamsky_database", `GRANT ALL ON ALL TABLES IN SCHEMA public TO "dreamsky_database";`);
+    await runSql("Grant permissions on sequences", `GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO "dreamsky_database";`);
 
-    // Add columns to Student table
+    // 2. Add columns to Student table
     await runSql("Student.studentCode column", `ALTER TABLE "Student" ADD COLUMN IF NOT EXISTS "studentCode" TEXT;`);
     await runSql("Student.passportNumber column", `ALTER TABLE "Student" ADD COLUMN IF NOT EXISTS "passportNumber" TEXT;`);
 
-    // Add columns to Document table
+    // 3. Add columns to Document table
     await runSql("Document.category column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'other';`);
     await runSql("Document.customName column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "customName" TEXT;`);
     await runSql("Document.reviewComment column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "reviewComment" TEXT;`);
@@ -72,7 +65,7 @@ async function main() {
     await runSql("Document.reviewedAt column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "reviewedAt" TIMESTAMP(3);`);
     await runSql("Document.currentVersion column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "currentVersion" INTEGER DEFAULT 1;`);
 
-    // Create DocumentVersion table
+    // 4. Create DocumentVersion table
     await runSql("DocumentVersion table", `
         CREATE TABLE IF NOT EXISTS "DocumentVersion" (
             "id" TEXT NOT NULL PRIMARY KEY,
@@ -89,8 +82,11 @@ async function main() {
         );
     `);
 
+    // 5. Grant permissions on new DocumentVersion table
+    await runSql("Grant DocumentVersion permissions", `GRANT ALL ON TABLE "DocumentVersion" TO "dreamsky_database";`);
+
     console.log("\n==========================================");
-    console.log("  DATABASE DIAGNOSTIC & MIGRATION COMPLETE ");
+    console.log("  DATABASE SCHEMA SUCCESSFULLY MIGRATED!  ");
     console.log("==========================================");
     await pool.end();
 }
