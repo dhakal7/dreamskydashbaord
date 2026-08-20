@@ -274,10 +274,10 @@ const getDocumentById = async (id) => {
 const listStudentProfiles = async (query) => {
     const { search } = query;
 
-    const studentWhere = {};
+    const baseSearchWhere = {};
     if (search?.trim()) {
         const q = search.trim();
-        studentWhere.OR = [
+        baseSearchWhere.OR = [
             { firstName: { contains: q, mode: "insensitive" } },
             { lastName: { contains: q, mode: "insensitive" } },
             { id: { contains: q, mode: "insensitive" } },
@@ -287,7 +287,17 @@ const listStudentProfiles = async (query) => {
     let students = [];
     try {
         students = await prisma.student.findMany({
-            where: studentWhere,
+            where: {
+                AND: [
+                    baseSearchWhere,
+                    {
+                        OR: [
+                            { documents: { some: {} } },
+                            { pipelineStage: { notIn: ["LEAD", "INQUIRY", "PROSPECT"] } },
+                        ],
+                    },
+                ],
+            },
             include: {
                 assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
                 documents: {
@@ -302,7 +312,12 @@ const listStudentProfiles = async (query) => {
         });
     } catch (e) {
         students = await prisma.student.findMany({
-            where: studentWhere,
+            where: {
+                AND: [
+                    baseSearchWhere,
+                    { documents: { some: {} } },
+                ],
+            },
             include: {
                 assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
                 documents: {
