@@ -20,6 +20,7 @@ import {
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 import { useUploadDocument } from '@/hooks/use-documents'
 import { useStudentsStore } from '@/features/students/store'
+import { useAuthStore } from '@/store/auth-store'
 import type { DocumentCategory } from '@/types'
 
 interface DocumentUploadDialogProps {
@@ -61,12 +62,12 @@ export const TYPE_OPTIONS_BY_CATEGORY: Record<DocumentCategory, { value: string;
     { value: 'OTHER', label: 'Other Test Score' },
   ],
   finance: [
+    { value: 'BANK_BALANCE_CERTIFICATE', label: 'Bank Balance Certificate' },
     { value: 'BANK_STATEMENT', label: 'Bank Statement' },
-    { value: 'BANK_CERTIFICATE', label: 'Bank Certificate' },
-    { value: 'INCOME_CERTIFICATE', label: 'Income Certificate' },
+    { value: 'INCOME_SOURCE', label: 'Income Source' },
     { value: 'TAX_CLEARANCE', label: 'Tax Clearance' },
+    { value: 'RELATIONSHIP_CERTIFICATE', label: 'Relationship Certificate' },
     { value: 'SPONSORSHIP_LETTER', label: 'Sponsorship Letter' },
-    { value: 'AFFIDAVIT', label: 'Affidavit' },
     { value: 'LOAN_LETTER', label: 'Loan Letter' },
     { value: 'PROPERTY_VALUATION', label: 'Property Valuation' },
     { value: 'OTHER', label: 'Other Financial Doc' },
@@ -85,7 +86,17 @@ export const TYPE_OPTIONS_BY_CATEGORY: Record<DocumentCategory, { value: string;
 
 export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId }: DocumentUploadDialogProps) {
   const fileInputId = useId()
-  const students = useStudentsStore((s) => s.students)
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const allStudents = useStudentsStore((s) => s.students)
+  const isCounselor = String(currentUser?.role).toLowerCase() === 'counselor'
+
+  const students = allStudents.filter((s) => {
+    if (!isCounselor) return true
+    const matchName = Boolean(currentUser?.name && s.counselorName?.toLowerCase().includes(currentUser.name.toLowerCase()))
+    const matchId = (s as any).counselorId === currentUser?.id || (s as any).counselorId === currentUser?.linkedId
+    return matchName || matchId
+  })
+
   const uploadMutation = useUploadDocument()
 
   const [studentId, setStudentId] = useState(preselectedStudentId ?? '')
