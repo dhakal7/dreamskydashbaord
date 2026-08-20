@@ -13,9 +13,11 @@ import { StudentDocumentProfileDialog } from './student-document-profile-dialog'
 import { useStudentDocumentProfiles, useDocuments } from '@/hooks/use-documents'
 import { useStudentsStore } from '@/features/students/store'
 import { useDocumentsStore } from './store'
+import { useAuthStore } from '@/store/auth-store'
 import type { StudentDocumentProfile, StudentDocument } from '@/types'
 
 export default function DocumentsPage() {
+  const currentUser = useAuthStore((s) => s.currentUser)
   const students = useStudentsStore((s) => s.students)
   const { documents: mockDocs, deleteDocument: deleteMockDoc } = useDocumentsStore()
 
@@ -61,15 +63,17 @@ export default function DocumentsPage() {
       docsByStudentId.set(d.studentId, existing)
     })
 
-    // Filter students: Only show registered students or students with uploaded documents (excluding pure leads)
+    const isCounselor = String(currentUser?.role).toLowerCase() === 'counselor'
+
+    // Filter students by counselor assignment & search query
     const q = searchQuery.toLowerCase().trim()
     const matchingStudents = students.filter((s) => {
-      const sDocs = docsByStudentId.get(s.id) || []
-      const hasDocs = sDocs.length > 0
-      const isRegisteredStudent = (s as any).stage !== 'lead' && (s as any).stage !== 'inquiry' && (s as any).status !== 'lead'
-
-      // Skip inquiry leads who have zero documents
-      if (!hasDocs && !isRegisteredStudent) return false
+      // Role check: Counselors only see assigned students
+      if (isCounselor) {
+        const matchName = Boolean(currentUser?.name && s.counselorName?.toLowerCase().includes(currentUser.name.toLowerCase()))
+        const matchId = (s as any).counselorId === currentUser?.id || (s as any).counselorId === currentUser?.linkedId
+        if (!matchName && !matchId) return false
+      }
 
       if (!q) return true
       return (
@@ -82,7 +86,7 @@ export default function DocumentsPage() {
 
     const REQUIRED_TARGET = 15
 
-    return matchingStudents.map((s) => {
+    const computedProfiles = matchingStudents.map((s) => {
       const sDocs = docsByStudentId.get(s.id) || []
       const verified = sDocs.filter((d) => d.status === 'verified').length
       const pending = sDocs.filter((d) => ['uploaded', 'pending_student_review', 're_uploaded', 'pending_review', 'pending'].includes(d.status)).length
@@ -105,7 +109,14 @@ export default function DocumentsPage() {
         documents: sDocs,
       }
     })
-  }, [apiProfiles, apiDocsData, mockDocs, students, searchQuery])
+
+    // If search bar is empty, ONLY show student profiles that actually have at least 1 uploaded document
+    if (!q) {
+      return computedProfiles.filter((p) => p.totalDocuments > 0)
+    }
+
+    return computedProfiles
+  }, [apiProfiles, apiDocsData, mockDocs, students, searchQuery, currentUser])
 
   // Sync selectedProfile if updated
   const activeProfile = selectedProfile
