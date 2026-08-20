@@ -7,11 +7,9 @@ async function main() {
     console.log("  EXPLICIT POSTGRESQL SCHEMA MIGRATION    ");
     console.log("==========================================");
 
-    // Extract password from .env or default password
     const envUrl = process.env.DATABASE_URL || "";
     const pass = envUrl.match(/:([^:@]+)@/)?.[1] || "DreamskyPass2026";
     
-    // Connect explicitly as table owner `dreamsky_dreamsky`
     const connectionStrings = [
         `postgresql://dreamsky_dreamsky:${pass}@127.0.0.1:5432/dreamsky_DreamSky?schema=public`,
         `postgresql://dreamsky:${pass}@127.0.0.1:5432/dreamsky_DreamSky?schema=public`,
@@ -49,15 +47,11 @@ async function main() {
         }
     };
 
-    // 1. Grant full privileges and reassign ownership to dreamsky_database if needed
-    await runSql("Grant permissions to dreamsky_database", `GRANT ALL ON ALL TABLES IN SCHEMA public TO "dreamsky_database";`);
-    await runSql("Grant permissions on sequences", `GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO "dreamsky_database";`);
-
-    // 2. Add columns to Student table
+    // Add columns to Student table
     await runSql("Student.studentCode column", `ALTER TABLE "Student" ADD COLUMN IF NOT EXISTS "studentCode" TEXT;`);
     await runSql("Student.passportNumber column", `ALTER TABLE "Student" ADD COLUMN IF NOT EXISTS "passportNumber" TEXT;`);
 
-    // 3. Add columns to Document table
+    // Add columns to Document table
     await runSql("Document.category column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "category" TEXT DEFAULT 'other';`);
     await runSql("Document.customName column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "customName" TEXT;`);
     await runSql("Document.reviewComment column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "reviewComment" TEXT;`);
@@ -65,7 +59,7 @@ async function main() {
     await runSql("Document.reviewedAt column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "reviewedAt" TIMESTAMP(3);`);
     await runSql("Document.currentVersion column", `ALTER TABLE "Document" ADD COLUMN IF NOT EXISTS "currentVersion" INTEGER DEFAULT 1;`);
 
-    // 4. Create DocumentVersion table
+    // Create DocumentVersion table
     await runSql("DocumentVersion table", `
         CREATE TABLE IF NOT EXISTS "DocumentVersion" (
             "id" TEXT NOT NULL PRIMARY KEY,
@@ -82,8 +76,10 @@ async function main() {
         );
     `);
 
-    // 5. Grant permissions on new DocumentVersion table
-    await runSql("Grant DocumentVersion permissions", `GRANT ALL ON TABLE "DocumentVersion" TO "dreamsky_database";`);
+    // Transfer table ownership to dreamsky_database so backend has 100% control
+    await runSql("Transfer Student ownership to dreamsky_database", `ALTER TABLE "Student" OWNER TO "dreamsky_database";`);
+    await runSql("Transfer Document ownership to dreamsky_database", `ALTER TABLE "Document" OWNER TO "dreamsky_database";`);
+    await runSql("Transfer DocumentVersion ownership to dreamsky_database", `ALTER TABLE "DocumentVersion" OWNER TO "dreamsky_database";`);
 
     console.log("\n==========================================");
     console.log("  DATABASE SCHEMA SUCCESSFULLY MIGRATED!  ");
