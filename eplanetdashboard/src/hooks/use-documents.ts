@@ -118,3 +118,15 @@ export function useDownloadDocument() {
     }
   }
 }
+
+export function useDeleteDocument() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => documentApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: documentKeys.all })
+      toast.success('Document deleted')
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}

@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
-import { Search, Upload, FolderKanban, ChevronRight, Plus } from 'lucide-react'
+import { Search, Upload, FolderKanban, ChevronRight, Plus, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -10,20 +10,35 @@ import { Progress } from '@/components/ui/progress'
 import { EmptyState } from '@/components/shared/empty-state'
 import { DocumentUploadDialog } from './document-upload-dialog'
 import { StudentDocumentProfileDialog } from './student-document-profile-dialog'
-import { useStudentDocumentProfiles, useDocuments } from '@/hooks/use-documents'
+import { useStudentDocumentProfiles, useDocuments, useDeleteDocument } from '@/hooks/use-documents'
 import { useStudentsStore } from '@/features/students/store'
 import { useDocumentsStore } from './store'
 import { useAuthStore } from '@/store/auth-store'
+import { toast } from 'sonner'
 import type { StudentDocumentProfile, StudentDocument } from '@/types'
 
 export default function DocumentsPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const students = useStudentsStore((s) => s.students)
   const { documents: mockDocs, deleteDocument: deleteMockDoc } = useDocumentsStore()
+  const deleteMutation = useDeleteDocument()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
   const [selectedProfile, setSelectedProfile] = useState<StudentDocumentProfile | null>(null)
+
+  const handleDeleteProfile = (profile: StudentDocumentProfile) => {
+    if (confirm(`Are you sure you want to delete the document profile for ${profile.studentName}? This will permanently delete all ${profile.totalDocuments} documents.`)) {
+      profile.documents.forEach((doc) => {
+        deleteMockDoc(doc.id)
+        deleteMutation.mutate(doc.id)
+      })
+      toast.success(`Deleted document profile for ${profile.studentName}`)
+      if (selectedProfile?.studentId === profile.studentId) {
+        setSelectedProfile(null)
+      }
+    }
+  }
 
   // Fetch real student document profiles from backend REST API
   const { data: apiProfiles, isLoading } = useStudentDocumentProfiles(searchQuery)
@@ -237,13 +252,27 @@ export default function DocumentsPage() {
                 <span className="text-[11px] text-muted-foreground">
                   Updated {dayjs(profile.lastUpdated).format('MMM D, YYYY')}
                 </span>
-                <Button
-                  onClick={() => setSelectedProfile(profile)}
-                  size="sm"
-                  className="gap-1.5 text-xs font-semibold px-3 shadow-soft"
-                >
-                  Open Documents <ChevronRight className="size-3.5" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+                    title="Delete Student Document Profile"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDeleteProfile(profile)
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                  <Button
+                    onClick={() => setSelectedProfile(profile)}
+                    size="sm"
+                    className="gap-1.5 text-xs font-semibold px-3 shadow-soft"
+                  >
+                    Open Documents <ChevronRight className="size-3.5" />
+                  </Button>
+                </div>
               </div>
             </Card>
           ))}
@@ -261,7 +290,10 @@ export default function DocumentsPage() {
         profile={activeProfile}
         open={Boolean(activeProfile)}
         onOpenChange={(open) => !open && setSelectedProfile(null)}
-        onDeleteDocument={(docId) => deleteMockDoc(docId)}
+        onDeleteDocument={(docId) => {
+          deleteMockDoc(docId)
+          deleteMutation.mutate(docId)
+        }}
       />
     </div>
   )
