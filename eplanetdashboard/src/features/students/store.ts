@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import type { Student, PartnerConsultancy } from '@/types'
 import { students as seedStudents, counselors, partnerConsultancies as seedPartners } from '@/mock'
 
+import { isMockMode } from '@/lib/api-client'
+
 interface StudentsState {
   students: Student[]
   partnerConsultancies: PartnerConsultancy[]
@@ -14,8 +16,8 @@ interface StudentsState {
 }
 
 export const useStudentsStore = create<StudentsState>((set, get) => ({
-  students: seedStudents,
-  partnerConsultancies: seedPartners,
+  students: isMockMode() ? seedStudents : [],
+  partnerConsultancies: isMockMode() ? seedPartners : [],
 
   addStudent: (data) => {
     const current = get().students

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware'
 import { toast } from 'sonner'
 import type { Lead, LeadStage } from '@/types'
 import { leads as seedLeads } from '@/mock'
+import { isMockMode } from '@/lib/api-client'
 import { leadStageMeta } from '@/components/shared/status-badges'
 
 interface LeadsState {
@@ -17,7 +18,7 @@ interface LeadsState {
 export const useLeadsStore = create<LeadsState>()(
   persist(
     (set, get) => ({
-      leads: seedLeads,
+      leads: isMockMode() ? seedLeads : [],
 
       addLead: (data) => {
         const current = get().leads

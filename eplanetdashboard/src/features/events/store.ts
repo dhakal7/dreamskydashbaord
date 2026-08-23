@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import type { Event } from '@/types'
 import { events as seedEvents } from '@/mock'
 
+import { isMockMode } from '@/lib/api-client'
+
 interface EventsState {
   events: Event[]
   addEvent: (data: Omit<Event, 'id'>) => Event
@@ -19,7 +21,7 @@ function getNextEventId(current: Event[]) {
 }
 
 export const useEventsStore = create<EventsState>((set, get) => ({
-  events: seedEvents,
+  events: isMockMode() ? seedEvents : [],
 
   addEvent: (data) => {
     const newEvent: Event = {

@@ -11,6 +11,7 @@ import { ClassFiltersBar, defaultClassFilters, type ClassFilters } from './compo
 
 import { getClassesForRole } from './selectors'
 import type { ClassSession } from '@/types'
+import { isMockMode } from '@/lib/api-client'
 import { useClasses, useMyClasses, useCreateClass, useUpdateClass, useDeleteClass } from '@/hooks/use-classes'
 import { ClassEnrollmentPanel } from '@/features/dashboard/components/class-enrollment-panel'
 import { ClassFormModal } from './components/class-form-modal'
@@ -32,10 +33,31 @@ export default function ClassesPage() {
   const [editingClass, setEditingClass] = useState<ClassSession | null>(null)
 
   const baseClasses: ClassSession[] = useMemo(() => {
+    if (!isMockMode()) {
+      const rawList = role === 'teacher'
+        ? (myClassesData ?? [])
+        : (Array.isArray(allClassesData) ? allClassesData : (allClassesData as any)?.classes ?? [])
+
+      return rawList.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        subject: (c.subject ?? 'IELTS') as any,
+        teacherId: c.teacherId,
+        teacherName: c.teacher ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim() : 'Teacher',
+        schedule: typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Sun/Tue/Thu · 10:00 AM',
+        room: 'Room 101',
+        startDate: c.startDate ?? c.createdAt,
+        endDate: c.endDate ?? c.createdAt,
+        capacity: c.capacity || 20,
+        enrolledCount: c.enrollments?.length ?? 0,
+        status: (c.status?.toLowerCase() ?? 'ongoing') as any,
+        nextSessionAt: c.startDate ?? c.createdAt,
+      }))
+    }
+
     const rawList = role === 'teacher' ? (myClassesData ?? []) : (allClassesData?.classes ?? [])
-    let initialList: ClassSession[] = []
     if (rawList.length > 0) {
-      initialList = rawList.map((c) => ({
+      return rawList.map((c) => ({
         id: c.id,
         name: c.name,
         subject: (c.subject ?? 'IELTS') as any,
@@ -50,16 +72,10 @@ export default function ClassesPage() {
         status: (c.status?.toLowerCase() ?? 'ongoing') as any,
         nextSessionAt: c.startDate ?? c.createdAt,
       }))
-    } else {
-      initialList = mockClasses
     }
 
-    if (localClasses.length === 0) {
-      return initialList
-    }
-
-    return localClasses
-  }, [allClassesData, myClassesData, mockClasses, role, localClasses])
+    return mockClasses
+  }, [allClassesData, myClassesData, mockClasses, role])
 
   // Sync initial list into localClasses on first load
   useMemo(() => {
@@ -155,14 +171,22 @@ export default function ClassesPage() {
         nextSessionAt: new Date().toISOString(),
       }
 
-      createClassMutation.mutate(data as any, {
+      const payload = {
+        name: data.name || 'New Class',
+        subject: data.subject || 'IELTS',
+        schedule: data.schedule || 'Sun/Tue/Thu · 10:00 AM',
+        capacity: data.capacity || 20,
+        status: data.status || 'ongoing',
+        branchId: (data as any).branchId || 'br-1',
+      }
+
+      createClassMutation.mutate(payload as any, {
         onSuccess: () => {
           setLocalClasses((prev) => [newClass, ...prev])
           toast.success('Class created successfully')
         },
         onError: () => {
           setLocalClasses((prev) => [newClass, ...prev])
-          toast.success('Class created successfully')
         },
       })
     }

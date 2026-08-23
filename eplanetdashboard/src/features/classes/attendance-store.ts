@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type { AttendanceRecord, Enrollment } from '@/types'
 import { attendanceRecords as mockAttendance, enrollments as mockEnrollments } from '@/mock'
 
+import { isMockMode } from '@/lib/api-client'
+
 export interface StudentPresence {
   studentId: string
   present: boolean
@@ -26,8 +28,8 @@ interface AttendanceState {
 }
 
 export const useAttendanceStore = create<AttendanceState>((set, get) => ({
-  attendanceRecords: [...mockAttendance],
-  enrollments: [...mockEnrollments],
+  attendanceRecords: isMockMode() ? [...mockAttendance] : [],
+  enrollments: isMockMode() ? [...mockEnrollments] : [],
   studentPresence: {},
 
   getAttendanceForClass: (classId) =>

@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import type { FollowUp } from '@/types'
 import { followUps as seedFollowUps } from '@/mock'
 
+import { isMockMode } from '@/lib/api-client'
+
 interface FollowUpsState {
   followUps: FollowUp[]
   addFollowUp: (data: Omit<FollowUp, 'id' | 'status'>) => FollowUp
@@ -12,7 +14,7 @@ interface FollowUpsState {
 }
 
 export const useFollowUpsStore = create<FollowUpsState>((set) => ({
-  followUps: seedFollowUps,
+  followUps: isMockMode() ? seedFollowUps : [],
   addFollowUp: (data) => {
     const newFollowUp: FollowUp = {
       ...data,

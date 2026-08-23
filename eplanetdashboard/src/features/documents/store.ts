@@ -1,10 +1,11 @@
 import { create } from 'zustand'
 import type { StudentDocument } from '@/types'
+import { isMockMode } from '@/lib/api-client'
 import { studentDocuments } from '@/mock'
 
 export type AddDocumentData = Omit<StudentDocument, 'id' | 'version' | 'uploadedAt' | 'status'>
 
-let nextId = studentDocuments.length + 1
+let nextId = 1
 
 interface DocumentsState {
   documents: StudentDocument[]
@@ -14,7 +15,7 @@ interface DocumentsState {
 }
 
 export const useDocumentsStore = create<DocumentsState>((set) => ({
-  documents: [...studentDocuments],
+  documents: isMockMode() ? [...studentDocuments] : [],
 
   addDocument: (data) =>
     set((state) => {
