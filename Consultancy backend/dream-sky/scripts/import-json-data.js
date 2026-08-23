@@ -91,11 +91,19 @@ async function main() {
     }
   }
 
+  // Clean up any dummy internal counselor accounts from older script runs
+  await prisma.user.deleteMany({
+    where: {
+      email: { endsWith: '@dreamsky.internal' },
+      role: 'COUNSELOR',
+    },
+  });
+
   const counselorMap = new Map();
   for (const name of counselorNames) {
     if (!name || name === 'Unassigned') continue;
     const { firstName, lastName } = parseName(name);
-    const email = `${firstName.toLowerCase()}.${lastName.toLowerCase().replace(/\s+/g, '')}@dreamsky.internal`;
+    const email = `${firstName.toLowerCase()}.${lastName.toLowerCase().replace(/\s+/g, '')}@dreamsky.com`;
 
     const user = await prisma.user.upsert({
       where: { email },
