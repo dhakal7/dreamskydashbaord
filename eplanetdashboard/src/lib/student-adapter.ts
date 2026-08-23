@@ -19,7 +19,7 @@ export function adaptApiStudentToStudent(apiStudent: ApiStudent): Student {
     passportNumber: '',
     address: '',
     status: (apiStudent.isActive ? 'active' : 'inactive') as Student['status'],
-    counselorId: apiStudent.assignedCounselorId ?? '',
+    counselorId: apiStudent.assignedCounselorId || apiStudent.assignedCounselor?.id || '',
     counselorName,
     preferredCountries: [],
     preferredLevel: 'bachelor',
