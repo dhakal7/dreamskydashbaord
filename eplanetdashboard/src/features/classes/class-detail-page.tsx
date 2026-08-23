@@ -44,7 +44,7 @@ export default function ClassDetailPage() {
   const markAttendanceApi = useMarkAttendance()
 
   // Live mode: fetch class from backend; mock mode: read from mock store
-  const { data: liveClass } = useClass(id!)
+  const { data: liveClass, isLoading: isClassLoading } = useClass(id!)
   const { data: liveContent } = useClassContent(id!)
 
   const classList = getClassesForRole(role, linkedId)
@@ -60,16 +60,24 @@ export default function ClassDetailPage() {
         teacherName: liveClass.teacher
           ? `${liveClass.teacher.firstName} ${liveClass.teacher.lastName}`
           : 'Teacher',
-        schedule: liveClass.schedule ?? 'TBD',
+        schedule: (liveClass.schedule as any)?.timing || String(liveClass.schedule || 'TBD'),
         room: 'Room 101',
         startDate: liveClass.startDate ?? liveClass.createdAt,
         endDate: liveClass.endDate ?? liveClass.createdAt,
-        capacity: liveClass.capacity,
+        capacity: liveClass.capacity || 20,
         enrolledCount: liveClass.enrollments?.length ?? 0,
         status: (liveClass.status?.toLowerCase() ?? 'ongoing') as any,
         nextSessionAt: liveClass.startDate ?? liveClass.createdAt,
       }
     : mockCls
+
+  if (!isMockMode() && isClassLoading) {
+    return (
+      <div className="flex items-center justify-center p-12 text-sm text-muted-foreground">
+        Loading class details...
+      </div>
+    )
+  }
 
   const today = dayjs().format('YYYY-MM-DD')
   const [todayPresence, setTodayPresence] = useState<Record<string, boolean>>({})
