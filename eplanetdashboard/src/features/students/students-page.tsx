@@ -27,10 +27,13 @@ export default function StudentsPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const mockMode = isMockMode()
 
-  // Counselors see only their assigned students — filter server-side so the full
-  // set is fetched, not just whatever happens to be in the first page.
+  // Filter server-side so only ENROLLED / processing stage students are fetched for Students Page
   const listParams = useMemo(
-    () => (currentUser.role === 'counselor' ? { counselorId: currentUser.linkedId, limit: 100 } : { limit: 100 }),
+    () => ({
+      stageIn: 'ENROLLED,APPLIED,OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED,DEPARTED',
+      counselorId: currentUser.role === 'counselor' ? currentUser.linkedId : undefined,
+      limit: 200,
+    }),
     [currentUser.role, currentUser.linkedId],
   )
   const { data: studentResponse } = useStudents(listParams)
@@ -47,7 +50,8 @@ export default function StudentsPage() {
     if (mockMode && studentResponse?.students && studentResponse.students.length > 0) {
       return studentResponse.students.map(adaptApiStudentToStudent)
     }
-    return mockStudents
+    // In mock mode, exclude leads
+    return mockStudents.filter((s) => (s as any).status !== 'lead' && (s as any).currentStage !== 'LEAD')
   }, [studentResponse, mockStudents, mockMode])
 
 
