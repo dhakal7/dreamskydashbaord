@@ -15,26 +15,36 @@ const REAL_STAFF_EMAILS = [
   'amisha.thapa@dreamsky.com',
 ];
 
+async function safeDelete(modelName) {
+  try {
+    if (prisma[modelName] && typeof prisma[modelName].deleteMany === 'function') {
+      await prisma[modelName].deleteMany({});
+    }
+  } catch (e) {
+    // Ignore optional relation delete errors
+  }
+}
+
 async function main() {
   console.log('🧹 Wiping all lead/student/class data from PostgreSQL database...\n');
 
-  await prisma.communicationLog.deleteMany({});
-  await prisma.attendanceRecord.deleteMany({});
-  await prisma.enrollment.deleteMany({});
-  await prisma.classContent.deleteMany({});
-  await prisma.classNotice.deleteMany({});
-  await prisma.classStudentNote.deleteMany({});
-  await prisma.classMaterial.deleteMany({});
-  await prisma.class.deleteMany({});
-  await prisma.visaDocument.deleteMany({});
-  await prisma.visaMilestone.deleteMany({});
-  await prisma.visaCase.deleteMany({});
-  await prisma.offerLetter.deleteMany({});
-  await prisma.application.deleteMany({});
-  await prisma.document.deleteMany({});
-  await prisma.pipelineStageHistory.deleteMany({});
-  await prisma.appointment.deleteMany({});
-  await prisma.student.deleteMany({});
+  await safeDelete('communicationLog');
+  await safeDelete('attendanceRecord');
+  await safeDelete('enrollment');
+  await safeDelete('classContent');
+  await safeDelete('classNotice');
+  await safeDelete('classStudentNote');
+  await safeDelete('classMaterial');
+  await safeDelete('class');
+  await safeDelete('visaDocument');
+  await safeDelete('visaMilestone');
+  await safeDelete('visaCase');
+  await safeDelete('offerLetter');
+  await safeDelete('application');
+  await safeDelete('document');
+  await safeDelete('pipelineStageHistory');
+  await safeDelete('appointment');
+  await safeDelete('student');
 
   // Keep only the 6 real staff users
   const deletedUsers = await prisma.user.deleteMany({
