@@ -28,7 +28,7 @@ export default function LeadsPage() {
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false)
 
   // Live mode: fetch LEAD/PROSPECT students from backend
-  const { leads: liveLeads } = useLiveLeads()
+  const { leads: liveLeads, totalCount: liveTotalCount } = useLiveLeads()
   const moveLiveLead = useMoveLiveLead()
 
   // Merge: use live data in real mode, mock data in mock mode
@@ -54,6 +54,8 @@ export default function LeadsPage() {
     })
   }, [currentUser, leads, filters])
 
+  const totalLeadsCount = isMockMode() ? filtered.length : liveTotalCount
+
   const hotLeads = filtered.filter((l) => l.priority === 'urgent' || l.priority === 'high').length
   const canChangeStage = hasPermission(currentUser.role, 'leads.change-stage')
   const canManageLeads = hasPermission(currentUser.role, 'leads.manage')
@@ -75,7 +77,7 @@ export default function LeadsPage() {
       <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
         <Card className="p-3.5">
           <p className="text-xs text-muted-foreground">Total Leads</p>
-          <p className="mt-1 text-xl font-semibold font-tabular">{filtered.length}</p>
+          <p className="mt-1 text-xl font-semibold font-tabular">{totalLeadsCount}</p>
         </Card>
         <Card className="p-3.5">
           <p className="text-xs text-muted-foreground">High / Urgent</p>

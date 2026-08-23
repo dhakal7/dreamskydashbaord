@@ -73,9 +73,10 @@ export function useSuperAdminStats() {
   return useQuery<SuperAdminStatItem[]>({
     queryKey: dashboardKeys.superAdmin(),
     queryFn: async () => {
+      const thirtyDaysAgo = dayjs().subtract(30, 'day').toISOString()
       const [enrolledStudents, newLeads, followUps, apps, offerLetters, visaCases, enrolledOnly] = await Promise.all([
         studentApi.list({ stageIn: 'ENROLLED,APPLIED,OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED,DEPARTED', limit: 1 }),
-        studentApi.list({ stageIn: 'LEAD,PROSPECT', limit: 1 }),
+        studentApi.list({ stageIn: 'LEAD,PROSPECT', createdFrom: thirtyDaysAgo, limit: 1 }),
         followUpApi.list({ status: 'upcoming', limit: 1 }),
         studentApi.list({ stageIn: 'APPLIED,OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED', limit: 1 }),
         studentApi.list({ stage: 'OFFER_RECEIVED', limit: 1 }),
@@ -85,7 +86,7 @@ export function useSuperAdminStats() {
 
       return [
         { label: 'Total Students', value: enrolledStudents.pagination.total, delta: `${enrolledStudents.pagination.total} total`, trend: 'up' as const },
-        { label: 'New Leads', value: newLeads.pagination.total, delta: `${newLeads.pagination.total} in pipeline`, trend: 'up' as const },
+        { label: 'New Leads', value: newLeads.pagination.total, delta: 'Last 30 days', trend: 'up' as const },
         { label: "Today's Follow-ups", value: followUps.pagination.total, delta: 'Due today', trend: 'flat' as const },
         { label: 'Applications', value: apps.pagination.total, delta: `${apps.pagination.total} active`, trend: 'up' as const },
         { label: 'Offer Letters', value: offerLetters.pagination.total, delta: `${offerLetters.pagination.total} received`, trend: 'up' as const },
