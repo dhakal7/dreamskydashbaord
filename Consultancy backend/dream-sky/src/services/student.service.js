@@ -28,9 +28,10 @@ const LIST_SELECT = {
     processingType: true,
     partnerConsultancyId: true,
     partnerConsultancy: { select: { id: true, name: true } },
+    assignedCounselorId: true,
+    assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
     isActive: true,
     createdAt: true,
-    assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
 };
 
 // ─── PORTAL PROVISIONING + WELCOME EMAIL ───────────────────────────────────────

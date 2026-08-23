@@ -82,7 +82,7 @@ function adaptStudentToLead(student: {
     photoColor: '#64748B',
     source: mapSource(student.source),
     stage: feStage,
-    counselorId: student.assignedCounselor?.id ?? '',
+    counselorId: (student as any).assignedCounselorId || student.assignedCounselor?.id || '',
     counselorName,
     interestedCountry: '',
     interestedLevel: 'bachelor',
