@@ -7,8 +7,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 interface StudentOption {
   id: string
   name: string
-  studentId: string
+  studentId?: string
   email?: string
+  phone?: string
 }
 
 interface SearchableStudentPickerProps {
@@ -42,7 +43,7 @@ export function SearchableStudentPicker({
     if (!query) return students
 
     return students.filter((student) => {
-      const haystack = `${student.name} ${student.studentId} ${student.email ?? ''}`.toLowerCase()
+      const haystack = `${student.name} ${student.studentId || ''} ${student.email || ''} ${student.phone || ''}`.toLowerCase()
       return haystack.includes(query)
     })
   }, [students, search])
@@ -62,7 +63,7 @@ export function SearchableStudentPicker({
             {selectedStudent ? (
               <span className="truncate">
                 <span className="font-medium text-foreground">{selectedStudent.name}</span>{' '}
-                <span className="text-xs text-muted-foreground">({selectedStudent.studentId})</span>
+                <span className="text-xs text-muted-foreground">({selectedStudent.studentId || selectedStudent.email || selectedStudent.phone || selectedStudent.id})</span>
               </span>
             ) : (
               <span className="text-muted-foreground">{placeholder}</span>
@@ -70,11 +71,11 @@ export function SearchableStudentPicker({
             <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-[300px] p-2 shadow-elevated">
+        <PopoverContent align="start" className="w-[320px] p-2 shadow-elevated">
           <div className="relative mb-2">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or ID..."
+              placeholder="Search by name, email, or phone..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-9 pl-8 text-xs"
@@ -100,7 +101,7 @@ export function SearchableStudentPicker({
                   >
                     <div>
                       <div className="font-medium text-foreground">{student.name}</div>
-                      <div className="text-[11px] text-muted-foreground">{student.studentId}</div>
+                      <div className="text-[11px] text-muted-foreground">{student.email || student.phone || student.studentId}</div>
                     </div>
                     {isSelected && <Check className="size-4 text-primary" />}
                   </button>

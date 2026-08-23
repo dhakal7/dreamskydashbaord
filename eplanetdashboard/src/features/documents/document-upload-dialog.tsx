@@ -1,4 +1,4 @@
-import { useState, useId } from 'react'
+import { useState, useId, useMemo } from 'react'
 import { Upload, X, FileText } from 'lucide-react'
 import {
   Dialog,
@@ -19,8 +19,10 @@ import {
 } from '@/components/ui/select'
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 import { useUploadDocument } from '@/hooks/use-documents'
+import { useStudents } from '@/hooks/use-students'
 import { useStudentsStore } from '@/features/students/store'
 import { useAuthStore } from '@/store/auth-store'
+import { isMockMode } from '@/lib/api-client'
 import type { DocumentCategory } from '@/types'
 
 interface DocumentUploadDialogProps {
@@ -87,15 +89,46 @@ export const TYPE_OPTIONS_BY_CATEGORY: Record<DocumentCategory, { value: string;
 export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId }: DocumentUploadDialogProps) {
   const fileInputId = useId()
   const currentUser = useAuthStore((s) => s.currentUser)
-  const allStudents = useStudentsStore((s) => s.students)
+
+  const { data: liveStudentsData } = useStudents({ limit: 500 })
+  const mockStudents = useStudentsStore((s) => s.students)
   const isCounselor = String(currentUser?.role).toLowerCase() === 'counselor'
 
-  const students = allStudents.filter((s) => {
-    if (!isCounselor) return true
-    const matchName = Boolean(currentUser?.name && s.counselorName?.toLowerCase().includes(currentUser.name.toLowerCase()))
-    const matchId = (s as any).counselorId === currentUser?.id || (s as any).counselorId === currentUser?.linkedId
-    return matchName || matchId
-  })
+  const students = useMemo(() => {
+    let rawList: Array<{ id: string; name: string; studentId?: string; email?: string; phone?: string; counselorName?: string; counselorId?: string }> = []
+
+    if (!isMockMode() && liveStudentsData) {
+      const list = liveStudentsData.students || (Array.isArray(liveStudentsData) ? liveStudentsData : [])
+      rawList = list.map((s: any) => ({
+        id: s.id,
+        name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email || 'Student',
+        studentId: s.email || s.phone || s.id,
+        email: s.email || '',
+        phone: s.phone || '',
+        counselorName: s.assignedCounselor ? `${s.assignedCounselor.firstName} ${s.assignedCounselor.lastName}`.trim() : undefined,
+        counselorId: s.assignedCounselorId,
+      }))
+    }
+
+    if (rawList.length === 0) {
+      rawList = mockStudents.map((s) => ({
+        id: s.id,
+        name: s.name,
+        studentId: s.studentId || s.id,
+        email: s.email,
+        phone: s.phone || '',
+        counselorName: s.counselorName,
+        counselorId: (s as any).counselorId,
+      }))
+    }
+
+    return rawList.filter((s) => {
+      if (!isCounselor) return true
+      const matchName = Boolean(currentUser?.name && s.counselorName?.toLowerCase().includes(currentUser.name.toLowerCase()))
+      const matchId = s.counselorId === currentUser?.id || s.counselorId === currentUser?.linkedId
+      return matchName || matchId
+    })
+  }, [liveStudentsData, mockStudents, currentUser, isCounselor])
 
   const uploadMutation = useUploadDocument()
 
