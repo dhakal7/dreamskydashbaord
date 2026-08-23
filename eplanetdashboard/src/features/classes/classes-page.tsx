@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import {
   BookOpen, UserPlus, Users, Clock, Search, ChevronRight, ClipboardCheck, Pencil, UserCheck
@@ -21,7 +21,7 @@ import {
 import { PersonAvatar } from '@/components/ui/avatar'
 import { EmptyState } from '@/components/shared/empty-state'
 
-import { isMockMode } from '@/lib/api-client'
+import { api, isMockMode } from '@/lib/api-client'
 import { useClasses, useEnrollStudent, useUpdateClass } from '@/hooks/use-classes'
 import { useStudents } from '@/hooks/use-students'
 import { getClassesForRole } from './selectors'
@@ -125,6 +125,26 @@ export default function ClassesPage() {
 
   const enrollMutation = useEnrollStudent()
   const updateClassMutation = useUpdateClass()
+
+  // Live Teachers state
+  const [liveTeachers, setLiveTeachers] = useState<Array<{ id: string; name: string; email: string }>>([])
+
+  useEffect(() => {
+    if (!isMockMode()) {
+      api.get<any[]>('/users')
+        .then((users) => {
+          if (Array.isArray(users)) {
+            const staffList = users.map((u) => ({
+              id: u.id,
+              name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+              email: u.email,
+            }))
+            if (staffList.length > 0) setLiveTeachers(staffList)
+          }
+        })
+        .catch(() => {})
+    }
+  }, [])
 
   // Component state
   const [searchQuery, setSearchQuery] = useState('')
@@ -579,7 +599,7 @@ export default function ClassesPage() {
                   <SelectValue placeholder="Choose instructor to assign…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockTeachers.map((t) => (
+                  {(liveTeachers.length > 0 ? liveTeachers : mockTeachers).map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name} ({t.email})
                     </SelectItem>

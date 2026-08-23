@@ -6,7 +6,7 @@ const { requireRole } = require("../middlewares/rbac.middleware");
 
 router.use(requireAuth);
 
-router.get("/", requireRole("SUPER_ADMIN", "BRANCH_ADMIN"), userController.listUsers);
+router.get("/", requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR", "TEACHER"), userController.listUsers);
 router.post("/invite", requireRole("SUPER_ADMIN", "BRANCH_ADMIN"), userController.inviteUser);
 
 module.exports = router;
