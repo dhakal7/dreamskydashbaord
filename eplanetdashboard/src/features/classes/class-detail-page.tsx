@@ -37,8 +37,8 @@ const tabs = [
 
 export default function ClassDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const role = useAuthStore((s) => s.currentUser.role)
-  const linkedId = useAuthStore((s) => s.currentUser.linkedId)
+  const role = useAuthStore((s) => s.currentUser?.role ?? 'front_desk')
+  const linkedId = useAuthStore((s) => s.currentUser?.linkedId)
   const submitAttendanceMock = useAttendanceStore((s) => s.submitAttendance)
   const addMaterialMock = useClassMaterialsStore((s) => s.addMaterial)
   const markAttendanceApi = useMarkAttendance()
