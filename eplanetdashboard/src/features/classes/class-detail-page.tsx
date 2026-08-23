@@ -25,7 +25,7 @@ import { useClassMaterialsStore, type AddMaterialData } from './materials-store'
 import { StudentClassProfileDialog } from './components/student-class-profile-dialog'
 import type { StudentPresence } from './attendance-store'
 import { isMockMode } from '@/lib/api-client'
-import { useClass, useMarkAttendance, useClassContent } from '@/hooks/use-classes'
+import { useClass, useClasses, useMarkAttendance, useClassContent } from '@/hooks/use-classes'
 import { classApi } from '@/api/class-api'
 import dayjs from 'dayjs'
 
@@ -46,35 +46,60 @@ export default function ClassDetailPage() {
   // Live mode: fetch class from backend; mock mode: read from mock store
   const { data: liveClass, isLoading: isClassLoading } = useClass(id!)
   const { data: liveContent } = useClassContent(id!)
+  const { data: allClassesData } = useClasses()
 
   const classList = getClassesForRole(role, linkedId)
   const mockCls = classList.find((c) => c.id === id)
 
+  const liveClassFromList = Array.isArray(allClassesData)
+    ? (allClassesData as any).find((c: any) => c.id === id)
+    : (allClassesData as any)?.classes?.find((c: any) => c.id === id)
+
+  const activeLiveClass = liveClass || liveClassFromList
+
   // Build the class object: live takes priority, fall back to mock
-  const cls = !isMockMode() && liveClass
+  const cls = activeLiveClass
     ? {
-        id: liveClass.id,
-        name: liveClass.name,
-        subject: (liveClass.subject ?? 'IELTS') as any,
-        teacherId: liveClass.teacherId,
-        teacherName: liveClass.teacher
-          ? `${liveClass.teacher.firstName} ${liveClass.teacher.lastName}`
-          : 'Teacher',
-        schedule: (liveClass.schedule as any)?.timing || String(liveClass.schedule || 'TBD'),
+        id: activeLiveClass.id,
+        name: activeLiveClass.name,
+        subject: (activeLiveClass.subject ?? 'IELTS') as any,
+        teacherId: activeLiveClass.teacherId,
+        teacherName: activeLiveClass.teacher
+          ? `${activeLiveClass.teacher.firstName || ''} ${activeLiveClass.teacher.lastName || ''}`.trim()
+          : 'EPT Instructor',
+        schedule: (activeLiveClass.schedule as any)?.timing || String(activeLiveClass.schedule || '07:00-08:00 AM'),
         room: 'Room 101',
-        startDate: liveClass.startDate ?? liveClass.createdAt,
-        endDate: liveClass.endDate ?? liveClass.createdAt,
-        capacity: liveClass.capacity || 20,
-        enrolledCount: liveClass.enrollments?.length ?? 0,
-        status: (liveClass.status?.toLowerCase() ?? 'ongoing') as any,
-        nextSessionAt: liveClass.startDate ?? liveClass.createdAt,
+        startDate: activeLiveClass.startDate ?? activeLiveClass.createdAt,
+        endDate: activeLiveClass.endDate ?? activeLiveClass.createdAt,
+        capacity: activeLiveClass.capacity || 20,
+        enrolledCount: activeLiveClass.enrollments?.length ?? (mockCls?.enrolledCount || 0),
+        status: (activeLiveClass.status?.toLowerCase() ?? 'ongoing') as any,
+        nextSessionAt: activeLiveClass.startDate ?? activeLiveClass.createdAt,
       }
     : mockCls
 
-  if (!isMockMode() && isClassLoading) {
+  if (!isMockMode() && isClassLoading && !cls) {
     return (
       <div className="flex items-center justify-center p-12 text-sm text-muted-foreground">
         Loading class details...
+      </div>
+    )
+  }
+
+  if (!cls) {
+    return (
+      <div className="space-y-5">
+        <PageHeader title="Class Details" />
+        <EmptyState
+          icon={BookOpen}
+          title="Class not found"
+          description={`No class found with ID ${id}.`}
+          action={
+            <Button asChild variant="outline" className="mt-2">
+              <Link to="/classes">Back to Classes</Link>
+            </Button>
+          }
+        />
       </div>
     )
   }
@@ -107,8 +132,8 @@ export default function ClassDetailPage() {
 
     if (!isMockMode()) {
       // Live mode: get roster from live class enrollments
-      const liveRoster = liveClass?.enrollments ?? []
-      const records = liveRoster.map((e) => ({
+      const liveRoster = activeLiveClass?.enrollments ?? []
+      const records = liveRoster.map((e: any) => ({
         studentId: e.studentId,
         status: (todayPresence[e.studentId] ?? false) ? 'PRESENT' : 'ABSENT',
       }))
@@ -182,30 +207,13 @@ export default function ClassDetailPage() {
     }
   }
 
-  if (!cls) {
-    return (
-      <div className="space-y-5">
-        <PageHeader title="Class Details" />
-        <EmptyState
-          icon={BookOpen}
-          title="Class not found"
-          description={`No class found with ID ${id}.`}
-          action={
-            <Button asChild variant="outline" className="mt-2">
-              <Link to="/classes">Back to Classes</Link>
-            </Button>
-          }
-        />
-      </div>
-    )
-  }
-
-  const roster = !isMockMode() && liveClass?.enrollments
-    ? liveClass.enrollments.map((e) => ({
+  const liveEnrollments = activeLiveClass?.enrollments
+  const roster = Array.isArray(liveEnrollments) && liveEnrollments.length > 0
+    ? liveEnrollments.map((e: any) => ({
         id: e.id,
         classId: cls?.id ?? '',
         studentId: e.studentId,
-        studentName: e.student ? `${e.student.firstName} ${e.student.lastName}` : 'Student',
+        studentName: e.student ? `${e.student.firstName} ${e.student.lastName}`.trim() : 'Student',
         enrolledAt: e.enrolledAt,
         attendancePct: 0,
         progress: 75,
