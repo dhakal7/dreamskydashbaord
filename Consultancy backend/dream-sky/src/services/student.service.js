@@ -139,14 +139,23 @@ const getStudentById = async (id) => {
 };
 
 // ─── LIST / SEARCH / FILTER ──────────────────────────────────────────────────
-const listStudents = async ({ search, stage, stageIn, counselorId, source, isActive, createdFrom, createdTo, page, limit, sortBy, order }) => {
+const listStudents = async ({ search, stage, stageIn, type, counselorId, source, isActive, createdFrom, createdTo, page, limit, sortBy, order }) => {
     const where = {};
 
     // Active filter (default: true)
     where.isActive = isActive !== undefined ? isActive === "true" : true;
 
-    if (stage) where.currentStage = stage;
-    if (stageIn) where.currentStage = { in: String(stageIn).split(",").map((s) => s.trim()) };
+    if (stage) {
+        where.currentStage = stage;
+    } else if (stageIn) {
+        where.currentStage = { in: String(stageIn).split(",").map((s) => s.trim()) };
+    } else if (type === "leads") {
+        where.currentStage = { in: ["LEAD", "PROSPECT"] };
+    } else {
+        // Backend Safety Guard: By default, GET /api/students returns enrolled/processing students, excluding un-enrolled leads ("LEAD", "PROSPECT")
+        where.currentStage = { notIn: ["LEAD", "PROSPECT"] };
+    }
+
     if (counselorId) where.assignedCounselorId = counselorId;
     if (source) where.source = source;
 
