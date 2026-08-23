@@ -17,11 +17,11 @@ router.use("/applications", require("./application.routes"));
 router.use("/visa-cases", require("./visa.routes"));
 router.use("/portal", require("./portal.routes"));
 
-// ─── Track B Merged Modules ───────────────────────────────────────
 router.use("/commissions", require("./commission.routes"));
 router.use("/classes", require("./class.routes"));
 router.use("/events", require("./event.routes"));
 router.use("/partner-consultancies", require("./partner-consultancy.routes"));
+router.use("/payments", require("./payment.routes"));
 
 
 // ─── M6: Notifications ────────────────────────────────────────────

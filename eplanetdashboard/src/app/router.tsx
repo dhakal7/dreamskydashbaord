@@ -31,6 +31,7 @@ const ReportsPage = lazy(() => import('@/features/reports/reports-page'))
 const SettingsPage = lazy(() => import('@/features/settings/settings-page'))
 const UsersPage = lazy(() => import('@/features/users/users-page'))
 const ReceptionPage = lazy(() => import('@/features/reception/reception-page'))
+const FeesPage = lazy(() => import('@/features/reception/fees-page'))
 const ReferralsPage = lazy(() => import('@/features/referrals/referrals-page'))
 const LoginPage = lazy(() => import('@/features/auth/login-page'))
 
@@ -66,6 +67,7 @@ export const router = createBrowserRouter([
       { path: 'dashboard/student', element: roleDashboard(['student']) },
       { path: 'dashboard/referral', element: roleDashboard(['referral_agent']) },
       { path: 'reception', element: protectedPage(<ReceptionPage />, 'appointments.view') },
+      { path: 'fees', element: protectedPage(<FeesPage />, 'appointments.view') },
       { path: 'leads', element: protectedPage(<LeadsPage />, 'leads.view') },
       { path: 'students', element: protectedPage(<StudentsPage />, 'students.view') },
       { path: 'students/:id', element: protectedPage(<StudentProfilePage />, 'students.view') },

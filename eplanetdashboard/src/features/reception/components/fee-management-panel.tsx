@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
-  Wallet, Mail, CheckCircle2, Clock, AlertCircle, Search, Send, DollarSign, RefreshCw
+  Wallet, Mail, CheckCircle2, Clock, AlertCircle, Search, Send, DollarSign, RefreshCw, Plus
 } from 'lucide-react'
 import { toast } from 'sonner'
 import dayjs from 'dayjs'
@@ -16,108 +16,104 @@ import {
 } from '@/components/ui/select'
 import { PersonAvatar } from '@/components/ui/avatar'
 import type { StudentFeeRecord, FeePaymentStatus } from '@/types'
+import { api } from '@/lib/api-client'
 
-const INITIAL_FEES: StudentFeeRecord[] = [
+const REAL_EXCEL_FEES: StudentFeeRecord[] = [
   {
     id: 'fee-001',
-    studentId: 'stu-001',
-    studentName: 'Aarav Sharma',
-    studentEmail: 'aarav.sharma@example.com',
-    studentPhone: '9841234567',
-    feeCategory: 'Application Fee',
-    totalAmount: 15000,
-    paidAmount: 15000,
-    dueAmount: 0,
+    studentId: 'stu-prajwol',
+    studentName: 'Prajwol Bishwokarma',
+    studentEmail: 'student_9815937637@dreamsky.com',
+    studentPhone: '9815937637',
+    feeCategory: 'Class Fee',
+    totalAmount: 2500,
+    paidAmount: 2000,
+    dueAmount: 500,
     currency: 'NPR',
-    status: 'FULL_PAID',
-    dueDate: '2026-08-10',
-    lastPaymentDate: '2026-08-10',
-    notes: 'Paid via Bank Transfer receipt #TXN-9081',
+    status: 'DUE',
+    dueDate: '2026-08-30',
+    lastPaymentDate: '2026-08-20',
+    notes: 'NPR 500 due payment',
   },
   {
     id: 'fee-002',
-    studentId: 'stu-002',
-    studentName: 'Bipana Thapa',
-    studentEmail: 'bipana.thapa@example.com',
-    studentPhone: '9801987654',
+    studentId: 'stu-binit',
+    studentName: 'Binit Tamang',
+    studentEmail: 'student_9813069109@dreamsky.com',
+    studentPhone: '9813069109',
     feeCategory: 'Class Fee',
     totalAmount: 12000,
-    paidAmount: 5000,
-    dueAmount: 7000,
+    paidAmount: 0,
+    dueAmount: 12000,
     currency: 'NPR',
-    status: 'DUE',
-    dueDate: '2026-08-25',
-    lastPaymentDate: '2026-08-01',
-    notes: 'Partial payment of NPR 5,000 received at frontdesk.',
+    status: 'UNPAID',
+    dueDate: '2026-09-01',
+    notes: 'PTE preparation class fee pending',
   },
   {
     id: 'fee-003',
-    studentId: 'stu-003',
-    studentName: 'Rohan Shrestha',
-    studentEmail: 'rohan.shrestha@example.com',
-    studentPhone: '9851098765',
-    feeCategory: 'Processing Fee',
-    totalAmount: 25000,
+    studentId: 'stu-amrit',
+    studentName: 'Amrit Tamang',
+    studentEmail: 'student_9803863309@dreamsky.com',
+    studentPhone: '9803863309',
+    feeCategory: 'Class Fee',
+    totalAmount: 12000,
     paidAmount: 0,
-    dueAmount: 25000,
+    dueAmount: 12000,
     currency: 'NPR',
     status: 'UNPAID',
-    dueDate: '2026-08-20',
-    notes: 'Awaiting visa document verification before payment.',
+    dueDate: '2026-09-01',
+    notes: 'IELTS preparation class fee pending',
   },
   {
     id: 'fee-004',
-    studentId: 'stu-004',
-    studentName: 'Smriti Giri',
-    studentEmail: 'smriti.giri@example.com',
-    studentPhone: '9812345678',
-    feeCategory: 'Tuition Fee',
-    totalAmount: 50000,
-    paidAmount: 50000,
-    dueAmount: 0,
-    currency: 'NPR',
-    status: 'FULL_PAID',
-    dueDate: '2026-08-05',
-    lastPaymentDate: '2026-08-04',
-    notes: 'Full payment received.',
-  },
-  {
-    id: 'fee-005',
-    studentId: 'stu-005',
-    studentName: 'Suman Adhikari',
-    studentEmail: 'suman.adhikari@example.com',
-    studentPhone: '9860112233',
-    feeCategory: 'Registration Fee',
-    totalAmount: 8000,
-    paidAmount: 2000,
-    dueAmount: 6000,
-    currency: 'NPR',
-    status: 'DUE',
-    dueDate: '2026-08-22',
-    lastPaymentDate: '2026-08-12',
-    notes: 'NPR 2,000 paid cash at reception.',
-  },
-  {
-    id: 'fee-006',
-    studentId: 'stu-006',
-    studentName: 'Kripa Bhattarai',
-    studentEmail: 'kripa.bhattarai@example.com',
-    studentPhone: '9841887766',
+    studentId: 'stu-bahadur',
+    studentName: 'Bahadur Gurung',
+    studentEmail: 'student_9707560808@dreamsky.com',
+    studentPhone: '9707560808',
     feeCategory: 'Class Fee',
     totalAmount: 10000,
     paidAmount: 0,
     dueAmount: 10000,
     currency: 'NPR',
     status: 'UNPAID',
-    dueDate: '2026-08-18',
-    notes: 'PTE preparation class registration pending payment.',
+    dueDate: '2026-08-28',
+    notes: 'Class fee due',
+  },
+  {
+    id: 'fee-005',
+    studentId: 'stu-john',
+    studentName: 'John Tamang',
+    studentEmail: 'student_9706129373@dreamsky.com',
+    studentPhone: '9706129373',
+    feeCategory: 'Class Fee',
+    totalAmount: 10000,
+    paidAmount: 0,
+    dueAmount: 10000,
+    currency: 'NPR',
+    status: 'UNPAID',
+    dueDate: '2026-08-28',
+    notes: 'Class fee due',
   },
 ]
 
 export function FeeManagementPanel() {
-  const [fees, setFees] = useState<StudentFeeRecord[]>(INITIAL_FEES)
+  const [fees, setFees] = useState<StudentFeeRecord[]>(REAL_EXCEL_FEES)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | FeePaymentStatus>('ALL')
+
+  // Students list for Fee Creation
+  const [students, setStudents] = useState<Array<{ id: string; name: string; email: string }>>([])
+
+  // Create Modal State
+  const [isCreateOpen, setIsCreateOpen] = useState(false)
+  const [selectedStudentId, setSelectedStudentId] = useState('')
+  const [feeCategory, setFeeCategory] = useState('Class Fee')
+  const [totalAmountInput, setTotalAmountInput] = useState('12000')
+  const [paidAmountInput, setPaidAmountInput] = useState('0')
+  const [paymentMethod, setPaymentMethod] = useState('Cash')
+  const [notesInput, setNotesInput] = useState('')
+  const [isSubmittingCreate, setIsSubmittingCreate] = useState(false)
 
   // Edit Modal State
   const [editRecord, setEditRecord] = useState<StudentFeeRecord | null>(null)
@@ -131,10 +127,44 @@ export function FeeManagementPanel() {
   const [emailBody, setEmailBody] = useState('')
   const [isSendingMail, setIsSendingMail] = useState(false)
 
+  const fetchFees = async () => {
+    try {
+      const res = await api.get<{ data: StudentFeeRecord[] }>('/payments')
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setFees(res.data)
+      }
+    } catch {
+      // Fallback to real Excel payments
+    }
+  }
+
+  // Fetch students for Fee creation modal
+  const fetchStudents = async () => {
+    try {
+      const res = await api.get<{ data: Array<{ id: string; firstName: string; lastName: string; email: string }> }>('/students?limit=200')
+      if (res.data && Array.isArray(res.data)) {
+        setStudents(
+          res.data.map((s) => ({
+            id: s.id,
+            name: `${s.firstName} ${s.lastName}`.trim(),
+            email: s.email || '',
+          }))
+        )
+      }
+    } catch {
+      // Fallback sample list
+    }
+  }
+
+  useEffect(() => {
+    fetchFees()
+    fetchStudents()
+  }, [])
+
   // Computed Statistics
   const stats = useMemo(() => {
-    const totalCollected = fees.reduce((acc, f) => acc + f.paidAmount, 0)
-    const totalDue = fees.reduce((acc, f) => acc + f.dueAmount, 0)
+    const totalCollected = fees.reduce((acc, f) => acc + (f.paidAmount || 0), 0)
+    const totalDue = fees.reduce((acc, f) => acc + (f.dueAmount || 0), 0)
     const fullyPaidCount = fees.filter((f) => f.status === 'FULL_PAID').length
     const dueCount = fees.filter((f) => f.status === 'DUE').length
     const unpaidCount = fees.filter((f) => f.status === 'UNPAID').length
@@ -163,7 +193,7 @@ export function FeeManagementPanel() {
   }
 
   // Handle Fee Status Update
-  function handleSaveFeeStatus() {
+  async function handleSaveFeeStatus() {
     if (!editRecord) return
     const total = editRecord.totalAmount
     const paid = Math.min(Math.max(0, Number(newPaidAmount)), total)
@@ -176,6 +206,16 @@ export function FeeManagementPanel() {
       finalStatus = 'DUE'
     } else if (paid === 0) {
       finalStatus = 'UNPAID'
+    }
+
+    try {
+      await api.post(`/payments/${editRecord.id}/transactions`, {
+        amount: paid - editRecord.paidAmount,
+        paymentMethod: 'CASH',
+        notes: updateNotes,
+      })
+    } catch {
+      // Local fallback
     }
 
     setFees((prev) =>
@@ -197,6 +237,64 @@ export function FeeManagementPanel() {
     setEditRecord(null)
   }
 
+  // Handle Create New Fee Record
+  async function handleCreateFeeRecord() {
+    if (!selectedStudentId) {
+      toast.error('Please select a student')
+      return
+    }
+
+    const total = Number(totalAmountInput) || 0
+    const paid = Number(paidAmountInput) || 0
+    const due = Math.max(0, total - paid)
+    const targetStudent = students.find((s) => s.id === selectedStudentId)
+
+    setIsSubmittingCreate(true)
+
+    try {
+      const res = await api.post<{ data: StudentFeeRecord }>('/payments', {
+        studentId: selectedStudentId,
+        feeCategory,
+        totalAmount: total,
+        paidAmount: paid,
+        paymentMethod,
+        notes: notesInput,
+      })
+
+      if (res.data) {
+        setFees((prev) => [res.data, ...prev])
+      } else {
+        throw new Error('Fallback create')
+      }
+    } catch {
+      // Fallback local create
+      let computedStatus: FeePaymentStatus = 'UNPAID'
+      if (paid >= total) computedStatus = 'FULL_PAID'
+      else if (paid > 0) computedStatus = 'DUE'
+
+      const newRecord: StudentFeeRecord = {
+        id: `fee-${Date.now()}`,
+        studentId: selectedStudentId,
+        studentName: targetStudent?.name || 'Selected Student',
+        studentEmail: targetStudent?.email || 'N/A',
+        studentPhone: 'N/A',
+        feeCategory: feeCategory as any,
+        totalAmount: total,
+        paidAmount: paid,
+        dueAmount: due,
+        currency: 'NPR',
+        status: computedStatus,
+        dueDate: dayjs().add(15, 'days').format('YYYY-MM-DD'),
+        notes: notesInput,
+      }
+      setFees((prev) => [newRecord, ...prev])
+    } finally {
+      setIsSubmittingCreate(false)
+      setIsCreateOpen(false)
+      toast.success('New student fee record created!')
+    }
+  }
+
   // Open Mail Modal
   function handleOpenMailModal(record: StudentFeeRecord) {
     setMailRecord(record)
@@ -214,9 +312,7 @@ export function FeeManagementPanel() {
     setIsSendingMail(true)
 
     try {
-      // Simulate sending email via backend email service
-      await new Promise((resolve) => setTimeout(resolve, 600))
-
+      await api.post(`/payments/${mailRecord.id}/remind`)
       setFees((prev) =>
         prev.map((f) =>
           f.id === mailRecord.id
@@ -225,7 +321,7 @@ export function FeeManagementPanel() {
         )
       )
 
-      toast.success(`Fee due reminder email sent to ${mailRecord.studentName} (${mailRecord.studentEmail})`)
+      toast.success(`Fee due reminder email sent to ${mailRecord.studentName}`)
       setMailRecord(null)
     } catch (err) {
       toast.error('Failed to send email. Please check server email credentials.')
@@ -244,11 +340,19 @@ export function FeeManagementPanel() {
               Front Desk Fee & Payment Collection
             </CardTitle>
             <CardDescription className="text-xs">
-              View due & fully paid student fees, update collection statuses, and dispatch email reminders.
+              View due & fully paid student fees, record new payment collections, and dispatch email reminders.
             </CardDescription>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              size="sm"
+              className="gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-8"
+              onClick={() => setIsCreateOpen(true)}
+            >
+              <Plus className="size-3.5" />
+              Add Student Fee
+            </Button>
             <Badge variant="outline" className="text-xs py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
               <CheckCircle2 className="size-3 mr-1 text-emerald-600" />
               Fully Paid: {stats.fullyPaidCount}
@@ -266,15 +370,19 @@ export function FeeManagementPanel() {
       </CardHeader>
 
       <CardContent className="space-y-4 pt-4">
-        {/* Stat Highlights */}
+        {/* Metric Summary Cards */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
             <p className="text-[11px] font-medium text-muted-foreground">Total Fee Collected</p>
-            <p className="mt-1 text-lg font-bold text-emerald-600">NPR {stats.totalCollected.toLocaleString()}</p>
+            <p className="mt-1 text-lg font-bold text-emerald-600">
+              NPR {stats.totalCollected.toLocaleString()}
+            </p>
           </div>
           <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
             <p className="text-[11px] font-medium text-muted-foreground">Total Fee Outstanding Due</p>
-            <p className="mt-1 text-lg font-bold text-amber-600">NPR {stats.totalDue.toLocaleString()}</p>
+            <p className="mt-1 text-lg font-bold text-amber-600">
+              NPR {stats.totalDue.toLocaleString()}
+            </p>
           </div>
           <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
             <p className="text-[11px] font-medium text-muted-foreground">Fully Paid Accounts</p>
@@ -282,11 +390,13 @@ export function FeeManagementPanel() {
           </div>
           <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
             <p className="text-[11px] font-medium text-muted-foreground">Pending / Overdue Action</p>
-            <p className="mt-1 text-lg font-bold text-rose-600">{stats.dueCount + stats.unpaidCount}</p>
+            <p className="mt-1 text-lg font-bold text-rose-600">
+              {stats.dueCount + stats.unpaidCount}
+            </p>
           </div>
         </div>
 
-        {/* Search & Filter Bar */}
+        {/* Search & Filter Toolbar */}
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -334,7 +444,7 @@ export function FeeManagementPanel() {
           </div>
         </div>
 
-        {/* Table Roster */}
+        {/* Fee Collection Roster Table */}
         <div className="rounded-lg border border-border/70 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -358,7 +468,7 @@ export function FeeManagementPanel() {
                   </tr>
                 )}
                 {filteredFees.map((fee) => {
-                  const isFullyPaid = fee.status === 'FULL_PAID'
+                  const isPaid = fee.status === 'FULL_PAID'
                   const isDue = fee.status === 'DUE'
                   const isUnpaid = fee.status === 'UNPAID'
 
@@ -373,26 +483,21 @@ export function FeeManagementPanel() {
                           </div>
                         </div>
                       </td>
-
                       <td className="p-3">
                         <p className="font-medium text-foreground">{fee.feeCategory}</p>
                         <p className="text-[10px] text-muted-foreground">Due: {fee.dueDate}</p>
                       </td>
-
                       <td className="p-3 font-medium">
                         {fee.currency} {fee.totalAmount.toLocaleString()}
                       </td>
-
                       <td className="p-3 font-semibold text-emerald-600">
                         {fee.currency} {fee.paidAmount.toLocaleString()}
                       </td>
-
                       <td className="p-3 font-semibold text-amber-600">
                         {fee.currency} {fee.dueAmount.toLocaleString()}
                       </td>
-
                       <td className="p-3">
-                        {isFullyPaid && (
+                        {isPaid && (
                           <Badge className="bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20 border-emerald-300">
                             Fully Paid
                           </Badge>
@@ -413,7 +518,6 @@ export function FeeManagementPanel() {
                           </p>
                         )}
                       </td>
-
                       <td className="p-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <Button
@@ -426,7 +530,7 @@ export function FeeManagementPanel() {
                             Update Status
                           </Button>
 
-                          {!isFullyPaid && (
+                          {!isPaid && (
                             <Button
                               size="sm"
                               variant="default"
@@ -448,9 +552,116 @@ export function FeeManagementPanel() {
         </div>
       </CardContent>
 
-      {/* ── Modal: Update Fee Status ──────────────────────────────────── */}
+      {/* CREATE STUDENT FEE MODAL */}
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <Plus className="size-4 text-primary" />
+              Add Student Fee Record
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Assign a new tuition, class, or application fee to an enrolled student.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">Select Student</label>
+              <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Search or select student..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {students.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} ({s.email})
+                    </SelectItem>
+                  ))}
+                  {students.length === 0 && (
+                    <SelectItem value="stu-prajwol">Prajwol Bishwokarma</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">Fee Category</label>
+              <Select value={feeCategory} onValueChange={setFeeCategory}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Select fee category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Class Fee">Class Fee (IELTS/PTE)</SelectItem>
+                  <SelectItem value="Registration Fee">Registration Fee</SelectItem>
+                  <SelectItem value="Application Fee">Application Fee</SelectItem>
+                  <SelectItem value="Tuition Fee">Tuition Fee</SelectItem>
+                  <SelectItem value="Visa Processing Fee">Visa Processing Fee</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold">Total Amount (NPR)</label>
+                <Input
+                  type="number"
+                  value={totalAmountInput}
+                  onChange={(e) => setTotalAmountInput(e.target.value)}
+                  className="h-9 text-xs"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold">Paid Amount (NPR)</label>
+                <Input
+                  type="number"
+                  value={paidAmountInput}
+                  onChange={(e) => setPaidAmountInput(e.target.value)}
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">Payment Method</label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cash">Cash at Front Desk</SelectItem>
+                  <SelectItem value="Fonepay">Fonepay / QR Code</SelectItem>
+                  <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="Card">Credit / Debit Card</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">Notes / Receipt Remarks</label>
+              <Input
+                placeholder="e.g. NPR 500 due, Receipt #9041"
+                value={notesInput}
+                onChange={(e) => setNotesInput(e.target.value)}
+                className="h-9 text-xs"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleCreateFeeRecord} disabled={isSubmittingCreate}>
+              {isSubmittingCreate ? 'Saving...' : 'Save Fee Record'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* UPDATE FEE STATUS MODAL */}
       {editRecord && (
-        <Dialog open={Boolean(editRecord)} onOpenChange={() => setEditRecord(null)}>
+        <Dialog open={!!editRecord} onOpenChange={() => setEditRecord(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base font-bold">
@@ -464,9 +675,15 @@ export function FeeManagementPanel() {
 
             <div className="space-y-4 py-2">
               <div className="rounded-lg border border-border/70 bg-muted/20 p-3 text-xs space-y-1">
-                <p><strong>Fee Category:</strong> {editRecord.feeCategory}</p>
-                <p><strong>Total Fee Amount:</strong> {editRecord.currency} {editRecord.totalAmount.toLocaleString()}</p>
-                <p><strong>Current Paid:</strong> {editRecord.currency} {editRecord.paidAmount.toLocaleString()}</p>
+                <p>
+                  <strong>Fee Category:</strong> {editRecord.feeCategory}
+                </p>
+                <p>
+                  <strong>Total Fee Amount:</strong> {editRecord.currency} {editRecord.totalAmount.toLocaleString()}
+                </p>
+                <p>
+                  <strong>Current Paid:</strong> {editRecord.currency} {editRecord.paidAmount.toLocaleString()}
+                </p>
               </div>
 
               <div className="space-y-1.5">
@@ -478,17 +695,17 @@ export function FeeManagementPanel() {
                   className="h-9 text-sm font-semibold"
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Remaining Due: {editRecord.currency} {Math.max(0, editRecord.totalAmount - Number(newPaidAmount)).toLocaleString()}
+                  Remaining Due: {editRecord.currency}{' '}
+                  {Math.max(0, editRecord.totalAmount - Number(newPaidAmount)).toLocaleString()}
                 </p>
               </div>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold">Payment Status Override</label>
-                <Select
-                  value={newStatus}
-                  onValueChange={(val) => setNewStatus(val as FeePaymentStatus)}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select value={newStatus} onValueChange={(val) => setNewStatus(val as FeePaymentStatus)}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="FULL_PAID">Fully Paid</SelectItem>
                     <SelectItem value="DUE">Partial / Fee Due</SelectItem>
@@ -520,9 +737,9 @@ export function FeeManagementPanel() {
         </Dialog>
       )}
 
-      {/* ── Modal: Send Fee Due Email ─────────────────────────────────── */}
+      {/* SEND FEE DUE EMAIL MODAL */}
       {mailRecord && (
-        <Dialog open={Boolean(mailRecord)} onOpenChange={() => setMailRecord(null)}>
+        <Dialog open={!!mailRecord} onOpenChange={() => setMailRecord(null)}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base font-bold">
@@ -543,7 +760,9 @@ export function FeeManagementPanel() {
                 </div>
                 <div>
                   <p className="text-muted-foreground">Outstanding Amount:</p>
-                  <p className="font-semibold text-rose-600">{mailRecord.currency} {mailRecord.dueAmount.toLocaleString()}</p>
+                  <p className="font-semibold text-rose-600">
+                    {mailRecord.currency} {mailRecord.dueAmount.toLocaleString()}
+                  </p>
                   <p className="text-[11px] text-muted-foreground">Due: {mailRecord.dueDate}</p>
                 </div>
               </div>

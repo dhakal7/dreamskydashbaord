@@ -301,12 +301,81 @@ async function main() {
   }
   console.log(`✅ Imported ${classStudentsImported} Enrolled Class Students & created ${classMap.size} Classes.`);
 
-  // 4. Final Summary Report
+  // 4. Import Payment Records from Payment Due For EPT Classes.xlsx
+  console.log('\n💳 Ingesting Payment Due Records into PostgreSQL...');
+  let paymentsImported = 0;
+
+  const paymentRecords = [
+    { name: 'Prajwol Bishwokarma', phone: '9815937637', feeCategory: 'Class Fee', totalAmount: 2500, paidAmount: 2000, method: 'CASH', notes: 'NPR 500 due payment' },
+    { name: 'Binit Tamang', phone: '9813069109', feeCategory: 'Class Fee', totalAmount: 12000, paidAmount: 0, method: 'CASH', notes: 'PTE preparation class fee pending' },
+    { name: 'Amrit Tamang', phone: '9803863309', feeCategory: 'Class Fee', totalAmount: 12000, paidAmount: 0, method: 'CASH', notes: 'IELTS preparation class fee pending' },
+    { name: 'Bahadur Gurung', phone: '9707560808', feeCategory: 'Class Fee', totalAmount: 10000, paidAmount: 0, method: 'CASH', notes: 'Class fee due' },
+    { name: 'John Tamang', phone: '9706129373', feeCategory: 'Class Fee', totalAmount: 10000, paidAmount: 0, method: 'CASH', notes: 'Class fee due' },
+  ];
+
+  for (const rec of paymentRecords) {
+    const { firstName, lastName } = parseName(rec.name);
+    const email = `student_${rec.phone}@dreamsky.com`;
+
+    let student = await prisma.student.findFirst({
+      where: {
+        OR: [
+          { email },
+          { phone: rec.phone },
+          { AND: [{ firstName }, { lastName }] },
+        ],
+      },
+    });
+
+    if (!student) {
+      student = await prisma.student.create({
+        data: {
+          email,
+          firstName,
+          lastName,
+          phone: rec.phone,
+          currentStage: 'ENROLLED',
+          source: 'Class Enrollment',
+        },
+      });
+    }
+
+    let pStatus = 'PENDING';
+    if (rec.paidAmount >= rec.totalAmount) pStatus = 'COMPLETED';
+    else if (rec.paidAmount > 0) pStatus = 'PARTIAL';
+
+    const pay = await prisma.payment.create({
+      data: {
+        studentId: student.id,
+        feeType: rec.feeCategory,
+        totalAmount: rec.totalAmount,
+        currency: 'NPR',
+        status: pStatus,
+      },
+    });
+
+    if (rec.paidAmount > 0) {
+      await prisma.transaction.create({
+        data: {
+          paymentId: pay.id,
+          amount: rec.paidAmount,
+          method: 'CASH',
+          notes: rec.notes,
+        },
+      });
+    }
+
+    paymentsImported++;
+  }
+  console.log(`✅ Ingested ${paymentsImported} Payment Due Records into database.`);
+
+  // 5. Final Summary Report
   const totalStaff = await prisma.user.count({ where: { role: { not: 'TEACHER' } } });
   const totalLeads = await prisma.student.count({ where: { currentStage: { in: ['LEAD', 'PROSPECT'] } } });
   const totalEnrolled = await prisma.student.count({ where: { currentStage: 'ENROLLED' } });
   const totalClasses = await prisma.class.count();
   const totalEnrollments = await prisma.enrollment.count();
+  const totalPaymentsCount = await prisma.payment.count();
 
   console.log('\n================ FINAL CLEAN IMPORT SUMMARY ================');
   console.log(`👥 Real Staff Users (Preserved):       ${totalStaff}`);
@@ -314,6 +383,7 @@ async function main() {
   console.log(`🎓 Total Enrolled Students (Students): ${totalEnrolled}`);
   console.log(`🏫 Total EPT Classes Created:           ${totalClasses}`);
   console.log(`📝 Total Class Enrollments:            ${totalEnrollments}`);
+  console.log(`💳 Total Payments Recorded:            ${totalPaymentsCount}`);
   console.log('===========================================================\n');
 }
 
