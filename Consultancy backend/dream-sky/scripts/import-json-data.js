@@ -91,11 +91,14 @@ async function main() {
     }
   }
 
-  // Clean up any dummy internal counselor accounts from older script runs
+  // Clean up dummy accounts & non-counselors (e.g. Rojina Ghale)
   await prisma.user.deleteMany({
     where: {
-      email: { endsWith: '@dreamsky.internal' },
-      role: 'COUNSELOR',
+      OR: [
+        { email: { endsWith: '@dreamsky.internal' } },
+        { email: 'rojina.ghale@dreamsky.com' },
+        { firstName: 'Rojina', lastName: 'Ghale' },
+      ],
     },
   });
 
