@@ -18,8 +18,8 @@ import { ClassFormModal } from './components/class-form-modal'
 
 export default function ClassesPage() {
   const navigate = useNavigate()
-  const role = useAuthStore((s) => s.currentUser.role)
-  const linkedId = useAuthStore((s) => s.currentUser.linkedId)
+  const role = useAuthStore((s) => s.currentUser?.role ?? 'front_desk')
+  const linkedId = useAuthStore((s) => s.currentUser?.linkedId)
   const mockClasses = getClassesForRole(role, linkedId)
   const { data: allClassesData } = useClasses()
   const { data: myClassesData } = useMyClasses()

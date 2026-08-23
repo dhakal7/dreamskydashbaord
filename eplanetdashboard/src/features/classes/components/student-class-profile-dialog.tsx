@@ -63,7 +63,7 @@ export function StudentClassProfileDialog({
     addNote({
       classId,
       studentId,
-      authorName: currentUser.name,
+      authorName: currentUser?.name || 'Staff User',
       message: newNoteMessage.trim(),
       type: newNoteType as 'test_result' | 'general',
     })
