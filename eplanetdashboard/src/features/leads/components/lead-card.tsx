@@ -176,7 +176,7 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
 
       <div className="mt-2 flex items-center justify-between border-t border-border/70 pt-2 text-[10px] text-muted-foreground">
         <span className="rounded bg-secondary px-1.5 py-0.5">{sourceLabel[lead.source] || lead.source}</span>
-        <span>{dayjs(lead.nextFollowUp).format('MMM D')}</span>
+        <span className="font-medium text-foreground/80">Created: {dayjs(lead.createdAt || lead.lastContact).format('MMM D, YYYY')}</span>
       </div>
     </Card>
 
@@ -325,7 +325,7 @@ export function LeadCardOverlay({ lead }: { lead: Lead }) {
       </div>
       <div className="mt-2 flex items-center justify-between border-t border-border/70 pt-2 text-[10px] text-muted-foreground">
         <span className="rounded bg-secondary px-1.5 py-0.5">{sourceLabel[lead.source] || lead.source}</span>
-        <span>{dayjs(lead.nextFollowUp).format('MMM D')}</span>
+        <span className="font-medium text-foreground/80">Created: {dayjs(lead.createdAt || lead.lastContact).format('MMM D, YYYY')}</span>
       </div>
     </Card>
   )

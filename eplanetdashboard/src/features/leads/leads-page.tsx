@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import dayjs from 'dayjs'
 import { LayoutGrid, Plus, Table2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
@@ -55,6 +56,10 @@ export default function LeadsPage() {
   }, [currentUser, leads, filters])
 
   const totalLeadsCount = isMockMode() ? filtered.length : liveTotalCount
+  const recentLeadsCount = useMemo(() => {
+    const thirtyDaysAgo = dayjs().subtract(30, 'day')
+    return leads.filter((l) => dayjs(l.createdAt || l.lastContact).isAfter(thirtyDaysAgo)).length
+  }, [leads])
 
   const hotLeads = filtered.filter((l) => l.priority === 'urgent' || l.priority === 'high').length
   const canChangeStage = hasPermission(currentUser.role, 'leads.change-stage')
@@ -76,8 +81,12 @@ export default function LeadsPage() {
 
       <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
         <Card className="p-3.5">
-          <p className="text-xs text-muted-foreground">Total Leads</p>
+          <p className="text-xs text-muted-foreground">Total Leads (All Time)</p>
           <p className="mt-1 text-xl font-semibold font-tabular">{totalLeadsCount}</p>
+        </Card>
+        <Card className="p-3.5">
+          <p className="text-xs text-muted-foreground">New (Last 30 Days)</p>
+          <p className="mt-1 text-xl font-semibold font-tabular text-brand-600 dark:text-brand-400">{recentLeadsCount}</p>
         </Card>
         <Card className="p-3.5">
           <p className="text-xs text-muted-foreground">High / Urgent</p>
