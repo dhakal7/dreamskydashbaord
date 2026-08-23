@@ -130,7 +130,7 @@ async function updateClass(id, data, user) {
   if (subject !== undefined) updateData.subject = subject ? subject.trim() : null;
   if (schedule !== undefined) updateData.schedule = schedule;
 
-  if (user.role === "SUPER_ADMIN" || user.role === "BRANCH_ADMIN") {
+  if (user.role === "SUPER_ADMIN" || user.role === "BRANCH_ADMIN" || user.role === "FRONT_DESK" || user.role === "RECEPTION") {
     if (branchId) {
       const branch = await prisma.branch.findUnique({ where: { id: branchId } });
       if (!branch) return { error: "BRANCH_NOT_FOUND" };
@@ -139,9 +139,6 @@ async function updateClass(id, data, user) {
     if (teacherId) {
       const teacherUser = await prisma.user.findUnique({ where: { id: teacherId } });
       if (!teacherUser) return { error: "TEACHER_NOT_FOUND" };
-      if (teacherUser.role !== "TEACHER" && teacherUser.role !== "SUPER_ADMIN") {
-        return { error: "INVALID_TEACHER_ROLE" };
-      }
       updateData.teacherId = teacherId;
     }
   } else {

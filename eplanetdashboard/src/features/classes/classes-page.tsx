@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import {
-  BookOpen, UserPlus, Users, Clock, Search, ChevronRight, ClipboardCheck
+  BookOpen, UserPlus, Users, Clock, Search, ChevronRight, ClipboardCheck, Pencil, UserCheck
 } from 'lucide-react'
 import dayjs from 'dayjs'
 
@@ -22,16 +22,18 @@ import { PersonAvatar } from '@/components/ui/avatar'
 import { EmptyState } from '@/components/shared/empty-state'
 
 import { isMockMode } from '@/lib/api-client'
-import { useClasses, useEnrollStudent } from '@/hooks/use-classes'
+import { useClasses, useEnrollStudent, useUpdateClass } from '@/hooks/use-classes'
 import { useStudents } from '@/hooks/use-students'
 import { getClassesForRole } from './selectors'
 import { useStudentsStore } from '@/features/students/store'
 import { useAttendanceStore } from '@/features/classes/attendance-store'
+import { teachers as mockTeachers } from '@/mock/staff'
 
 interface FormattedClass {
   id: string
   name: string
   subject: 'IELTS' | 'PTE' | string
+  teacherId?: string
   teacherName: string
   schedule: string
   room: string
@@ -76,11 +78,6 @@ const EXCEL_CLASS_ROSTER_MAP: Record<string, Array<{ name: string; phone: string
   'PTE_07:00-08:00 AM': [
     { name: 'Alisha Kafle', phone: '9863832280', date: '2026-08-14' },
   ],
-  'PTE_Not joined': [
-    { name: 'Aryan Dhungana', phone: '9767221022', date: '2026-06-03' },
-    { name: 'Milan Singh', phone: '9713749676', date: '2026-06-03' },
-    { name: 'Aryan Karanjit', phone: '9808165305', date: '2026-06-24' },
-  ],
   'IELTS_07:00-08:00 AM': [
     { name: 'Pragya Rai', phone: '9767987766', date: '2026-05-25' },
     { name: 'Sandesh Lama', phone: '9865209195', date: '2026-06-29' },
@@ -113,11 +110,6 @@ const EXCEL_CLASS_ROSTER_MAP: Record<string, Array<{ name: string; phone: string
     { name: 'Amrit Tamang', phone: '9803863309', date: '2026-07-19' },
     { name: 'Karuna Balampaki', phone: '9810752114', date: '2026-08-20' },
   ],
-  'IELTS_Not joined': [
-    { name: 'Sonam Tamang', phone: '9701301388', date: '2026-06-03' },
-    { name: 'Monika Magar', phone: '9818595195', date: '2026-06-03' },
-    { name: 'Jagadish Parajuli', phone: '9840938481', date: '2026-06-28' },
-  ],
 }
 
 export default function ClassesPage() {
@@ -132,6 +124,7 @@ export default function ClassesPage() {
   const mockEnroll = useAttendanceStore((s) => s.enrollments)
 
   const enrollMutation = useEnrollStudent()
+  const updateClassMutation = useUpdateClass()
 
   // Component state
   const [searchQuery, setSearchQuery] = useState('')
@@ -142,6 +135,14 @@ export default function ClassesPage() {
   const [targetClassId, setTargetClassId] = useState('')
   const [targetStudentId, setTargetStudentId] = useState('')
   const [isEnrolling, setIsEnrolling] = useState(false)
+
+  // Edit Class & Assign Teacher State
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingClass, setEditingClass] = useState<FormattedClass | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editSchedule, setEditSchedule] = useState('')
+  const [editTeacherId, setEditTeacherId] = useState('')
+  const [isUpdatingClass, setIsUpdatingClass] = useState(false)
 
   // Class Detail Drawer State
   const [selectedClass, setSelectedClass] = useState<FormattedClass | null>(null)
@@ -169,6 +170,7 @@ export default function ClassesPage() {
               id: c.id,
               name: c.name,
               subject,
+              teacherId: c.teacherId,
               teacherName: c.teacher
                 ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
                 : 'EPT Instructor',
@@ -193,6 +195,7 @@ export default function ClassesPage() {
           id: c.id,
           name: c.name,
           subject: c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS'),
+          teacherId: c.teacherId,
           teacherName: c.teacherName || 'EPT Instructor',
           schedule: c.schedule || 'Morning Batch',
           room: c.room || 'Room 101',
@@ -235,6 +238,51 @@ export default function ClassesPage() {
     setTargetClassId(classId)
     setTargetStudentId('')
     setEnrollDialogOpen(true)
+  }
+
+  // Open Edit & Assign Teacher Modal
+  function handleOpenEditModal(cls: FormattedClass) {
+    setEditingClass(cls)
+    setEditName(cls.name)
+    setEditSchedule(cls.schedule)
+    setEditTeacherId(cls.teacherId || '')
+    setEditDialogOpen(true)
+  }
+
+  // Submit Class Details & Assign Teacher
+  function handleEditSubmit() {
+    if (!editingClass) return
+    setIsUpdatingClass(true)
+
+    const selectedTeacher = mockTeachers.find((t) => t.id === editTeacherId)
+
+    if (!isMockMode()) {
+      updateClassMutation.mutate(
+        {
+          id: editingClass.id,
+          data: {
+            name: editName.trim(),
+            schedule: editSchedule.trim(),
+            teacherId: editTeacherId || undefined,
+          },
+        },
+        {
+          onSuccess: () => {
+            setIsUpdatingClass(false)
+            setEditDialogOpen(false)
+            toast.success(`Updated ${editName} & assigned teacher successfully!`)
+          },
+          onError: (err: any) => {
+            setIsUpdatingClass(false)
+            toast.error(err.message || 'Failed to update class details')
+          },
+        }
+      )
+    } else {
+      setIsUpdatingClass(false)
+      setEditDialogOpen(false)
+      toast.success(`Updated ${editName} & assigned ${selectedTeacher?.name || 'Teacher'} successfully!`)
+    }
   }
 
   // Submit Admission / Enrollment
@@ -320,10 +368,10 @@ export default function ClassesPage() {
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <BookOpen className="size-5 text-primary" />
-            Class Batches & Student Enrollment
+            Class Batches & Teacher Assignments
           </h1>
           <p className="text-xs text-muted-foreground">
-            Manage IELTS & PTE class timing batches, view enrolled student rosters, and admit new students.
+            Manage IELTS & PTE class timing batches, assign instructors, view enrolled student rosters, and admit new students.
           </p>
         </div>
 
@@ -428,10 +476,25 @@ export default function ClassesPage() {
                 </div>
 
                 {/* Instructor */}
-                <div className="flex items-center gap-2 pt-1 border-t border-border/50 text-xs">
-                  <PersonAvatar name={c.teacherName} className="size-6 text-[10px]" />
-                  <span className="text-muted-foreground">Instructor:</span>
-                  <span className="font-medium text-foreground">{c.teacherName}</span>
+                <div className="flex items-center justify-between pt-1 border-t border-border/50 text-xs">
+                  <div className="flex items-center gap-2">
+                    <PersonAvatar name={c.teacherName} className="size-6 text-[10px]" />
+                    <span className="text-muted-foreground">Instructor:</span>
+                    <span className="font-medium text-foreground">{c.teacherName}</span>
+                  </div>
+
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 text-[10px] gap-1 text-primary hover:bg-primary/10 px-2"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleOpenEditModal(c)
+                    }}
+                  >
+                    <UserCheck className="size-3" />
+                    Assign
+                  </Button>
                 </div>
 
                 {/* Enrollment Progress Bar */}
@@ -474,6 +537,68 @@ export default function ClassesPage() {
           )
         })}
       </div>
+
+      {/* EDIT CLASS & ASSIGN TEACHER MODAL */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <Pencil className="size-4 text-primary" />
+              Edit Class & Assign Instructor
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Assign an instructor to this class and update batch details. The assigned teacher will see this class live on their dashboard.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">Class Name</label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="e.g. IELTS Class (07:00-08:00 AM)"
+                className="h-9 text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">Schedule / Timing</label>
+              <Input
+                value={editSchedule}
+                onChange={(e) => setEditSchedule(e.target.value)}
+                placeholder="e.g. 07:00-08:00 AM"
+                className="h-9 text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">Assign Instructor / Teacher</label>
+              <Select value={editTeacherId} onValueChange={setEditTeacherId}>
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue placeholder="Choose instructor to assign…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {mockTeachers.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name} ({t.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleEditSubmit} disabled={isUpdatingClass}>
+              {isUpdatingClass ? 'Saving…' : 'Save & Assign Teacher'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* ADMIT STUDENT MODAL */}
       <Dialog open={enrollDialogOpen} onOpenChange={setEnrollDialogOpen}>
@@ -548,9 +673,20 @@ export default function ClassesPage() {
                     {selectedClass.room} · {selectedClass.schedule} · Instructor: {selectedClass.teacherName}
                   </DialogDescription>
                 </div>
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
-                  {classRoster.length} Enrolled Students
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs gap-1"
+                    onClick={() => handleOpenEditModal(selectedClass)}
+                  >
+                    <Pencil className="size-3.5" />
+                    Edit Class / Teacher
+                  </Button>
+                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200">
+                    {classRoster.length} Enrolled Students
+                  </Badge>
+                </div>
               </div>
             </DialogHeader>
 
