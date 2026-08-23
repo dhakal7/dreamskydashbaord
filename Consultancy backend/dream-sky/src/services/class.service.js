@@ -12,6 +12,25 @@ function normalizeToUtcMidnight(dateStr) {
 async function checkClassAccess(classId, user) {
   const clazz = await prisma.class.findUnique({
     where: { id: classId },
+    include: {
+      branch: true,
+      teacher: { select: { id: true, firstName: true, lastName: true, email: true } },
+      enrollments: {
+        include: {
+          student: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              phone: true,
+              currentStage: true,
+            },
+          },
+        },
+        orderBy: { enrolledAt: 'desc' },
+      },
+    },
   });
 
   if (!clazz) {
@@ -63,7 +82,7 @@ async function createClass(data, currentUser) {
       branchId: branchId || null,
       teacherId: targetTeacherId,
     },
-    include: { branch: true, teacher: { select: { id: true, firstName: true, lastName: true, email: true } } },
+    include: { branch: true, teacher: { select: { id: true, firstName: true, lastName: true, email: true } }, enrollments: { include: { student: true } } },
   });
 
   return { clazz };
@@ -77,7 +96,15 @@ async function listClasses(user) {
 
   return await prisma.class.findMany({
     where: whereClause,
-    include: { branch: true, teacher: { select: { id: true, firstName: true, lastName: true, email: true } } },
+    include: {
+      branch: true,
+      teacher: { select: { id: true, firstName: true, lastName: true, email: true } },
+      enrollments: {
+        include: {
+          student: true,
+        },
+      },
+    },
     orderBy: { name: "asc" },
   });
 }

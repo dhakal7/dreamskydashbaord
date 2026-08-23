@@ -28,7 +28,7 @@ export default function ClassesPage() {
   const updateClassMutation = useUpdateClass()
   const deleteClassMutation = useDeleteClass()
 
-  const [localClasses, setLocalClasses] = useState<ClassSession[]>([])
+  const [localClasses, setLocalClasses] = useState<ClassSession[] | null>(null)
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editingClass, setEditingClass] = useState<ClassSession | null>(null)
 
@@ -77,16 +77,9 @@ export default function ClassesPage() {
     return mockClasses
   }, [allClassesData, myClassesData, mockClasses, role])
 
-  // Sync initial list into localClasses on first load
-  useMemo(() => {
-    if (localClasses.length === 0 && baseClasses.length > 0) {
-      setLocalClasses(baseClasses)
-    }
-  }, [baseClasses])
-
   const [filters, setFilters] = useState<ClassFilters>(defaultClassFilters)
 
-  const currentList = localClasses.length > 0 ? localClasses : baseClasses
+  const currentList = localClasses !== null ? localClasses : baseClasses
 
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase()
@@ -121,12 +114,12 @@ export default function ClassesPage() {
     if (confirm(`Are you sure you want to delete "${cls.name}"?`)) {
       deleteClassMutation.mutate(cls.id, {
         onSuccess: () => {
-          setLocalClasses((prev) => prev.filter((item) => item.id !== cls.id))
+          setLocalClasses((prev) => (prev || baseClasses).filter((item) => item.id !== cls.id))
           toast.success(`Class "${cls.name}" deleted successfully`)
         },
         onError: () => {
           // Fallback for mock mode
-          setLocalClasses((prev) => prev.filter((item) => item.id !== cls.id))
+          setLocalClasses((prev) => (prev || baseClasses).filter((item) => item.id !== cls.id))
           toast.success(`Class "${cls.name}" deleted successfully`)
         },
       })
@@ -141,13 +134,13 @@ export default function ClassesPage() {
         {
           onSuccess: () => {
             setLocalClasses((prev) =>
-              prev.map((item) => (item.id === editingClass.id ? { ...item, ...data } : item))
+              (prev || baseClasses).map((item) => (item.id === editingClass.id ? { ...item, ...data } : item))
             )
             toast.success('Class updated successfully')
           },
           onError: () => {
             setLocalClasses((prev) =>
-              prev.map((item) => (item.id === editingClass.id ? { ...item, ...data } : item))
+              (prev || baseClasses).map((item) => (item.id === editingClass.id ? { ...item, ...data } : item))
             )
             toast.success('Class updated successfully')
           },
@@ -182,11 +175,11 @@ export default function ClassesPage() {
 
       createClassMutation.mutate(payload as any, {
         onSuccess: () => {
-          setLocalClasses((prev) => [newClass, ...prev])
+          setLocalClasses((prev) => [newClass, ...(prev || baseClasses)])
           toast.success('Class created successfully')
         },
         onError: () => {
-          setLocalClasses((prev) => [newClass, ...prev])
+          setLocalClasses((prev) => [newClass, ...(prev || baseClasses)])
         },
       })
     }
