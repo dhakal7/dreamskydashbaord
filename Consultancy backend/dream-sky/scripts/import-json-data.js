@@ -133,6 +133,7 @@ async function main() {
   // 2. Process Lead Data
   console.log('📋 Ingesting Lead Data & Students...');
   let leadsImported = 0;
+  const processedKeys = new Set();
 
   for (const file of leadFiles) {
     const filePath = getJsonPath(file);
@@ -146,10 +147,15 @@ async function main() {
 
       const { firstName, lastName } = parseName(rawName);
       const phone = parsePhone(item['Contact Number']);
-      let email = item['Email Address'];
 
+      // Deduplicate across Lead_Data.json and Copy_of_Lead_Data.json
+      const dedupeKey = `${firstName}_${lastName}_${phone || ''}`.toLowerCase();
+      if (processedKeys.has(dedupeKey)) continue;
+      processedKeys.add(dedupeKey);
+
+      let email = item['Email Address'];
       if (!email || email === '*' || !email.includes('@')) {
-        const phoneSlug = phone || id || Math.floor(Math.random() * 100000);
+        const phoneSlug = phone || dedupeKey.replace(/[^a-z0-9]/g, '') || Math.floor(Math.random() * 100000);
         email = `student_${phoneSlug}@dreamsky.internal`;
       }
 
