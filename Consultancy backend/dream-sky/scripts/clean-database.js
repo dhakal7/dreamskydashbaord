@@ -44,6 +44,8 @@ async function main() {
   await safeDelete('document');
   await safeDelete('pipelineStageHistory');
   await safeDelete('appointment');
+  await safeDelete('notification');
+  await safeDelete('auditLog');
   await safeDelete('student');
 
   // Keep only the 6 real staff users

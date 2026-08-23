@@ -384,8 +384,8 @@ model ReferralAgentProfile {
 
 model Student {
   id                  String        @id @default(cuid())
-  studentCode         String?       @unique
-  passportNumber      String?
+  // studentCode       String?       @unique
+  // passportNumber    String?
   firstName           String
   lastName            String
   email               String?       @unique
