@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import type { Appointment } from '@/types'
 import { appointments as seedAppointments } from '@/mock'
 
+import { isMockMode } from '@/lib/api-client'
+
 interface AppointmentsState {
   appointments: Appointment[]
   addAppointment: (data: Omit<Appointment, 'id'>) => Appointment
@@ -11,7 +13,7 @@ interface AppointmentsState {
 }
 
 export const useAppointmentsStore = create<AppointmentsState>((set, get) => ({
-  appointments: seedAppointments,
+  appointments: isMockMode() ? seedAppointments : [],
 
   addAppointment: (data) => {
     const current = get().appointments

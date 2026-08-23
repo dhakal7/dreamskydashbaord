@@ -4,6 +4,8 @@ import type { Course } from '@/types'
 import { courses as seedCourses } from '@/mock'
 import { useUniversitiesStore } from '@/features/universities/store'
 
+import { isMockMode } from '@/lib/api-client'
+
 interface CoursesState {
   courses: Course[]
   addCourse: (data: Omit<Course, 'id' | 'universityName' | 'countryName'>) => void
@@ -12,7 +14,7 @@ interface CoursesState {
 }
 
 export const useCoursesStore = create<CoursesState>((set, get) => ({
-  courses: seedCourses,
+  courses: isMockMode() ? seedCourses : [],
 
   addCourse: (data) => {
     const uni = useUniversitiesStore.getState().universities.find((u) => u.id === data.universityId)

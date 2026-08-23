@@ -5,13 +5,48 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PersonAvatar } from '@/components/ui/avatar'
+import { isMockMode } from '@/lib/api-client'
+import { useClasses } from '@/hooks/use-classes'
 import { classes, enrollments as mockEnrollments } from '@/mock'
 import type { ClassSession, Enrollment } from '@/types'
 
 export function ClassAttendanceWidget() {
-  const [selectedClassId, setSelectedClassId] = useState<string>(classes[0]?.id || 'cls-01')
+  const { data: liveClassesData } = useClasses()
+  const [selectedClassId, setSelectedClassId] = useState<string>('')
 
   const activeClasses = useMemo(() => {
+    if (!isMockMode()) {
+      const rawList = Array.isArray(liveClassesData)
+        ? liveClassesData
+        : (liveClassesData as any)?.classes || []
+
+      return rawList.map((c: any) => {
+        const classEnrollments = (c.enrollments || []).map((e: any) => ({
+          id: e.id,
+          classId: c.id,
+          studentId: e.studentId,
+          studentName: e.student ? `${e.student.firstName || ''} ${e.student.lastName || ''}`.trim() : 'Student',
+          enrolledAt: e.enrolledAt || 'Recently',
+          attendancePct: 85,
+        }))
+        const totalEnrolled = classEnrollments.length || c.capacity || 15
+        const avgAttendance = 88
+        return {
+          id: c.id,
+          name: c.name,
+          subject: c.subject || 'IELTS',
+          teacherName: c.teacher ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim() : 'Assigned Instructor',
+          schedule: typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Mon-Fri (Morning)',
+          capacity: c.capacity || 25,
+          classEnrollments,
+          totalEnrolled,
+          avgAttendance,
+          presentToday: Math.round(totalEnrolled * (avgAttendance / 100)),
+          absentToday: totalEnrolled - Math.round(totalEnrolled * (avgAttendance / 100)),
+        }
+      })
+    }
+
     return classes.map((cls: ClassSession) => {
       const classEnrollments = mockEnrollments.filter((e: Enrollment) => e.classId === cls.id)
       const totalEnrolled = classEnrollments.length || cls.enrolledCount || 15
@@ -28,10 +63,10 @@ export function ClassAttendanceWidget() {
         absentToday: totalEnrolled - Math.round(totalEnrolled * (avgAttendance / 100)),
       }
     })
-  }, [])
+  }, [liveClassesData])
 
   const selectedClass = useMemo(() => {
-    return activeClasses.find((c) => c.id === selectedClassId) || activeClasses[0]
+    return activeClasses.find((c: any) => c.id === selectedClassId) || activeClasses[0]
   }, [activeClasses, selectedClassId])
 
   return (
@@ -59,7 +94,7 @@ export function ClassAttendanceWidget() {
       <CardContent className="space-y-4 pt-4">
         {/* Class Selector Badges */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {activeClasses.map((cls) => {
+          {activeClasses.map((cls: any) => {
             const isSelected = cls.id === selectedClassId
             return (
               <button

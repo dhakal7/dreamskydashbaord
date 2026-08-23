@@ -3,6 +3,8 @@ import { toast } from 'sonner'
 import type { VisaCase, VisaStep, VisaStatus } from '@/types'
 import { visaCases as seedVisaCases } from '@/mock'
 
+import { isMockMode } from '@/lib/api-client'
+
 interface VisaState {
   visaCases: VisaCase[]
   updateChecklistItem: (caseId: string, step: VisaStep, status: VisaStatus) => void
@@ -26,7 +28,7 @@ function deriveOverallStatus(progress: number, checklist: VisaCase['checklist'])
 }
 
 export const useVisaStore = create<VisaState>((set) => ({
-  visaCases: [...seedVisaCases],
+  visaCases: isMockMode() ? [...seedVisaCases] : [],
 
   updateChecklistItem: (caseId, step, status) =>
     set((state) => {

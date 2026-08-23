@@ -4,6 +4,8 @@ import type { University } from '@/types'
 import { universities as seedUniversities } from '@/mock'
 import { useCountriesStore } from '@/features/countries/store'
 
+import { isMockMode } from '@/lib/api-client'
+
 function toSlug(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
@@ -16,7 +18,7 @@ interface UniversitiesState {
 }
 
 export const useUniversitiesStore = create<UniversitiesState>((set, get) => ({
-  universities: seedUniversities,
+  universities: isMockMode() ? seedUniversities : [],
 
   addUniversity: (data) => {
     const country = useCountriesStore.getState().countries.find((c) => c.id === data.countryId)

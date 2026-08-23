@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import type { ClassMaterial } from '@/types'
 import { classMaterials as mockMaterials } from '@/mock'
 
+import { isMockMode } from '@/lib/api-client'
+
 let nextId = mockMaterials.length + 1
 
 export interface AddMaterialData {
@@ -19,7 +21,7 @@ interface ClassMaterialsState {
 }
 
 export const useClassMaterialsStore = create<ClassMaterialsState>((set, get) => ({
-  materials: [...mockMaterials],
+  materials: isMockMode() ? [...mockMaterials] : [],
 
   getMaterialsForClass: (classId) =>
     get().materials.filter((m) => m.classId === classId),

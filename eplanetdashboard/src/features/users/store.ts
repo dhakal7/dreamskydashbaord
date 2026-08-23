@@ -25,7 +25,7 @@ interface UsersState {
 }
 
 export const useUsersStore = create<UsersState>((set) => ({
-  users: [...userAccounts],
+  users: isMockMode() ? [...userAccounts] : [],
 
   inviteUser: async (data) => {
     const nameParts = data.name.trim().split(/\s+/)

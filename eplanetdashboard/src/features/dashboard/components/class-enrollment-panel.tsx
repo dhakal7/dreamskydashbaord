@@ -40,13 +40,19 @@ export function ClassEnrollmentPanel() {
 
   // Format classes array for unified rendering
   const activeClasses = useMemo<FormattedClass[]>(() => {
-    if (!isMockMode() && liveClassesData?.classes) {
-      return liveClassesData.classes.map((c) => ({
+    if (!isMockMode()) {
+      const rawList = Array.isArray(liveClassesData)
+        ? liveClassesData
+        : (liveClassesData as any)?.classes || []
+
+      return rawList.map((c: any) => ({
         id: c.id,
         name: c.name,
-        subject: c.subject,
-        teacherName: c.teacher ? `${c.teacher.firstName} ${c.teacher.lastName}` : 'Assigned Instructor',
-        schedule: c.schedule || 'Mon-Fri (Morning)',
+        subject: c.subject || 'IELTS',
+        teacherName: c.teacher
+          ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
+          : 'Assigned Instructor',
+        schedule: typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Mon-Fri (Morning)',
         capacity: c.capacity || 25,
         enrolledCount: c.enrollments?.length || 0,
         status: c.status || 'Active',
@@ -69,11 +75,12 @@ export function ClassEnrollmentPanel() {
 
   // Format students list for enrollment selector
   const availableStudents = useMemo(() => {
-    if (!isMockMode() && liveStudentsData?.students) {
-      return liveStudentsData.students.map((s) => ({
+    if (!isMockMode()) {
+      const rawStudents = liveStudentsData?.students || (Array.isArray(liveStudentsData) ? liveStudentsData : [])
+      return rawStudents.map((s: any) => ({
         id: s.id,
-        name: `${s.firstName} ${s.lastName}`.trim(),
-        email: s.email,
+        name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email || 'Unnamed Student',
+        email: s.email || '',
       }))
     }
     return mockStudents.map((s) => ({ id: s.id, name: s.name, email: s.email }))
@@ -215,11 +222,15 @@ export function ClassEnrollmentPanel() {
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
               >
                 <option value="">-- Choose Class --</option>
-                {activeClasses.map((cls: FormattedClass) => (
-                  <option key={cls.id} value={cls.id}>
-                    {cls.name} ({cls.subject}) — {cls.enrolledCount}/{cls.capacity} Enrolled
-                  </option>
-                ))}
+                {activeClasses.length === 0 ? (
+                  <option value="" disabled>-- No Classes Available (Create a Class first) --</option>
+                ) : (
+                  activeClasses.map((cls: FormattedClass) => (
+                    <option key={cls.id} value={cls.id}>
+                      {cls.name} ({cls.subject}) — {cls.enrolledCount}/{cls.capacity} Enrolled
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -232,11 +243,15 @@ export function ClassEnrollmentPanel() {
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
               >
                 <option value="">-- Choose Student --</option>
-                {availableStudents.map((st) => (
-                  <option key={st.id} value={st.id}>
-                    {st.name} ({st.email || 'No email'})
-                  </option>
-                ))}
+                {availableStudents.length === 0 ? (
+                  <option value="" disabled>-- No Students Available --</option>
+                ) : (
+                  availableStudents.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.name} ({st.email || 'No email'})
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           </div>

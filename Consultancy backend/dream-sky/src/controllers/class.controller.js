@@ -9,12 +9,14 @@ const VALID_CONTENT_TYPES = ["NOTE", "MATERIAL", "ASSIGNMENT"];
 
 const createClass = async (req, res, next) => {
   try {
-    const { name, subject, schedule, branchId } = req.body;
-    if (!name || !subject || !schedule || !branchId) {
-      throw new AppError("Fields `name`, `subject`, `schedule`, and `branchId` are required.", 400);
+    const { name, subject, schedule } = req.body;
+    const branchId = req.body.branchId || req.user?.branchId || "br-1";
+    if (!name || !subject || !schedule) {
+      throw new AppError("Fields `name`, `subject`, and `schedule` are required.", 400);
     }
 
-    const result = await classService.createClass(req.body, req.user);
+    const payload = { ...req.body, branchId };
+    const result = await classService.createClass(payload, req.user);
     if (result.error === "BRANCH_NOT_FOUND") {
       throw new AppError(`Branch with id '${branchId}' not found.`, 404);
     }
