@@ -156,48 +156,52 @@ export default function ClassesPage() {
         : (liveClassesData as any)?.classes || []
 
       if (rawList.length > 0) {
-        return rawList.map((c: any) => {
-          const subject = c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS')
-          const schedule = typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Morning Batch'
-          const key = `${subject}_${schedule}`
-          const fallbackList = EXCEL_CLASS_ROSTER_MAP[key] || []
-          const enrolledCount = c.enrollments?.length || fallbackList.length || 10
+        return rawList
+          .filter((c: any) => !c.name?.toLowerCase().includes('not joined'))
+          .map((c: any) => {
+            const subject = c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS')
+            const schedule = typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Morning Batch'
+            const key = `${subject}_${schedule}`
+            const fallbackList = EXCEL_CLASS_ROSTER_MAP[key] || []
+            const enrolledCount = c.enrollments?.length || fallbackList.length || 10
 
-          return {
-            id: c.id,
-            name: c.name,
-            subject,
-            teacherName: c.teacher
-              ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
-              : 'EPT Instructor',
-            schedule,
-            room: 'Room 101',
-            capacity: c.capacity || 20,
-            enrolledCount,
-            status: c.status || 'Ongoing',
-            startDate: c.startDate || c.createdAt,
-          }
-        })
+            return {
+              id: c.id,
+              name: c.name,
+              subject,
+              teacherName: c.teacher
+                ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
+                : 'EPT Instructor',
+              schedule,
+              room: 'Room 101',
+              capacity: c.capacity || 20,
+              enrolledCount,
+              status: c.status || 'Ongoing',
+              startDate: c.startDate || c.createdAt,
+            }
+          })
       }
     }
 
-    return (mockClasses as any[]).map((c) => {
-      const count = mockEnroll.filter((e) => e.classId === c.id).length
-      const key = `${c.subject}_${c.schedule}`
-      const fallbackList = EXCEL_CLASS_ROSTER_MAP[key] || []
-      return {
-        id: c.id,
-        name: c.name,
-        subject: c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS'),
-        teacherName: c.teacherName || 'EPT Instructor',
-        schedule: c.schedule || 'Morning Batch',
-        room: c.room || 'Room 101',
-        capacity: c.capacity || 20,
-        enrolledCount: count || fallbackList.length || (c.subject === 'PTE' ? 20 : 29),
-        status: c.status || 'Ongoing',
-        startDate: c.startDate || new Date().toISOString(),
-      }
-    })
+    return (mockClasses as any[])
+      .filter((c) => !c.name?.toLowerCase().includes('not joined'))
+      .map((c) => {
+        const count = mockEnroll.filter((e) => e.classId === c.id).length
+        const key = `${c.subject}_${c.schedule}`
+        const fallbackList = EXCEL_CLASS_ROSTER_MAP[key] || []
+        return {
+          id: c.id,
+          name: c.name,
+          subject: c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS'),
+          teacherName: c.teacherName || 'EPT Instructor',
+          schedule: c.schedule || 'Morning Batch',
+          room: c.room || 'Room 101',
+          capacity: c.capacity || 20,
+          enrolledCount: count || fallbackList.length || (c.subject === 'PTE' ? 20 : 29),
+          status: c.status || 'Ongoing',
+          startDate: c.startDate || new Date().toISOString(),
+        }
+      })
   }, [liveClassesData, mockClasses, mockEnroll])
 
   // Filtered classes grid
