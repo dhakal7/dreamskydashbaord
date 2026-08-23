@@ -150,10 +150,30 @@ async function enrollStudent(classId, studentId) {
   const clazz = await prisma.class.findUnique({ where: { id: classId } });
   if (!clazz) return { error: "CLASS_NOT_FOUND" };
 
+  const student = await prisma.student.findUnique({ where: { id: studentId } });
+  if (!student) return { error: "STUDENT_NOT_FOUND" };
+
   try {
     const enrollment = await prisma.enrollment.create({
       data: { classId, studentId },
     });
+
+    // Automatically update student stage to ENROLLED if they are a LEAD/PROSPECT
+    if (student.currentStage === "LEAD" || student.currentStage === "PROSPECT") {
+      await prisma.student.update({
+        where: { id: studentId },
+        data: { currentStage: "ENROLLED" },
+      });
+      await prisma.pipelineStageHistory.create({
+        data: {
+          studentId,
+          fromStage: student.currentStage,
+          toStage: "ENROLLED",
+          notes: `Enrolled into class ${clazz.name}`,
+        },
+      });
+    }
+
     return { enrollment };
   } catch (error) {
     if (error.code === "P2002") {
