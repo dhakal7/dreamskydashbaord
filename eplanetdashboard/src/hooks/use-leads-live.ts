@@ -107,7 +107,7 @@ export function useLiveLeads() {
 
   const { data, isLoading } = useStudents({
     stageIn: 'LEAD,PROSPECT',
-    limit: 200,
+    limit: 1000,
     counselorId,
   })
 
@@ -116,7 +116,9 @@ export function useLiveLeads() {
     return data.students.map(adaptStudentToLead)
   }, [data])
 
-  return { leads, isLoading }
+  const totalCount = data?.pagination?.total ?? leads.length
+
+  return { leads, totalCount, isLoading }
 }
 
 // ── Mutation: move a lead stage in the backend ───────────────────────────────
