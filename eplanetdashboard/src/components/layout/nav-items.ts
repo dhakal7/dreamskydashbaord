@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, UserPlus, CalendarClock, CalendarDays, FileStack,
   PlaneTakeoff, FolderKanban, Landmark, Globe2, GraduationCap, BarChart3, Settings,
-  Wallet, Link2, BookOpen, Bookmark, UserCog, CalendarCheck,
+  Wallet, Link2, BookOpen, Bookmark, UserCog, CalendarCheck, DollarSign,
 } from 'lucide-react'
 import type { Role } from '@/types'
 import { hasPermission, type Permission } from '@/lib/rbac'
@@ -38,17 +38,18 @@ const all: Record<string, NavItem> = {
   commissionRules: { label: 'Commission Rules', to: '/commission-rules', icon: Wallet, permission: 'commission-rules.manage' },
   events: { label: 'Events', to: '/events', icon: CalendarDays, permission: 'events.view' },
   users: { label: 'Users', to: '/users', icon: UserCog, permission: 'users.view' },
+  fees: { label: 'Fees & Payments', to: '/fees', icon: DollarSign, permission: 'appointments.view' },
 }
 
 const byRole: Record<Role, (keyof typeof all)[]> = {
   super_admin: [
     'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa',
-    'documents', 'universities', 'countries', 'courses', 'classes', 'reports', 'commissionRules', 'events', 'users', 'settings',
+    'documents', 'universities', 'countries', 'courses', 'classes', 'fees', 'reports', 'commissionRules', 'events', 'users', 'settings',
   ],
-  front_desk: ['dashboard', 'reception', 'leads', 'students', 'followUps', 'appointments', 'classes', 'documents', 'settings'],
+  front_desk: ['dashboard', 'reception', 'fees', 'leads', 'students', 'followUps', 'appointments', 'classes', 'documents', 'settings'],
   counselor: [
     'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa',
-    'documents', 'classes', 'materials', 'commissions', 'events', 'reports', 'settings',
+    'documents', 'classes', 'materials', 'fees', 'commissions', 'events', 'reports', 'settings',
   ],
   teacher: ['dashboard', 'leads', 'classes', 'reports', 'settings'],
   student: ['dashboard', 'appointments', 'applications', 'visa', 'documents', 'classes', 'materials', 'settings'],
