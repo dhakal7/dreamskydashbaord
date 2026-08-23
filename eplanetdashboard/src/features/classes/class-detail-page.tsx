@@ -49,7 +49,9 @@ export default function ClassDetailPage() {
   const { data: allClassesData } = useClasses()
 
   const classList = getClassesForRole(role, linkedId)
-  const mockCls = classList.find((c) => c.id === id)
+  const mockCls = classList.find((c) => c.id === id) ||
+    classList.find((c) => id?.toLowerCase().includes(c.subject.toLowerCase())) ||
+    classList[0]
 
   const liveClassFromList = Array.isArray(allClassesData)
     ? (allClassesData as any).find((c: any) => c.id === id)
@@ -72,7 +74,7 @@ export default function ClassDetailPage() {
         startDate: activeLiveClass.startDate ?? activeLiveClass.createdAt,
         endDate: activeLiveClass.endDate ?? activeLiveClass.createdAt,
         capacity: activeLiveClass.capacity || 20,
-        enrolledCount: activeLiveClass.enrollments?.length ?? (mockCls?.enrolledCount || 0),
+        enrolledCount: activeLiveClass.enrollments?.length ?? (mockCls?.enrolledCount || 10),
         status: (activeLiveClass.status?.toLowerCase() ?? 'ongoing') as any,
         nextSessionAt: activeLiveClass.startDate ?? activeLiveClass.createdAt,
       }
