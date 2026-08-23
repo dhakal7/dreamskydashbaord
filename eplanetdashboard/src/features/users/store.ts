@@ -16,6 +16,7 @@ let nextId = userAccounts.length + 1
 
 interface UsersState {
   users: UserAccount[]
+  fetchUsers: () => Promise<void>
   inviteUser: (data: InviteUserData) => Promise<void>
   suspendUser: (id: string) => void
   reactivateUser: (id: string) => void
@@ -26,6 +27,36 @@ interface UsersState {
 
 export const useUsersStore = create<UsersState>((set) => ({
   users: isMockMode() ? [...userAccounts] : [],
+
+  fetchUsers: async () => {
+    if (isMockMode()) {
+      set({ users: [...userAccounts] })
+      return
+    }
+
+    try {
+      const rawUsers: any = await api.get('/users')
+      const userList = Array.isArray(rawUsers) ? rawUsers : rawUsers?.data || []
+      const mapped: UserAccount[] = userList.map((u: any) => ({
+        id: u.id,
+        name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+        email: u.email,
+        phone: u.phone || '',
+        role: (u.role?.toLowerCase() as Role) || 'staff',
+        status: (u.status?.toLowerCase() as UserStatus) || 'active',
+        branchId: u.branchId,
+        branchName: u.branch?.name || 'Headquarters',
+        avatarColor: '#0891B2',
+        lastLoginAt: u.lastLoginAt || u.createdAt,
+        createdAt: u.createdAt,
+        linkedId: u.id,
+      }))
+      set({ users: mapped })
+    } catch (err: any) {
+      // Fallback to mock data if API call fails
+      set({ users: [...userAccounts] })
+    }
+  },
 
   inviteUser: async (data) => {
     const nameParts = data.name.trim().split(/\s+/)

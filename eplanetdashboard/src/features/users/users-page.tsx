@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { UserPlus, Users as UsersIcon } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
@@ -15,6 +15,11 @@ import { InviteUserDialog } from './components/invite-user-dialog'
 export default function UsersPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const users = useUsersStore((s) => s.users)
+  const fetchUsers = useUsersStore((s) => s.fetchUsers)
+
+  useEffect(() => {
+    fetchUsers()
+  }, [fetchUsers])
 
   const canManage = hasPermission(currentUser.role, 'users.manage')
 
