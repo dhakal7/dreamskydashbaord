@@ -21,9 +21,9 @@ const REAL_STAFF_EMAILS = [
   'amisha.thapa@dreamsky.com',
 ];
 
-function parseName(fullName) {
-  if (!fullName || typeof fullName !== 'string') {
-    return { firstName: 'Unknown', lastName: 'Student' };
+function parseName(fullName, fallbackId) {
+  if (!fullName || typeof fullName !== 'string' || fullName.trim().length === 0) {
+    return { firstName: 'Lead', lastName: fallbackId ? `#${fallbackId}` : 'Inquiry' };
   }
   const clean = fullName.trim().replace(/\(.*\)/, '').trim();
   const parts = clean.split(/\s+/);
@@ -45,9 +45,6 @@ function mapStatusToStage(statusStr) {
   if (s.includes('HOT')) return 'PROSPECT';
   if (s.includes('WARM')) return 'PROSPECT';
   if (s.includes('COLD')) return 'LEAD';
-  if (s.includes('APPLIED')) return 'VISA_APPLIED';
-  if (s.includes('APPROVED')) return 'VISA_APPROVED';
-  if (s.includes('ENROLLED')) return 'ENROLLED';
   return 'LEAD';
 }
 
@@ -145,18 +142,28 @@ async function main() {
 
   if (fs.existsSync(leadsPath)) {
     const leadData = JSON.parse(fs.readFileSync(leadsPath, 'utf8'));
+    const usedEmails = new Set();
+
     for (const item of leadData) {
       const rawName = item['Student Name'];
-      if (!rawName) continue;
-
-      const { firstName, lastName } = parseName(rawName);
       const phone = parsePhone(item['Contact Number']);
+      const remarks = item['Follow up remarks'] || item['Next Follow up remarks'];
+
+      if (!rawName && !phone && !remarks) continue; // Skip completely blank row
+
+      const { firstName, lastName } = parseName(rawName, item.ID || leadsImported + 1);
       let email = item['Email Address'];
 
       if (!email || email === '*' || !email.includes('@')) {
         const phoneSlug = phone || Math.floor(100000 + Math.random() * 900000);
-        email = `student_${phoneSlug}@dreamsky.com`;
+        email = `student_${phoneSlug}_${leadsImported + 1}@dreamsky.com`;
+      } else {
+        email = email.trim().toLowerCase();
+        if (usedEmails.has(email)) {
+          email = email.replace('@', `_${leadsImported + 1}@`);
+        }
       }
+      usedEmails.add(email);
 
       const counselorName = item['Counselor Assigned'] ? String(item['Counselor Assigned']).trim().toLowerCase() : '';
       const counselorId = counselorMap.get(counselorName) || null;
