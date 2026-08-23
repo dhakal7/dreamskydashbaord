@@ -250,7 +250,7 @@ async function main() {
 
       const student = await prisma.student.upsert({
         where: { email },
-        update: { phone: phone || undefined },
+        update: { phone: phone || undefined, currentStage: 'ENROLLED' },
         create: {
           email,
           firstName,
@@ -301,7 +301,7 @@ async function main() {
 
       const student = await prisma.student.upsert({
         where: { email },
-        update: {},
+        update: { currentStage: 'ENROLLED' },
         create: {
           email,
           firstName,
