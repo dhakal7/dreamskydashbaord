@@ -2,9 +2,10 @@ import { PageHeader } from '@/components/shared/page-header'
 import { StatCards } from '../components/stat-cards'
 import { TodaysAppointmentsPanel, UpcomingFollowUpsPanel } from '../components/panels'
 import { getDashboardStats } from '../selectors'
+import { useSuperAdminStats } from '../hooks/use-dashboard-stats'
 
 export function SuperAdminDashboard() {
-  const stats = getDashboardStats()
+  const { data: stats = getDashboardStats() } = useSuperAdminStats()
 
   return (
     <div className="space-y-5">
