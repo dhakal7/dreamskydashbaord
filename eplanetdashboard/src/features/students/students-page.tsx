@@ -95,11 +95,11 @@ export default function StudentsPage() {
       <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
         <Card className="p-3.5">
           <p className="text-xs text-muted-foreground">Total Students</p>
-          <p className="mt-1 text-xl font-semibold font-tabular">{filtered.length}</p>
+          <p className="mt-1 text-xl font-semibold font-tabular">{studentResponse?.pagination?.total ?? filtered.length}</p>
         </Card>
         <Card className="p-3.5">
           <p className="text-xs text-muted-foreground">Active</p>
-          <p className="mt-1 text-xl font-semibold font-tabular">{activeCount}</p>
+          <p className="mt-1 text-xl font-semibold font-tabular">{studentResponse?.pagination?.total ?? activeCount}</p>
         </Card>
         <Card className="p-3.5">
           <p className="text-xs text-muted-foreground">Enrolled</p>
