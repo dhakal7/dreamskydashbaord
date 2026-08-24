@@ -1,7 +1,7 @@
 import type { CurrentUser } from '@/types'
 import { branches } from './branches'
 import { counselors } from './reference'
-import { teachers, referralAgents } from './staff'
+import { referralAgents } from './staff'
 import { students } from './entities'
 
 const hq = branches[0]
@@ -22,8 +22,8 @@ export const demoUsers: Record<CurrentUser['role'], CurrentUser> = {
     role: 'counselor', avatarColor: counselors[0].avatarColor, branchId: hq.id, branchName: hq.name, linkedId: counselors[0].id,
   },
   teacher: {
-    id: 'user-t-1', name: teachers[0].name, email: teachers[0].email,
-    role: 'teacher', avatarColor: teachers[0].avatarColor, branchId: hq.id, branchName: hq.name, linkedId: teachers[0].id,
+    id: 'user-t-1', name: 'EPT Instructor', email: 'teacher@dreamsky.internal',
+    role: 'teacher', avatarColor: '#0891B2', branchId: hq.id, branchName: hq.name, linkedId: 'tchr-1',
   },
   student: {
     id: 'user-s-1', name: students[0].name, email: students[0].email,

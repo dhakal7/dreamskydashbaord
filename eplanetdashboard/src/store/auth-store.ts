@@ -261,10 +261,14 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     // ── MOCK MODE ──────────────────────────────────────────────────────────────
     if (isMockMode()) {
+      const isTeacherEmail = email.trim().toLowerCase() === 'teacher@dreamsky.internal' || email.trim().toLowerCase() === 'anup.rijal@dreamsky.com'
       const demoUser = Object.values(demoUsers).find(
         (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
-      )
-      if (demoUser && password === demoPassword) {
+      ) || (isTeacherEmail ? demoUsers.teacher : undefined)
+
+      const isTeacherPasswordMatch = isTeacherEmail && (password === 'dreamskyteacher@2025' || password === 'Password123!' || password === demoPassword)
+
+      if (demoUser && (password === demoPassword || isTeacherPasswordMatch)) {
         mockStorage().removeItem('dreamsky-logged-out')
         mockStorage().setItem('dreamsky-authenticated', 'true')
         mockStorage().setItem('dreamsky-demo-role', demoUser.role)
