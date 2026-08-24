@@ -1,0 +1,1 @@
+import{At as e}from"./index-Dtgdu4Pg.js";var t=1,n=e((e,n)=>({notes:[],addNote:n=>e(e=>{let r=`cls-note-${String(t).padStart(3,`0`)}`;t++;let i={...n,id:r,createdAt:new Date().toISOString()};return{notes:[...e.notes,i]}}),getNotesForStudentInClass:(e,t)=>n().notes.filter(n=>n.studentId===e&&n.classId===t)}));export{n as t};
