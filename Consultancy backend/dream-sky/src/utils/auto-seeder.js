@@ -100,37 +100,44 @@ const autoSeedUsers = async () => {
         }).catch(() => {});
 
         for (const u of realStaffUsers) {
-            const hash = await bcrypt.hash(u.password, 12);
-            await prisma.user.upsert({
-                where: { email: u.email },
-                update: {
-                    passwordHash: hash,
-                    firstName: u.firstName,
-                    lastName: u.lastName,
-                    role: u.role,
-                    status: u.status,
-                    branchId: u.branchId,
-                    mustChangePassword: false
-                },
-                create: {
-                    id: u.id,
-                    email: u.email,
-                    passwordHash: hash,
-                    firstName: u.firstName,
-                    lastName: u.lastName,
-                    role: u.role,
-                    status: u.status,
-                    branchId: u.branchId,
-                    mustChangePassword: false
-                }
-            }).catch((err) => console.error(`Staff user sync error [${u.email}]:`, err.message));
-
-            // Force update teacher password specifically
-            if (u.email === 'teacher@dreamsky.internal') {
-                await prisma.user.updateMany({
+            const existing = await prisma.user.findUnique({ where: { email: u.email } });
+            let needUpdate = !existing;
+            if (existing) {
+                const matches = await bcrypt.compare(u.password, existing.passwordHash).catch(() => false);
+                if (!matches) needUpdate = true;
+            }
+            if (needUpdate) {
+                const hash = await bcrypt.hash(u.password, 10);
+                await prisma.user.upsert({
                     where: { email: u.email },
-                    data: { passwordHash: hash, status: 'ACTIVE', role: 'TEACHER' }
-                }).catch(() => {});
+                    update: {
+                        passwordHash: hash,
+                        firstName: u.firstName,
+                        lastName: u.lastName,
+                        role: u.role,
+                        status: u.status,
+                        branchId: u.branchId,
+                        mustChangePassword: false
+                    },
+                    create: {
+                        id: u.id,
+                        email: u.email,
+                        passwordHash: hash,
+                        firstName: u.firstName,
+                        lastName: u.lastName,
+                        role: u.role,
+                        status: u.status,
+                        branchId: u.branchId,
+                        mustChangePassword: false
+                    }
+                }).catch((err) => console.error(`Staff user sync error [${u.email}]:`, err.message));
+
+                if (u.email === 'teacher@dreamsky.internal') {
+                    await prisma.user.updateMany({
+                        where: { email: u.email },
+                        data: { passwordHash: hash, status: 'ACTIVE', role: 'TEACHER' }
+                    }).catch(() => {});
+                }
             }
         }
         console.log("✅ Auto-seeder completed real staff user sync.");
