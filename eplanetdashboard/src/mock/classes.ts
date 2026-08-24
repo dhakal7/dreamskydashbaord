@@ -55,6 +55,20 @@ export const REAL_CLASS_DATA = [
   },
   {
     id: 'cls-04',
+    name: 'PTE Class (Unassigned / Pending)',
+    subject: 'PTE' as const,
+    schedule: 'Flexible · Pending Joining',
+    room: 'Unassigned',
+    capacity: 30,
+    status: 'upcoming' as const,
+    students: [
+      'Aryan Dhungana',
+      'Milan Singh',
+      'Aryan Karanjit',
+    ],
+  },
+  {
+    id: 'cls-05',
     name: 'IELTS Class (07:00-08:00 AM)',
     subject: 'IELTS' as const,
     schedule: 'Sun-Fri · 07:00 AM - 08:00 AM',
@@ -77,7 +91,7 @@ export const REAL_CLASS_DATA = [
     ],
   },
   {
-    id: 'cls-05',
+    id: 'cls-06',
     name: 'IELTS Class (08:00-09:00 AM)',
     subject: 'IELTS' as const,
     schedule: 'Sun-Fri · 08:00 AM - 09:00 AM',
@@ -97,7 +111,7 @@ export const REAL_CLASS_DATA = [
     ],
   },
   {
-    id: 'cls-06',
+    id: 'cls-07',
     name: 'IELTS Class (09:00-10:00 AM)',
     subject: 'IELTS' as const,
     schedule: 'Sun-Fri · 09:00 AM - 10:00 AM',
@@ -110,6 +124,20 @@ export const REAL_CLASS_DATA = [
       'Binit Tamang',
       'Amrit Tamang',
       'Karuna Balampaki',
+    ],
+  },
+  {
+    id: 'cls-08',
+    name: 'IELTS Class (Unassigned / Pending)',
+    subject: 'IELTS' as const,
+    schedule: 'Flexible · Pending Joining',
+    room: 'Unassigned',
+    capacity: 30,
+    status: 'upcoming' as const,
+    students: [
+      'Sonam Tamang',
+      'Monika Magar',
+      'Jagadish Parajuli',
     ],
   },
 ]
