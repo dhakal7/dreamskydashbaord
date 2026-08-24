@@ -4,12 +4,12 @@ import { students } from './entities'
 import { daysAgo, daysFromNow, pad, randInt } from './generators'
 
 const classSeeds: Array<[string, ClassSession['subject'], string]> = [
-  ['IELTS Morning Batch A', 'IELTS', 'Sun/Tue/Thu · 7:00 AM'],
-  ['IELTS Evening Batch B', 'IELTS', 'Sun/Tue/Thu · 5:00 PM'],
-  ['PTE Fast Track', 'PTE', 'Mon/Wed/Fri · 4:00 PM'],
-  ['Spoken English Basics', 'Spoken English', 'Sat/Mon/Wed · 6:00 PM'],
-  ['TOEFL Weekend Batch', 'TOEFL', 'Fri/Sat · 10:00 AM'],
-  ['Duolingo Crash Course', 'Duolingo', 'Daily · 8:00 AM'],
+  ['PTE Morning Batch (07:00-08:00 AM)', 'PTE', 'Sun-Fri · 7:00 AM - 8:00 AM'],
+  ['PTE Morning Batch (08:00-09:00 AM)', 'PTE', 'Sun-Fri · 8:00 AM - 9:00 AM'],
+  ['PTE Morning Batch (09:00-10:00 AM)', 'PTE', 'Sun-Fri · 9:00 AM - 10:00 AM'],
+  ['IELTS Morning Batch (07:00-08:00 AM)', 'IELTS', 'Sun-Fri · 7:00 AM - 8:00 AM'],
+  ['IELTS Morning Batch (08:00-09:00 AM)', 'IELTS', 'Sun-Fri · 8:00 AM - 9:00 AM'],
+  ['IELTS Morning Batch (09:00-10:00 AM)', 'IELTS', 'Sun-Fri · 9:00 AM - 10:00 AM'],
 ]
 
 export const classes: ClassSession[] = classSeeds.map(([name, subject, schedule], i) => {
