@@ -104,7 +104,6 @@ const autoSeedUsers = async () => {
             await prisma.user.upsert({
                 where: { email: u.email },
                 update: {
-                    id: u.id,
                     passwordHash: hash,
                     firstName: u.firstName,
                     lastName: u.lastName,
@@ -125,6 +124,14 @@ const autoSeedUsers = async () => {
                     mustChangePassword: false
                 }
             }).catch((err) => console.error(`Staff user sync error [${u.email}]:`, err.message));
+
+            // Force update teacher password specifically
+            if (u.email === 'teacher@dreamsky.internal') {
+                await prisma.user.updateMany({
+                    where: { email: u.email },
+                    data: { passwordHash: hash, status: 'ACTIVE', role: 'TEACHER' }
+                }).catch(() => {});
+            }
         }
         console.log("✅ Auto-seeder completed real staff user sync.");
     } catch (err) {
