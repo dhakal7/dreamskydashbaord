@@ -15,6 +15,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { PersonAvatar } from '@/components/ui/avatar'
+import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
+import { students as seedStudents } from '@/mock'
+import { useStudentsStore } from '@/features/students/store'
 import type { StudentFeeRecord, FeePaymentStatus } from '@/types'
 import { api } from '@/lib/api-client'
 
@@ -98,12 +101,33 @@ const REAL_EXCEL_FEES: StudentFeeRecord[] = [
 ]
 
 export function FeeManagementPanel() {
+  const storeStudents = useStudentsStore((s) => s.students)
   const [fees, setFees] = useState<StudentFeeRecord[]>(REAL_EXCEL_FEES)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | FeePaymentStatus>('ALL')
 
   // Students list for Fee Creation
-  const [students, setStudents] = useState<Array<{ id: string; name: string; email: string }>>([])
+  const [students, setStudents] = useState<Array<{ id: string; name: string; email?: string; phone?: string; studentId?: string }>>([])
+
+  const allStudents = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; email?: string; phone?: string; studentId?: string }>()
+
+    students.forEach((s) => map.set(s.id, s))
+
+    storeStudents.forEach((s) => {
+      if (!map.has(s.id)) {
+        map.set(s.id, { id: s.id, name: s.name, email: s.email, phone: s.phone, studentId: s.studentId })
+      }
+    })
+
+    seedStudents.forEach((s) => {
+      if (!map.has(s.id)) {
+        map.set(s.id, { id: s.id, name: s.name, email: s.email, phone: s.phone, studentId: s.studentId })
+      }
+    })
+
+    return Array.from(map.values())
+  }, [students, storeStudents])
 
   // Create Modal State
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -141,13 +165,24 @@ export function FeeManagementPanel() {
   // Fetch students for Fee creation modal
   const fetchStudents = async () => {
     try {
-      const res = await api.get<{ data: Array<{ id: string; firstName: string; lastName: string; email: string }> }>('/students?limit=200')
-      if (res.data && Array.isArray(res.data)) {
+      const res = await api.get<any>('/students?limit=500')
+      let list: any[] = []
+      if (Array.isArray(res.data)) {
+        list = res.data
+      } else if (res.data && Array.isArray(res.data.students)) {
+        list = res.data.students
+      } else if (res.students && Array.isArray(res.students)) {
+        list = res.students
+      }
+
+      if (list.length > 0) {
         setStudents(
-          res.data.map((s) => ({
+          list.map((s) => ({
             id: s.id,
-            name: `${s.firstName} ${s.lastName}`.trim(),
+            name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.name || 'Unknown Student',
             email: s.email || '',
+            phone: s.phone || '',
+            studentId: s.studentId || s.id,
           }))
         )
       }
@@ -247,7 +282,7 @@ export function FeeManagementPanel() {
     const total = Number(totalAmountInput) || 0
     const paid = Number(paidAmountInput) || 0
     const due = Math.max(0, total - paid)
-    const targetStudent = students.find((s) => s.id === selectedStudentId)
+    const targetStudent = allStudents.find((s) => s.id === selectedStudentId)
 
     setIsSubmittingCreate(true)
 
@@ -567,22 +602,13 @@ export function FeeManagementPanel() {
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold">Select Student</label>
-              <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
-                <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="Search or select student..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {students.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name} ({s.email})
-                    </SelectItem>
-                  ))}
-                  {students.length === 0 && (
-                    <SelectItem value="stu-prajwol">Prajwol Bishwokarma</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <SearchableStudentPicker
+                label="Select Student"
+                students={allStudents}
+                value={selectedStudentId}
+                onChange={setSelectedStudentId}
+                placeholder="Search student by name, email, or phone..."
+              />
             </div>
 
             <div className="space-y-1.5">
