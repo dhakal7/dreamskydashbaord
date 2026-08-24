@@ -1,13 +1,13 @@
 import type { ReferralAgent, Teacher } from '@/types'
 import { pad, pick, randInt, randomEmail, randomPhone } from './generators'
 
-const teacherNames = ['Anup Rijal', 'Suprina Maskey', 'Deepika Sunuwar', 'Rojan Bajracharya']
+const teacherNames = ['EPT Instructor', 'Suprina Maskey', 'Deepika Sunuwar', 'Rojan Bajracharya']
 const subjectPool: Teacher['subjects'] = ['IELTS', 'PTE', 'TOEFL', 'Spoken English', 'Duolingo']
 
 export const teachers: Teacher[] = teacherNames.map((name, i) => ({
   id: `tchr-${i + 1}`,
   name,
-  email: `${name.toLowerCase().replace(' ', '.')}@dreamsky.com`,
+  email: i === 0 ? 'teacher@dreamsky.internal' : `${name.toLowerCase().replace(' ', '.')}@dreamsky.com`,
   avatarColor: ['#0891B2', '#7C3AED', '#D97706', '#16A34A'][i],
   subjects: [subjectPool[i % subjectPool.length], subjectPool[(i + 2) % subjectPool.length]],
   classesHandled: randInt(2, 5),
