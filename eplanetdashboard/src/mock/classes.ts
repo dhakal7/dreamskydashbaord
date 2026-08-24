@@ -1,80 +1,184 @@
 import type { AttendanceRecord, ClassMaterial, ClassSession, Enrollment } from '@/types'
 import { teachers } from './staff'
-import { students } from './entities'
 import { daysAgo, daysFromNow, pad, randInt } from './generators'
 
-const classSeeds: Array<[string, ClassSession['subject'], string]> = [
-  ['PTE Morning Batch (07:00-08:00 AM)', 'PTE', 'Sun-Fri · 7:00 AM - 8:00 AM'],
-  ['PTE Morning Batch (08:00-09:00 AM)', 'PTE', 'Sun-Fri · 8:00 AM - 9:00 AM'],
-  ['PTE Morning Batch (09:00-10:00 AM)', 'PTE', 'Sun-Fri · 9:00 AM - 10:00 AM'],
-  ['IELTS Morning Batch (07:00-08:00 AM)', 'IELTS', 'Sun-Fri · 7:00 AM - 8:00 AM'],
-  ['IELTS Morning Batch (08:00-09:00 AM)', 'IELTS', 'Sun-Fri · 8:00 AM - 9:00 AM'],
-  ['IELTS Morning Batch (09:00-10:00 AM)', 'IELTS', 'Sun-Fri · 9:00 AM - 10:00 AM'],
+export const REAL_CLASS_DATA = [
+  {
+    id: 'cls-01',
+    name: 'PTE Class (07:00-08:00 AM)',
+    subject: 'PTE' as const,
+    schedule: 'Sun-Fri · 07:00 AM - 08:00 AM',
+    room: 'Room 101',
+    capacity: 20,
+    status: 'ongoing' as const,
+    students: [
+      'Alisha Kafle',
+    ],
+  },
+  {
+    id: 'cls-02',
+    name: 'PTE Class (08:00-09:00 AM)',
+    subject: 'PTE' as const,
+    schedule: 'Sun-Fri · 08:00 AM - 09:00 AM',
+    room: 'Room 102',
+    capacity: 25,
+    status: 'ongoing' as const,
+    students: [
+      'Jenisha Bishwokarma',
+      'Puja Tamang',
+      'Sana Shrestha',
+      'Manish Thakur',
+      'Sarita Tamang',
+      'Dawa Sangmu Rokaya',
+    ],
+  },
+  {
+    id: 'cls-03',
+    name: 'PTE Class (09:00-10:00 AM)',
+    subject: 'PTE' as const,
+    schedule: 'Sun-Fri · 09:00 AM - 10:00 AM',
+    room: 'Room 103',
+    capacity: 25,
+    status: 'ongoing' as const,
+    students: [
+      'Sushma Pudasaini',
+      'Rajiv Khadka',
+      'Ronak Shrestha',
+      'Urgen Sonam Sherpa',
+      'Prajwol Bishwokarma',
+      'Siddhant Rai',
+      'Upasana Rai',
+      'Sonam Lama',
+      'Pralad Lama',
+      'Prayush Lama',
+    ],
+  },
+  {
+    id: 'cls-04',
+    name: 'IELTS Class (07:00-08:00 AM)',
+    subject: 'IELTS' as const,
+    schedule: 'Sun-Fri · 07:00 AM - 08:00 AM',
+    room: 'Room 201',
+    capacity: 25,
+    status: 'ongoing' as const,
+    students: [
+      'Pragya Rai',
+      'Sandesh Lama',
+      'Nima Lopchan',
+      'Prativa Lama',
+      'Rijan Dhahal',
+      'Binu Tamang',
+      'Angela Basnet',
+      'Liza Tamang',
+      'Chorten Dolma Tamang',
+      'Chhedar Dhoke',
+      'Bahadur Gurung',
+      'John Tamang',
+    ],
+  },
+  {
+    id: 'cls-05',
+    name: 'IELTS Class (08:00-09:00 AM)',
+    subject: 'IELTS' as const,
+    schedule: 'Sun-Fri · 08:00 AM - 09:00 AM',
+    room: 'Room 202',
+    capacity: 20,
+    status: 'ongoing' as const,
+    students: [
+      'Kavya Basnet',
+      'Mandira Kharel',
+      'Jibika Sapkota',
+      'Roshan Shah',
+      'Anisha Badal',
+      'Arpana Khadka',
+      'Reesu',
+      'Asmita Tamang',
+      'Sudikhya Kharel',
+    ],
+  },
+  {
+    id: 'cls-06',
+    name: 'IELTS Class (09:00-10:00 AM)',
+    subject: 'IELTS' as const,
+    schedule: 'Sun-Fri · 09:00 AM - 10:00 AM',
+    room: 'Room 203',
+    capacity: 20,
+    status: 'ongoing' as const,
+    students: [
+      'Sangye Khando Lama',
+      'Aakanshya Rana',
+      'Binit Tamang',
+      'Amrit Tamang',
+      'Karuna Balampaki',
+    ],
+  },
 ]
 
-export const classes: ClassSession[] = classSeeds.map(([name, subject, schedule], i) => {
-  const teacher = teachers[0] // EPT Instructor handles all class batches
-  const status: ClassSession['status'] = i < 4 ? 'ongoing' : i < 5 ? 'upcoming' : 'completed'
-  const capacity = randInt(15, 25)
+export const classes: ClassSession[] = REAL_CLASS_DATA.map((c) => {
+  const teacher = teachers[0] // EPT Instructor handles live classes
   return {
-    id: `cls-${pad(i + 1, 2)}`,
-    name,
-    subject,
+    id: c.id,
+    name: c.name,
+    subject: c.subject,
     teacherId: teacher.id,
     teacherName: teacher.name,
-    schedule,
-    startDate: status === 'upcoming' ? daysFromNow(randInt(3, 20)) : daysAgo(randInt(10, 60)),
-    endDate: status === 'completed' ? daysAgo(randInt(1, 8)) : daysFromNow(randInt(20, 70)),
-    room: `Room ${randInt(1, 4)}`,
-    capacity,
-    enrolledCount: status === 'upcoming' ? randInt(4, 12) : randInt(12, capacity),
-    status,
-    nextSessionAt: status === 'ongoing' ? daysFromNow(randInt(0, 3)) : daysFromNow(randInt(3, 20)),
+    schedule: c.schedule,
+    startDate: daysAgo(30),
+    endDate: daysFromNow(60),
+    room: c.room,
+    capacity: c.capacity,
+    enrolledCount: c.students.length,
+    status: c.status,
+    nextSessionAt: daysFromNow(1),
   }
 })
 
-export const enrollments: Enrollment[] = classes.flatMap((cls, classIdx) => {
-  const chunkSize = Math.floor(students.length / classes.length)
-  const startIdx = classIdx * chunkSize
-  const roster = students.slice(startIdx, startIdx + chunkSize)
-  cls.enrolledCount = roster.length
-
-  return roster.map((s, i) => ({
-    id: `enr-${cls.id}-${pad(i + 1, 2)}`,
-    classId: cls.id,
-    studentId: s.id,
-    studentName: s.name,
-    enrolledAt: cls.startDate,
-    progress: cls.status === 'completed' ? randInt(80, 100) : randInt(15, 90),
-    attendancePct: randInt(60, 100),
+export const enrollments: Enrollment[] = REAL_CLASS_DATA.flatMap((c) => {
+  return c.students.map((studentName, i) => ({
+    id: `enr-${c.id}-${pad(i + 1, 2)}`,
+    classId: c.id,
+    studentId: `stu-${c.id}-${i + 1}`,
+    studentName,
+    enrolledAt: daysAgo(20),
+    progress: randInt(45, 95),
+    attendancePct: randInt(75, 100),
   }))
 })
 
-export const attendanceRecords: AttendanceRecord[] = classes
-  .filter((c) => c.status !== 'upcoming')
-  .flatMap((cls) =>
-    Array.from({ length: 5 }).map((_, i) => {
-      const total = cls.enrolledCount
-      const present = randInt(Math.max(1, total - 5), total)
-      return {
-        id: `att-${cls.id}-${i + 1}`,
-        classId: cls.id,
-        className: cls.name,
-        date: daysAgo(i * 3),
-        presentCount: present,
-        absentCount: total - present,
-        totalCount: total,
-      }
-    })
-  )
-
-export const classMaterials: ClassMaterial[] = classes.flatMap((cls, ci) =>
-  [0, 1].map((i) => ({
-    id: `mat-${cls.id}-${i + 1}`,
-    classId: cls.id,
-    title: i === 0 ? `${cls.subject} Practice Set ${ci + 1}` : `${cls.subject} Mock Test ${ci + 1}`,
-    type: (i === 0 ? 'material' : 'assignment') as ClassMaterial['type'],
-    uploadedAt: daysAgo(randInt(1, 20)),
-    dueDate: i === 1 ? daysFromNow(randInt(2, 10)) : undefined,
-  }))
+export const attendanceRecords: AttendanceRecord[] = classes.flatMap((cls) =>
+  Array.from({ length: 5 }).map((_, i) => {
+    const total = cls.enrolledCount
+    const present = Math.max(1, total - randInt(0, 2))
+    return {
+      id: `att-${cls.id}-${i + 1}`,
+      classId: cls.id,
+      className: cls.name,
+      date: daysAgo(i * 2),
+      presentCount: present,
+      absentCount: total - present,
+      totalCount: total,
+    }
+  })
 )
+
+export const classMaterials: ClassMaterial[] = classes.flatMap((cls, ci) => [
+  {
+    id: `mat-${cls.id}-1`,
+    classId: cls.id,
+    title: `${cls.subject} Speaking & Writing Syllabus`,
+    type: 'material' as const,
+    fileName: `${cls.subject}_Syllabus_2025.pdf`,
+    fileSize: 1024,
+    uploadedAt: daysAgo(10),
+  },
+  {
+    id: `mat-${cls.id}-2`,
+    classId: cls.id,
+    title: `${cls.subject} Mock Exam Set ${ci + 1}`,
+    type: 'assignment' as const,
+    fileName: `${cls.subject}_Mock_Test_${ci + 1}.pdf`,
+    fileSize: 2048,
+    uploadedAt: daysAgo(5),
+    dueDate: daysFromNow(5),
+  },
+])
