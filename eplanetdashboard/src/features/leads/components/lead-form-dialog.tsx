@@ -399,7 +399,9 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                   <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/70 bg-muted/20 p-2.5 sm:grid-cols-3">
                     {countries.map((c) => {
                       const isChecked = (field.value ?? []).includes(c.name)
-                      const toggleCountry = () => {
+                      const toggleCountry = (e: React.MouseEvent) => {
+                        e.preventDefault()
+                        e.stopPropagation()
                         const current = field.value ?? []
                         const next = current.includes(c.name)
                           ? current.filter((name: string) => name !== c.name)
@@ -407,10 +409,11 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                         field.onChange(next)
                       }
                       return (
-                        <div
+                        <button
                           key={c.id}
+                          type="button"
                           onClick={toggleCountry}
-                          className={`flex items-center gap-2 rounded-md border p-2 text-xs font-medium cursor-pointer transition-colors select-none ${
+                          className={`flex items-center gap-2 rounded-md border p-2 text-xs font-medium cursor-pointer transition-colors select-none text-left ${
                             isChecked
                               ? 'border-primary bg-primary/10 text-primary font-semibold'
                               : 'border-border/60 bg-background hover:bg-muted/50'
@@ -418,11 +421,10 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                         >
                           <Checkbox
                             checked={isChecked}
-                            onCheckedChange={toggleCountry}
-                            onClick={(e) => e.stopPropagation()}
+                            className="pointer-events-none"
                           />
                           <span className="truncate">{c.flag || '🌐'} {c.name}</span>
-                        </div>
+                        </button>
                       )
                     })}
                   </div>
