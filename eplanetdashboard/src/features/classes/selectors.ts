@@ -1,6 +1,6 @@
 import dayjs from 'dayjs'
 import type { ClassSession, ClassMaterial, Enrollment, AttendanceRecord } from '@/types'
-import { classes, enrollments } from '@/mock'
+import { classes } from '@/mock'
 import type { CurrentUser } from '@/types'
 import { visibleClasses } from '@/lib/data-visibility'
 import { useAttendanceStore } from './attendance-store'
@@ -16,7 +16,7 @@ export function getTeacherClassIds(teacherId: string): Set<string> {
 }
 
 export function getClassEnrollments(classId: string): Enrollment[] {
-  return enrollments.filter((e) => e.classId === classId)
+  return useAttendanceStore.getState().getEnrollmentsForClass(classId)
 }
 
 export function getClassAttendance(classId: string): AttendanceRecord[] {
