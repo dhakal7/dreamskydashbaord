@@ -209,6 +209,7 @@ export default function ClassDetailPage() {
   }
 
   const liveEnrollments = activeLiveClass?.enrollments
+  const storeEnrollments = (getClassEnrollments(cls?.id ?? '').length > 0 ? getClassEnrollments(cls?.id ?? '') : getClassEnrollments(id!))
   const roster = Array.isArray(liveEnrollments) && liveEnrollments.length > 0
     ? liveEnrollments.map((e: any) => ({
         id: e.id,
@@ -219,7 +220,7 @@ export default function ClassDetailPage() {
         attendancePct: 0,
         progress: 75,
       }))
-    : getClassEnrollments(cls?.id ?? '')
+    : storeEnrollments
   const attendance = getClassAttendance(cls?.id ?? '')
   const materials = !isMockMode() && liveContent
     ? liveContent.map((c) => ({
