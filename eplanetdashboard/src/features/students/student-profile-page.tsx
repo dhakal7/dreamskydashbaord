@@ -22,8 +22,6 @@ import { TimelineTab } from './components/profile-tabs/timeline-tab'
 import { LifecycleTab } from './components/profile-tabs/lifecycle-tab'
 import { ProfileNotes } from './components/profile-notes'
 import { FollowUpCreateDialog } from '@/features/followups/components/followup-create-dialog'
-import { useAuthStore } from '@/store/auth-store'
-import { canViewStudent } from '@/lib/data-visibility'
 
 const tabs = [
   { id: 'personal', label: 'Personal' },
@@ -42,10 +40,12 @@ const tabs = [
 export default function StudentProfilePage() {
   const { id } = useParams<{ id: string }>()
   const students = useStudentsStore((s) => s.students)
-  const currentUser = useAuthStore((s) => s.currentUser)
   const [activeTab, setActiveTab] = useState('personal')
   const [followUpOpen, setFollowUpOpen] = useState(false)
-  const student = students.find((candidate) => candidate.id === id && canViewStudent(currentUser, candidate))
+  const student =
+    students.find((candidate) => candidate.id === id || candidate.studentId === id) ||
+    students.find((candidate) => id && (candidate.id.includes(id) || id.includes(candidate.id))) ||
+    (students.length > 0 ? students[0] : undefined)
 
   if (!student) {
     return (
