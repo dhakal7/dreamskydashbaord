@@ -21,14 +21,17 @@ export function ClassAttendanceWidget() {
         : (liveClassesData as any)?.classes || []
 
       return rawList.map((c: any) => {
-        const classEnrollments = (c.enrollments || []).map((e: any) => ({
-          id: e.id,
-          classId: c.id,
-          studentId: e.studentId,
-          studentName: e.student ? `${e.student.firstName || ''} ${e.student.lastName || ''}`.trim() : 'Student',
-          enrolledAt: e.enrolledAt || 'Recently',
-          attendancePct: 85,
-        }))
+        const storeEnrollments = mockEnrollments.filter((e) => e.classId === c.id || e.classId === c.name)
+        const classEnrollments = (Array.isArray(c.enrollments) && c.enrollments.length > 0)
+          ? c.enrollments.map((e: any) => ({
+              id: e.id,
+              classId: c.id,
+              studentId: e.studentId,
+              studentName: e.student ? `${e.student.firstName || ''} ${e.student.lastName || ''}`.trim() : 'Student',
+              enrolledAt: e.enrolledAt || 'Recently',
+              attendancePct: 85,
+            }))
+          : storeEnrollments
         const totalEnrolled = classEnrollments.length || c.capacity || 15
         const avgAttendance = 88
         return {
