@@ -62,6 +62,16 @@ const realStaffUsers = [
         role: "FRONT_DESK",
         status: "ACTIVE",
         branchId: "br-1"
+    },
+    {
+        id: "teacher-1",
+        email: "teacher@dreamsky.internal",
+        firstName: "EPT",
+        lastName: "Instructor",
+        password: "dreamskyteacher@2025",
+        role: "TEACHER",
+        status: "ACTIVE",
+        branchId: "br-1"
     }
 ];
 
