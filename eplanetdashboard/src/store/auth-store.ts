@@ -233,19 +233,11 @@ function getInitialAuthenticated(): boolean {
 
   if (isLoggedOut) return false
 
-  if (isMockMode()) {
-    const hasMockAuth =
-      window.sessionStorage.getItem('dreamsky-authenticated') === 'true' ||
-      (tokenStore.getRemember() && window.localStorage.getItem('dreamsky-authenticated') === 'true')
-    return hasMockAuth
-  }
-
-  const hasToken = !!tokenStore.getAccess()
   const hasAuthFlag =
     window.sessionStorage.getItem('dreamsky-authenticated') === 'true' ||
     window.localStorage.getItem('dreamsky-authenticated') === 'true'
 
-  return hasToken && hasAuthFlag
+  return hasAuthFlag
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -407,32 +399,41 @@ export const useAuthStore = create<AuthState>((set) => ({
   // ── restoreSession (real mode: called once in App.tsx on mount) ────────────
   restoreSession: async () => {
     const token = tokenStore.getAccess()
+    const storedUser = getInitialUser()
+    const isAuth = getInitialAuthenticated()
 
     if (isMockMode()) {
-      const isAuth = getInitialAuthenticated()
       if (isAuth) {
-        set({ currentUser: getInitialUser(), isAuthenticated: true })
+        set({ currentUser: storedUser, isAuthenticated: true })
       } else {
         set({ isAuthenticated: false })
       }
       return
     }
 
-    if (!token) {
-      set({ isAuthenticated: false })
+    if (token) {
+      set({ isLoading: true })
+      try {
+        const user = await api.get<BackendUser>('/auth/me')
+        const currentUser = toCurrentUser(user)
+        localStorage.setItem('dreamsky-user', JSON.stringify(user))
+        localStorage.setItem('dreamsky-authenticated', 'true')
+        set({ currentUser, isAuthenticated: true, isLoading: false })
+        return
+      } catch {
+        if (isAuth && storedUser) {
+          set({ currentUser: storedUser, isAuthenticated: true, isLoading: false })
+          return
+        }
+      }
+    }
+
+    if (isAuth && storedUser) {
+      set({ currentUser: storedUser, isAuthenticated: true, isLoading: false })
       return
     }
 
-    set({ isLoading: true })
-    try {
-      const user = await api.get<BackendUser>('/auth/me')
-      const currentUser = toCurrentUser(user)
-      localStorage.setItem('dreamsky-user', JSON.stringify(user))
-      set({ currentUser, isAuthenticated: true, isLoading: false })
-    } catch {
-      tokenStore.clearAll()
-      set({ isAuthenticated: false, isLoading: false })
-    }
+    set({ isAuthenticated: false, isLoading: false })
   },
 }))
 
