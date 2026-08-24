@@ -136,7 +136,14 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
   }, [open, leadToEdit, reset])
 
   const selectedSource = watch('source')
-  const selectedCountries = watch('interestedCountries') || []
+  const rawWatchedCountries = watch('interestedCountries')
+  const selectedCountries = useMemo(() => {
+    if (Array.isArray(rawWatchedCountries)) return rawWatchedCountries
+    if (typeof rawWatchedCountries === 'string' && rawWatchedCountries) {
+      return (rawWatchedCountries as string).split(',').map((s) => s.trim())
+    }
+    return []
+  }, [rawWatchedCountries])
   const showAgentField = selectedSource === 'referral_agent'
 
   const suggestedAgents = useMemo(() => {
@@ -146,11 +153,16 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
   }, [agentQuery])
 
   function onSubmit(data: FormData) {
-    const selectedCounselors = counselors.filter((c) => data.counselorIds.includes(c.id))
+    const targetCountries = Array.isArray(data.interestedCountries)
+      ? data.interestedCountries
+      : (typeof data.interestedCountries === 'string' && data.interestedCountries
+          ? (data.interestedCountries as string).split(',').map((s) => s.trim())
+          : [])
+    const selectedCounselors = counselors.filter((c) => (data.counselorIds || []).includes(c.id))
     const primaryCounselor = selectedCounselors[0]
     const resolvedAgent = showAgentField ? createReferralAgent(agentQuery) : null
 
-    const primaryCountry = data.interestedCountries.join(', ')
+    const primaryCountry = targetCountries.join(', ')
 
     const assignments = selectedCounselors.map((counselor) => ({
       country: primaryCountry,
