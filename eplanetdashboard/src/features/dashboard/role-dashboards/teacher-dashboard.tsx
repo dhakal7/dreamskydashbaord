@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import dayjs from 'dayjs'
+import { useNavigate } from 'react-router-dom'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
+import { PersonAvatar } from '@/components/ui/avatar'
 import { EmptyState } from '@/components/shared/empty-state'
 import { BookOpen, Clock, ChevronRight } from 'lucide-react'
 import { RoleStatCards } from './shared'
@@ -12,16 +14,8 @@ import { useAuthStore } from '@/store/auth-store'
 import { isMockMode } from '@/lib/api-client'
 import { useMyClasses } from '@/hooks/use-classes'
 
-const statusMeta: Record<string, { label: string; variant: 'success' | 'info' | 'slate' | 'warning' }> = {
-  ongoing: { label: 'Ongoing', variant: 'success' },
-  active: { label: 'Active', variant: 'success' },
-  upcoming: { label: 'Upcoming', variant: 'info' },
-  completed: { label: 'Completed', variant: 'slate' },
-  inactive: { label: 'Inactive', variant: 'slate' },
-  cancelled: { label: 'Cancelled', variant: 'warning' },
-}
-
 export function TeacherDashboard() {
+  const navigate = useNavigate()
   const linkedId = useAuthStore((s) => s.currentUser.linkedId)
   const mockData = getTeacherDashboard(linkedId)
   const { data: liveClasses } = useMyClasses()
@@ -34,11 +28,13 @@ export function TeacherDashboard() {
     const classesMapped = (liveClasses || []).map((c) => ({
       id: c.id,
       name: c.name,
+      subject: c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS'),
       status: (c.status?.toLowerCase() ?? 'ongoing'),
-      schedule: c.schedule ?? 'Sun/Tue/Thu · 10:00 AM',
+      schedule: c.schedule ?? 'Sun-Fri · 07:00 AM - 08:00 AM',
       room: 'Room 101',
       enrolledCount: c.enrollments?.length ?? 0,
-      capacity: c.capacity,
+      capacity: c.capacity || 20,
+      teacherName: useAuthStore.getState().currentUser.name || 'EPT Instructor',
       nextSessionAt: c.startDate ?? c.createdAt,
     }))
 
@@ -68,49 +64,108 @@ export function TeacherDashboard() {
     <div className="space-y-5">
       <PageHeader
         title={`Welcome back, ${(dashboardData.teacher?.name || 'Teacher').split(' ')[0]}`}
-        description="Your classes at a glance."
+        description="Your assigned class batches at a glance."
       />
 
       <RoleStatCards stats={stats} />
 
       <Card>
         <CardHeader>
-          <CardTitle>My Classes</CardTitle>
-          <CardDescription>Click a class to manage attendance and materials</CardDescription>
+          <CardTitle className="text-base font-bold flex items-center gap-2">
+            <BookOpen className="size-4 text-primary" />
+            My Class Batches
+          </CardTitle>
+          <CardDescription>Click any class batch card to manage daily attendance, roster, and materials</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2.5">
-          {dashboardData.classes.length === 0 && (
+        <CardContent>
+          {dashboardData.classes.length === 0 ? (
             <EmptyState icon={BookOpen} title="No classes assigned" className="py-8" />
+          ) : (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {dashboardData.classes.map((classItem) => {
+                const subjectName = (classItem as any).subject || (classItem.name.includes('PTE') ? 'PTE' : 'IELTS')
+                const isIelts = subjectName.toUpperCase() === 'IELTS'
+                const pct = Math.min(100, Math.round((classItem.enrolledCount / classItem.capacity) * 100))
+                const teacherName = (classItem as any).teacherName || dashboardData.teacher?.name || 'EPT Instructor'
+
+                return (
+                  <Card
+                    key={classItem.id}
+                    className="group relative overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/50 cursor-pointer border-border/80"
+                    onClick={() => navigate(`/classes/${classItem.id}`)}
+                  >
+                    <div className="p-4 space-y-3">
+                      {/* Header Tag & Status */}
+                      <div className="flex items-center justify-between">
+                        <Badge
+                          variant="outline"
+                          className={
+                            isIelts
+                              ? 'bg-blue-50 text-blue-700 border-blue-200 font-semibold text-[11px]'
+                              : 'bg-purple-50 text-purple-700 border-purple-200 font-semibold text-[11px]'
+                          }
+                        >
+                          {subjectName} Batch
+                        </Badge>
+                        <Badge variant="outline" className="text-[10px] py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200">
+                          {classItem.status || 'ongoing'}
+                        </Badge>
+                      </div>
+
+                      {/* Class Title & Schedule */}
+                      <div>
+                        <h3 className="font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                          {classItem.name}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <Clock className="size-3.5 text-muted-foreground" />
+                          <span>{classItem.schedule}</span>
+                          <span>·</span>
+                          <span>{classItem.room || 'Room 101'}</span>
+                        </div>
+                      </div>
+
+                      {/* Instructor */}
+                      <div className="flex items-center justify-between pt-1 border-t border-border/50 text-xs">
+                        <div className="flex items-center gap-2">
+                          <PersonAvatar name={teacherName} className="size-6 text-[10px]" />
+                          <span className="text-muted-foreground">Instructor:</span>
+                          <span className="font-medium text-foreground">{teacherName}</span>
+                        </div>
+                      </div>
+
+                      {/* Enrollment Capacity Progress Bar */}
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="text-muted-foreground">Class Capacity</span>
+                          <span className="font-semibold text-foreground">
+                            {classItem.enrolledCount} / {classItem.capacity} Enrolled ({pct}%)
+                          </span>
+                        </div>
+                        <Progress value={pct} className="h-1.5 bg-muted" />
+                      </div>
+
+                      {/* Card Action Footer */}
+                      <div className="flex items-center justify-end pt-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 text-xs gap-1 text-muted-foreground group-hover:text-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            navigate(`/classes/${classItem.id}`)
+                          }}
+                        >
+                          View Details
+                          <ChevronRight className="size-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
           )}
-          {dashboardData.classes.map((classItem) => {
-            const meta = statusMeta[classItem.status] ?? { label: classItem.status || 'Active', variant: 'success' as const }
-            return (
-              <Link
-                key={classItem.id}
-                to={`/classes/${classItem.id}`}
-                className="flex items-center justify-between rounded-lg border border-border/70 p-3 transition-colors hover:bg-accent/50"
-              >
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate text-[13px] font-medium">{classItem.name}</p>
-                    <Badge variant={meta.variant} className="shrink-0 text-[10px] py-0">
-                      {meta.label}
-                    </Badge>
-                  </div>
-                  <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>{classItem.schedule} · {classItem.room}</span>
-                    <span>{classItem.enrolledCount}/{classItem.capacity} enrolled</span>
-                    {classItem.status !== 'completed' && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="size-3" /> {dayjs(classItem.nextSessionAt).format('MMM D, h:mm A')}
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-              </Link>
-            )
-          })}
         </CardContent>
       </Card>
     </div>
