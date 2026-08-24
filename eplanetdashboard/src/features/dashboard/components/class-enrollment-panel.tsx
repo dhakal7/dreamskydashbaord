@@ -45,18 +45,25 @@ export function ClassEnrollmentPanel() {
         ? liveClassesData
         : (liveClassesData as any)?.classes || []
 
-      return rawList.map((c: any) => ({
-        id: c.id,
-        name: c.name,
-        subject: c.subject || 'IELTS',
-        teacherName: c.teacher
-          ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
-          : 'Assigned Instructor',
-        schedule: typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Mon-Fri (Morning)',
-        capacity: c.capacity || 25,
-        enrolledCount: c.enrollments?.length || 0,
-        status: c.status || 'Active',
-      }))
+      return rawList.map((c: any) => {
+        const storeCount = mockEnroll.filter((e) => e.classId === c.id || e.classId === c.name).length
+        const enrolledCount = (Array.isArray(c.enrollments) && c.enrollments.length > 0)
+          ? c.enrollments.length
+          : storeCount
+
+        return {
+          id: c.id,
+          name: c.name,
+          subject: c.subject || 'IELTS',
+          teacherName: c.teacher
+            ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
+            : 'Assigned Instructor',
+          schedule: typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Mon-Fri (Morning)',
+          capacity: c.capacity || 25,
+          enrolledCount,
+          status: c.status || 'Active',
+        }
+      })
     }
     return (mockClasses as ClassSession[]).map((c) => {
       const count = mockEnroll.filter((e) => e.classId === c.id).length

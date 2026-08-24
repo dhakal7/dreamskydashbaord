@@ -26,7 +26,7 @@ interface UsersState {
 }
 
 export const useUsersStore = create<UsersState>((set) => ({
-  users: isMockMode() ? [...userAccounts] : [],
+  users: [...userAccounts],
 
   fetchUsers: async () => {
     if (isMockMode()) {

@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { toast } from 'sonner'
 import type { Application, ApplicationStage } from '@/types'
 import { applications as seedApplications } from '@/mock'
-import { isMockMode } from '@/lib/api-client'
+
 import { applicationStageMeta } from '@/components/shared/status-badges'
 
 interface ApplicationsState {
@@ -12,7 +12,7 @@ interface ApplicationsState {
 }
 
 export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
-  applications: isMockMode() ? seedApplications : [],
+  applications: seedApplications,
   moveApplication: (id, stage) =>
     set((state) => {
       const app = state.applications.find((a) => a.id === id)
