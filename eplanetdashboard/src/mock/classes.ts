@@ -1,7 +1,7 @@
 import type { AttendanceRecord, ClassMaterial, ClassSession, Enrollment } from '@/types'
 import { teachers } from './staff'
 import { students } from './entities'
-import { daysAgo, daysFromNow, pad, pickMany, randInt } from './generators'
+import { daysAgo, daysFromNow, pad, randInt } from './generators'
 
 const classSeeds: Array<[string, ClassSession['subject'], string]> = [
   ['IELTS Morning Batch A', 'IELTS', 'Sun/Tue/Thu · 7:00 AM'],
@@ -33,8 +33,12 @@ export const classes: ClassSession[] = classSeeds.map(([name, subject, schedule]
   }
 })
 
-export const enrollments: Enrollment[] = classes.flatMap((cls) => {
-  const roster = pickMany(students, Math.min(cls.enrolledCount, students.length))
+export const enrollments: Enrollment[] = classes.flatMap((cls, classIdx) => {
+  const chunkSize = Math.floor(students.length / classes.length)
+  const startIdx = classIdx * chunkSize
+  const roster = students.slice(startIdx, startIdx + chunkSize)
+  cls.enrolledCount = roster.length
+
   return roster.map((s, i) => ({
     id: `enr-${cls.id}-${pad(i + 1, 2)}`,
     classId: cls.id,
