@@ -141,6 +141,7 @@ export function FeeManagementPanel() {
 
   // Edit Modal State
   const [editRecord, setEditRecord] = useState<StudentFeeRecord | null>(null)
+  const [newTotalAmount, setNewTotalAmount] = useState<number>(0)
   const [newPaidAmount, setNewPaidAmount] = useState<number>(0)
   const [newStatus, setNewStatus] = useState<FeePaymentStatus>('FULL_PAID')
   const [updateNotes, setUpdateNotes] = useState('')
@@ -167,6 +168,7 @@ export function FeeManagementPanel() {
     try {
       const res = await api.get<any>('/students?limit=500')
       let list: any[] = []
+
       if (Array.isArray(res.data)) {
         list = res.data
       } else if (res.data && Array.isArray(res.data.students)) {
@@ -222,6 +224,7 @@ export function FeeManagementPanel() {
   // Open Edit Modal
   function handleOpenUpdateModal(record: StudentFeeRecord) {
     setEditRecord(record)
+    setNewTotalAmount(record.totalAmount)
     setNewPaidAmount(record.paidAmount)
     setNewStatus(record.status)
     setUpdateNotes(record.notes || '')
@@ -230,12 +233,12 @@ export function FeeManagementPanel() {
   // Handle Fee Status Update
   async function handleSaveFeeStatus() {
     if (!editRecord) return
-    const total = editRecord.totalAmount
+    const total = Math.max(0, Number(newTotalAmount))
     const paid = Math.min(Math.max(0, Number(newPaidAmount)), total)
     const due = Math.max(0, total - paid)
 
     let finalStatus: FeePaymentStatus = newStatus
-    if (paid >= total) {
+    if (paid >= total && total > 0) {
       finalStatus = 'FULL_PAID'
     } else if (paid > 0 && paid < total) {
       finalStatus = 'DUE'
@@ -244,9 +247,10 @@ export function FeeManagementPanel() {
     }
 
     try {
-      await api.post(`/payments/${editRecord.id}/transactions`, {
-        amount: paid - editRecord.paidAmount,
-        paymentMethod: 'CASH',
+      await api.patch(`/payments/${editRecord.id}`, {
+        totalAmount: total,
+        paidAmount: paid,
+        status: finalStatus,
         notes: updateNotes,
       })
     } catch {
@@ -258,6 +262,7 @@ export function FeeManagementPanel() {
         f.id === editRecord.id
           ? {
               ...f,
+              totalAmount: total,
               paidAmount: paid,
               dueAmount: due,
               status: finalStatus,
@@ -705,26 +710,34 @@ export function FeeManagementPanel() {
                   <strong>Fee Category:</strong> {editRecord.feeCategory}
                 </p>
                 <p>
-                  <strong>Total Fee Amount:</strong> {editRecord.currency} {editRecord.totalAmount.toLocaleString()}
-                </p>
-                <p>
-                  <strong>Current Paid:</strong> {editRecord.currency} {editRecord.paidAmount.toLocaleString()}
+                  <strong>Student Email:</strong> {editRecord.studentEmail}
                 </p>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold">Amount Paid ({editRecord.currency})</label>
-                <Input
-                  type="number"
-                  value={newPaidAmount}
-                  onChange={(e) => setNewPaidAmount(Number(e.target.value))}
-                  className="h-9 text-sm font-semibold"
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Remaining Due: {editRecord.currency}{' '}
-                  {Math.max(0, editRecord.totalAmount - Number(newPaidAmount)).toLocaleString()}
-                </p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold">Total Fee Amount ({editRecord.currency})</label>
+                  <Input
+                    type="number"
+                    value={newTotalAmount}
+                    onChange={(e) => setNewTotalAmount(Number(e.target.value))}
+                    className="h-9 text-xs font-semibold"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold">Amount Paid ({editRecord.currency})</label>
+                  <Input
+                    type="number"
+                    value={newPaidAmount}
+                    onChange={(e) => setNewPaidAmount(Number(e.target.value))}
+                    className="h-9 text-xs font-semibold text-emerald-600"
+                  />
+                </div>
               </div>
+              <p className="text-[11px] font-medium text-amber-600">
+                Remaining Due: {editRecord.currency}{' '}
+                {Math.max(0, Number(newTotalAmount) - Number(newPaidAmount)).toLocaleString()}
+              </p>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold">Payment Status Override</label>
