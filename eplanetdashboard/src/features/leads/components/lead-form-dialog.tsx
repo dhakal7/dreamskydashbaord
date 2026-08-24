@@ -2,12 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { UserPlus, AlertTriangle } from 'lucide-react'
+import { UserPlus, AlertTriangle, Check } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -438,9 +437,8 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                           field.onChange(next)
                         }
                         return (
-                          <button
+                          <div
                             key={c.id}
-                            type="button"
                             onClick={toggleCountry}
                             className={`flex items-center gap-2 rounded-md border p-2 text-xs font-medium cursor-pointer transition-colors select-none text-left ${
                               isChecked
@@ -448,12 +446,13 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                                 : 'border-border/60 bg-background hover:bg-muted/50'
                             }`}
                           >
-                            <Checkbox
-                              checked={isChecked}
-                              className="pointer-events-none"
-                            />
+                            <div className={`flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors ${
+                              isChecked ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background'
+                            }`}>
+                              {isChecked && <Check className="size-3" />}
+                            </div>
                             <span className="truncate">{c.flag || '🌐'} {c.name}</span>
-                          </button>
+                          </div>
                         )
                       })}
                     </div>
@@ -531,18 +530,18 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                             field.onChange(next)
                           }
                           return (
-                            <button
+                            <div
                               key={c.id}
-                              type="button"
                               onClick={toggleCounselor}
-                              className="flex w-full items-center justify-between gap-3 rounded-md border border-transparent px-2 py-1.5 hover:border-border/70 hover:bg-background/80 text-left cursor-pointer"
+                              className="flex w-full items-center justify-between gap-3 rounded-md border border-transparent px-2 py-1.5 hover:border-border/70 hover:bg-background/80 text-left cursor-pointer select-none"
                             >
                               <span className="text-sm font-medium">{c.name}</span>
-                              <Checkbox
-                                checked={checked}
-                                className="pointer-events-none"
-                              />
-                            </button>
+                              <div className={`flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors ${
+                                checked ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background'
+                              }`}>
+                                {checked && <Check className="size-3" />}
+                              </div>
+                            </div>
                           )
                         })}
                       </div>
