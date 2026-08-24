@@ -13,6 +13,7 @@ import { getTeacherDashboard } from '../role-selectors'
 import { useAuthStore } from '@/store/auth-store'
 import { isMockMode } from '@/lib/api-client'
 import { useMyClasses } from '@/hooks/use-classes'
+import { enrollments as mockEnroll } from '@/mock/classes'
 
 export function TeacherDashboard() {
   const navigate = useNavigate()
@@ -25,18 +26,25 @@ export function TeacherDashboard() {
       return mockData
     }
 
-    const classesMapped = (liveClasses || []).map((c) => ({
-      id: c.id,
-      name: c.name,
-      subject: c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS'),
-      status: (c.status?.toLowerCase() ?? 'ongoing'),
-      schedule: c.schedule ?? 'Sun-Fri · 07:00 AM - 08:00 AM',
-      room: 'Room 101',
-      enrolledCount: c.enrollments?.length ?? 0,
-      capacity: c.capacity || 20,
-      teacherName: useAuthStore.getState().currentUser.name || 'EPT Instructor',
-      nextSessionAt: c.startDate ?? c.createdAt,
-    }))
+    const classesMapped = (liveClasses || []).map((c) => {
+      const storeCount = mockEnroll.filter((e) => e.classId === c.id || e.classId === c.name).length
+      const enrolledCount = (Array.isArray(c.enrollments) && c.enrollments.length > 0)
+        ? c.enrollments.length
+        : storeCount
+
+      return {
+        id: c.id,
+        name: c.name,
+        subject: c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS'),
+        status: (c.status?.toLowerCase() ?? 'ongoing'),
+        schedule: c.schedule ?? 'Sun-Fri · 07:00 AM - 08:00 AM',
+        room: 'Room 101',
+        enrolledCount,
+        capacity: c.capacity || 20,
+        teacherName: useAuthStore.getState().currentUser.name || 'EPT Instructor',
+        nextSessionAt: c.startDate ?? c.createdAt,
+      }
+    })
 
     const ongoingCount = classesMapped.filter((c) => c.status === 'ongoing' || c.status === 'active').length
     const upcomingCount = classesMapped.filter((c) => c.status === 'upcoming').length

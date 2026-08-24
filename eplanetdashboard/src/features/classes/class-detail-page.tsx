@@ -56,6 +56,7 @@ export default function ClassDetailPage() {
   const activeLiveClass = liveClass || liveClassFromList
 
   // Build the class object: live takes priority, fall back to mock
+  const fallbackEnrollCount = getClassEnrollments(id!).length || mockCls?.enrolledCount || 0
   const cls = activeLiveClass
     ? {
         id: activeLiveClass.id,
@@ -70,7 +71,9 @@ export default function ClassDetailPage() {
         startDate: activeLiveClass.startDate ?? activeLiveClass.createdAt,
         endDate: activeLiveClass.endDate ?? activeLiveClass.createdAt,
         capacity: activeLiveClass.capacity || 20,
-        enrolledCount: activeLiveClass.enrollments?.length ?? (mockCls?.enrolledCount || 10),
+        enrolledCount: (Array.isArray(activeLiveClass.enrollments) && activeLiveClass.enrollments.length > 0)
+          ? activeLiveClass.enrollments.length
+          : fallbackEnrollCount,
         status: (activeLiveClass.status?.toLowerCase() ?? 'ongoing') as any,
         nextSessionAt: activeLiveClass.startDate ?? activeLiveClass.createdAt,
       }

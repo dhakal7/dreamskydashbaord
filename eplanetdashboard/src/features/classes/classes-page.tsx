@@ -125,7 +125,10 @@ export default function ClassesPage() {
         return rawList.map((c: any) => {
           const subject = c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS')
           const schedule = typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Morning Batch'
-          const enrolledCount = c.enrollments?.length ?? 0
+          const storeCount = mockEnroll.filter((e) => e.classId === c.id || e.classId === c.name).length
+          const enrolledCount = (Array.isArray(c.enrollments) && c.enrollments.length > 0)
+            ? c.enrollments.length
+            : storeCount
 
           return {
             id: c.id,
