@@ -201,6 +201,42 @@ class PaymentService {
 
     return this.getPaymentById(paymentId);
   }
+
+  async updatePayment({ id, totalAmount, paidAmount, status, notes }) {
+    const payment = await prisma.payment.findUnique({ where: { id } });
+    if (!payment) throw new Error('Payment record not found');
+
+    const updateData = {};
+    if (totalAmount !== undefined) updateData.totalAmount = Number(totalAmount);
+    if (status !== undefined) {
+      if (status === 'FULL_PAID') updateData.status = 'COMPLETED';
+      else if (status === 'DUE') updateData.status = 'PARTIAL';
+      else if (status === 'UNPAID') updateData.status = 'PENDING';
+      else updateData.status = status;
+    }
+    if (notes !== undefined) updateData.notes = notes;
+
+    await prisma.payment.update({
+      where: { id },
+      data: updateData,
+    });
+
+    if (paidAmount !== undefined && Number(paidAmount) !== (payment.paidAmount || 0)) {
+      const diff = Number(paidAmount) - (payment.paidAmount || 0);
+      if (diff > 0) {
+        await prisma.transaction.create({
+          data: {
+            paymentId: id,
+            amount: diff,
+            method: 'CASH',
+            notes: notes || 'Updated via reception desk',
+          },
+        }).catch(() => {});
+      }
+    }
+
+    return this.getPaymentById(id);
+  }
 }
 
 module.exports = new PaymentService();

@@ -76,6 +76,25 @@ class PaymentController {
       res.status(500).json({ success: false, message: err.message });
     }
   }
+
+  async updatePayment(req, res) {
+    try {
+      const { id } = req.params;
+      const { totalAmount, paidAmount, status, notes } = req.body;
+
+      const updated = await paymentService.updatePayment({
+        id,
+        totalAmount,
+        paidAmount,
+        status,
+        notes,
+      });
+
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  }
 }
 
 module.exports = new PaymentController();

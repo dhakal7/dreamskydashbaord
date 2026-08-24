@@ -5,6 +5,7 @@ const { authenticate } = require('../middlewares/auth.middleware');
 
 router.get('/', authenticate, (req, res) => paymentController.listPayments(req, res));
 router.post('/', authenticate, (req, res) => paymentController.createPayment(req, res));
+router.patch('/:id', authenticate, (req, res) => paymentController.updatePayment(req, res));
 router.post('/:id/transactions', authenticate, (req, res) => paymentController.addTransaction(req, res));
 router.post('/:id/remind', authenticate, (req, res) => paymentController.sendPaymentReminder(req, res));
 
