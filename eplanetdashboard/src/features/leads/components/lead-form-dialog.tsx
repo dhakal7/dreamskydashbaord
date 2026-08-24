@@ -408,40 +408,45 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
               <Controller
                 name="interestedCountries"
                 control={control}
-                render={({ field }) => (
-                  <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/70 bg-muted/20 p-2.5 sm:grid-cols-3">
-                    {countries.map((c) => {
-                      const isChecked = (field.value ?? []).includes(c.name)
-                      const toggleCountry = (e: React.MouseEvent) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        const current = field.value ?? []
-                        const next = current.includes(c.name)
-                          ? current.filter((name: string) => name !== c.name)
-                          : [...current, c.name]
-                        field.onChange(next)
-                      }
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={toggleCountry}
-                          className={`flex items-center gap-2 rounded-md border p-2 text-xs font-medium cursor-pointer transition-colors select-none text-left ${
-                            isChecked
-                              ? 'border-primary bg-primary/10 text-primary font-semibold'
-                              : 'border-border/60 bg-background hover:bg-muted/50'
-                          }`}
-                        >
-                          <Checkbox
-                            checked={isChecked}
-                            className="pointer-events-none"
-                          />
-                          <span className="truncate">{c.flag || '🌐'} {c.name}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
+                render={({ field }) => {
+                  const currentValues = Array.isArray(field.value)
+                    ? field.value
+                    : (typeof field.value === 'string' && field.value ? (field.value as string).split(',').map((s) => s.trim()) : [])
+
+                  return (
+                    <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/70 bg-muted/20 p-2.5 sm:grid-cols-3">
+                      {countries.map((c) => {
+                        const isChecked = currentValues.includes(c.name)
+                        const toggleCountry = (e: React.MouseEvent) => {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          const next = isChecked
+                            ? currentValues.filter((name: string) => name !== c.name)
+                            : [...currentValues, c.name]
+                          field.onChange(next)
+                        }
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={toggleCountry}
+                            className={`flex items-center gap-2 rounded-md border p-2 text-xs font-medium cursor-pointer transition-colors select-none text-left ${
+                              isChecked
+                                ? 'border-primary bg-primary/10 text-primary font-semibold'
+                                : 'border-border/60 bg-background hover:bg-muted/50'
+                            }`}
+                          >
+                            <Checkbox
+                              checked={isChecked}
+                              className="pointer-events-none"
+                            />
+                            <span className="truncate">{c.flag || '🌐'} {c.name}</span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )
+                }}
               />
               {errors.interestedCountries && (
                 <p className="text-[11px] text-danger-600 flex items-center gap-1">
@@ -495,32 +500,43 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
               <Controller
                 name="counselorIds"
                 control={control}
-                render={({ field }) => (
-                  <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
-                    <p className="mb-2 text-[11px] text-muted-foreground">
-                      Select one or more counselors for {selectedCountries.length > 0 ? selectedCountries.join(', ') : 'the selected countries'}.
-                    </p>
-                    <div className="space-y-2">
-                      {counselors.map((c) => {
-                        const checked = (field.value ?? []).includes(c.id)
-                        return (
-                          <label key={c.id} className="flex items-center justify-between gap-3 rounded-md border border-transparent px-2 py-1.5 hover:border-border/70 hover:bg-background/80">
-                            <span className="text-sm font-medium">{c.name}</span>
-                            <Checkbox
-                              checked={checked}
-                              onCheckedChange={(value) => {
-                                const next = value
-                                  ? [...(field.value ?? []), c.id]
-                                  : (field.value ?? []).filter((id: string) => id !== c.id)
-                                field.onChange(next)
-                              }}
-                            />
-                          </label>
-                        )
-                      })}
+                render={({ field }) => {
+                  const currentCounselors = Array.isArray(field.value) ? field.value : []
+                  return (
+                    <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
+                      <p className="mb-2 text-[11px] text-muted-foreground">
+                        Select one or more counselors for {selectedCountries.length > 0 ? selectedCountries.join(', ') : 'the selected countries'}.
+                      </p>
+                      <div className="space-y-2">
+                        {counselors.map((c) => {
+                          const checked = currentCounselors.includes(c.id)
+                          const toggleCounselor = (e: React.MouseEvent) => {
+                            e.preventDefault()
+                            e.stopPropagation()
+                            const next = checked
+                              ? currentCounselors.filter((id: string) => id !== c.id)
+                              : [...currentCounselors, c.id]
+                            field.onChange(next)
+                          }
+                          return (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={toggleCounselor}
+                              className="flex w-full items-center justify-between gap-3 rounded-md border border-transparent px-2 py-1.5 hover:border-border/70 hover:bg-background/80 text-left cursor-pointer"
+                            >
+                              <span className="text-sm font-medium">{c.name}</span>
+                              <Checkbox
+                                checked={checked}
+                                className="pointer-events-none"
+                              />
+                            </button>
+                          )
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )
+                }}
               />
               {errors.counselorIds && (
                 <p className="text-[11px] text-danger-600 flex items-center gap-1">
