@@ -48,6 +48,17 @@ const priorityLabels: Record<Priority, string> = {
   low: 'Low', medium: 'Medium', high: 'High', urgent: 'Urgent',
 }
 
+const DEFAULT_TARGET_COUNTRIES = [
+  { id: 'c-au', name: 'Australia', flag: '🇦🇺' },
+  { id: 'c-uk', name: 'United Kingdom', flag: '🇬🇧' },
+  { id: 'c-ca', name: 'Canada', flag: '🇨🇦' },
+  { id: 'c-us', name: 'United States', flag: '🇺🇸' },
+  { id: 'c-nz', name: 'New Zealand', flag: '🇳🇿' },
+  { id: 'c-jp', name: 'Japan', flag: '🇯🇵' },
+  { id: 'c-de', name: 'Germany', flag: '🇩🇪' },
+  { id: 'c-ma', name: 'Malta', flag: '🇲🇹' },
+]
+
 // ── Props ─────────────────────────────────────────────────────────────────────
 
 interface LeadFormDialogProps {
@@ -60,7 +71,9 @@ interface LeadFormDialogProps {
 
 export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialogProps) {
   const storeCountries = useCountriesStore((s) => s.countries)
-  const countries = storeCountries && storeCountries.length > 0 ? storeCountries : seedCountries
+  const countries = (storeCountries && storeCountries.length > 0)
+    ? storeCountries
+    : (seedCountries && seedCountries.length > 0 ? seedCountries : DEFAULT_TARGET_COUNTRIES)
   const addLead = useLeadsStore((s) => s.addLead)
   const updateLead = useLeadsStore((s) => s.updateLead)
   const createLiveLead = useCreateLiveLead()
