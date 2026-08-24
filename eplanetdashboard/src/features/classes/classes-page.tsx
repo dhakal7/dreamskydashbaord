@@ -330,16 +330,18 @@ export default function ClassesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            className="gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs h-9"
-            onClick={() => handleOpenAdmitModal(formattedClasses[0]?.id || '')}
-          >
-            <UserPlus className="size-4" />
-            + Admit Student to Class
-          </Button>
-        </div>
+        {role !== 'teacher' && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs h-9"
+              onClick={() => handleOpenAdmitModal(formattedClasses[0]?.id || '')}
+            >
+              <UserPlus className="size-4" />
+              + Admit Student to Class
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Search & Subject Filter Bar */}
@@ -437,18 +439,20 @@ export default function ClassesPage() {
                     <span className="font-medium text-foreground">{c.teacherName}</span>
                   </div>
 
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 text-[10px] gap-1 text-primary hover:bg-primary/10 px-2"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleOpenEditModal(c)
-                    }}
-                  >
-                    <UserCheck className="size-3" />
-                    Assign
-                  </Button>
+                  {role !== 'teacher' && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-[10px] gap-1 text-primary hover:bg-primary/10 px-2"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleOpenEditModal(c)
+                      }}
+                    >
+                      <UserCheck className="size-3" />
+                      Assign
+                    </Button>
+                  )}
                 </div>
 
                 {/* Enrollment Progress Bar */}
@@ -463,19 +467,21 @@ export default function ClassesPage() {
                 </div>
 
                 {/* Card Action Footer */}
-                <div className="flex items-center justify-between pt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleOpenAdmitModal(c.id)
-                    }}
-                  >
-                    <UserPlus className="size-3.5" />
-                    + Admit Student
-                  </Button>
+                <div className="flex items-center justify-end pt-2">
+                  {role !== 'teacher' && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10 mr-auto"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleOpenAdmitModal(c.id)
+                      }}
+                    >
+                      <UserPlus className="size-3.5" />
+                      + Admit Student
+                    </Button>
+                  )}
 
                   <Button
                     size="sm"
