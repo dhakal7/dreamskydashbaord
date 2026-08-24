@@ -47,13 +47,18 @@ export default function ClassDetailPage() {
   const { data: liveContent } = useClassContent(id!)
   const { data: allClassesData } = useClasses()
 
-  const mockCls = mockAllClasses.find((c) => c.id === id)
-
   const liveClassFromList = Array.isArray(allClassesData)
     ? (allClassesData as any).find((c: any) => c.id === id)
     : (allClassesData as any)?.classes?.find((c: any) => c.id === id)
 
   const activeLiveClass = liveClass || liveClassFromList
+
+  const mockCls =
+    mockAllClasses.find((c) => c.id === id) ||
+    (activeLiveClass?.name
+      ? mockAllClasses.find((c) => c.name.toLowerCase().trim() === activeLiveClass.name.toLowerCase().trim())
+      : undefined) ||
+    mockAllClasses[0]
 
   // Build the class object: live takes priority, fall back to mock
   const fallbackEnrollCount = getClassEnrollments(id!).length || mockCls?.enrolledCount || 0
