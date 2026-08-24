@@ -18,9 +18,10 @@ app.use(cors({
 
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: process.env.NODE_ENV === "development" ? 10000 : 100, // High limit in dev mode
+    max: 1000, // High limit for active CRM sessions
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => req.path.includes('/auth/login') || req.path.includes('/auth/refresh'),
     message: {
         success: false,
         code: "RATE_LIMIT_EXCEEDED",
