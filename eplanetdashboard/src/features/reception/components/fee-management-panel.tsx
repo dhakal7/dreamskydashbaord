@@ -102,7 +102,16 @@ const REAL_EXCEL_FEES: StudentFeeRecord[] = [
 
 export function FeeManagementPanel() {
   const storeStudents = useStudentsStore((s) => s.students)
-  const [fees, setFees] = useState<StudentFeeRecord[]>(REAL_EXCEL_FEES)
+  const [fees, setFees] = useState<StudentFeeRecord[]>(() => {
+    try {
+      const saved = localStorage.getItem('dreamsky-fee-records')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {}
+    return REAL_EXCEL_FEES
+  })
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | FeePaymentStatus>('ALL')
 
@@ -157,9 +166,12 @@ export function FeeManagementPanel() {
       const res = await api.get<{ data: StudentFeeRecord[] }>('/payments')
       if (res.data && Array.isArray(res.data) && res.data.length > 0) {
         setFees(res.data)
+        try {
+          localStorage.setItem('dreamsky-fee-records', JSON.stringify(res.data))
+        } catch {}
       }
     } catch {
-      // Fallback to real Excel payments
+      // Fallback to local persisted storage or real Excel payments
     }
   }
 
@@ -257,8 +269,8 @@ export function FeeManagementPanel() {
       // Local fallback
     }
 
-    setFees((prev) =>
-      prev.map((f) =>
+    setFees((prev) => {
+      const updated = prev.map((f) =>
         f.id === editRecord.id
           ? {
               ...f,
@@ -271,7 +283,11 @@ export function FeeManagementPanel() {
             }
           : f
       )
-    )
+      try {
+        localStorage.setItem('dreamsky-fee-records', JSON.stringify(updated))
+      } catch {}
+      return updated
+    })
 
     toast.success(`Fee record updated for ${editRecord.studentName}`)
     setEditRecord(null)
@@ -302,7 +318,13 @@ export function FeeManagementPanel() {
       })
 
       if (res.data) {
-        setFees((prev) => [res.data, ...prev])
+        setFees((prev) => {
+          const updated = [res.data, ...prev]
+          try {
+            localStorage.setItem('dreamsky-fee-records', JSON.stringify(updated))
+          } catch {}
+          return updated
+        })
       } else {
         throw new Error('Fallback create')
       }
@@ -327,7 +349,13 @@ export function FeeManagementPanel() {
         dueDate: dayjs().add(15, 'days').format('YYYY-MM-DD'),
         notes: notesInput,
       }
-      setFees((prev) => [newRecord, ...prev])
+      setFees((prev) => {
+        const updated = [newRecord, ...prev]
+        try {
+          localStorage.setItem('dreamsky-fee-records', JSON.stringify(updated))
+        } catch {}
+        return updated
+      })
     } finally {
       setIsSubmittingCreate(false)
       setIsCreateOpen(false)
