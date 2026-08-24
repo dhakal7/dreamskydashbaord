@@ -53,64 +53,7 @@ interface RosterStudent {
   stage: string
 }
 
-// 49 Real Enrolled Student Records from Excel EPT Student records.xlsx
-const EXCEL_CLASS_ROSTER_MAP: Record<string, Array<{ name: string; phone: string; date: string }>> = {
-  'PTE_09:00-10:00 AM': [
-    { name: 'Sushma Pudasaini', phone: '9863811046', date: '2026-04-27' },
-    { name: 'Rajiv Khadka', phone: '9860551668', date: '2026-05-20' },
-    { name: 'Ronak Shrestha', phone: '9762344939', date: '2026-05-25' },
-    { name: 'Urgen Sonam Sherpa', phone: '9767564069', date: '2026-06-03' },
-    { name: 'Prajwol Bishwokarma', phone: '9815937637', date: '2026-06-03' },
-    { name: 'Siddhant Rai', phone: '986907606', date: '2026-06-09' },
-    { name: 'Upasana Rai', phone: '9843151440', date: '2026-07-09' },
-    { name: 'Sonam Lama', phone: '9849504489', date: '2026-07-09' },
-    { name: 'Pralad Lama', phone: '9843546963', date: '2026-07-12' },
-    { name: 'Prayush Lama', phone: '9818930197', date: '2026-07-20' },
-  ],
-  'PTE_08:00-09:00 AM': [
-    { name: 'Jenisha Bishwokarma', phone: '9825023502', date: '2026-04-30' },
-    { name: 'Puja Tamang', phone: '9806393765', date: '2026-05-01' },
-    { name: 'Sana Shrestha', phone: '9810331992', date: '2026-06-25' },
-    { name: 'Manish Thakur', phone: '9709863879', date: '2026-06-26' },
-    { name: 'Sarita Tamang', phone: '9745307339', date: '2026-07-13' },
-    { name: 'Dawa Sangmu Rokaya', phone: '9767878755', date: '2026-07-15' },
-  ],
-  'PTE_07:00-08:00 AM': [
-    { name: 'Alisha Kafle', phone: '9863832280', date: '2026-08-14' },
-  ],
-  'IELTS_07:00-08:00 AM': [
-    { name: 'Pragya Rai', phone: '9767987766', date: '2026-05-25' },
-    { name: 'Sandesh Lama', phone: '9865209195', date: '2026-06-29' },
-    { name: 'Nima Lopchan', phone: '9702776579', date: '2026-06-29' },
-    { name: 'Prativa Lama', phone: '9845062130', date: '2026-05-21' },
-    { name: 'Rijan Dhahal', phone: '9818613193', date: '2026-06-29' },
-    { name: 'Binu Tamang', phone: '9828214779', date: '2026-06-29' },
-    { name: 'Angela Basnet', phone: '9761674669', date: '2026-07-12' },
-    { name: 'Liza Tamang', phone: '9714272321', date: '2026-07-09' },
-    { name: 'Chorten Dolma Tamang', phone: '9769827948', date: '2026-07-12' },
-    { name: 'Chhedar Dhoke', phone: '9764779234', date: '2026-07-22' },
-    { name: 'Bahadur Gurung', phone: '9707560808', date: '2026-08-10' },
-    { name: 'John Tamang', phone: '9706129373', date: '2026-08-10' },
-  ],
-  'IELTS_08:00-09:00 AM': [
-    { name: 'Kavya Basnet', phone: '9768439280', date: '2026-05-01' },
-    { name: 'Mandira Kharel', phone: '9828864301', date: '2026-05-01' },
-    { name: 'Jibika Sapkota', phone: '9865131310', date: '2026-06-07' },
-    { name: 'Roshan Shah', phone: '9818185661', date: '2026-06-08' },
-    { name: 'Anisha Badal', phone: '9768389114', date: '2026-06-18' },
-    { name: 'Arpana Khadka', phone: '9745673443', date: '2026-06-25' },
-    { name: 'Reesu', phone: '9816438125', date: '2026-06-26' },
-    { name: 'Asmita Tamang', phone: '9810112060', date: '2026-06-29' },
-    { name: 'Sudikhya Kharel', phone: '9860023405', date: '2026-08-16' },
-  ],
-  'IELTS_09:00-10:00 AM': [
-    { name: 'Sangye Khando Lama', phone: '9763906389', date: '2026-05-25' },
-    { name: 'Aakanshya Rana', phone: '9819184075', date: '2026-06-08' },
-    { name: 'Binit Tamang', phone: '9813069109', date: '2026-07-19' },
-    { name: 'Amrit Tamang', phone: '9803863309', date: '2026-07-19' },
-    { name: 'Karuna Balampaki', phone: '9810752114', date: '2026-08-20' },
-  ],
-}
+
 
 export default function ClassesPage() {
   const role = useAuthStore((s) => s.currentUser?.role ?? 'front_desk')
@@ -177,54 +120,46 @@ export default function ClassesPage() {
         : (liveClassesData as any)?.classes || []
 
       if (rawList.length > 0) {
-        return rawList
-          .filter((c: any) => !c.name?.toLowerCase().includes('not joined'))
-          .map((c: any) => {
-            const subject = c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS')
-            const schedule = typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Morning Batch'
-            const key = `${subject}_${schedule}`
-            const fallbackList = EXCEL_CLASS_ROSTER_MAP[key] || []
-            const enrolledCount = c.enrollments?.length || fallbackList.length || 10
+        return rawList.map((c: any) => {
+          const subject = c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS')
+          const schedule = typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Morning Batch'
+          const enrolledCount = c.enrollments?.length ?? 0
 
-            return {
-              id: c.id,
-              name: c.name,
-              subject,
-              teacherId: c.teacherId,
-              teacherName: c.teacher
-                ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
-                : 'EPT Instructor',
-              schedule,
-              room: 'Room 101',
-              capacity: c.capacity || 20,
-              enrolledCount,
-              status: c.status || 'Ongoing',
-              startDate: c.startDate || c.createdAt,
-            }
-          })
+          return {
+            id: c.id,
+            name: c.name,
+            subject,
+            teacherId: c.teacherId,
+            teacherName: c.teacher
+              ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
+              : 'EPT Instructor',
+            schedule,
+            room: 'Room 101',
+            capacity: c.capacity || 20,
+            enrolledCount,
+            status: c.status || 'Ongoing',
+            startDate: c.startDate || c.createdAt,
+          }
+        })
       }
     }
 
-    return (mockClasses as any[])
-      .filter((c) => !c.name?.toLowerCase().includes('not joined'))
-      .map((c) => {
-        const count = mockEnroll.filter((e) => e.classId === c.id).length
-        const key = `${c.subject}_${c.schedule}`
-        const fallbackList = EXCEL_CLASS_ROSTER_MAP[key] || []
-        return {
-          id: c.id,
-          name: c.name,
-          subject: c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS'),
-          teacherId: c.teacherId,
-          teacherName: c.teacherName || 'EPT Instructor',
-          schedule: c.schedule || 'Morning Batch',
-          room: c.room || 'Room 101',
-          capacity: c.capacity || 20,
-          enrolledCount: count || fallbackList.length || (c.subject === 'PTE' ? 20 : 29),
-          status: c.status || 'Ongoing',
-          startDate: c.startDate || new Date().toISOString(),
-        }
-      })
+    return (mockClasses as any[]).map((c) => {
+      const count = mockEnroll.filter((e) => e.classId === c.id).length
+      return {
+        id: c.id,
+        name: c.name,
+        subject: c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS'),
+        teacherId: c.teacherId,
+        teacherName: c.teacherName || 'EPT Instructor',
+        schedule: c.schedule || 'Morning Batch',
+        room: c.room || 'Room 101',
+        capacity: c.capacity || 20,
+        enrolledCount: count,
+        status: c.status || 'ongoing',
+        startDate: c.startDate || new Date().toISOString(),
+      }
+    })
   }, [liveClassesData, mockClasses, mockEnroll])
 
   // Filtered classes grid
@@ -366,17 +301,15 @@ export default function ClassesPage() {
       }))
     }
 
-    // 2. Fallback to 49 Excel Student Roster Map (EPT Student records.xlsx)
-    const key = `${selectedClass.subject}_${selectedClass.schedule}`
-    const excelStudents = EXCEL_CLASS_ROSTER_MAP[key] || EXCEL_CLASS_ROSTER_MAP['IELTS_07:00-08:00 AM'] || []
-
-    return excelStudents.map((s, idx) => ({
-      id: `enr-${selectedClass.id}-${idx + 1}`,
-      studentId: `stu-excel-${idx + 1}`,
-      name: s.name,
-      email: `${s.name.toLowerCase().replace(/[^a-z0-9]/g, '.')}@dreamsky.com`,
-      phone: String(s.phone),
-      enrolledAt: s.date,
+    // 2. Read directly from useAttendanceStore / mock enrollments
+    const storeEnrollments = useAttendanceStore.getState().getEnrollmentsForClass(selectedClass.id)
+    return storeEnrollments.map((e, idx) => ({
+      id: e.id || `enr-${selectedClass.id}-${idx + 1}`,
+      studentId: e.studentId || `stu-${selectedClass.id}-${idx + 1}`,
+      name: e.studentName,
+      email: `${e.studentName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@dreamsky.com`,
+      phone: '9800000000',
+      enrolledAt: e.enrolledAt,
       stage: 'Enrolled Class Student',
     }))
   }, [selectedClass, liveClassesData])
