@@ -257,6 +257,11 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   // ── login ──────────────────────────────────────────────────────────────────
   login: async (email, password, remember = true) => {
+    tokenStore.clearAll()
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('dreamsky-logged-out')
+      window.sessionStorage.removeItem('dreamsky-logged-out')
+    }
     tokenStore.setRemember(remember)
 
     // ── MOCK MODE ──────────────────────────────────────────────────────────────
