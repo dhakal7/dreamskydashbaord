@@ -19,11 +19,11 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { useAuthStore } from '@/store/auth-store'
-import { getClassesForRole, getClassEnrollments, getClassAttendance, getClassMaterials } from './selectors'
-import { useAttendanceStore } from './attendance-store'
+import { classes as mockAllClasses } from '@/mock'
+import { getClassEnrollments, getClassAttendance, getClassMaterials } from './selectors'
+import { useAttendanceStore, type StudentPresence } from './attendance-store'
 import { useClassMaterialsStore, type AddMaterialData } from './materials-store'
 import { StudentClassProfileDialog } from './components/student-class-profile-dialog'
-import type { StudentPresence } from './attendance-store'
 import { isMockMode } from '@/lib/api-client'
 import { useClass, useClasses, useMarkAttendance, useClassContent } from '@/hooks/use-classes'
 import { classApi } from '@/api/class-api'
@@ -38,7 +38,6 @@ const tabs = [
 export default function ClassDetailPage() {
   const { id } = useParams<{ id: string }>()
   const role = useAuthStore((s) => s.currentUser?.role ?? 'front_desk')
-  const linkedId = useAuthStore((s) => s.currentUser?.linkedId)
   const submitAttendanceMock = useAttendanceStore((s) => s.submitAttendance)
   const addMaterialMock = useClassMaterialsStore((s) => s.addMaterial)
   const markAttendanceApi = useMarkAttendance()
@@ -48,10 +47,7 @@ export default function ClassDetailPage() {
   const { data: liveContent } = useClassContent(id!)
   const { data: allClassesData } = useClasses()
 
-  const classList = getClassesForRole(role, linkedId)
-  const mockCls = classList.find((c) => c.id === id) ||
-    classList.find((c) => id?.toLowerCase().includes(c.subject.toLowerCase())) ||
-    classList[0]
+  const mockCls = mockAllClasses.find((c) => c.id === id)
 
   const liveClassFromList = Array.isArray(allClassesData)
     ? (allClassesData as any).find((c: any) => c.id === id)

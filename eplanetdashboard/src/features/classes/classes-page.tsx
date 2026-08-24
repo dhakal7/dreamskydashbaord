@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   BookOpen, UserPlus, Users, Clock, Search, ChevronRight, ClipboardCheck, Pencil, UserCheck
@@ -56,6 +57,7 @@ interface RosterStudent {
 
 
 export default function ClassesPage() {
+  const navigate = useNavigate()
   const role = useAuthStore((s) => s.currentUser?.role ?? 'front_desk')
   const linkedId = useAuthStore((s) => s.currentUser?.linkedId)
 
@@ -393,8 +395,7 @@ export default function ClassesPage() {
               key={c.id}
               className="group relative overflow-hidden transition-all duration-200 hover:shadow-md hover:border-primary/50 cursor-pointer border-border/80"
               onClick={() => {
-                setSelectedClass(c)
-                setActiveTab('roster')
+                navigate(`/classes/${c.id}`)
               }}
             >
               <div className="p-4 space-y-3">
@@ -480,6 +481,10 @@ export default function ClassesPage() {
                     size="sm"
                     variant="ghost"
                     className="h-8 text-xs gap-1 text-muted-foreground group-hover:text-foreground"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/classes/${c.id}`)
+                    }}
                   >
                     View Details
                     <ChevronRight className="size-3.5" />
