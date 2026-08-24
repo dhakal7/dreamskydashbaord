@@ -3,7 +3,6 @@ import { toast } from 'sonner'
 import type { Country } from '@/types'
 import { countries as seedCountries } from '@/mock'
 
-import { isMockMode } from '@/lib/api-client'
 
 interface CountriesState {
   countries: Country[]
@@ -13,7 +12,7 @@ interface CountriesState {
 }
 
 export const useCountriesStore = create<CountriesState>((set, get) => ({
-  countries: isMockMode() ? seedCountries : [],
+  countries: seedCountries,
 
   addCountry: (data) => {
     const id = `c-${data.code.toLowerCase()}`

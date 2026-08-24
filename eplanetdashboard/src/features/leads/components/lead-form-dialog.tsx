@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { counselors, createReferralAgent, referralAgents } from '@/mock'
+import { counselors, createReferralAgent, referralAgents, countries as seedCountries } from '@/mock'
 import { useCountriesStore } from '@/features/countries/store'
 import { useLeadsStore } from '../store'
 import { isMockMode } from '@/lib/api-client'
@@ -59,7 +59,8 @@ interface LeadFormDialogProps {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialogProps) {
-  const countries = useCountriesStore((s) => s.countries)
+  const storeCountries = useCountriesStore((s) => s.countries)
+  const countries = storeCountries && storeCountries.length > 0 ? storeCountries : seedCountries
   const addLead = useLeadsStore((s) => s.addLead)
   const updateLead = useLeadsStore((s) => s.updateLead)
   const createLiveLead = useCreateLiveLead()
@@ -398,10 +399,18 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                   <div className="grid grid-cols-2 gap-2 rounded-lg border border-border/70 bg-muted/20 p-2.5 sm:grid-cols-3">
                     {countries.map((c) => {
                       const isChecked = (field.value ?? []).includes(c.name)
+                      const toggleCountry = () => {
+                        const current = field.value ?? []
+                        const next = current.includes(c.name)
+                          ? current.filter((name: string) => name !== c.name)
+                          : [...current, c.name]
+                        field.onChange(next)
+                      }
                       return (
-                        <label
+                        <div
                           key={c.id}
-                          className={`flex items-center gap-2 rounded-md border p-2 text-xs font-medium cursor-pointer transition-colors ${
+                          onClick={toggleCountry}
+                          className={`flex items-center gap-2 rounded-md border p-2 text-xs font-medium cursor-pointer transition-colors select-none ${
                             isChecked
                               ? 'border-primary bg-primary/10 text-primary font-semibold'
                               : 'border-border/60 bg-background hover:bg-muted/50'
@@ -409,15 +418,11 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                         >
                           <Checkbox
                             checked={isChecked}
-                            onCheckedChange={(val) => {
-                              const next = val
-                                ? [...(field.value ?? []), c.name]
-                                : (field.value ?? []).filter((name: string) => name !== c.name)
-                              field.onChange(next)
-                            }}
+                            onCheckedChange={toggleCountry}
+                            onClick={(e) => e.stopPropagation()}
                           />
                           <span className="truncate">{c.flag || '🌐'} {c.name}</span>
-                        </label>
+                        </div>
                       )
                     })}
                   </div>
