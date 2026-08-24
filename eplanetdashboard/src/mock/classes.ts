@@ -13,8 +13,8 @@ const classSeeds: Array<[string, ClassSession['subject'], string]> = [
 ]
 
 export const classes: ClassSession[] = classSeeds.map(([name, subject, schedule], i) => {
-  const teacher = teachers[i % teachers.length]
-  const status: ClassSession['status'] = i < 3 ? 'ongoing' : i < 5 ? 'upcoming' : 'completed'
+  const teacher = teachers[0] // EPT Instructor handles all class batches
+  const status: ClassSession['status'] = i < 4 ? 'ongoing' : i < 5 ? 'upcoming' : 'completed'
   const capacity = randInt(15, 25)
   return {
     id: `cls-${pad(i + 1, 2)}`,
