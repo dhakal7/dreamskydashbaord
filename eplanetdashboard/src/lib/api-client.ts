@@ -174,10 +174,8 @@ axiosInstance.interceptors.response.use(
       const refreshToken = tokenStore.getRefresh()
 
       if (!refreshToken) {
-        // No refresh token — force logout
-        tokenStore.clearAll()
-        window.location.href = '/login'
-        return Promise.reject(error)
+        // Reject gracefully without forcibly reloading browser location
+        return Promise.reject(new Error('Unauthorized request'))
       }
 
       if (isRefreshing) {
@@ -218,9 +216,7 @@ axiosInstance.interceptors.response.use(
       } catch {
         isRefreshing = false
         refreshSubscribers = []
-        tokenStore.clearAll()
-        window.location.href = '/login'
-        return Promise.reject(error)
+        return Promise.reject(new Error('Refresh token invalid'))
       }
     }
 
