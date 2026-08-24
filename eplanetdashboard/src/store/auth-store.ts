@@ -335,9 +335,10 @@ export const useAuthStore = create<AuthState>((set) => ({
           // Swallow — tokens will be cleared locally regardless
         }
       }
-      tokenStore.clearAll()
-    } else {
-      // Clear all mock-mode auth flags so landing page login is required again
+    }
+
+    tokenStore.clearAll()
+    if (typeof window !== 'undefined') {
       window.localStorage.setItem('dreamsky-logged-out', 'true')
       window.sessionStorage.setItem('dreamsky-logged-out', 'true')
       window.localStorage.removeItem('dreamsky-authenticated')
@@ -346,14 +347,13 @@ export const useAuthStore = create<AuthState>((set) => ({
       window.sessionStorage.removeItem('dreamsky-demo-role')
       window.localStorage.removeItem('dreamsky-user')
       window.sessionStorage.removeItem('dreamsky-user')
-      // Also clear real-mode token keys so landing page doesn't auto-restore
       window.localStorage.removeItem('dreamsky-access-token')
       window.localStorage.removeItem('dreamsky-refresh-token')
       window.sessionStorage.removeItem('dreamsky-access-token')
       window.sessionStorage.removeItem('dreamsky-refresh-token')
     }
+
     set({ isAuthenticated: false })
-    // Redirect to dashboard login page
     window.location.href = '/login'
   },
 
