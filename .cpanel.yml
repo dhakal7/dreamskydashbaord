@@ -1,7 +1,8 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/YOUR_CPANEL_USERNAME/public_html
+    - export DEPLOYPATH=/home4/dreamsky/public_html
     - /bin/mkdir -p $DEPLOYPATH
     - cd eplanetdashboard && npm install && npm run build
     - /bin/cp -R eplanetdashboard/dist/* $DEPLOYPATH/
+    - /bin/cp eplanetdashboard/public/.htaccess $DEPLOYPATH/.htaccess
