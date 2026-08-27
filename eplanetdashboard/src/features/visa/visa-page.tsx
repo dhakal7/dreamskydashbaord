@@ -58,7 +58,7 @@ export default function VisaPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<VisaStatus | 'all'>('all')
   const [countryFilter, setCountryFilter] = useState('all')
-  const canManage = hasPermission(currentUser.role, 'visa.manage')
+  const canManage = hasPermission(currentUser.role, 'visa.manage') || (currentUser.role !== 'student' && currentUser.role !== 'referral_agent')
   const [formOpen, setFormOpen] = useState(false)
 
   const visible = visibleVisaCases(currentUser, visaCases, students)

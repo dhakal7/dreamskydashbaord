@@ -370,7 +370,7 @@ export default function ClassDetailPage() {
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span className="font-tabular">{e.progress}% progress</span>
                             <span className="font-tabular">{e.attendancePct}% attendance</span>
-                            {(role === 'super_admin' || role === 'front_desk' || role === 'teacher') && (
+                            {role !== 'student' && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -389,7 +389,7 @@ export default function ClassDetailPage() {
                       )
                     })}
                   </div>
-                  {(role === 'teacher' || role === 'super_admin' || role === 'front_desk') && roster.length > 0 && (
+                  {role !== 'student' && roster.length > 0 && (
                     <div className="mt-4 flex justify-end border-t pt-4">
                       <Button onClick={handleSubmitAttendance} className="gap-2">
                         <ClipboardCheck className="size-4" />
@@ -442,7 +442,7 @@ export default function ClassDetailPage() {
                       <CardTitle>Materials & Assignments</CardTitle>
                       <CardDescription>{materials.length} files</CardDescription>
                     </div>
-                    {(role === 'teacher' || role === 'super_admin' || role === 'front_desk') && (
+                    {role !== 'student' && (
                       <Button size="sm" onClick={() => setMaterialDialogOpen(true)} className="gap-1">
                         <Plus className="size-4" />
                         Add Material
@@ -482,7 +482,7 @@ export default function ClassDetailPage() {
                               </div>
                             )}
                           </div>
-                          {(role === 'teacher' || role === 'super_admin' || role === 'front_desk') && (
+                          {role !== 'student' && (
                             <Button
                               variant="ghost"
                               size="icon"
