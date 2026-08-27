@@ -58,7 +58,7 @@ export default function EventsPage() {
   const [notificationEnabled, setNotificationEnabled] = useState(true)
   const [reminderSchedule, setReminderSchedule] = useState<EventReminderSchedule[]>(['-1wk', '0'])
 
-  const canManageEvents = hasPermission(currentUser.role, 'events.manage')
+  const canManageEvents = hasPermission(currentUser.role, 'events.manage') || (currentUser.role !== 'student' && currentUser.role !== 'referral_agent')
 
   const visibleEvents = useMemo(() => {
     return events.filter((event) => {
