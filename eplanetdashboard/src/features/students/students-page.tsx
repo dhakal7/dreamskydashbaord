@@ -44,11 +44,8 @@ export default function StudentsPage() {
   const [formOpen, setFormOpen] = useState(false)
 
   const students = useMemo(() => {
-    if (!mockMode && studentResponse?.students) {
-      return studentResponse.students.map(adaptApiStudentToStudent)
-    }
-    if (mockMode && studentResponse?.students && studentResponse.students.length > 0) {
-      return studentResponse.students.map(adaptApiStudentToStudent)
+    if (!mockMode) {
+      return (studentResponse?.students ?? []).map(adaptApiStudentToStudent)
     }
     // In mock mode, exclude leads
     return mockStudents.filter((s) => (s as any).status !== 'lead' && (s as any).currentStage !== 'LEAD')
