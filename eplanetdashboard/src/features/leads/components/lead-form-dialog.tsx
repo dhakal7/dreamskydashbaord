@@ -179,7 +179,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
               phone: data.phone || '',
               source: data.source,
               assignedCounselorId: primaryCounselor?.id,
-              notes: `Interested Countries: ${data.interestedCountries.join(', ')} | Address: ${data.address || 'N/A'}`,
+              notes: `Interested Countries: ${data.interestedCountries.join(', ')} | Level: ${data.interestedLevel} | Address: ${data.address || 'N/A'}`,
             },
           },
           {
@@ -221,7 +221,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
           phone: data.phone || '',
           source: data.source,
           assignedCounselorId: primaryCounselor?.id,
-          notes: `Interested Countries: ${data.interestedCountries.join(', ')} | Address: ${data.address || 'N/A'}`,
+          notes: `Interested Countries: ${data.interestedCountries.join(', ')} | Level: ${data.interestedLevel} | Address: ${data.address || 'N/A'}`,
         },
         {
           onSuccess: () => {
