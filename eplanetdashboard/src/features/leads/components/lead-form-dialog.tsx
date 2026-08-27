@@ -53,9 +53,6 @@ const DEFAULT_TARGET_COUNTRIES = [
   { id: 'c-ca', name: 'Canada', flag: '🇨🇦' },
   { id: 'c-us', name: 'United States', flag: '🇺🇸' },
   { id: 'c-nz', name: 'New Zealand', flag: '🇳🇿' },
-  { id: 'c-jp', name: 'Japan', flag: '🇯🇵' },
-  { id: 'c-de', name: 'Germany', flag: '🇩🇪' },
-  { id: 'c-ma', name: 'Malta', flag: '🇲🇹' },
 ]
 
 // ── Props ─────────────────────────────────────────────────────────────────────

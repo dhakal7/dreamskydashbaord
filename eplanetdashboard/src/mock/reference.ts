@@ -23,18 +23,6 @@ export const countries: Country[] = [
     id: 'c-nz', name: 'New Zealand', code: 'NZ', flag: '🇳🇿', universityCount: 2, studentCount: 33,
     popularCourses: ['Agriculture', 'IT', 'Hospitality'], visaDifficulty: 'easy', avgTuitionUsd: 19500,
   },
-  {
-    id: 'c-jp', name: 'Japan', code: 'JP', flag: '🇯🇵', universityCount: 2, studentCount: 21,
-    popularCourses: ['Engineering', 'Japanese Studies'], visaDifficulty: 'moderate', avgTuitionUsd: 9500,
-  },
-  {
-    id: 'c-de', name: 'Germany', code: 'DE', flag: '🇩🇪', universityCount: 2, studentCount: 16,
-    popularCourses: ['Mechanical Engineering', 'Computer Science'], visaDifficulty: 'moderate', avgTuitionUsd: 4000,
-  },
-  {
-    id: 'c-ma', name: 'Malta', code: 'MT', flag: '🇲🇹', universityCount: 1, studentCount: 9,
-    popularCourses: ['Business Management'], visaDifficulty: 'easy', avgTuitionUsd: 12000,
-  },
 ]
 
 const universitySeeds: Array<[string, string, string, number]> = [
@@ -58,11 +46,6 @@ const universitySeeds: Array<[string, string, string, number]> = [
   ['Northeastern University', 'c-us', 'Boston', 176],
   ['University of Auckland', 'c-nz', 'Auckland', 68],
   ['Auckland University of Technology', 'c-nz', 'Auckland', 401],
-  ['University of Tokyo', 'c-jp', 'Tokyo', 28],
-  ['Ritsumeikan Asia Pacific Univ.', 'c-jp', 'Beppu', 601],
-  ['TU Munich', 'c-de', 'Munich', 37],
-  ['University of Stuttgart', 'c-de', 'Stuttgart', 251],
-  ['University of Malta', 'c-ma', 'Msida', 501],
 ]
 
 const countryMap = new Map(countries.map((c) => [c.id, c]))
