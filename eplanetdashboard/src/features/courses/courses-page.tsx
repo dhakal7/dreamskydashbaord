@@ -27,6 +27,15 @@ const levelMeta: Record<StudyLevel, { label: string; variant: 'default' | 'info'
   phd: { label: 'PhD', variant: 'warning' },
 }
 
+function normalizeStudyLevel(raw: string | undefined): StudyLevel {
+  const s = (raw ?? '').toLowerCase().trim()
+  if (s.includes('master') || s.includes('postgraduate') || s.includes('mba') || s === 'pg' || s === 'msc' || s === 'ma') return 'master'
+  if (s.includes('diploma') || s.includes('cert')) return 'diploma'
+  if (s.includes('foundation')) return 'foundation'
+  if (s.includes('phd') || s.includes('doctorate')) return 'phd'
+  return 'bachelor'
+}
+
 export default function CoursesPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const canManage = hasPermission(currentUser.role, 'courses.manage')
@@ -62,16 +71,17 @@ export default function CoursesPage() {
     const q = search.trim().toLowerCase()
     return courses.filter((course) => {
       if (q && !`${course.name} ${course.field} ${course.universityName}`.toLowerCase().includes(q)) return false
-      if (levelFilter !== 'all' && (course.level ?? '').toLowerCase() !== levelFilter) return false
+      const cLevel = normalizeStudyLevel(course.level)
+      if (levelFilter !== 'all' && cLevel !== levelFilter) return false
       if (uniFilter !== 'all' && course.universityId !== uniFilter) return false
       return true
     })
   }, [courses, search, levelFilter, uniFilter])
 
   const totalCount = filtered.length
-  const bachelorCount = filtered.filter((c) => (c.level ?? '').toLowerCase() === 'bachelor').length
-  const masterCount = filtered.filter((c) => (c.level ?? '').toLowerCase() === 'master').length
-  const diplomaCount = filtered.filter((c) => (c.level ?? '').toLowerCase() === 'diploma').length
+  const bachelorCount = filtered.filter((c) => normalizeStudyLevel(c.level) === 'bachelor').length
+  const masterCount = filtered.filter((c) => normalizeStudyLevel(c.level) === 'master').length
+  const diplomaCount = filtered.filter((c) => normalizeStudyLevel(c.level) === 'diploma').length
 
   const isFiltered = search || levelFilter !== 'all' || uniFilter !== 'all'
 
@@ -195,7 +205,7 @@ export default function CoursesPage() {
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {filtered.map((course) => {
-              const level = levelMeta[course.level]
+              const level = levelMeta[normalizeStudyLevel(course.level)] ?? levelMeta.bachelor
               return (
                 <Card key={course.id} className="p-5 border-border/70 shadow-sm hover:shadow-elevated transition-shadow">
                   <div className="flex items-start justify-between mb-3">
