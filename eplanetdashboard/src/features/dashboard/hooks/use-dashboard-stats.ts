@@ -94,8 +94,9 @@ export function useSuperAdminStats() {
         { label: 'Enrolled Students', value: enrolledOnly.pagination.total, delta: `${enrolledOnly.pagination.total} enrolled`, trend: 'up' as const },
       ]
     },
+    staleTime: 5 * 60 * 1000,
     enabled: !isMockMode(),
-    placeholderData: isMockMode() ? getDashboardStats() : [],
+    placeholderData: (previousData) => previousData ?? (isMockMode() ? getDashboardStats() : []),
   })
 }
 
