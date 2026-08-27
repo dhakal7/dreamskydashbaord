@@ -225,6 +225,10 @@ const updateStudent = async (id, data) => {
     if (data.phone !== undefined) update.phone = data.phone?.trim() || null;
     if (data.dateOfBirth !== undefined) update.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
     if (data.nationality !== undefined) update.nationality = data.nationality?.trim() || null;
+    if (data.source !== undefined) update.source = data.source;
+    if (data.assignedCounselorId !== undefined) update.assignedCounselorId = data.assignedCounselorId || null;
+    if (data.notes !== undefined) update.notes = data.notes;
+    if (data.academicBackground !== undefined) update.academicBackground = data.academicBackground;
     // Handle processingType & partner consultancy updates
     if (data.processingType !== undefined) {
         update.processingType = data.processingType === "PARTNER_CONSULTANCY" ? "PARTNER_CONSULTANCY" : "SELF";
@@ -249,6 +253,7 @@ const updateStudent = async (id, data) => {
         data: update,
         include: {
             partnerConsultancy: { select: { id: true, name: true } },
+            assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
         },
     });
 };

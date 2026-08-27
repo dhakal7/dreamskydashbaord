@@ -560,8 +560,17 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
               Cancel
             </Button>
             <Button type="submit" size="sm" disabled={isSubmitting}>
-              <UserPlus className="size-3.5 mr-1" />
-              Add Lead
+              {leadToEdit ? (
+                <>
+                  <Check className="size-3.5 mr-1" />
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </>
+              ) : (
+                <>
+                  <UserPlus className="size-3.5 mr-1" />
+                  {isSubmitting ? 'Adding...' : 'Add Lead'}
+                </>
+              )}
             </Button>
           </DialogFooter>
         </form>

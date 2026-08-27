@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { DataTable } from '@/components/shared/data-table'
 import { useLeadsStore } from './store'
-import { leadColumns } from './components/lead-columns'
+import { getLeadColumns } from './components/lead-columns'
 import { LeadsPipeline } from './components/leads-pipeline'
 import { LeadFiltersBar, defaultLeadFilters, type LeadFilters } from './components/lead-filters'
 import { LeadFormDialog } from './components/lead-form-dialog'
@@ -16,7 +16,7 @@ import { visibleLeads } from '@/lib/data-visibility'
 import { hasPermission } from '@/lib/rbac'
 import { isMockMode } from '@/lib/api-client'
 import { useLiveLeads, useMoveLiveLead } from '@/hooks/use-leads-live'
-import type { LeadStage } from '@/types'
+import type { Lead, LeadStage } from '@/types'
 
 type ViewMode = 'table' | 'pipeline'
 
@@ -27,6 +27,7 @@ export default function LeadsPage() {
   const [view, setView] = useState<ViewMode>('pipeline')
   const [filters, setFilters] = useState<LeadFilters>(defaultLeadFilters)
   const [isLeadDialogOpen, setIsLeadDialogOpen] = useState(false)
+  const [editingLead, setEditingLead] = useState<Lead | null>(null)
 
   // Live mode: fetch LEAD/PROSPECT students from backend
   const { leads: liveLeads, totalCount: liveTotalCount } = useLiveLeads()
@@ -125,10 +126,27 @@ export default function LeadsPage() {
       {view === 'pipeline' ? (
         <LeadsPipeline leads={filtered} onMove={handleMove} canChangeStage={canChangeStage} />
       ) : (
-        <DataTable columns={leadColumns} data={filtered} enableRowSelection pageSize={10} />
+        <DataTable
+          columns={getLeadColumns((lead) => setEditingLead(lead))}
+          data={filtered}
+          enableRowSelection
+          pageSize={10}
+          onRowClick={(lead) => setEditingLead(lead)}
+        />
       )}
 
-      <LeadFormDialog open={isLeadDialogOpen} onOpenChange={setIsLeadDialogOpen} />
+      <LeadFormDialog
+        open={isLeadDialogOpen || Boolean(editingLead)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsLeadDialogOpen(false)
+            setEditingLead(null)
+          } else {
+            setIsLeadDialogOpen(true)
+          }
+        }}
+        leadToEdit={editingLead}
+      />
     </div>
   )
 }
