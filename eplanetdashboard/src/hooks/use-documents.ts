@@ -36,7 +36,10 @@ export function useUploadDocument() {
   return useMutation({
     mutationFn: (body: UploadDocumentBody) => documentApi.upload(body),
     onSuccess: () => {
+      // Use refetchQueries instead of invalidateQueries so new documents
+      // appear immediately (no need to wait for next focus/mount cycle)
       qc.invalidateQueries({ queryKey: documentKeys.all })
+      qc.refetchQueries({ queryKey: documentKeys.profiles() })
       toast.success('Document uploaded successfully')
     },
     onError: (err: Error) => toast.error(err.message),

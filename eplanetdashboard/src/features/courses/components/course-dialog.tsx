@@ -20,6 +20,18 @@ const levelLabels: Record<StudyLevel, string> = {
   phd: 'PhD',
 }
 
+// Normalize API/DB level strings to lowercase StudyLevel keys
+function normalizeLevel(raw: string | undefined): StudyLevel {
+  const map: Record<string, StudyLevel> = {
+    bachelor: 'bachelor', bachelors: 'bachelor', undergraduate: 'bachelor',
+    master: 'master', masters: 'master', postgraduate: 'master', mba: 'master',
+    diploma: 'diploma',
+    foundation: 'foundation',
+    phd: 'phd', doctorate: 'phd',
+  }
+  return map[(raw ?? '').toLowerCase().trim()] ?? 'bachelor'
+}
+
 interface CourseDialogProps {
   course: {
     id: string
@@ -56,7 +68,7 @@ export function CourseDialog({ course, open, onOpenChange }: CourseDialogProps) 
       if (course) {
         setName(course.name)
         setUniversityId(course.universityId)
-        setLevel(course.level)
+        setLevel(normalizeLevel(course.level))
         setDuration(course.duration)
         setIntake(course.intake.join(', '))
         setTuitionUsd(String(course.tuitionUsd))
