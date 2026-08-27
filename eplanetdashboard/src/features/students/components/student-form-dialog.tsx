@@ -179,6 +179,8 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
     const nameParts = data.name.trim().split(' ')
     const firstName = nameParts[0]
     const lastName = nameParts.slice(1).join(' ') || firstName
+    const countriesStr = data.preferredCountries.join(', ')
+    const notesPayload = `Interested Countries: ${countriesStr} | Level: ${data.preferredLevel} | Address: ${data.address || 'N/A'}`
 
     await createStudent.mutateAsync({
       firstName,
@@ -188,7 +190,13 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
       nationality: data.nationality || undefined,
       // Always SELF on creation — counselor sets B2B from the student profile later
       processingType: 'SELF',
-      academicBackground: { records: data.academics },
+      academicBackground: {
+        records: data.academics,
+        preferredLevel: data.preferredLevel,
+        preferredCountries: data.preferredCountries,
+        budgetUsd: data.budgetUsd,
+      },
+      notes: notesPayload,
     })
 
     onOpenChange(false)
