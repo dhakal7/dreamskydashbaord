@@ -1,0 +1,36 @@
+name: Build and Deploy to cPanel
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: 'eplanetdashboard/package-lock.json'
+
+      - name: Install Frontend Dependencies & Build
+        run: |
+          cd eplanetdashboard
+          npm ci
+          npm run build
+
+      # FTP Deploy to cPanel (Requires FTP_SERVER, FTP_USERNAME, FTP_PASSWORD set in GitHub Secrets)
+      - name: FTP Deploy Frontend to cPanel
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./eplanetdashboard/dist/
+          server-dir: ./public_html/
