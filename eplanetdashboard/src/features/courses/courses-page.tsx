@@ -16,6 +16,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { useUniversitiesStore } from '@/features/universities/store'
+import { useUniversities } from '@/hooks/use-universities'
+import { universities as seedUniversities } from '@/mock'
 
 const levelMeta: Record<StudyLevel, { label: string; variant: 'default' | 'info' | 'secondary' | 'success' | 'warning' }> = {
   bachelor: { label: 'Bachelor', variant: 'default' },
@@ -29,7 +31,26 @@ export default function CoursesPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const canManage = hasPermission(currentUser.role, 'courses.manage')
   const { courses, removeCourse } = useCoursesStore()
-  const universities = useUniversitiesStore((s) => s.universities)
+  const storeUniversities = useUniversitiesStore((s) => s.universities)
+  const { data: apiUniData } = useUniversities()
+
+  const universities = apiUniData?.universities && apiUniData.universities.length > 0
+    ? apiUniData.universities.map((u) => ({
+        id: u.id,
+        name: u.name,
+        countryId: u.countryId,
+        countryName: u.country?.name ?? 'Country',
+        countryFlag: '🌐',
+        city: u.city ?? 'City',
+        logo: u.logoUrl ?? undefined,
+        website: u.websiteUrl ?? '',
+        qsRanking: u.ranking ?? 500,
+        scholarshipAvailable: true,
+        scholarshipDetails: 'Available',
+        tuitionFromUsd: 15000,
+        isActive: u.isActive,
+      }))
+    : (storeUniversities.length > 0 ? storeUniversities : seedUniversities)
 
   const [search, setSearch] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
