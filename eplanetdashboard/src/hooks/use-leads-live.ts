@@ -242,7 +242,7 @@ export function useUpdateLiveLead() {
       })
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: studentKeys.lists() })
+      qc.invalidateQueries({ queryKey: studentKeys.all })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Lead updated successfully')
     },
