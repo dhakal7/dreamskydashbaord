@@ -1,10 +1,9 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import { toast } from 'sonner'
 import type { Course } from '@/types'
 import { courses as seedCourses } from '@/mock'
 import { useUniversitiesStore } from '@/features/universities/store'
-
-
 
 interface CoursesState {
   courses: Course[]
@@ -13,8 +12,10 @@ interface CoursesState {
   removeCourse: (id: string) => void
 }
 
-export const useCoursesStore = create<CoursesState>((set, get) => ({
-  courses: seedCourses,
+export const useCoursesStore = create<CoursesState>()(
+  persist(
+    (set, get) => ({
+      courses: seedCourses,
 
   addCourse: (data) => {
     const uni = useUniversitiesStore.getState().universities.find((u) => u.id === data.universityId)
@@ -54,4 +55,10 @@ export const useCoursesStore = create<CoursesState>((set, get) => ({
       toast.success(`${course.name} removed`)
       return { courses: state.courses.filter((c) => c.id !== id) }
     }),
-}))
+  }),
+  {
+    name: 'dreamsky-courses-store',
+  }
+)
+)
+

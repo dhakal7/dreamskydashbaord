@@ -56,6 +56,32 @@ export const SOURCE_TO_BACKEND: Record<LeadSource, string> = {
 
 // ── Adapter: ApiStudent → Lead ───────────────────────────────────────────────
 
+function parseLevelFromNotes(notes: string | null): import('@/types').StudyLevel {
+  if (!notes) return 'bachelor'
+  const match = notes.match(/Level:\s*([a-zA-Z]+)/i)
+  if (match) {
+    const raw = match[1].toLowerCase()
+    if (raw.includes('master')) return 'master'
+    if (raw.includes('diploma')) return 'diploma'
+    if (raw.includes('foundation')) return 'foundation'
+    if (raw.includes('phd') || raw.includes('doctorate')) return 'phd'
+    if (raw.includes('bachelor')) return 'bachelor'
+  }
+  const lower = notes.toLowerCase()
+  if (lower.includes('master')) return 'master'
+  if (lower.includes('diploma')) return 'diploma'
+  if (lower.includes('phd')) return 'phd'
+  if (lower.includes('foundation')) return 'foundation'
+  return 'bachelor'
+}
+
+function parseCountryFromNotes(notes: string | null): string {
+  if (!notes) return ''
+  const match = notes.match(/Interested Countries:\s*([^|]+)/i)
+  if (match) return match[1].trim()
+  return ''
+}
+
 function adaptStudentToLead(student: {
   id: string
   firstName: string
@@ -73,6 +99,8 @@ function adaptStudentToLead(student: {
     : 'Unassigned'
 
   const feStage: LeadStage = LEAD_STAGE_MAP[student.currentStage] ?? 'new'
+  const parsedLevel = parseLevelFromNotes(student.notes)
+  const parsedCountry = parseCountryFromNotes(student.notes)
 
   return {
     id: student.id,
@@ -84,8 +112,9 @@ function adaptStudentToLead(student: {
     stage: feStage,
     counselorId: (student as any).assignedCounselorId || student.assignedCounselor?.id || '',
     counselorName,
-    interestedCountry: '',
-    interestedLevel: 'bachelor',
+    interestedCountry: parsedCountry,
+    interestedCountries: parsedCountry ? [parsedCountry] : [],
+    interestedLevel: parsedLevel,
     priority: 'medium',
     lastContact: student.createdAt,
     nextFollowUp: new Date(Date.now() + 7 * 86400000).toISOString(),
