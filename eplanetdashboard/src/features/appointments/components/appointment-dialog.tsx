@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import dayjs from 'dayjs'
 import {
-  CalendarClock, MapPin, Monitor, Phone, X, Plus, AlertTriangle, Mail,
+  CalendarClock, MapPin, Monitor, Phone, X, Plus, AlertTriangle, Mail, Trash2,
 } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -82,6 +82,7 @@ export function AppointmentDialog({
   const addAppointmentMock = useAppointmentsStore((s) => s.addAppointment)
   const updateAppointmentMock = useAppointmentsStore((s) => s.updateAppointment)
   const cancelAppointmentMock = useAppointmentsStore((s) => s.cancelAppointment)
+  const removeAppointmentMock = useAppointmentsStore((s) => s.removeAppointment)
   const createAppointmentApi = useCreateAppointment()
   const updateAppointmentApi = useUpdateAppointment()
   const changeStatusApi = useChangeAppointmentStatus()
@@ -226,6 +227,15 @@ export function AppointmentDialog({
         )
       } else {
         cancelAppointmentMock(appointment.id)
+        onOpenChange(false)
+      }
+    }
+  }
+
+  function handleDelete() {
+    if (appointment) {
+      if (window.confirm(`Are you sure you want to permanently delete this appointment for "${appointment.studentName}"?`)) {
+        removeAppointmentMock(appointment.id)
         onOpenChange(false)
       }
     }
@@ -467,18 +477,32 @@ export function AppointmentDialog({
               </Button>
             ) : (
               <>
-                {isCancellable && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="mr-auto text-danger-600 border-danger-200 hover:bg-danger-50 hover:border-danger-400"
-                    onClick={handleCancel}
-                  >
-                    <X className="size-3.5 mr-1" />
-                    Cancel Appointment
-                  </Button>
-                )}
+                <div className="mr-auto flex items-center gap-2">
+                  {isEditing && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-danger-600 hover:bg-danger-50 hover:text-danger-700 h-8 px-2 text-xs"
+                      onClick={handleDelete}
+                    >
+                      <Trash2 className="size-3.5 mr-1" />
+                      Delete
+                    </Button>
+                  )}
+                  {isCancellable && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="text-danger-600 border-danger-200 hover:bg-danger-50 hover:border-danger-400 h-8 text-xs"
+                      onClick={handleCancel}
+                    >
+                      <X className="size-3.5 mr-1" />
+                      Cancel
+                    </Button>
+                  )}
+                </div>
                 <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                   Discard
                 </Button>

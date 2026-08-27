@@ -18,6 +18,7 @@ interface ClassMaterialsState {
 
   getMaterialsForClass: (classId: string) => ClassMaterial[]
   addMaterial: (classId: string, data: AddMaterialData) => Promise<void>
+  removeMaterial: (materialId: string) => void
 }
 
 export const useClassMaterialsStore = create<ClassMaterialsState>((set, get) => ({
@@ -58,6 +59,12 @@ export const useClassMaterialsStore = create<ClassMaterialsState>((set, get) => 
     }
 
     set((state) => ({ materials: [...state.materials, newMaterial] }))
+  },
+
+  removeMaterial: (materialId) => {
+    set((state) => ({
+      materials: state.materials.filter((m) => m.id !== materialId),
+    }))
   },
 }))
 

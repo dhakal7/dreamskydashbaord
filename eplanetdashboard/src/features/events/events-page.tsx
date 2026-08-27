@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
-import { CalendarDays, Filter, Plus, Bell } from 'lucide-react'
+import { CalendarDays, Filter, Plus, Bell, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,7 +31,7 @@ import { isMockMode } from '@/lib/api-client'
 
 export default function EventsPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
-  const { events: mockEvents, addEvent } = useEventsStore()
+  const { events: mockEvents, addEvent, deleteEvent } = useEventsStore()
   const { data: apiEventsData } = useEvents()
 
   const events = !isMockMode()
@@ -216,7 +216,16 @@ export default function EventsPage() {
           ) : (
             <div className="mt-4 space-y-3">
               {upcoming.map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  canManage={canManageEvents}
+                  onDelete={() => {
+                    if (window.confirm(`Are you sure you want to delete event "${event.name}"?`)) {
+                      deleteEvent(event.id)
+                    }
+                  }}
+                />
               ))}
             </div>
           )}
@@ -234,7 +243,16 @@ export default function EventsPage() {
           ) : (
             <div className="mt-4 space-y-3">
               {past.map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  canManage={canManageEvents}
+                  onDelete={() => {
+                    if (window.confirm(`Are you sure you want to delete event "${event.name}"?`)) {
+                      deleteEvent(event.id)
+                    }
+                  }}
+                />
               ))}
             </div>
           )}
@@ -244,7 +262,15 @@ export default function EventsPage() {
   )
 }
 
-function EventCard({ event }: { event: Event }) {
+function EventCard({
+  event,
+  canManage,
+  onDelete,
+}: {
+  event: Event
+  canManage?: boolean
+  onDelete?: () => void
+}) {
   return (
     <div className="rounded-lg border border-border/70 bg-secondary/40 p-3">
       <div className="flex items-start justify-between gap-2">
@@ -252,9 +278,22 @@ function EventCard({ event }: { event: Event }) {
           <p className="font-medium">{event.name}</p>
           <p className="mt-1 text-sm text-muted-foreground">{event.location}</p>
         </div>
-        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase text-primary">
-          {event.type.replace(/_/g, ' ')}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase text-primary">
+            {event.type.replace(/_/g, ' ')}
+          </span>
+          {canManage && onDelete && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+              onClick={onDelete}
+              title="Delete event"
+            >
+              <Trash2 className="size-3" />
+            </Button>
+          )}
+        </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span>{formatDate(event.date)}</span>

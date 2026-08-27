@@ -11,6 +11,7 @@ interface FollowUpsState {
   markComplete: (id: string) => void
   reschedule: (id: string, date: string, time: string) => void
   addNote: (id: string, notes: string) => void
+  removeFollowUp: (id: string) => void
 }
 
 export const useFollowUpsStore = create<FollowUpsState>((set) => ({
@@ -65,5 +66,13 @@ export const useFollowUpsStore = create<FollowUpsState>((set) => ({
           f.id === id ? { ...f, notes } : f
         ),
       }
+    }),
+  removeFollowUp: (id) =>
+    set((state) => {
+      const followup = state.followUps.find((f) => f.id === id)
+      if (followup) {
+        toast.success(`Follow-up for ${followup.studentName} removed.`)
+      }
+      return { followUps: state.followUps.filter((f) => f.id !== id) }
     }),
 }))
