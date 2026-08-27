@@ -1,6 +1,6 @@
 import { memo, useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import { Phone, Mail, GripVertical, GraduationCap, MoreVertical, Pencil, AlertCircle } from 'lucide-react'
+import { Phone, Mail, GripVertical, GraduationCap, MoreVertical, Pencil, AlertCircle, Trash2 } from 'lucide-react'
 import dayjs from 'dayjs'
 import { toast } from 'sonner'
 import type { Lead, LeadStage } from '@/types'
@@ -36,6 +36,7 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
   const currentUser = useAuthStore((s) => s.currentUser)
   const moveLead = useLeadsStore((s) => s.moveLead)
   const updateLead = useLeadsStore((s) => s.updateLead)
+  const removeLead = useLeadsStore((s) => s.removeLead)
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
@@ -78,6 +79,15 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
       toast.error(err instanceof Error ? err.message : 'Failed to register student. Please try again.')
     } finally {
       setIsRegistering(false)
+    }
+  }
+
+  function handleDeleteLead(e?: React.MouseEvent) {
+    if (e) e.stopPropagation()
+    if (window.confirm(`Are you sure you want to permanently delete lead "${lead.name}"?`)) {
+      removeLead(lead.id)
+      setIsDetailOpen(false)
+      toast.success(`Lead "${lead.name}" deleted.`)
     }
   }
 
@@ -137,7 +147,16 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
                         {lead.stage === ps.stage && <span className="text-[10px] text-muted-foreground font-medium">(Current)</span>}
                       </DropdownMenuItem>
                     ))}
+                    <DropdownMenuSeparator />
                   </>
+                )}
+                {canManageLeads && (
+                  <DropdownMenuItem
+                    onClick={handleDeleteLead}
+                    className="text-xs text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/50"
+                  >
+                    <Trash2 className="mr-1.5 size-3.5" /> Delete Lead
+                  </DropdownMenuItem>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -281,8 +300,18 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
           )}
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setIsDetailOpen(false)}>Close</Button>
+        <DialogFooter className="flex items-center justify-between sm:justify-between">
+          {canManageLeads ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={() => handleDeleteLead()}
+            >
+              <Trash2 className="mr-1.5 size-3.5" /> Delete Lead
+            </Button>
+          ) : <div />}
+          <Button variant="outline" size="sm" onClick={() => setIsDetailOpen(false)}>Close</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
