@@ -18,6 +18,8 @@ import { ApplicationFormDialog } from './components/application-form-dialog'
 
 
 
+import { isMockMode } from '@/lib/api-client'
+
 export default function ApplicationsPage() {
   const navigate = useNavigate()
   const mockApplications = useApplicationsStore((s) => s.applications)
@@ -28,8 +30,8 @@ export default function ApplicationsPage() {
   const [filters, setFilters] = useState<ApplicationFilters>(defaultApplicationFilters)
   const [formOpen, setFormOpen] = useState(false)
 
-  const applications: Application[] = apiAppData?.applications && apiAppData.applications.length > 0
-    ? apiAppData.applications.map((app) => ({
+  const applications: Application[] = !isMockMode()
+    ? (apiAppData?.applications ?? []).map((app) => ({
         id: app.id,
         applicationRef: app.id,
         studentId: app.studentId,

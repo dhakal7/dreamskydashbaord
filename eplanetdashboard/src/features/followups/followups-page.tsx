@@ -41,8 +41,8 @@ export default function FollowUpsPage() {
   const authorId = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
   const { data: apiData } = useFollowUps({ authorId, limit: 200 })
 
-  const followUps: FollowUp[] = !isMockMode() && apiData?.followUps && apiData.followUps.length > 0
-    ? apiData.followUps.map((f) => ({
+  const followUps: FollowUp[] = !isMockMode()
+    ? (apiData?.followUps ?? []).map((f) => ({
         id: f.id,
         studentId: f.studentId,
         studentName: f.student ? `${f.student.firstName} ${f.student.lastName}` : 'Student',
