@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
-  BookOpen, UserPlus, Users, Clock, Search, ChevronRight, ClipboardCheck, Pencil, UserCheck
+  BookOpen, UserPlus, Users, Clock, Search, ChevronRight, ClipboardCheck, Pencil, UserCheck, Phone, ClipboardList, Plus as PlusIcon
 } from 'lucide-react'
 import dayjs from 'dayjs'
 
@@ -54,12 +54,65 @@ interface RosterStudent {
   stage: string
 }
 
+// Class Capture List: students who enquired only for language/test-prep classes
+interface ClassCaptureEntry {
+  id: string
+  name: string
+  phone: string
+  email: string
+  course: string   // e.g. "IELTS", "PTE"
+  note: string
+  addedAt: string
+}
 
 
 export default function ClassesPage() {
   const navigate = useNavigate()
   const role = useAuthStore((s) => s.currentUser?.role ?? 'front_desk')
   const linkedId = useAuthStore((s) => s.currentUser?.linkedId)
+
+  // Page-level section: 'batches' = admitted class batches | 'capture' = inquiry-only list
+  const [sectionTab, setSectionTab] = useState<'batches' | 'capture'>('batches')
+
+  // Class Capture List state (local — these are not pushed to backend yet)
+  const [captureList, setCaptureList] = useState<ClassCaptureEntry[]>([])
+  const [captureDialogOpen, setCaptureDialogOpen] = useState(false)
+  const [captureName, setCaptureName] = useState('')
+  const [capturePhone, setCapturePhone] = useState('')
+  const [captureEmail, setCaptureEmail] = useState('')
+  const [captureCourse, setCaptureCourse] = useState('IELTS')
+  const [captureNote, setCaptureNote] = useState('')
+
+  function handleAddCapture() {
+    if (!captureName.trim() || !capturePhone.trim()) {
+      toast.error('Name and phone number are required')
+      return
+    }
+    setCaptureList((prev) => [
+      ...prev,
+      {
+        id: `cap-${Date.now()}`,
+        name: captureName.trim(),
+        phone: capturePhone.trim(),
+        email: captureEmail.trim(),
+        course: captureCourse,
+        note: captureNote.trim(),
+        addedAt: new Date().toISOString(),
+      },
+    ])
+    setCaptureName('')
+    setCapturePhone('')
+    setCaptureEmail('')
+    setCaptureCourse('IELTS')
+    setCaptureNote('')
+    setCaptureDialogOpen(false)
+    toast.success('Inquiry added to Class Capture List')
+  }
+
+  function handleDeleteCapture(id: string) {
+    setCaptureList((prev) => prev.filter((e) => e.id !== id))
+    toast.success('Entry removed from capture list')
+  }
 
   // Data queries
   const { data: liveClassesData } = useClasses()
@@ -321,7 +374,162 @@ export default function ClassesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header Toolbar */}
+      {/* Section-Level Tabs: Admitted Batches vs Class Capture List */}
+      <div className="flex items-center gap-1 border-b border-border/70 pb-0">
+        <button
+          onClick={() => setSectionTab('batches')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+            sectionTab === 'batches'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <BookOpen className="size-4" />
+            Admitted Class Batches
+          </span>
+        </button>
+        <button
+          onClick={() => setSectionTab('capture')}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+            sectionTab === 'capture'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <ClipboardList className="size-4" />
+            Class Capture List
+            {captureList.length > 0 && (
+              <span className="ml-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5">
+                {captureList.length}
+              </span>
+            )}
+          </span>
+        </button>
+      </div>
+
+      {/* ========== CLASS CAPTURE LIST TAB ========== */}
+      {sectionTab === 'capture' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-bold flex items-center gap-2">
+                <ClipboardList className="size-4 text-primary" />
+                Class Capture List
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Track students who enquired only for language/test-prep classes (IELTS, PTE, TOEFL). These are separate from study-abroad consultancy leads.
+              </p>
+            </div>
+            <Button size="sm" className="gap-1.5 text-xs" onClick={() => setCaptureDialogOpen(true)}>
+              <PlusIcon className="size-3.5" />
+              + Add Enquiry
+            </Button>
+          </div>
+
+          {captureList.length === 0 ? (
+            <EmptyState
+              icon={ClipboardList}
+              title="No class enquiries yet"
+              description="Add students who enquire about IELTS, PTE, or other test-prep classes only, separate from your study-abroad admission leads."
+              action={
+                <Button size="sm" variant="outline" className="mt-2" onClick={() => setCaptureDialogOpen(true)}>
+                  <PlusIcon className="size-3.5 mr-1" /> Add First Enquiry
+                </Button>
+              }
+            />
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {captureList.map((entry) => (
+                <Card key={entry.id} className="p-4 space-y-2 border-border/70 hover:border-primary/40 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <PersonAvatar name={entry.name} className="size-8" />
+                      <div>
+                        <p className="text-sm font-bold">{entry.name}</p>
+                        <a href={`tel:${entry.phone}`} className="flex items-center gap-0.5 text-xs text-primary hover:underline">
+                          <Phone className="size-3" />{entry.phone}
+                        </a>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[10px] bg-blue-50 text-blue-700 border-blue-200">
+                      {entry.course}
+                    </Badge>
+                  </div>
+                  {entry.email && <p className="text-[11px] text-muted-foreground">{entry.email}</p>}
+                  {entry.note && <p className="text-[11px] text-muted-foreground italic">"{entry.note}"</p>}
+                  <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                    <p className="text-[10px] text-muted-foreground">{dayjs(entry.addedAt).format('MMM D, YYYY')}</p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 text-[10px] text-red-500 hover:text-red-600 hover:bg-red-50 px-2"
+                      onClick={() => handleDeleteCapture(entry.id)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Add Enquiry Dialog */}
+          <Dialog open={captureDialogOpen} onOpenChange={setCaptureDialogOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2 text-sm font-bold">
+                  <ClipboardList className="size-4 text-primary" />
+                  Add to Class Capture List
+                </DialogTitle>
+                <DialogDescription className="text-xs">
+                  Record an enquiry from a student interested only in language/test-prep classes.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-3 py-1">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Full Name *</label>
+                  <Input value={captureName} onChange={(e) => setCaptureName(e.target.value)} placeholder="Student full name" className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Phone Number *</label>
+                  <Input value={capturePhone} onChange={(e) => setCapturePhone(e.target.value)} placeholder="98XXXXXXXX" className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Email (optional)</label>
+                  <Input value={captureEmail} onChange={(e) => setCaptureEmail(e.target.value)} placeholder="email@example.com" className="h-8 text-xs" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Class / Course</label>
+                  <Select value={captureCourse} onValueChange={setCaptureCourse}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="IELTS">IELTS</SelectItem>
+                      <SelectItem value="PTE">PTE</SelectItem>
+                      <SelectItem value="TOEFL">TOEFL</SelectItem>
+                      <SelectItem value="Spoken English">Spoken English</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold">Note (optional)</label>
+                  <Input value={captureNote} onChange={(e) => setCaptureNote(e.target.value)} placeholder="Any note about this enquiry" className="h-8 text-xs" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" size="sm" onClick={() => setCaptureDialogOpen(false)}>Cancel</Button>
+                <Button size="sm" onClick={handleAddCapture}>Save Enquiry</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
+
+      {/* ========== ADMITTED CLASS BATCHES TAB (all existing content, untouched) ========== */}
+      {sectionTab === 'batches' && (
+      <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -790,6 +998,8 @@ export default function ClassesPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+      </>
       )}
     </div>
   )

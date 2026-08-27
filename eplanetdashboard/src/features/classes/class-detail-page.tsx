@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { BookOpen, Users, ClipboardCheck, ArrowLeft, GraduationCap, Check, X, Plus, FileText } from 'lucide-react'
+import { BookOpen, Users, ClipboardCheck, ArrowLeft, GraduationCap, Check, X, Plus, FileText, Phone } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
@@ -221,6 +221,7 @@ export default function ClassDetailPage() {
         classId: cls?.id ?? '',
         studentId: e.studentId,
         studentName: e.student ? `${e.student.firstName} ${e.student.lastName}`.trim() : 'Student',
+        studentPhone: e.student?.phone || '',
         enrolledAt: e.enrolledAt,
         attendancePct: 0,
         progress: 75,
@@ -334,7 +335,19 @@ export default function ClassDetailPage() {
                               >
                                 {e.studentName}
                               </button>
-                              <p className="text-xs text-muted-foreground">Enrolled {dayjs(e.enrolledAt).format('MMM D, YYYY')}</p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs text-muted-foreground">Enrolled {dayjs(e.enrolledAt).format('MMM D, YYYY')}</p>
+                                {(e as any).studentPhone && (
+                                  <a
+                                    href={`tel:${(e as any).studentPhone}`}
+                                    onClick={(ev) => ev.stopPropagation()}
+                                    className="flex items-center gap-0.5 text-[11px] text-primary hover:underline"
+                                  >
+                                    <Phone className="size-2.5" />
+                                    {(e as any).studentPhone}
+                                  </a>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">

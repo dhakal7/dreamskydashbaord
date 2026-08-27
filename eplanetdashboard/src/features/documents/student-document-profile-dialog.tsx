@@ -74,7 +74,8 @@ export function StudentDocumentProfileDialog({
   }
 
   documents.forEach((doc) => {
-    const rawCat = (doc.category || 'other').toLowerCase() as DocumentCategory
+    // Normalize to lowercase so 'ACADEMIC', 'Academic', 'academic' all match
+    const rawCat = (doc.category || 'other').toLowerCase().trim() as DocumentCategory
     if (docsByCategory[rawCat]) {
       docsByCategory[rawCat].push(doc)
     } else {

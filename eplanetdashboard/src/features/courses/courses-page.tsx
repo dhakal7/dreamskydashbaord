@@ -62,16 +62,16 @@ export default function CoursesPage() {
     const q = search.trim().toLowerCase()
     return courses.filter((course) => {
       if (q && !`${course.name} ${course.field} ${course.universityName}`.toLowerCase().includes(q)) return false
-      if (levelFilter !== 'all' && course.level !== levelFilter) return false
+      if (levelFilter !== 'all' && (course.level ?? '').toLowerCase() !== levelFilter) return false
       if (uniFilter !== 'all' && course.universityId !== uniFilter) return false
       return true
     })
   }, [courses, search, levelFilter, uniFilter])
 
   const totalCount = filtered.length
-  const bachelorCount = filtered.filter((c) => c.level === 'bachelor').length
-  const masterCount = filtered.filter((c) => c.level === 'master').length
-  const diplomaCount = filtered.filter((c) => c.level === 'diploma').length
+  const bachelorCount = filtered.filter((c) => (c.level ?? '').toLowerCase() === 'bachelor').length
+  const masterCount = filtered.filter((c) => (c.level ?? '').toLowerCase() === 'master').length
+  const diplomaCount = filtered.filter((c) => (c.level ?? '').toLowerCase() === 'diploma').length
 
   const isFiltered = search || levelFilter !== 'all' || uniFilter !== 'all'
 
