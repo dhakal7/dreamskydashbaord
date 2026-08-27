@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { toast } from 'sonner'
+import { useLeadsStore } from '../store'
 import { LeadStageBadge, PriorityBadge } from '@/components/shared/status-badges'
 
 export const leadColumns: ColumnDef<Lead, any>[] = [
@@ -94,21 +96,34 @@ export const leadColumns: ColumnDef<Lead, any>[] = [
     id: 'actions',
     header: '',
     enableSorting: false,
-    cell: () => (
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem>View details</DropdownMenuItem>
-          <DropdownMenuItem>Log a call</DropdownMenuItem>
-          <DropdownMenuItem>Send email</DropdownMenuItem>
-          <DropdownMenuItem>Convert to student</DropdownMenuItem>
-          <DropdownMenuItem destructive>Delete lead</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ),
+    cell: ({ row }) => {
+      const handleDelete = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (window.confirm(`Are you sure you want to delete lead "${row.original.name}"?`)) {
+          useLeadsStore.getState().removeLead(row.original.id)
+          toast.success(`Lead "${row.original.name}" deleted.`)
+        }
+      }
+
+      return (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>View details</DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Log a call</DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Send email</DropdownMenuItem>
+            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Convert to student</DropdownMenuItem>
+            <DropdownMenuItem destructive onClick={handleDelete}>
+              Delete lead
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )
+    },
   },
 ]
+

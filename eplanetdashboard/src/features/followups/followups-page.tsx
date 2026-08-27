@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Calendar, Clock, Table2, Plus, Phone, Mail, MessageSquare, User } from 'lucide-react'
+import { Calendar, Clock, Table2, Plus, Phone, Mail, MessageSquare, User, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -158,6 +158,31 @@ export default function FollowUpsPage() {
             <p className="text-xs text-muted-foreground">{row.original.time}</p>
           </div>
         ),
+      },
+      {
+        id: 'actions',
+        header: '',
+        enableSorting: false,
+        cell: ({ row }) => {
+          const handleDelete = (e: React.MouseEvent) => {
+            e.stopPropagation()
+            if (window.confirm(`Are you sure you want to delete this follow-up for "${row.original.studentName}"?`)) {
+              useFollowUpsStore.getState().removeFollowUp(row.original.id)
+            }
+          }
+
+          return (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+              onClick={handleDelete}
+              title="Delete follow-up"
+            >
+              <Trash2 className="size-3.5" />
+            </Button>
+          )
+        },
       },
     ],
     [studentColors]

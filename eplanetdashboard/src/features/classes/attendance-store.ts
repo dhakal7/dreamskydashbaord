@@ -25,12 +25,21 @@ interface AttendanceState {
     date: string,
     presence: StudentPresence[],
   ) => void
+  unenrollStudent: (classId: string, studentId: string) => void
 }
 
 export const useAttendanceStore = create<AttendanceState>((set, get) => ({
   attendanceRecords: [...mockAttendance],
   enrollments: [...mockEnrollments],
   studentPresence: {},
+
+  unenrollStudent: (classId, studentId) => {
+    set((state) => ({
+      enrollments: state.enrollments.filter(
+        (e) => !(e.classId === classId && e.studentId === studentId)
+      ),
+    }))
+  },
 
   getAttendanceForClass: (classId) =>
     get()

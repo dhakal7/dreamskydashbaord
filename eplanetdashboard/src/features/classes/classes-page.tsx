@@ -541,18 +541,16 @@ export default function ClassesPage() {
           </p>
         </div>
 
-        {role !== 'teacher' && (
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              className="gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs h-9"
-              onClick={() => handleOpenAdmitModal(formattedClasses[0]?.id || '')}
-            >
-              <UserPlus className="size-4" />
-              + Admit Student to Class
-            </Button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            className="gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs h-9"
+            onClick={() => handleOpenAdmitModal(formattedClasses[0]?.id || '')}
+          >
+            <UserPlus className="size-4" />
+            + Admit Student to Class
+          </Button>
+        </div>
       </div>
 
       {/* Search & Subject Filter Bar */}
@@ -679,20 +677,18 @@ export default function ClassesPage() {
 
                 {/* Card Action Footer */}
                 <div className="flex items-center justify-end pt-2">
-                  {role !== 'teacher' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10 mr-auto"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleOpenAdmitModal(c.id)
-                      }}
-                    >
-                      <UserPlus className="size-3.5" />
-                      + Admit Student
-                    </Button>
-                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10 mr-auto"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleOpenAdmitModal(c.id)
+                    }}
+                  >
+                    <UserPlus className="size-3.5" />
+                    + Admit Student
+                  </Button>
 
                   <Button
                     size="sm"

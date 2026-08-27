@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { PlaneTakeoff, CheckCircle2, Clock, XCircle, FileStack, Plus } from 'lucide-react'
+import { PlaneTakeoff, CheckCircle2, Clock, XCircle, FileStack, Plus, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -33,6 +33,7 @@ import { isMockMode } from '@/lib/api-client'
 export default function VisaPage() {
   const navigate = useNavigate()
   const mockVisaCases = useVisaStore((s) => s.visaCases)
+  const removeVisaCase = useVisaStore((s) => s.removeVisaCase)
   const { data: apiVisaData } = useVisaCases()
   const students = useStudentsStore((s) => s.students)
   const currentUser = useAuthStore((s) => s.currentUser)
@@ -201,7 +202,25 @@ export default function VisaPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-semibold text-sm truncate">{vc.studentName}</p>
-                      <VisaStatusBadge status={vc.overallStatus} className="shrink-0 text-[10px] py-0" />
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <VisaStatusBadge status={vc.overallStatus} className="text-[10px] py-0" />
+                        {canManage && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-6 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              if (window.confirm(`Are you sure you want to delete visa case for "${vc.studentName}"?`)) {
+                                removeVisaCase(vc.id)
+                              }
+                            }}
+                            title="Delete visa case"
+                          >
+                            <Trash2 className="size-3" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">

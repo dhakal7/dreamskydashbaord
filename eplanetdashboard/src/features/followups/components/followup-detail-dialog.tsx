@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CalendarClock, CheckCircle, Clock, FileText, Phone, MessageSquare, Mail, User } from 'lucide-react'
+import { CalendarClock, CheckCircle, Clock, FileText, Phone, MessageSquare, Mail, User, Trash2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -35,6 +35,7 @@ export function FollowUpDetailDialog({
   const markComplete = useFollowUpsStore((s) => s.markComplete)
   const reschedule = useFollowUpsStore((s) => s.reschedule)
   const addNote = useFollowUpsStore((s) => s.addNote)
+  const removeFollowUp = useFollowUpsStore((s) => s.removeFollowUp)
 
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
@@ -70,6 +71,13 @@ export function FollowUpDetailDialog({
     addNote(followup.id, notes)
   }
 
+  const handleDelete = () => {
+    if (window.confirm(`Are you sure you want to delete this follow-up for "${followup.studentName}"?`)) {
+      removeFollowUp(followup.id)
+      onOpenChange(false)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md gap-5 overflow-hidden">
@@ -100,59 +108,46 @@ export function FollowUpDetailDialog({
               </div>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Priority</p>
-              <div className="mt-1">
-                <PriorityBadge priority={followup.priority} />
-              </div>
+              <p className="text-xs text-muted-foreground">Due Date</p>
+              <p className="mt-0.5 font-medium text-foreground font-tabular">{followup.date} at {followup.time}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Status</p>
-              <div className="mt-1">
+              <p className="text-xs text-muted-foreground">Priority / Status</p>
+              <div className="mt-0.5 flex items-center gap-2">
+                <PriorityBadge priority={followup.priority} />
                 <FollowUpStatusBadge status={followup.status} />
-              </div>
-            </div>
-            <div className="col-span-2 border-t border-border/40 pt-2.5 mt-1 grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-xs text-muted-foreground">Scheduled Date</p>
-                <p className="mt-0.5 font-medium text-foreground font-tabular">{followup.date}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Scheduled Time</p>
-                <p className="mt-0.5 font-medium text-foreground font-tabular">{followup.time}</p>
               </div>
             </div>
           </div>
 
-          {/* Quick Actions (e.g. Mark Complete) */}
-          {followup.status !== 'completed' && (
-            <div className="flex gap-2">
+          {/* Quick Actions */}
+          <div className="flex items-center gap-2">
+            {followup.status !== 'completed' && (
               <Button
                 variant="default"
                 size="sm"
-                className="flex-1 font-medium bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="flex-1 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={handleMarkComplete}
               >
-                <CheckCircle className="size-4 mr-1.5" /> Mark Completed
+                <CheckCircle className="size-3.5" /> Mark Completed
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsRescheduling(!isRescheduling)}
-              >
-                <Clock className="size-4 mr-1.5" /> {isRescheduling ? 'Cancel Reschedule' : 'Reschedule'}
-              </Button>
-            </div>
-          )}
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 text-xs gap-1.5"
+              onClick={() => setIsRescheduling(!isRescheduling)}
+            >
+              <Clock className="size-3.5" /> {isRescheduling ? 'Cancel Reschedule' : 'Reschedule'}
+            </Button>
+          </div>
 
           {/* Reschedule Form */}
           {isRescheduling && (
-            <form onSubmit={handleReschedule} className="space-y-3 border border-border/80 rounded-xl p-3.5 bg-background shadow-inner">
-              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Clock className="size-3.5 text-primary" /> Reschedule Follow-up
-              </p>
-              <div className="grid grid-cols-2 gap-2.5">
+            <form onSubmit={handleReschedule} className="bg-secondary/40 rounded-xl p-3 border border-border/60 space-y-3">
+              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-[11px] text-muted-foreground">New Date</label>
+                  <label className="text-[11px] font-medium text-muted-foreground">New Date</label>
                   <Input
                     type="date"
                     value={date}
@@ -162,7 +157,7 @@ export function FollowUpDetailDialog({
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-muted-foreground">New Time</label>
+                  <label className="text-[11px] font-medium text-muted-foreground">New Time</label>
                   <Input
                     type="time"
                     value={time}
@@ -189,7 +184,15 @@ export function FollowUpDetailDialog({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
             />
-            <div className="flex justify-end">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700 gap-1 h-8"
+                onClick={handleDelete}
+              >
+                <Trash2 className="size-3.5" /> Delete Follow-up
+              </Button>
               <Button
                 variant="secondary"
                 size="sm"

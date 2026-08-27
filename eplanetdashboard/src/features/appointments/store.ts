@@ -10,6 +10,7 @@ interface AppointmentsState {
   addAppointment: (data: Omit<Appointment, 'id'>) => Appointment
   updateAppointment: (id: string, patch: Partial<Appointment>) => void
   cancelAppointment: (id: string) => void
+  removeAppointment: (id: string) => void
 }
 
 export const useAppointmentsStore = create<AppointmentsState>((set, get) => ({
@@ -58,6 +59,17 @@ export const useAppointmentsStore = create<AppointmentsState>((set, get) => ({
         appointments: state.appointments.map((a) =>
           a.id === id ? { ...a, status: 'cancelled' } : a
         ),
+      }
+    }),
+
+  removeAppointment: (id) =>
+    set((state) => {
+      const appt = state.appointments.find((a) => a.id === id)
+      if (appt) {
+        toast.success(`Appointment for ${appt.studentName} deleted.`)
+      }
+      return {
+        appointments: state.appointments.filter((a) => a.id !== id),
       }
     }),
 }))

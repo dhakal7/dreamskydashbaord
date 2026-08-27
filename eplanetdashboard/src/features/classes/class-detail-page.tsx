@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { BookOpen, Users, ClipboardCheck, ArrowLeft, GraduationCap, Check, X, Plus, FileText, Phone } from 'lucide-react'
+import { BookOpen, Users, ClipboardCheck, ArrowLeft, GraduationCap, Check, X, Plus, FileText, Phone, Trash2, UserMinus } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
@@ -39,7 +39,9 @@ export default function ClassDetailPage() {
   const { id } = useParams<{ id: string }>()
   const role = useAuthStore((s) => s.currentUser?.role ?? 'front_desk')
   const submitAttendanceMock = useAttendanceStore((s) => s.submitAttendance)
+  const unenrollStudentMock = useAttendanceStore((s) => s.unenrollStudent)
   const addMaterialMock = useClassMaterialsStore((s) => s.addMaterial)
+  const removeMaterialMock = useClassMaterialsStore((s) => s.removeMaterial)
   const markAttendanceApi = useMarkAttendance()
 
   // Live mode: fetch class from backend; mock mode: read from mock store
@@ -213,6 +215,21 @@ export default function ClassDetailPage() {
     }
   }
 
+  const handleUnenroll = (studentId: string, studentName: string) => {
+    if (!cls) return
+    if (window.confirm(`Are you sure you want to remove "${studentName}" from this class?`)) {
+      unenrollStudentMock(cls.id, studentId)
+      toast.success(`${studentName} removed from class`)
+    }
+  }
+
+  const handleDeleteMaterial = (materialId: string, title: string) => {
+    if (window.confirm(`Are you sure you want to delete material "${title}"?`)) {
+      removeMaterialMock(materialId)
+      toast.success(`Material "${title}" deleted`)
+    }
+  }
+
   const liveEnrollments = activeLiveClass?.enrollments
   const storeEnrollments = (getClassEnrollments(cls?.id ?? '').length > 0 ? getClassEnrollments(cls?.id ?? '') : getClassEnrollments(id!))
   const roster = Array.isArray(liveEnrollments) && liveEnrollments.length > 0
@@ -353,12 +370,26 @@ export default function ClassDetailPage() {
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span className="font-tabular">{e.progress}% progress</span>
                             <span className="font-tabular">{e.attendancePct}% attendance</span>
+                            {(role === 'super_admin' || role === 'front_desk' || role === 'teacher') && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                                onClick={(ev) => {
+                                  ev.stopPropagation()
+                                  handleUnenroll(e.studentId, e.studentName)
+                                }}
+                                title="Remove student from class"
+                              >
+                                <UserMinus className="size-3.5" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       )
                     })}
                   </div>
-                  {(role === 'teacher' || role === 'super_admin') && roster.length > 0 && (
+                  {(role === 'teacher' || role === 'super_admin' || role === 'front_desk') && roster.length > 0 && (
                     <div className="mt-4 flex justify-end border-t pt-4">
                       <Button onClick={handleSubmitAttendance} className="gap-2">
                         <ClipboardCheck className="size-4" />
@@ -411,7 +442,7 @@ export default function ClassDetailPage() {
                       <CardTitle>Materials & Assignments</CardTitle>
                       <CardDescription>{materials.length} files</CardDescription>
                     </div>
-                    {(role === 'teacher' || role === 'super_admin') && (
+                    {(role === 'teacher' || role === 'super_admin' || role === 'front_desk') && (
                       <Button size="sm" onClick={() => setMaterialDialogOpen(true)} className="gap-1">
                         <Plus className="size-4" />
                         Add Material
@@ -451,6 +482,17 @@ export default function ClassDetailPage() {
                               </div>
                             )}
                           </div>
+                          {(role === 'teacher' || role === 'super_admin' || role === 'front_desk') && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50 shrink-0"
+                              onClick={() => handleDeleteMaterial(m.id, m.title)}
+                              title="Delete material"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Uploaded {dayjs(m.uploadedAt).format('MMM D, YYYY')}

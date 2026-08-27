@@ -9,6 +9,7 @@ interface ApplicationsState {
   applications: Application[]
   moveApplication: (id: string, stage: ApplicationStage) => void
   addApplication: (data: Omit<Application, 'id' | 'applicationRef' | 'submittedDate' | 'lastUpdate'>) => void
+  removeApplication: (id: string) => void
 }
 
 export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
@@ -41,4 +42,14 @@ export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
     set({ applications: [...current, newApp] })
     toast.success(`Application created for ${newApp.studentName}`)
   },
+  removeApplication: (id) =>
+    set((state) => {
+      const app = state.applications.find((item) => item.id === id)
+      if (app) {
+        toast.success(`Application ${app.applicationRef} deleted.`)
+      }
+      return {
+        applications: state.applications.filter((item) => item.id !== id),
+      }
+    }),
 }))

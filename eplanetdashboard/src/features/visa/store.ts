@@ -10,6 +10,7 @@ interface VisaState {
   updateChecklistItem: (caseId: string, step: VisaStep, status: VisaStatus) => void
   updateOverallStatus: (caseId: string, status: VisaStatus) => void
   addVisaCase: (data: Omit<VisaCase, 'id' | 'checklist' | 'progress' | 'overallStatus' | 'submissionDate'>) => void
+  removeVisaCase: (caseId: string) => void
 }
 
 function recalcProgress(checklist: VisaCase['checklist']): number {
@@ -91,5 +92,16 @@ export const useVisaStore = create<VisaState>((set) => ({
       }
       toast.success(`Visa case started for ${newCase.studentName}`)
       return { visaCases: [...state.visaCases, newCase] }
+    }),
+
+  removeVisaCase: (caseId) =>
+    set((state) => {
+      const vc = state.visaCases.find((item) => item.id === caseId)
+      if (vc) {
+        toast.success(`Visa case for ${vc.studentName} deleted.`)
+      }
+      return {
+        visaCases: state.visaCases.filter((item) => item.id !== caseId),
+      }
     }),
 }))
