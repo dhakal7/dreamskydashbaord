@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import dayjs from 'dayjs'
-import { Phone, MoreHorizontal } from 'lucide-react'
+import { Phone, MoreHorizontal, Pencil } from 'lucide-react'
 import type { Lead } from '@/types'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -92,38 +92,48 @@ export const leadColumns: ColumnDef<Lead, any>[] = [
     header: 'Next Follow-up',
     cell: ({ row }) => <span className="text-xs text-muted-foreground font-tabular">{dayjs(row.original.nextFollowUp).format('MMM D, YYYY')}</span>,
   },
-  {
-    id: 'actions',
-    header: '',
-    enableSorting: false,
-    cell: ({ row }) => {
-      const handleDelete = (e: React.MouseEvent) => {
-        e.stopPropagation()
-        if (window.confirm(`Are you sure you want to delete lead "${row.original.name}"?`)) {
-          useLeadsStore.getState().removeLead(row.original.id)
-          toast.success(`Lead "${row.original.name}" deleted.`)
-        }
-      }
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>View details</DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Log a call</DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Send email</DropdownMenuItem>
-            <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Convert to student</DropdownMenuItem>
-            <DropdownMenuItem destructive onClick={handleDelete}>
-              Delete lead
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
-  },
 ]
+
+export function getLeadColumns(onEdit?: (lead: Lead) => void): ColumnDef<Lead, any>[] {
+  return [
+    ...leadColumns.filter(c => c.id !== 'actions'),
+    {
+      id: 'actions',
+      header: '',
+      enableSorting: false,
+      cell: ({ row }) => {
+        const handleDelete = (e: React.MouseEvent) => {
+          e.stopPropagation()
+          if (window.confirm(`Are you sure you want to delete lead "${row.original.name}"?`)) {
+            useLeadsStore.getState().removeLead(row.original.id)
+            toast.success(`Lead "${row.original.name}" deleted.`)
+          }
+        }
+
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
+                <MoreHorizontal className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {onEdit && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(row.original); }}>
+                  <Pencil className="mr-2 size-3.5" /> Edit Details
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Log a call</DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Send email</DropdownMenuItem>
+              <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Convert to student</DropdownMenuItem>
+              <DropdownMenuItem destructive onClick={handleDelete}>
+                Delete lead
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
+}
 
