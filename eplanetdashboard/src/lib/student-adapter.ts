@@ -34,6 +34,15 @@ export function adaptApiStudentToStudent(apiStudent: ApiStudent): Student {
     ? `${apiStudent.assignedCounselor.firstName} ${apiStudent.assignedCounselor.lastName}`.trim()
     : 'Unassigned'
 
+  const acad = (apiStudent.academicBackground as any) || {}
+  const parsedLevel = acad.preferredLevel
+    ? parseLevelFromNotes(acad.preferredLevel)
+    : parseLevelFromNotes(apiStudent.notes)
+
+  const parsedCountries = Array.isArray(acad.preferredCountries) && acad.preferredCountries.length > 0
+    ? acad.preferredCountries
+    : parseCountriesFromNotes(apiStudent.notes)
+
   return {
     id: apiStudent.id,
     studentId: apiStudent.id,
@@ -49,11 +58,11 @@ export function adaptApiStudentToStudent(apiStudent: ApiStudent): Student {
     status: (apiStudent.isActive ? 'active' : 'inactive') as Student['status'],
     counselorId: apiStudent.assignedCounselorId || apiStudent.assignedCounselor?.id || '',
     counselorName,
-    preferredCountries: parseCountriesFromNotes(apiStudent.notes),
-    preferredLevel: parseLevelFromNotes(apiStudent.notes),
-    budgetUsd: 0,
+    preferredCountries: parsedCountries,
+    preferredLevel: parsedLevel,
+    budgetUsd: acad.budgetUsd || 0,
     englishTest: { type: 'None', overallScore: 0, testDate: '' },
-    academics: [],
+    academics: Array.isArray(acad.records) ? acad.records : [],
     parents: [],
     documentsUploaded: 0,
     documentsRequired: 7,
