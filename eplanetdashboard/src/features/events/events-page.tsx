@@ -27,14 +27,15 @@ function scopeLabel(scope: EventAudienceScope) {
 }
 
 import { useEvents } from '@/hooks/use-events'
+import { isMockMode } from '@/lib/api-client'
 
 export default function EventsPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const { events: mockEvents, addEvent } = useEventsStore()
   const { data: apiEventsData } = useEvents()
 
-  const events = apiEventsData?.events && apiEventsData.events.length > 0
-    ? apiEventsData.events.map((e) => ({
+  const events = !isMockMode()
+    ? (apiEventsData?.events ?? []).map((e) => ({
         id: e.id,
         name: e.title,
         type: e.type.toLowerCase() as EventType,

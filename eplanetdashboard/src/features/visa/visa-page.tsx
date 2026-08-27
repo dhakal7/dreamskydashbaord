@@ -28,6 +28,8 @@ import { VisaFormDialog } from './components/visa-form-dialog'
 
 
 
+import { isMockMode } from '@/lib/api-client'
+
 export default function VisaPage() {
   const navigate = useNavigate()
   const mockVisaCases = useVisaStore((s) => s.visaCases)
@@ -35,8 +37,8 @@ export default function VisaPage() {
   const students = useStudentsStore((s) => s.students)
   const currentUser = useAuthStore((s) => s.currentUser)
 
-  const visaCases: VisaCase[] = apiVisaData?.visaCases && apiVisaData.visaCases.length > 0
-    ? apiVisaData.visaCases.map((vc) => ({
+  const visaCases: VisaCase[] = !isMockMode()
+    ? (apiVisaData?.visaCases ?? []).map((vc) => ({
         id: vc.id,
         studentId: vc.studentId,
         studentName: vc.student ? `${vc.student.firstName} ${vc.student.lastName}` : 'Unknown Student',

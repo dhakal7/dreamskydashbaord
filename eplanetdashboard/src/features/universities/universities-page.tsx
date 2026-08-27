@@ -17,6 +17,7 @@ import { UniversityDialog } from './components/university-dialog'
 import type { University } from '@/types'
 
 import { useUniversities } from '@/hooks/use-universities'
+import { isMockMode } from '@/lib/api-client'
 
 export default function UniversitiesPage() {
   const [searchParams] = useSearchParams()
@@ -27,8 +28,8 @@ export default function UniversitiesPage() {
   const { data: apiUniData } = useUniversities()
   const courses = useCoursesStore((s) => s.courses)
 
-  const universities = apiUniData?.universities && apiUniData.universities.length > 0
-    ? apiUniData.universities.map((u) => ({
+  const universities = !isMockMode()
+    ? (apiUniData?.universities ?? []).map((u) => ({
         id: u.id,
         name: u.name,
         countryId: u.countryId,

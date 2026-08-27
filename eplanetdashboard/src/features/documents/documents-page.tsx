@@ -17,6 +17,8 @@ import { useAuthStore } from '@/store/auth-store'
 import { toast } from 'sonner'
 import type { StudentDocumentProfile, StudentDocument } from '@/types'
 
+import { isMockMode } from '@/lib/api-client'
+
 export default function DocumentsPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const students = useStudentsStore((s) => s.students)
@@ -46,8 +48,8 @@ export default function DocumentsPage() {
 
   // Generate fallback student profile cards if using mock store or before backend response
   const profiles: StudentDocumentProfile[] = useMemo(() => {
-    if (apiProfiles && apiProfiles.length > 0) {
-      return apiProfiles
+    if (!isMockMode()) {
+      return apiProfiles ?? []
     }
 
     // Adapt students + documents store into Student Profile Cards

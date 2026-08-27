@@ -54,8 +54,8 @@ export default function AppointmentsPage() {
   const counselorId = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
   const { data: apiData } = useAppointments({ counselorId, limit: 200 })
 
-  const appointments: Appointment[] = !isMockMode() && apiData?.appointments && apiData.appointments.length > 0
-    ? apiData.appointments.map((a) => ({
+  const appointments: Appointment[] = !isMockMode()
+    ? (apiData?.appointments ?? []).map((a) => ({
         id: a.id,
         title: `${(a.type ?? 'Appointment').replace(/_/g, ' ')} — ${a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Student'}`,
         studentId: a.studentId,

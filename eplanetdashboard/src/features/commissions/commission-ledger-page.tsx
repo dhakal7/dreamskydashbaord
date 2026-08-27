@@ -22,6 +22,7 @@ function formatDate(value?: string) {
 }
 
 import { useCommissions, useMarkCommissionPaid } from '@/hooks/use-commissions'
+import { isMockMode } from '@/lib/api-client'
 
 export default function CommissionLedgerPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
@@ -32,7 +33,7 @@ export default function CommissionLedgerPage() {
 
   const apiCommissionsList = Array.isArray(apiCommissions) ? apiCommissions : []
 
-  const commissions: Commission[] = apiCommissionsList.length > 0
+  const commissions: Commission[] = !isMockMode()
     ? apiCommissionsList.map((c) => ({
         id: c.id,
         ruleId: c.ruleId ?? 'rule-1',
