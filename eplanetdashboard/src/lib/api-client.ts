@@ -117,7 +117,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api'
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
-  timeout: 15_000,
+  timeout: 30_000, // 30s — cPanel shared DB can be slow on first queries
   headers: { 'Content-Type': 'application/json' },
 })
 

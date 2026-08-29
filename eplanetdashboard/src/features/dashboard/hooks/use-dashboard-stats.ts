@@ -24,6 +24,7 @@ import { studentApi } from '@/api/student-api'
 import { followUpApi } from '@/api/followup-api'
 import { appointmentApi } from '@/api/appointment-api'
 import { commissionApi } from '@/api/commission-api'
+import { dashboardApi } from '@/api/dashboard-api'
 import { getFrontDeskStats, getCounselorDashboard } from '../role-selectors'
 import { getUpcomingFollowUps, getDashboardStats } from '../selectors'
 import type { AppointmentStatus, LeadStage, Priority } from '@/types'
@@ -73,30 +74,25 @@ export function useSuperAdminStats() {
   return useQuery<SuperAdminStatItem[]>({
     queryKey: dashboardKeys.superAdmin(),
     queryFn: async () => {
-      const thirtyDaysAgo = dayjs().subtract(30, 'day').toISOString()
-      const [enrolledStudents, newLeads, followUps, apps, offerLetters, visaCases, enrolledOnly] = await Promise.all([
-        studentApi.list({ stageIn: 'ENROLLED,APPLIED,OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED,DEPARTED', limit: 1 }),
-        studentApi.list({ stageIn: 'LEAD,PROSPECT', createdFrom: thirtyDaysAgo, limit: 1 }),
-        followUpApi.list({ status: 'upcoming', limit: 1 }),
-        studentApi.list({ stageIn: 'APPLIED,OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED', limit: 1 }),
-        studentApi.list({ stage: 'OFFER_RECEIVED', limit: 1 }),
-        studentApi.list({ stageIn: 'VISA_APPLIED,VISA_APPROVED', limit: 1 }),
-        studentApi.list({ stage: 'ENROLLED', limit: 1 }),
-      ])
+      // Single consolidated request — backend runs all counts in parallel server-side
+      const summary = await dashboardApi.getSummary()
 
       return [
-        { label: 'Total Students', value: enrolledStudents.pagination.total, delta: `${enrolledStudents.pagination.total} total`, trend: 'up' as const },
-        { label: 'New Leads', value: newLeads.pagination.total, delta: 'Last 30 days', trend: 'up' as const },
-        { label: "Today's Follow-ups", value: followUps.pagination.total, delta: 'Due today', trend: 'flat' as const },
-        { label: 'Applications', value: apps.pagination.total, delta: `${apps.pagination.total} active`, trend: 'up' as const },
-        { label: 'Offer Letters', value: offerLetters.pagination.total, delta: `${offerLetters.pagination.total} received`, trend: 'up' as const },
-        { label: 'Visa Processing', value: visaCases.pagination.total, delta: `${visaCases.pagination.total} total cases`, trend: 'flat' as const },
-        { label: 'Enrolled Students', value: enrolledOnly.pagination.total, delta: `${enrolledOnly.pagination.total} enrolled`, trend: 'up' as const },
+        { label: 'Total Students',      value: summary.totalStudents,   delta: `${summary.totalStudents} total`,       trend: 'up'   as const },
+        { label: 'New Leads',           value: summary.newLeads,         delta: 'Last 30 days',                         trend: 'up'   as const },
+        { label: "Today's Follow-ups",  value: summary.pendingFollowUps, delta: 'Upcoming',                             trend: 'flat' as const },
+        { label: 'Applications',        value: summary.applications,     delta: `${summary.applications} active`,       trend: 'up'   as const },
+        { label: 'Offer Letters',       value: summary.offerLetters,     delta: `${summary.offerLetters} received`,     trend: 'up'   as const },
+        { label: 'Visa Processing',     value: summary.visaCases,        delta: `${summary.visaCases} total cases`,     trend: 'flat' as const },
+        { label: 'Enrolled Students',   value: summary.enrolledOnly,     delta: `${summary.enrolledOnly} enrolled`,     trend: 'up'   as const },
       ]
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,     // 2 minutes — refresh dashboard data more often
     enabled: !isMockMode(),
-    placeholderData: (previousData) => previousData ?? (isMockMode() ? getDashboardStats() : []),
+    // In real mode: return undefined (not []) so the dashboard shows a loading state
+    // until the first successful fetch. In mock mode: return pre-computed mock data.
+    placeholderData: (previousData) =>
+      previousData ?? (isMockMode() ? getDashboardStats() : undefined),
   })
 }
 

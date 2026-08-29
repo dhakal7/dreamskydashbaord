@@ -8,6 +8,7 @@ router.get(["/", "/health"], (req, res) => {
 
 // ─── Module Routers ───────────────────────────────────────────────
 router.use("/auth", require("./auth.routes"));
+router.use("/dashboard", require("./dashboard.routes"));
 router.use("/users", require("./user.routes"));
 router.use("/students", require("./student.routes"));
 router.use("/follow-ups", require("./followup.routes"));

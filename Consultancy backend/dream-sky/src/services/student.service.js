@@ -32,6 +32,11 @@ const LIST_SELECT = {
     assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
     isActive: true,
     createdAt: true,
+    // notes & academicBackground are needed by the frontend to parse
+    // interestedLevel / preferredLevel / interestedCountries from the notes string.
+    // Without these, every lead shows as 'bachelor' regardless of what was saved.
+    notes: true,
+    academicBackground: true,
 };
 
 // ─── PORTAL PROVISIONING + WELCOME EMAIL ───────────────────────────────────────
