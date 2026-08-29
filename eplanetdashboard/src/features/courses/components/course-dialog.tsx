@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Plus, AlertTriangle } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
@@ -20,7 +20,8 @@ const levelLabels: Record<StudyLevel, string> = {
   phd: 'PhD',
 }
 
-// Normalize API/DB level strings to lowercase StudyLevel keys
+// Normalize API/DB level strings to lowercase StudyLevel keys.
+// Handles both lowercase ('master') and uppercase DB enum values ('MASTER').
 function normalizeLevel(raw: string | undefined): StudyLevel {
   const map: Record<string, StudyLevel> = {
     bachelor: 'bachelor', bachelors: 'bachelor', undergraduate: 'bachelor',
@@ -29,7 +30,11 @@ function normalizeLevel(raw: string | undefined): StudyLevel {
     foundation: 'foundation',
     phd: 'phd', doctorate: 'phd',
   }
-  return map[(raw ?? '').toLowerCase().trim()] ?? 'bachelor'
+  const normalized = map[(raw ?? '').toLowerCase().trim()]
+  if (!normalized) {
+    console.warn(`[CourseDialog] Unknown level value: "${raw}" — defaulting to 'bachelor'`)
+  }
+  return normalized ?? 'bachelor'
 }
 
 interface CourseDialogProps {
@@ -63,8 +68,14 @@ export function CourseDialog({ course, open, onOpenChange }: CourseDialogProps) 
 
   const isEditing = course !== null
 
+  // Track whether the dialog was previously open so we only reset on
+  // open→true transitions, not on every re-render caused by `universities`
+  // refetching (which previously reset `level` back to 'bachelor').
+  const wasOpenRef = useRef(false)
+
   useEffect(() => {
-    if (open) {
+    if (open && !wasOpenRef.current) {
+      // Dialog just opened — populate fields
       if (course) {
         setName(course.name)
         setUniversityId(course.universityId)
@@ -84,6 +95,7 @@ export function CourseDialog({ course, open, onOpenChange }: CourseDialogProps) 
       }
       setError('')
     }
+    wasOpenRef.current = open
   }, [open, course, universities])
 
   function handleSubmit() {
