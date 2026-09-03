@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { BookOpen, Users, ClipboardCheck, ArrowLeft, GraduationCap, Check, X, Plus, FileText, Phone, Trash2, UserMinus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -18,6 +18,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 import { useAuthStore } from '@/store/auth-store'
 import { classes as mockAllClasses } from '@/mock'
 import { getClassEnrollments, getClassAttendance, getClassMaterials } from './selectors'
@@ -25,7 +26,9 @@ import { useAttendanceStore, type StudentPresence } from './attendance-store'
 import { useClassMaterialsStore, type AddMaterialData } from './materials-store'
 import { StudentClassProfileDialog } from './components/student-class-profile-dialog'
 import { isMockMode } from '@/lib/api-client'
-import { useClass, useClasses, useMarkAttendance, useClassContent } from '@/hooks/use-classes'
+import { useClass, useClasses, useMarkAttendance, useClassContent, useEnrollStudent } from '@/hooks/use-classes'
+import { useStudents } from '@/hooks/use-students'
+import { useStudentsStore } from '@/features/students/store'
 import { classApi } from '@/api/class-api'
 import dayjs from 'dayjs'
 
@@ -43,6 +46,13 @@ export default function ClassDetailPage() {
   const addMaterialMock = useClassMaterialsStore((s) => s.addMaterial)
   const removeMaterialMock = useClassMaterialsStore((s) => s.removeMaterial)
   const markAttendanceApi = useMarkAttendance()
+  const enrollStudentMock = useAttendanceStore((s) => s.enrollStudent)
+  const enrollMutation = useEnrollStudent()
+  const { data: liveStudentsData } = useStudents({ limit: 100 })
+  const mockStudents = useStudentsStore((s) => s.students)
+  const [admitDialogOpen, setAdmitDialogOpen] = useState(false)
+  const [targetStudentId, setTargetStudentId] = useState('')
+  const [isAdmitting, setIsAdmitting] = useState(false)
 
   // Live mode: fetch class from backend; mock mode: read from mock store
   const { data: liveClass, isLoading: isClassLoading } = useClass(id!)
@@ -230,6 +240,64 @@ export default function ClassDetailPage() {
     }
   }
 
+  const availableStudents = useMemo(() => {
+    if (!isMockMode()) {
+      const rawStudents = liveStudentsData?.students || (Array.isArray(liveStudentsData) ? liveStudentsData : [])
+      if (rawStudents.length > 0) {
+        return rawStudents.map((s: any) => ({
+          id: s.id,
+          studentId: s.studentId || s.id,
+          name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email || 'Student',
+          email: s.email || '',
+          phone: s.phone || '',
+        }))
+      }
+    }
+    return mockStudents.map((s) => ({ id: s.id, studentId: s.studentId || s.id, name: s.name, email: s.email, phone: s.phone || '' }))
+  }, [liveStudentsData, mockStudents])
+
+  const handleAdmitSubmit = () => {
+    if (!cls || !targetStudentId) {
+      toast.error('Please select a student to admit')
+      return
+    }
+    const student = availableStudents.find((s) => s.id === targetStudentId)
+    setIsAdmitting(true)
+    if (!isMockMode()) {
+      enrollMutation.mutate(
+        { classId: cls.id, studentId: targetStudentId },
+        {
+          onSuccess: () => {
+            setIsAdmitting(false)
+            setAdmitDialogOpen(false)
+            setTargetStudentId('')
+            toast.success(`Enrolled ${student?.name || 'Student'} into ${cls.name}!`)
+          },
+          onError: (err: any) => {
+            setIsAdmitting(false)
+            toast.error(err.message || 'Failed to admit student')
+          },
+        }
+      )
+    } else {
+      enrollStudentMock({
+        id: `enr-${Date.now()}`,
+        classId: cls.id,
+        studentId: targetStudentId,
+        studentName: student?.name || 'Student',
+        studentEmail: student?.email || '',
+        studentPhone: student?.phone || '',
+        enrolledAt: new Date().toISOString(),
+        attendancePct: 0,
+        progress: 0,
+      })
+      setIsAdmitting(false)
+      setAdmitDialogOpen(false)
+      setTargetStudentId('')
+      toast.success(`Enrolled ${student?.name || 'Student'} into ${cls.name}!`)
+    }
+  }
+
   const liveEnrollments = activeLiveClass?.enrollments
   const storeEnrollments = (getClassEnrollments(cls?.id ?? '').length > 0 ? getClassEnrollments(cls?.id ?? '') : getClassEnrollments(id!))
   const roster = Array.isArray(liveEnrollments) && liveEnrollments.length > 0
@@ -303,9 +371,21 @@ export default function ClassDetailPage() {
           <div className="mt-5 space-y-4">
             <TabsContent value="roster">
               <Card>
-                <CardHeader>
-                  <CardTitle>Class Roster</CardTitle>
-                  <CardDescription>{roster.length} enrolled students</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between pb-3">
+                  <div>
+                    <CardTitle>Class Roster</CardTitle>
+                    <CardDescription>{roster.length} enrolled students</CardDescription>
+                  </div>
+                  {role !== 'student' && (
+                    <Button
+                      size="sm"
+                      className="gap-1.5 h-8 text-xs bg-primary hover:bg-primary/90 text-white"
+                      onClick={() => setAdmitDialogOpen(true)}
+                    >
+                      <Plus className="size-3.5" />
+                      + Admit Student
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent>
                   {roster.length === 0 && (
@@ -593,6 +673,43 @@ export default function ClassDetailPage() {
             </Button>
             <Button onClick={handleAddMaterial} disabled={isUploadingMaterial || !newMaterialTitle.trim()}>
               {isUploadingMaterial ? 'Uploading...' : 'Add Material'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ADMIT STUDENT MODAL */}
+      <Dialog open={admitDialogOpen} onOpenChange={setAdmitDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <GraduationCap className="size-4 text-primary" />
+              Admit Student into {cls?.name || 'Class'}
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Search and select an enrolled student to add them directly to this class roster.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold">Select Student</label>
+              <SearchableStudentPicker
+                students={availableStudents}
+                value={targetStudentId}
+                onChange={setTargetStudentId}
+                placeholder="Type student name, email, or phone to search..."
+                emptyMessage="No matching students found"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setAdmitDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleAdmitSubmit} disabled={isAdmitting || !targetStudentId}>
+              {isAdmitting ? 'Admitting…' : 'Admit Student'}
             </Button>
           </DialogFooter>
         </DialogContent>

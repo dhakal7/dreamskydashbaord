@@ -23,36 +23,36 @@ import { useCreateStudent } from '@/hooks/use-students'
 // ── Zod schema ──────────────────────────────────────────────────────────────
 
 const academicSchema = z.object({
-  level: z.string().min(1, 'Level is required'),
-  institution: z.string().min(1, 'Institution is required'),
-  board: z.string().min(1, 'Board is required'),
-  gpaOrPercentage: z.string().min(1, 'GPA/Percentage is required'),
-  passedYear: z.string().min(4, 'Year is required'),
+  level: z.string().optional().or(z.literal('')),
+  institution: z.string().optional().or(z.literal('')),
+  board: z.string().optional().or(z.literal('')),
+  gpaOrPercentage: z.string().optional().or(z.literal('')),
+  passedYear: z.string().optional().or(z.literal('')),
 })
 
 const parentSchema = z.object({
-  id: z.string(),
-  name: z.string().min(1, 'Name is required'),
-  relation: z.enum(['father', 'mother', 'guardian']),
-  phone: z.string().min(10, 'Phone must be at least 10 digits'),
+  id: z.string().optional(),
+  name: z.string().optional().or(z.literal('')),
+  relation: z.enum(['father', 'mother', 'guardian']).optional(),
+  phone: z.string().optional().or(z.literal('')),
   email: z.string().email().optional().or(z.literal('')),
-  occupation: z.string().optional(),
+  occupation: z.string().optional().or(z.literal('')),
 })
 
 const formSchema = z.object({
   // Step 1: Personal Info
   name: z.string().min(2, 'Name is required'),
-  email: z.string().email('Valid email is required'),
+  email: z.string().email('Valid email is required').optional().or(z.literal('')),
   phone: z.string().min(10, 'Phone must be at least 10 digits'),
-  dob: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['male', 'female', 'other']),
-  nationality: z.string().min(1, 'Nationality is required'),
-  passportNumber: z.string().min(1, 'Passport number is required'),
-  address: z.string().min(1, 'Address is required'),
+  dob: z.string().optional().or(z.literal('')),
+  gender: z.enum(['male', 'female', 'other']).optional(),
+  nationality: z.string().optional().or(z.literal('')),
+  passportNumber: z.string().optional().or(z.literal('')),
+  address: z.string().optional().or(z.literal('')),
   // Step 2: Academic Background
-  academics: z.array(academicSchema).min(1, 'At least one academic record is required'),
+  academics: z.array(academicSchema).optional(),
   // Step 3: English Test
-  englishTestType: z.enum(['IELTS', 'PTE', 'TOEFL', 'Duolingo', 'None']),
+  englishTestType: z.enum(['IELTS', 'PTE', 'TOEFL', 'Duolingo', 'None']).optional(),
   overallScore: z.coerce.number().min(0).max(120).optional(),
   listening: z.coerce.number().min(0).max(120).optional(),
   reading: z.coerce.number().min(0).max(120).optional(),
@@ -60,11 +60,11 @@ const formSchema = z.object({
   speaking: z.coerce.number().min(0).max(120).optional(),
   testDate: z.string().optional(),
   // Step 4: Study Preferences
-  preferredCountries: z.array(z.string()).min(1, 'Select at least one country'),
-  preferredLevel: z.enum(['foundation', 'diploma', 'bachelor', 'master', 'phd']),
-  budgetUsd: z.coerce.number().min(1000, 'Budget must be at least $1,000'),
+  preferredCountries: z.array(z.string()).optional(),
+  preferredLevel: z.enum(['foundation', 'diploma', 'bachelor', 'master', 'phd']).optional(),
+  budgetUsd: z.coerce.number().optional(),
   // Step 5: Parents
-  parents: z.array(parentSchema).min(1, 'At least one parent/guardian is required'),
+  parents: z.array(parentSchema).optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -77,13 +77,13 @@ const steps = [
   { title: 'Parents', description: 'Guardians info' },
 ]
 
-// Fields to validate per step
+// Fields to validate per step — only name and phone are compulsory
 const stepFields: (keyof FormData)[][] = [
-  ['name', 'email', 'phone', 'dob', 'gender', 'nationality', 'passportNumber', 'address'],
-  ['academics'],
-  ['englishTestType'],
-  ['preferredCountries', 'preferredLevel', 'budgetUsd'],
-  ['parents'],
+  ['name', 'phone'],
+  [],
+  [],
+  [],
+  [],
 ]
 
 interface StudentFormDialogProps {
@@ -103,11 +103,11 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
     defaultValues: {
       name: '', email: '', phone: '', dob: '', gender: 'male', nationality: 'Nepali',
       passportNumber: '', address: '',
-      academics: [{ level: '', institution: '', board: '', gpaOrPercentage: '', passedYear: '' }],
+      academics: [],
       englishTestType: 'None', overallScore: undefined, listening: undefined,
       reading: undefined, writing: undefined, speaking: undefined, testDate: '',
       preferredCountries: [], preferredLevel: 'bachelor', budgetUsd: 15000,
-      parents: [{ id: 'p-new-1', name: '', relation: 'father', phone: '', email: '', occupation: '' }],
+      parents: [],
     },
     mode: 'onTouched',
   })
@@ -134,29 +134,31 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
 
   async function onSubmit(data: FormData) {
     const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)]
+    const validAcademics = (data.academics || []).filter((a) => a.level || a.institution)
+    const validParents = (data.parents || []).filter((p) => p.name || p.phone)
 
     if (isMockMode()) {
       // ── Mock path: write directly to Zustand store ──
       const newStudent = addStudent({
         name: data.name,
-        email: data.email,
+        email: data.email || '',
         phone: data.phone,
         photoColor: pick(['#2563EB', '#7C3AED', '#0EA5E9', '#16A34A', '#D97706', '#DB2777']),
-        dob: data.dob,
-        gender: data.gender,
-        nationality: data.nationality,
-        passportNumber: data.passportNumber,
-        address: data.address,
+        dob: data.dob || '2000-01-01',
+        gender: data.gender || 'other',
+        nationality: data.nationality || 'Nepali',
+        passportNumber: data.passportNumber || 'PENDING',
+        address: data.address || 'N/A',
         // Always SELF on creation — can be changed from the student profile
         processingType: 'self',
         status: 'active',
         counselorId: 'cnslr-1',
         counselorName: 'Sristi Baral',
-        preferredCountries: data.preferredCountries,
-        preferredLevel: data.preferredLevel,
-        budgetUsd: data.budgetUsd,
+        preferredCountries: data.preferredCountries || [],
+        preferredLevel: data.preferredLevel || 'bachelor',
+        budgetUsd: data.budgetUsd || 0,
         englishTest: {
-          type: data.englishTestType,
+          type: data.englishTestType || 'None',
           overallScore: data.overallScore,
           listening: data.listening,
           reading: data.reading,
@@ -164,8 +166,8 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
           speaking: data.speaking,
           testDate: data.testDate,
         },
-        academics: data.academics,
-        parents: data.parents,
+        academics: validAcademics as any,
+        parents: validParents as any,
         tags: [],
       })
       onOpenChange(false)
@@ -178,20 +180,20 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
     // ── Live path: call backend API ──
     const nameParts = data.name.trim().split(' ')
     const firstName = nameParts[0]
-    const lastName = nameParts.slice(1).join(' ') || firstName
-    const countriesStr = data.preferredCountries.join(', ')
-    const notesPayload = `Interested Countries: ${countriesStr} | Level: ${data.preferredLevel} | Address: ${data.address || 'N/A'}`
+    const lastName = nameParts.slice(1).join(' ') || firstName || 'Student'
+    const countriesStr = (data.preferredCountries || []).join(', ')
+    const notesPayload = `Interested Countries: ${countriesStr || 'N/A'} | Level: ${data.preferredLevel || 'N/A'} | Address: ${data.address || 'N/A'}`
 
     await createStudent.mutateAsync({
       firstName,
       lastName,
-      email: data.email,
-      phone: data.phone || undefined,
+      email: data.email?.trim() || undefined,
+      phone: data.phone?.trim() || undefined,
       nationality: data.nationality || undefined,
       // Always SELF on creation — counselor sets B2B from the student profile later
       processingType: 'SELF',
       academicBackground: {
-        records: data.academics,
+        records: validAcademics,
         preferredLevel: data.preferredLevel,
         preferredCountries: data.preferredCountries,
         budgetUsd: data.budgetUsd,
@@ -261,20 +263,21 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
           {currentStep === 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-semibold flex items-center gap-2"><User className="size-4" /> Personal Information</h3>
+              <p className="text-xs text-muted-foreground">Only Name and Phone are required for quick admission. Other fields can be filled later.</p>
               <div className="grid grid-cols-2 gap-3">
-                <FieldWrap label="Full Name" error={errors.name?.message}>
+                <FieldWrap label="Full Name *" error={errors.name?.message}>
                   <Input {...form.register('name')} placeholder="e.g. Aarav Shrestha" />
                 </FieldWrap>
-                <FieldWrap label="Email" error={errors.email?.message}>
-                  <Input {...form.register('email')} type="email" placeholder="student@email.com" />
-                </FieldWrap>
-                <FieldWrap label="Phone" error={errors.phone?.message}>
+                <FieldWrap label="Phone *" error={errors.phone?.message}>
                   <Input {...form.register('phone')} placeholder="98XXXXXXXX" />
                 </FieldWrap>
-                <FieldWrap label="Date of Birth" error={errors.dob?.message}>
+                <FieldWrap label="Email (optional)" error={errors.email?.message}>
+                  <Input {...form.register('email')} type="email" placeholder="student@email.com" />
+                </FieldWrap>
+                <FieldWrap label="Date of Birth (optional)" error={errors.dob?.message}>
                   <Input {...form.register('dob')} type="date" />
                 </FieldWrap>
-                <FieldWrap label="Gender" error={errors.gender?.message}>
+                <FieldWrap label="Gender (optional)" error={errors.gender?.message}>
                   <Controller control={form.control} name="gender" render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
@@ -286,16 +289,15 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
                     </Select>
                   )} />
                 </FieldWrap>
-                <FieldWrap label="Nationality" error={errors.nationality?.message}>
+                <FieldWrap label="Nationality (optional)" error={errors.nationality?.message}>
                   <Input {...form.register('nationality')} placeholder="Nepali" />
                 </FieldWrap>
-                <FieldWrap label="Passport Number" error={errors.passportNumber?.message}>
+                <FieldWrap label="Passport Number (optional)" error={errors.passportNumber?.message}>
                   <Input {...form.register('passportNumber')} placeholder="PA1234567" />
                 </FieldWrap>
-                <FieldWrap label="Address" error={errors.address?.message}>
+                <FieldWrap label="Address (optional)" error={errors.address?.message}>
                   <Input {...form.register('address')} placeholder="Baneshwor, Kathmandu" />
                 </FieldWrap>
-
               </div>
             </div>
           )}
@@ -304,12 +306,20 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
           {currentStep === 1 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Academic Background</h3>
+                <div>
+                  <h3 className="text-sm font-semibold">Academic Background (optional)</h3>
+                  <p className="text-xs text-muted-foreground">Add prior education records if available, or skip to the next step.</p>
+                </div>
                 <Button type="button" variant="outline" size="sm" onClick={() => addAcademic({ level: '', institution: '', board: '', gpaOrPercentage: '', passedYear: '' })}>
                   <Plus /> Add Record
                 </Button>
               </div>
               {errors.academics?.root && <p className="text-xs text-danger-500">{errors.academics.root.message}</p>}
+              {academicFields.length === 0 && (
+                <div className="rounded-lg border border-dashed border-border/80 p-6 text-center text-xs text-muted-foreground">
+                  No academic background entered yet. Click &quot;+ Add Record&quot; if available, or click Next to skip.
+                </div>
+              )}
               {academicFields.map((field, idx) => (
                 <Card key={field.id} className="p-3 space-y-2.5">
                   <div className="flex items-center justify-between">
@@ -437,12 +447,20 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
           {currentStep === 4 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Parents / Guardians</h3>
+                <div>
+                  <h3 className="text-sm font-semibold">Parents / Guardians (optional)</h3>
+                  <p className="text-xs text-muted-foreground">Add parent or guardian details if available, or skip to finish.</p>
+                </div>
                 <Button type="button" variant="outline" size="sm" onClick={() => addParent({ id: `p-new-${Date.now()}`, name: '', relation: 'father', phone: '', email: '', occupation: '' })}>
                   <Plus /> Add Guardian
                 </Button>
               </div>
               {errors.parents?.root && <p className="text-xs text-danger-500">{errors.parents.root.message}</p>}
+              {parentFields.length === 0 && (
+                <div className="rounded-lg border border-dashed border-border/80 p-6 text-center text-xs text-muted-foreground">
+                  No guardians added yet. Click &quot;+ Add Guardian&quot; if available, or click Create Student to complete.
+                </div>
+              )}
               {parentFields.map((field, idx) => (
                 <Card key={field.id} className="p-3 space-y-2.5">
                   <div className="flex items-center justify-between">

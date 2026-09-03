@@ -311,24 +311,33 @@ const listStudentProfiles = async (query) => {
             orderBy: { createdAt: "desc" },
         });
     } catch (e) {
-        students = await prisma.student.findMany({
-            where: {
-                AND: [
-                    baseSearchWhere,
-                    { documents: { some: {} } },
-                ],
-            },
-            include: {
-                assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
-                documents: {
-                    include: {
-                        uploadedBy: { select: { id: true, firstName: true, lastName: true } },
-                    },
-                    orderBy: { updatedAt: "desc" },
+        // First query failed (likely because pipelineStage field doesn't exist yet).
+        // Try a simpler query without the pipelineStage filter.
+        console.warn("[document.service] listStudentProfiles: primary query failed, trying fallback:", e.message);
+        try {
+            students = await prisma.student.findMany({
+                where: {
+                    AND: [
+                        baseSearchWhere,
+                        { documents: { some: {} } },
+                    ],
                 },
-            },
-            orderBy: { createdAt: "desc" },
-        });
+                include: {
+                    assignedCounselor: { select: { id: true, firstName: true, lastName: true } },
+                    documents: {
+                        include: {
+                            uploadedBy: { select: { id: true, firstName: true, lastName: true } },
+                        },
+                        orderBy: { updatedAt: "desc" },
+                    },
+                },
+                orderBy: { createdAt: "desc" },
+            });
+        } catch (fallbackErr) {
+            // Both queries failed — surface the error properly instead of returning []
+            console.error("[document.service] listStudentProfiles: fallback query also failed:", fallbackErr.message);
+            throw fallbackErr;
+        }
     }
 
     const REQUIRED_STANDARD_DOCS = 15;

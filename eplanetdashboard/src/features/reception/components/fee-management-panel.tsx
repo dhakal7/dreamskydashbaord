@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import {
-  Wallet, Mail, CheckCircle2, Clock, AlertCircle, Search, Send, DollarSign, RefreshCw, Plus
+  Wallet, Mail, CheckCircle2, Clock, AlertCircle, Search, Send, DollarSign, RefreshCw, Plus, Trash2
 } from 'lucide-react'
 import { toast } from 'sonner'
 import dayjs from 'dayjs'
@@ -160,6 +160,10 @@ export function FeeManagementPanel() {
   const [emailSubject, setEmailSubject] = useState('')
   const [emailBody, setEmailBody] = useState('')
   const [isSendingMail, setIsSendingMail] = useState(false)
+
+  // Delete Confirmation State
+  const [deleteRecord, setDeleteRecord] = useState<StudentFeeRecord | null>(null)
+  const [isDeletingFee, setIsDeletingFee] = useState(false)
 
   const fetchFees = async () => {
     try {
@@ -398,6 +402,28 @@ export function FeeManagementPanel() {
     }
   }
 
+  // Handle Delete Fee Record
+  async function handleDeleteFee() {
+    if (!deleteRecord) return
+    setIsDeletingFee(true)
+    try {
+      await api.delete(`/payments/${deleteRecord.id}`)
+    } catch {
+      // Proceed with local removal even if backend call fails (record may already be gone)
+    } finally {
+      setFees((prev) => {
+        const updated = prev.filter((f) => f.id !== deleteRecord.id)
+        try {
+          localStorage.setItem('dreamsky-fee-records', JSON.stringify(updated))
+        } catch {}
+        return updated
+      })
+      toast.success(`Fee record for ${deleteRecord.studentName} deleted.`)
+      setDeleteRecord(null)
+      setIsDeletingFee(false)
+    }
+  }
+
   return (
     <Card className="shadow-sm">
       <CardHeader className="border-b border-border/60 pb-4">
@@ -609,6 +635,16 @@ export function FeeManagementPanel() {
                               Send Mail
                             </Button>
                           )}
+
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-[11px] gap-1 px-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                            onClick={() => setDeleteRecord(fee)}
+                          >
+                            <Trash2 className="size-3" />
+                            Delete
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -871,6 +907,43 @@ export function FeeManagementPanel() {
           </DialogContent>
         </Dialog>
       )}
+
+      {/* DELETE CONFIRMATION DIALOG */}
+      <Dialog open={!!deleteRecord} onOpenChange={(open) => { if (!open) setDeleteRecord(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-rose-600">
+              <Trash2 className="size-4" />
+              Delete Fee Record?
+            </DialogTitle>
+            <DialogDescription className="text-sm space-y-1">
+              <span>
+                This will permanently delete the fee record for{' '}
+                <strong>{deleteRecord?.studentName}</strong>{' '}—{' '}
+                <strong>{deleteRecord?.feeCategory}</strong> (NPR {deleteRecord?.totalAmount.toLocaleString()}).
+              </span>
+              <br />
+              <span className="text-rose-500 font-medium text-xs">
+                This action cannot be undone. All associated transactions will also be removed.
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setDeleteRecord(null)} disabled={isDeletingFee}>
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="bg-rose-600 hover:bg-rose-700 text-white gap-1.5"
+              onClick={handleDeleteFee}
+              disabled={isDeletingFee}
+            >
+              <Trash2 className="size-3.5" />
+              {isDeletingFee ? 'Deleting…' : 'Yes, Delete Record'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

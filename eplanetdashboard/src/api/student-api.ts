@@ -74,7 +74,7 @@ export interface StudentsListResponse {
 export interface CreateStudentBody {
   firstName: string
   lastName: string
-  email: string
+  email?: string
   phone?: string
   nationality?: string
   source?: string

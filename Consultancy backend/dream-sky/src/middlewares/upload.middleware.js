@@ -26,7 +26,12 @@ const upload = multer({
 });
 
 /**
- * Express middleware: expects a single file field named "file"
+ * Express middleware: expects a single file field named "file".
+ * Returns a clean JSON 400 when:
+ *  - Multiple files are sent (MulterError: Unexpected field)
+ *  - File exceeds size limit
+ *  - Invalid file type
+ *  - No file included at all
  */
 const uploadSingle = (req, res, next) => {
     upload.single("file")(req, res, (err) => {
@@ -34,15 +39,26 @@ const uploadSingle = (req, res, next) => {
             if (err.code === "LIMIT_FILE_SIZE") {
                 return next(AppError.badRequest("File exceeds maximum allowed size (10 MB).", "FILE_TOO_LARGE"));
             }
+            // LIMIT_UNEXPECTED_FILE fires when multiple files or wrong field name is sent
+            if (err.code === "LIMIT_UNEXPECTED_FILE") {
+                return next(AppError.badRequest(
+                    "Only one file can be uploaded at a time. Please upload documents one by one.",
+                    "MULTIPLE_FILES_NOT_ALLOWED"
+                ));
+            }
             return next(AppError.badRequest(err.message, "UPLOAD_ERROR"));
         }
         if (err) return next(err);
-        if (!req.file) return next(AppError.badRequest("No file uploaded.", "NO_FILE"));
+
+        // Missing file — controller will handle this gracefully
+        // (we don't reject here so the controller can return a typed error message)
 
         // Extra size check for images
-        const isImage = req.file.mimetype.startsWith("image/");
-        if (isImage && req.file.size > MAX_IMAGE_SIZE) {
-            return next(AppError.badRequest("Image files must be under 2 MB.", "FILE_TOO_LARGE"));
+        if (req.file) {
+            const isImage = req.file.mimetype.startsWith("image/");
+            if (isImage && req.file.size > MAX_IMAGE_SIZE) {
+                return next(AppError.badRequest("Image files must be under 2 MB.", "FILE_TOO_LARGE"));
+            }
         }
 
         next();

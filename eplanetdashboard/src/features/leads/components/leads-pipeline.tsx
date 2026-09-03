@@ -27,21 +27,33 @@ const customCollisionDetection: CollisionDetection = (args) => {
 
 export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelineProps) {
   const [activeLead, setActiveLead] = useState<Lead | null>(null)
+  // Optimistic override map: leadId → overridden stage (shown immediately on drag, reset after refetch)
+  const [optimisticStages, setOptimisticStages] = useState<Record<string, LeadStage>>({})
+
   const sensors = useSensors(
-    useSensor(MouseSensor, { activationConstraint: { distance: 0 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 0, tolerance: 5 } })
+    // distance: 5 prevents a plain click from starting a drag
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   )
+
+  // Merge optimistic overrides into the leads list so UI updates instantly
+  const effectiveLeads = useMemo(() => {
+    if (Object.keys(optimisticStages).length === 0) return leads
+    return leads.map((l) =>
+      optimisticStages[l.id] !== undefined ? { ...l, stage: optimisticStages[l.id] } : l
+    )
+  }, [leads, optimisticStages])
 
   const columns = useMemo(() => {
     const map = new Map<LeadStage, Lead[]>()
     PIPELINE_STAGES.forEach((s) => map.set(s, []))
-    leads.forEach((l) => {
+    effectiveLeads.forEach((l) => {
       if (map.has(l.stage)) {
         map.get(l.stage)!.push(l)
       }
     })
     return map
-  }, [leads])
+  }, [effectiveLeads])
 
   function handleDragStart(event: DragStartEvent) {
     const lead = leads.find((l) => l.id === event.active.id)
@@ -59,7 +71,7 @@ export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelinePr
     if (PIPELINE_STAGES.includes(over.id as LeadStage)) {
       overStage = over.id as LeadStage
     } else {
-      const overLead = leads.find((l) => l.id === over.id)
+      const overLead = effectiveLeads.find((l) => l.id === over.id)
       if (overLead) {
         overStage = overLead.stage
       } else if (over.data?.current?.stage) {
@@ -69,9 +81,19 @@ export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelinePr
 
     if (!overStage) return
 
-    const activeLeadObj = leads.find((l) => l.id === activeLeadId)
+    const activeLeadObj = effectiveLeads.find((l) => l.id === activeLeadId)
     if (activeLeadObj && activeLeadObj.stage !== overStage) {
+      // Apply optimistic update immediately so the card visually jumps to new column
+      setOptimisticStages((prev) => ({ ...prev, [activeLeadId]: overStage! }))
       onMove(activeLeadId, overStage)
+      // Clear optimistic override after a short delay (React Query will refetch and replace)
+      setTimeout(() => {
+        setOptimisticStages((prev) => {
+          const next = { ...prev }
+          delete next[activeLeadId]
+          return next
+        })
+      }, 3000)
     }
   }
 
@@ -79,7 +101,7 @@ export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelinePr
     return (
       <div className="flex gap-3.5 overflow-x-auto pb-3">
         {PIPELINE_STAGES.map((stage) => (
-          <PipelineColumnStatic key={stage} stage={stage} leads={columns.get(stage) ?? []} />
+          <PipelineColumnStatic key={stage} stage={stage} leads={columns.get(stage) ?? []} onMove={onMove} />
         ))}
       </div>
     )
@@ -94,7 +116,7 @@ export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelinePr
     >
       <div className="flex gap-3.5 overflow-x-auto pb-3">
         {PIPELINE_STAGES.map((stage) => (
-          <PipelineColumn key={stage} stage={stage} leads={columns.get(stage) ?? []} />
+          <PipelineColumn key={stage} stage={stage} leads={columns.get(stage) ?? []} onMove={onMove} />
         ))}
       </div>
       <DragOverlay dropAnimation={null}>
@@ -104,7 +126,7 @@ export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelinePr
   )
 }
 
-function PipelineColumn({ stage, leads }: { stage: LeadStage; leads: Lead[] }) {
+function PipelineColumn({ stage, leads, onMove }: { stage: LeadStage; leads: Lead[]; onMove: (id: string, stage: LeadStage) => void }) {
   const meta = leadStageMeta[stage] ?? {
     label: stage.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
     variant: 'slate' as const,
@@ -131,7 +153,7 @@ function PipelineColumn({ stage, leads }: { stage: LeadStage; leads: Lead[] }) {
 
       <div className="flex min-h-[200px] flex-1 flex-col gap-2 overflow-y-auto px-2.5 pb-3">
         {leads.map((lead) => (
-          <LeadCard key={lead.id} lead={lead} canDrag />
+          <LeadCard key={lead.id} lead={lead} canDrag onMove={onMove} />
         ))}
         {leads.length === 0 && (
           <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border/70 py-8 text-[11px] text-muted-foreground">
@@ -143,7 +165,7 @@ function PipelineColumn({ stage, leads }: { stage: LeadStage; leads: Lead[] }) {
   )
 }
 
-function PipelineColumnStatic({ stage, leads }: { stage: LeadStage; leads: Lead[] }) {
+function PipelineColumnStatic({ stage, leads, onMove }: { stage: LeadStage; leads: Lead[]; onMove: (id: string, stage: LeadStage) => void }) {
   const meta = leadStageMeta[stage] ?? {
     label: stage.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
     variant: 'slate' as const,
@@ -163,7 +185,7 @@ function PipelineColumnStatic({ stage, leads }: { stage: LeadStage; leads: Lead[
 
       <div className="flex min-h-[200px] flex-1 flex-col gap-2 overflow-y-auto px-2.5 pb-3">
         {leads.map((lead) => (
-          <LeadCard key={lead.id} lead={lead} canDrag={false} />
+          <LeadCard key={lead.id} lead={lead} canDrag={false} onMove={onMove} />
         ))}
         {leads.length === 0 && (
           <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-border/70 py-8 text-[11px] text-muted-foreground">

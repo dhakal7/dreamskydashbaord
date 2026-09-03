@@ -237,6 +237,23 @@ class PaymentService {
 
     return this.getPaymentById(id);
   }
+
+  /**
+   * Delete a Payment record and all its child Transactions
+   * Used to remove accidental duplicate uploads.
+   */
+  async deletePayment(id) {
+    const payment = await prisma.payment.findUnique({ where: { id } });
+    if (!payment) throw new Error('Payment record not found');
+
+    // Delete child transactions first (in case DB cascade is not configured)
+    await prisma.transaction.deleteMany({ where: { paymentId: id } });
+
+    // Then delete the payment itself
+    await prisma.payment.delete({ where: { id } });
+
+    return { deleted: true, id };
+  }
 }
 
 module.exports = new PaymentService();

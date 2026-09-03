@@ -43,7 +43,7 @@ export default function DocumentsPage() {
   }
 
   // Fetch real student document profiles from backend REST API
-  const { data: apiProfiles, isLoading } = useStudentDocumentProfiles(searchQuery)
+  const { data: apiProfiles, isLoading, isError, refetch } = useStudentDocumentProfiles(searchQuery)
   const { data: apiDocsData } = useDocuments()
 
   // Generate fallback student profile cards if using mock store or before backend response
@@ -174,6 +174,17 @@ export default function DocumentsPage() {
       {/* ── Student Profile Cards Grid (Student-Centric Primary View) ── */}
       {isLoading && profiles.length === 0 ? (
         <div className="py-16 text-center text-sm text-muted-foreground">Loading student document profiles...</div>
+      ) : isError && !isMockMode() ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+          <div className="rounded-full bg-destructive/10 p-4">
+            <FolderKanban className="size-8 text-destructive/60" />
+          </div>
+          <p className="text-sm font-semibold text-foreground">Failed to load document profiles</p>
+          <p className="text-xs text-muted-foreground max-w-xs">Could not connect to the server. Please check your connection and try again.</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-1 gap-2">
+            Retry
+          </Button>
+        </div>
       ) : profiles.length === 0 ? (
         <EmptyState
           icon={FolderKanban}
