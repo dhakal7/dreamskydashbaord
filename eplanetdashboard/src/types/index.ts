@@ -511,6 +511,8 @@ export interface Enrollment {
   classId: string
   studentId: string
   studentName: string
+  studentEmail?: string
+  studentPhone?: string
   enrolledAt: string
   progress: number // 0-100
   attendancePct: number

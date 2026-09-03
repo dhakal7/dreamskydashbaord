@@ -51,6 +51,7 @@ export async function convertLeadToStudent(leadId: string): Promise<LeadConversi
   let backendStudentId: string | null = null
 
   // ── REAL MODE: persist the student and enroll them so the welcome email fires ──
+  if (!isMockMode()) {
     const nameParts = lead.name.trim().split(/\s+/)
     const firstName = nameParts[0] || 'Unknown'
     const lastName = nameParts.slice(1).join(' ') || firstName || 'Student'

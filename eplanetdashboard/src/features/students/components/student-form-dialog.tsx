@@ -406,9 +406,9 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
                   {countries.map((c) => (
                     <label key={c.id} className="flex items-center gap-2 rounded-lg border border-border p-2 cursor-pointer hover:bg-accent/50 transition-colors">
                       <Checkbox
-                        checked={watchCountries.includes(c.name)}
+                        checked={(watchCountries || []).includes(c.name)}
                         onCheckedChange={(checked) => {
-                          const current = form.getValues('preferredCountries')
+                          const current = form.getValues('preferredCountries') || []
                           form.setValue(
                             'preferredCountries',
                             checked ? [...current, c.name] : current.filter((n) => n !== c.name),
