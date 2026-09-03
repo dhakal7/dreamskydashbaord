@@ -52,7 +52,7 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
   const [missingEmailInput, setMissingEmailInput] = useState('')
-  const [showEmailPrompt, setShowEmailPrompt] = useState(false)
+  const [showEmailPrompt] = useState(false)
   const [registeredStudent, setRegisteredStudent] = useState<{ studentId: string; email: string; portalPassword: string | null } | null>(null)
 
   // Track the card DOM node separately — used only to apply isDragging opacity
