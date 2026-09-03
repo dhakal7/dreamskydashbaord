@@ -190,6 +190,7 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
       email: data.email?.trim() || undefined,
       phone: data.phone?.trim() || undefined,
       nationality: data.nationality || undefined,
+      currentStage: 'ENROLLED',
       // Always SELF on creation — counselor sets B2B from the student profile later
       processingType: 'SELF',
       academicBackground: {

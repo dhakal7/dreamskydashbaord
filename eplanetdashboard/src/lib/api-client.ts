@@ -196,7 +196,11 @@ axiosInstance.interceptors.response.use(
       const refreshToken = tokenStore.getRefresh()
 
       if (!refreshToken) {
-        // Reject gracefully without forcibly reloading browser location
+        tokenStore.clearAll()
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('dreamsky-authenticated')
+          localStorage.removeItem('dreamsky-user')
+        }
         return Promise.reject(new Error('Unauthorized request'))
       }
 
@@ -238,6 +242,11 @@ axiosInstance.interceptors.response.use(
       } catch {
         isRefreshing = false
         refreshSubscribers = []
+        tokenStore.clearAll()
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('dreamsky-authenticated')
+          localStorage.removeItem('dreamsky-user')
+        }
         return Promise.reject(new Error('Refresh token invalid'))
       }
     }

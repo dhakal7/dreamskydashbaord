@@ -95,6 +95,8 @@ const createStudent = async (data) => {
         partnerConsultancyId = partner.id;
     }
 
+    const initialStage = (data.currentStage || data.stage || "ENROLLED").toUpperCase();
+
     const student = await prisma.student.create({
         data: {
             firstName: data.firstName.trim(),
@@ -104,6 +106,7 @@ const createStudent = async (data) => {
             dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
             nationality: data.nationality?.trim() || null,
             source: data.source || null,
+            currentStage: initialStage,
             processingType,
             partnerConsultancyId: processingType === "PARTNER_CONSULTANCY" ? partnerConsultancyId : null,
             assignedCounselorId: data.assignedCounselorId || null,
@@ -117,7 +120,7 @@ const createStudent = async (data) => {
 
     // Record the initial stage in history
     await prisma.pipelineStageHistory.create({
-        data: { studentId: student.id, stage: "LEAD" },
+        data: { studentId: student.id, stage: initialStage },
     });
 
     return student;

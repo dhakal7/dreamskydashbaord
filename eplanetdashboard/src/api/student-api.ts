@@ -78,6 +78,7 @@ export interface CreateStudentBody {
   phone?: string
   nationality?: string
   source?: string
+  currentStage?: string
   assignedCounselorId?: string
   referredByAgentId?: string
   notes?: string

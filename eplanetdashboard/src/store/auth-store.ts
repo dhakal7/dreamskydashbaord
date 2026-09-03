@@ -233,6 +233,15 @@ function getInitialAuthenticated(): boolean {
 
   if (isLoggedOut) return false
 
+  // In real mode (VITE_USE_MOCK !== 'true'), user is ONLY authenticated if they have an active access token
+  if (!isMockMode()) {
+    const hasToken = Boolean(
+      window.sessionStorage.getItem('dreamsky-access-token') ||
+      window.localStorage.getItem('dreamsky-access-token')
+    )
+    return hasToken
+  }
+
   const hasAuthFlag =
     window.sessionStorage.getItem('dreamsky-authenticated') === 'true' ||
     window.localStorage.getItem('dreamsky-authenticated') === 'true'
@@ -300,25 +309,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ currentUser, isAuthenticated: true, isLoading: false })
       return true
     } catch (err) {
-      // Smart Fallback for staff users if network or backend API call fails/times out
-      const lowerEmail = email.trim().toLowerCase()
-      const isTeacher = lowerEmail === 'teacher@dreamsky.internal' || lowerEmail.includes('teacher') || lowerEmail === 'anup.rijal@dreamsky.com'
-      
-      let fallbackUser = Object.values(demoUsers).find(
-        (u) => u.email.toLowerCase() === lowerEmail,
-      )
-      if (!fallbackUser && isTeacher) {
-        fallbackUser = demoUsers.teacher
-      }
-
-      if (fallbackUser && (password === 'dreamskyteacher@2025' || password === 'Password123!' || password === demoPassword || password === 'dreamskyconsultancy@2025' || password === 'dreamskyfrontdesk@2025' || password === 'DreamSky@Counselor2025!')) {
-        localStorage.setItem('dreamsky-authenticated', 'true')
-        localStorage.setItem('dreamsky-demo-role', fallbackUser.role)
-        localStorage.setItem('dreamsky-user', JSON.stringify(fallbackUser))
-        set({ currentUser: fallbackUser, isAuthenticated: true, isLoading: false })
-        return true
-      }
-
       set({ isLoading: false })
       throw err // let login-page.tsx catch and display the toast
     }
@@ -420,19 +410,20 @@ export const useAuthStore = create<AuthState>((set) => ({
         localStorage.setItem('dreamsky-authenticated', 'true')
         set({ currentUser, isAuthenticated: true, isLoading: false })
         return
-      } catch {
-        if (isAuth && storedUser) {
-          set({ currentUser: storedUser, isAuthenticated: true, isLoading: false })
-          return
-        }
+      } catch (err) {
+        console.warn('Real session rehydration failed, clearing expired credentials:', err)
+        tokenStore.clearAll()
+        localStorage.removeItem('dreamsky-authenticated')
+        localStorage.removeItem('dreamsky-user')
+        set({ isAuthenticated: false, isLoading: false })
+        return
       }
     }
 
-    if (isAuth && storedUser) {
-      set({ currentUser: storedUser, isAuthenticated: true, isLoading: false })
-      return
-    }
-
+    // In real mode, missing token means unauthenticated
+    tokenStore.clearAll()
+    localStorage.removeItem('dreamsky-authenticated')
+    localStorage.removeItem('dreamsky-user')
     set({ isAuthenticated: false, isLoading: false })
   },
 }))
