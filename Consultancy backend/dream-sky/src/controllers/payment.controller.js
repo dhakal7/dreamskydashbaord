@@ -60,8 +60,8 @@ class PaymentController {
         return res.status(404).json({ success: false, message: 'Payment record not found' });
       }
 
-      if (payment.studentEmail && payment.studentEmail.includes('@') && !payment.studentEmail.endsWith('@dreamsky.com')) {
-        await emailService.sendFeeReminder({
+      if (payment.studentEmail && payment.studentEmail.includes('@')) {
+        await emailService.sendFeeDueEmail({
           to: payment.studentEmail,
           studentName: payment.studentName,
           feeCategory: payment.feeCategory,
@@ -92,6 +92,19 @@ class PaymentController {
 
       res.json({ success: true, data: updated });
     } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  }
+
+  async deletePayment(req, res) {
+    try {
+      const { id } = req.params;
+      await paymentService.deletePayment(id);
+      res.json({ success: true, message: 'Payment record deleted successfully.' });
+    } catch (err) {
+      if (err.message === 'Payment record not found') {
+        return res.status(404).json({ success: false, message: err.message });
+      }
       res.status(500).json({ success: false, message: err.message });
     }
   }

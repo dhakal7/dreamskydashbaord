@@ -139,6 +139,8 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
   const [notes, setNotes] = useState('')
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [dragActive, setDragActive] = useState(false)
+  const [multiFileWarning, setMultiFileWarning] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
 
   const activeStudentId = preselectedStudentId || studentId
   const selectedStudent = students.find((s) => s.id === activeStudentId)
@@ -155,21 +157,31 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
     const file = e.target.files?.[0]
     if (file) {
       setSelectedFile(file)
+      setUploadError(null)
+      setMultiFileWarning(false)
     }
   }
 
   const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
     e.preventDefault()
     setDragActive(false)
-    const file = e.dataTransfer.files?.[0]
+    const files = e.dataTransfer.files
+    if (files && files.length > 1) {
+      setMultiFileWarning(true)
+    } else {
+      setMultiFileWarning(false)
+    }
+    const file = files?.[0]
     if (file) {
       setSelectedFile(file)
+      setUploadError(null)
     }
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!activeStudentId || !selectedFile) return
+    setUploadError(null)
 
     uploadMutation.mutate(
       {
@@ -185,7 +197,12 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
           setSelectedFile(null)
           setCustomName('')
           setNotes('')
+          setUploadError(null)
+          setMultiFileWarning(false)
           onOpenChange(false)
+        },
+        onError: (err: Error) => {
+          setUploadError(err.message || 'Upload failed. Please try again.')
         },
       }
     )
@@ -321,8 +338,22 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
             />
           </div>
 
+          {/* Upload error display */}
+          {uploadError && (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive font-medium">
+              ⚠️ {uploadError}
+            </div>
+          )}
+
+          {/* Multi-file warning */}
+          {multiFileWarning && (
+            <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400 font-medium">
+              ⚠️ Only one file can be uploaded at a time. The first file has been selected — please upload the others separately.
+            </div>
+          )}
+
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={uploadMutation.isPending}>
               Cancel
             </Button>
             <Button type="submit" disabled={!activeStudentId || !selectedFile || uploadMutation.isPending}>

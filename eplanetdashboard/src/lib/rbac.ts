@@ -35,7 +35,7 @@ export type Permission =
 
 export const rolePermissions: Record<Role, readonly Permission[]> = {
   super_admin: [
-    'dashboard.view', 'leads.view', 'leads.manage', 'students.view', 'students.manage',
+    'dashboard.view', 'leads.view', 'leads.manage', 'leads.change-stage', 'students.view', 'students.manage',
     'followups.view', 'appointments.view', 'appointments.manage', 'applications.view', 'applications.manage',
     'visa.view', 'visa.manage', 'documents.view', 'documents.manage', 'universities.view',
     'countries.view', 'countries.manage', 'universities.view', 'universities.manage', 'courses.view', 'courses.manage',
@@ -49,12 +49,12 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
     'documents.view', 'documents.manage', 'classes.view', 'classes.manage', 'events.view', 'events.manage', 'settings.manage',
   ],
   counselor: [
-    'dashboard.view', 'leads.view', 'leads.change-stage', 'students.view', 'students.manage',
+    'dashboard.view', 'leads.view', 'leads.manage', 'leads.change-stage', 'students.view', 'students.manage',
     'followups.view', 'appointments.view', 'applications.view', 'applications.manage',
     'visa.view', 'visa.manage', 'documents.view', 'documents.manage',
     'commissions.view', 'events.view', 'reports.view', 'settings.manage',
   ],
-  teacher: ['dashboard.view', 'leads.view', 'classes.view', 'reports.view', 'settings.manage', 'events.view'],
+  teacher: ['dashboard.view', 'leads.view', 'students.view', 'classes.view', 'classes.manage', 'reports.view', 'settings.manage', 'events.view'],
   student: ['dashboard.view', 'appointments.view', 'applications.view', 'visa.view', 'documents.view', 'classes.view', 'events.view', 'settings.manage'],
   referral_agent: ['dashboard.view', 'leads.view', 'commissions.view', 'events.view', 'settings.manage'],
 }

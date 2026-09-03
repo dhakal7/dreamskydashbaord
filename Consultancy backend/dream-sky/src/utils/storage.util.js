@@ -1,16 +1,39 @@
 const fs = require("fs/promises");
 const path = require("path");
 
-const UPLOAD_DIR = path.join(process.cwd(), "uploads");
+// Support a configurable upload directory via env (important for cPanel deployments
+// where process.cwd() may not be writable, but a specific path is).
+const UPLOAD_DIR = process.env.UPLOAD_DIR
+    ? path.resolve(process.env.UPLOAD_DIR)
+    : path.join(process.cwd(), "uploads");
 
 /**
- * Save buffer to disk. Creates directories as needed.
+ * Ensure the upload directory exists on startup.
+ * Call once at app boot — safe to call multiple times.
+ */
+const initUploadDir = async () => {
+    try {
+        await fs.mkdir(UPLOAD_DIR, { recursive: true });
+    } catch (err) {
+        console.error("[storage] Failed to create upload directory:", UPLOAD_DIR, err);
+    }
+};
+// Auto-initialize on module load
+initUploadDir();
+
+/**
+ * Save buffer to disk. Creates sub-directories as needed.
  * @returns {string} relative path (e.g. "students/abc123/doc456.enc")
  */
 const saveFile = async (relativePath, buffer) => {
     const fullPath = path.join(UPLOAD_DIR, relativePath);
-    await fs.mkdir(path.dirname(fullPath), { recursive: true });
-    await fs.writeFile(fullPath, buffer);
+    try {
+        await fs.mkdir(path.dirname(fullPath), { recursive: true });
+        await fs.writeFile(fullPath, buffer);
+    } catch (err) {
+        console.error("[storage] Failed to save file:", fullPath, err);
+        throw err;
+    }
     return relativePath;
 };
 
@@ -34,4 +57,5 @@ const deleteFile = async (relativePath) => {
     }
 };
 
-module.exports = { saveFile, readFile, deleteFile };
+module.exports = { saveFile, readFile, deleteFile, initUploadDir };
+

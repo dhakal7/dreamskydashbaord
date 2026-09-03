@@ -19,6 +19,7 @@ interface AttendanceState {
 
   getAttendanceForClass: (classId: string) => AttendanceRecord[]
   getEnrollmentsForClass: (classId: string) => Enrollment[]
+  enrollStudent: (enrollment: Enrollment) => void
   submitAttendance: (
     classId: string,
     className: string,
@@ -32,6 +33,12 @@ export const useAttendanceStore = create<AttendanceState>((set, get) => ({
   attendanceRecords: [...mockAttendance],
   enrollments: [...mockEnrollments],
   studentPresence: {},
+
+  enrollStudent: (enrollment) => {
+    set((state) => ({
+      enrollments: [enrollment, ...state.enrollments.filter((e) => !(e.classId === enrollment.classId && e.studentId === enrollment.studentId))],
+    }))
+  },
 
   unenrollStudent: (classId, studentId) => {
     set((state) => ({

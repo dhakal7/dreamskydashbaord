@@ -121,9 +121,31 @@ const axiosInstance: AxiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+/**
+ * Separate Axios instance for file uploads with a longer timeout.
+ * File uploads on cPanel shared hosting can take 60-120 seconds.
+ */
+export const uploadAxiosInstance: AxiosInstance = axios.create({
+  baseURL: BASE_URL,
+  timeout: 120_000, // 120s for multipart file uploads
+})
+
 // ─── Request interceptor — attach Bearer token ────────────────────────────────
 
 axiosInstance.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    const token = tokenStore.getAccess()
+    if (token) {
+      config.headers = config.headers ?? {}
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error),
+)
+
+// Apply same auth interceptor to uploadAxiosInstance
+uploadAxiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = tokenStore.getAccess()
     if (token) {

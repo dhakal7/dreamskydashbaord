@@ -3,7 +3,7 @@
  */
 
 import { api } from '@/lib/api-client'
-import axiosInstance from '@/lib/api-client'
+import { uploadAxiosInstance } from '@/lib/api-client'
 import type { StudentDocumentProfile, StudentDocument } from '@/types'
 
 export interface UploadDocumentBody {
@@ -59,7 +59,7 @@ export const documentApi = {
     if (body.notes) form.append('notes', body.notes)
     if (body.expiryDate) form.append('expiryDate', body.expiryDate)
 
-    return axiosInstance.post('/documents/upload', form, {
+    return uploadAxiosInstance.post('/documents/upload', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }) as Promise<StudentDocument>
   },
@@ -73,7 +73,7 @@ export const documentApi = {
     if (body.notes) form.append('notes', body.notes)
     if (body.customName) form.append('customName', body.customName)
 
-    return axiosInstance.post(`/documents/${id}/replace`, form, {
+    return uploadAxiosInstance.post(`/documents/${id}/replace`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }) as Promise<StudentDocument>
   },
@@ -94,7 +94,7 @@ export const documentApi = {
   },
 
   download(id: string): Promise<Blob> {
-    return axiosInstance.get(`/documents/${id}/download`, {
+    return uploadAxiosInstance.get(`/documents/${id}/download`, {
       responseType: 'blob',
     }) as Promise<Blob>
   },

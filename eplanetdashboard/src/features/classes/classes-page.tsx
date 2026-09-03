@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/select'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { EmptyState } from '@/components/shared/empty-state'
+import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 
 import { api, isMockMode } from '@/lib/api-client'
 import { useClasses, useEnrollStudent, useUpdateClass } from '@/hooks/use-classes'
@@ -146,7 +147,7 @@ export default function ClassesPage() {
 
   // Component state
   const [searchQuery, setSearchQuery] = useState('')
-  const [subjectFilter, setSubjectFilter] = useState<'ALL' | 'IELTS' | 'PTE'>('ALL')
+  const [subjectFilter, setSubjectFilter] = useState<'ALL' | 'IELTS' | 'PTE' | 'EPT'>('ALL')
 
   // Admission Modal State
   const [enrollDialogOpen, setEnrollDialogOpen] = useState(false)
@@ -176,7 +177,7 @@ export default function ClassesPage() {
 
       if (rawList.length > 0) {
         return rawList.map((c: any) => {
-          const subject = c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS')
+          const subject = c.subject || (c.name.toUpperCase().includes('PTE') ? 'PTE' : (c.name.toUpperCase().includes('EPT') ? 'EPT' : 'IELTS'))
           const schedule = typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Morning Batch'
           const storeCount = mockEnroll.filter((e) => e.classId === c.id || e.classId === c.name).length
           const enrolledCount = (Array.isArray(c.enrollments) && c.enrollments.length > 0)
@@ -207,7 +208,7 @@ export default function ClassesPage() {
       return {
         id: c.id,
         name: c.name,
-        subject: c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS'),
+        subject: c.subject || (c.name.toUpperCase().includes('PTE') ? 'PTE' : (c.name.toUpperCase().includes('EPT') ? 'EPT' : 'IELTS')),
         teacherId: c.teacherId,
         teacherName: c.teacherName || 'EPT Instructor',
         schedule: c.schedule || 'Morning Batch',
@@ -227,7 +228,9 @@ export default function ClassesPage() {
         c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.schedule.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.teacherName.toLowerCase().includes(searchQuery.toLowerCase())
-      const matchesSubject = subjectFilter === 'ALL' || c.subject.toUpperCase() === subjectFilter
+      const matchesSubject = subjectFilter === 'ALL' ||
+        c.subject.toUpperCase() === subjectFilter ||
+        (subjectFilter === 'EPT' && (c.name.toUpperCase().includes('EPT') || c.subject.toUpperCase().includes('EPT')))
       return matchesSearch && matchesSubject
     })
   }, [formattedClasses, searchQuery, subjectFilter])
@@ -236,14 +239,17 @@ export default function ClassesPage() {
   const availableStudents = useMemo(() => {
     if (!isMockMode()) {
       const rawStudents = liveStudentsData?.students || (Array.isArray(liveStudentsData) ? liveStudentsData : [])
-      return rawStudents.map((s: any) => ({
-        id: s.id,
-        name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email || 'Student',
-        email: s.email || '',
-        phone: s.phone || '',
-      }))
+      if (rawStudents.length > 0) {
+        return rawStudents.map((s: any) => ({
+          id: s.id,
+          studentId: s.studentId || s.id,
+          name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email || 'Student',
+          email: s.email || '',
+          phone: s.phone || '',
+        }))
+      }
     }
-    return mockStudents.map((s) => ({ id: s.id, name: s.name, email: s.email, phone: s.phone || '' }))
+    return mockStudents.map((s) => ({ id: s.id, studentId: s.studentId || s.id, name: s.name, email: s.email, phone: s.phone || '' }))
   }, [liveStudentsData, mockStudents])
 
   // Open Admission Modal
@@ -591,6 +597,14 @@ export default function ClassesPage() {
             >
               PTE Batches
             </Button>
+            <Button
+              size="sm"
+              variant={subjectFilter === 'EPT' ? 'default' : 'outline'}
+              className="h-8 text-xs px-3 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 border-emerald-200"
+              onClick={() => setSubjectFilter('EPT')}
+            >
+              EPT Batches
+            </Button>
           </div>
         </div>
       </Card>
@@ -803,18 +817,13 @@ export default function ClassesPage() {
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold">Select Student</label>
-              <Select value={targetStudentId} onValueChange={setTargetStudentId}>
-                <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="Search or select student…" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableStudents.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name} ({s.email || s.phone})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableStudentPicker
+                students={availableStudents}
+                value={targetStudentId}
+                onChange={setTargetStudentId}
+                placeholder="Type student name, email, or phone to search..."
+                emptyMessage="No matching students found"
+              />
             </div>
           </div>
 

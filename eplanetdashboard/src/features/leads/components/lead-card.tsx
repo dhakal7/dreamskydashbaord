@@ -1,4 +1,4 @@
-import { memo, useState } from 'react'
+import { memo, useRef, useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
 import { Phone, Mail, GripVertical, GraduationCap, MoreVertical, Pencil, AlertCircle, Trash2 } from 'lucide-react'
 import dayjs from 'dayjs'
@@ -32,7 +32,18 @@ const PIPELINE_STAGES: { stage: LeadStage; label: string }[] = [
   { stage: 'interested', label: 'Interested' },
 ]
 
-export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }: { lead: Lead; overlay?: boolean; canDrag?: boolean }) {
+// Stages where a counselor / admin can register the lead as a permanent student
+const REGISTERABLE_STAGES: LeadStage[] = ['counseling', 'interested']
+
+interface LeadCardProps {
+  lead: Lead
+  overlay?: boolean
+  canDrag?: boolean
+  /** Called when the user moves the lead to a new stage via the detail dialog. Routed correctly to backend in live mode. */
+  onMove?: (id: string, stage: LeadStage) => void
+}
+
+export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, onMove }: LeadCardProps) {
   const currentUser = useAuthStore((s) => s.currentUser)
   const moveLead = useLeadsStore((s) => s.moveLead)
   const updateLead = useLeadsStore((s) => s.updateLead)
@@ -44,21 +55,33 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
   const [showEmailPrompt, setShowEmailPrompt] = useState(false)
   const [registeredStudent, setRegisteredStudent] = useState<{ studentId: string; email: string; portalPassword: string | null } | null>(null)
 
+  // Track the card DOM node separately — used only to apply isDragging opacity
+  const cardRef = useRef<HTMLDivElement>(null)
+
   const canChangeStage = hasPermission(currentUser.role, 'leads.change-stage')
   const canManageLeads = hasPermission(currentUser.role, 'leads.manage')
   const isMissingEmail = !lead.email || lead.email.includes('@no-email') || lead.email.includes('eplanet') || !lead.email.includes('@')
 
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  // Only the grip handle is the drag source — `setNodeRef` goes on the handle button
+  const { attributes, listeners, setNodeRef: setHandleRef, isDragging } = useDraggable({
     id: lead.id,
     disabled: !canDrag || !canChangeStage,
   })
 
+  // Use the prop-based onMove if provided (live mode), otherwise fall back to mock store
+  function handleStageChange(stage: LeadStage) {
+    if (onMove) {
+      onMove(lead.id, stage)
+    } else {
+      moveLead(lead.id, stage)
+    }
+  }
+
   async function handleRegisterLead() {
     let finalEmail = lead.email
-    if (isMissingEmail) {
-      if (!missingEmailInput.trim() || !missingEmailInput.includes('@')) {
-        setShowEmailPrompt(true)
-        toast.error('Please enter a valid email address to complete student registration')
+    if (isMissingEmail && missingEmailInput.trim()) {
+      if (!missingEmailInput.includes('@')) {
+        toast.error('Please enter a valid email address or leave it blank')
         return
       }
       finalEmail = missingEmailInput.trim()
@@ -91,10 +114,13 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
     }
   }
 
+  const canRegisterAsStudent = REGISTERABLE_STAGES.includes(lead.stage) && !registeredStudent && canChangeStage
+  const showEmailPromptSection = isMissingEmail && (showEmailPrompt || REGISTERABLE_STAGES.includes(lead.stage))
+
   return (
     <>
     <Card
-      ref={overlay ? undefined : setNodeRef}
+      ref={cardRef}
       onClick={() => {
         if (!isDragging) setIsDetailOpen(true)
       }}
@@ -140,13 +166,24 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
                       <DropdownMenuItem
                         key={ps.stage}
                         disabled={lead.stage === ps.stage}
-                        onClick={() => moveLead(lead.id, ps.stage)}
+                        onClick={() => handleStageChange(ps.stage)}
                         className="text-xs flex items-center justify-between"
                       >
                         <span>{ps.label}</span>
                         {lead.stage === ps.stage && <span className="text-[10px] text-muted-foreground font-medium">(Current)</span>}
                       </DropdownMenuItem>
                     ))}
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {canRegisterAsStudent && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => setIsDetailOpen(true)}
+                      className="text-xs text-brand-600 focus:text-brand-700 focus:bg-brand-50 dark:focus:bg-brand-950/50"
+                    >
+                      <GraduationCap className="mr-1.5 size-3.5" /> Register as Student
+                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
                 )}
@@ -162,13 +199,15 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
             </DropdownMenu>
           )}
 
+          {/* Grip handle — this is the ONLY drag source, not the whole card */}
           {canDrag && canChangeStage && !overlay && (
             <button
+              ref={setHandleRef}
               {...attributes}
               {...listeners}
               type="button"
               className="flex size-6 touch-none items-center justify-center rounded text-muted-foreground/70 transition-colors hover:bg-secondary hover:text-foreground cursor-grab active:cursor-grabbing"
-              title="Drag to reorder"
+              title="Drag to move to another stage"
             >
               <GripVertical className="size-3.5" />
             </button>
@@ -191,6 +230,11 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
 
       <div className="mt-2.5 flex items-center justify-between">
         <PriorityBadge priority={lead.priority} className="text-[10px] py-0" />
+        {canRegisterAsStudent && (
+          <span className="text-[10px] font-medium text-brand-600 dark:text-brand-400 flex items-center gap-0.5">
+            <GraduationCap className="size-3" /> Ready to register
+          </span>
+        )}
       </div>
 
       <div className="mt-2 flex items-center justify-between border-t border-border/70 pt-2 text-[10px] text-muted-foreground">
@@ -214,27 +258,29 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
         </DialogHeader>
 
         <div className="space-y-3 text-sm">
-          {/* Stage Switcher inside Dialog */}
-          <div className="rounded-lg border border-border bg-secondary/30 p-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Current Pipeline Stage</p>
-            <div className="flex flex-wrap gap-1.5">
-              {PIPELINE_STAGES.map((ps) => {
-                const isActive = lead.stage === ps.stage
-                return (
-                  <Button
-                    key={ps.stage}
-                    size="sm"
-                    variant={isActive ? 'default' : 'outline'}
-                    disabled={isActive || !canChangeStage}
-                    onClick={() => moveLead(lead.id, ps.stage)}
-                    className="h-7 text-xs px-2.5"
-                  >
-                    {ps.label}
-                  </Button>
-                )
-              })}
+          {/* Stage Switcher inside Dialog — uses the correct onMove (backend-aware) */}
+          {canChangeStage && (
+            <div className="rounded-lg border border-border bg-secondary/30 p-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Current Pipeline Stage</p>
+              <div className="flex flex-wrap gap-1.5">
+                {PIPELINE_STAGES.map((ps) => {
+                  const isActive = lead.stage === ps.stage
+                  return (
+                    <Button
+                      key={ps.stage}
+                      size="sm"
+                      variant={isActive ? 'default' : 'outline'}
+                      disabled={isActive}
+                      onClick={() => handleStageChange(ps.stage)}
+                      className="h-7 text-xs px-2.5"
+                    >
+                      {ps.label}
+                    </Button>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-border/70 bg-secondary/40 p-3">
@@ -251,7 +297,11 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
             </div>
             <div className="rounded-lg border border-border/70 bg-secondary/40 p-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Interest</p>
-              <p className="mt-1 font-medium">{lead.interestedCountry}</p>
+              <p className="mt-1 font-medium">
+                {lead.interestedCountries && lead.interestedCountries.length > 0
+                  ? lead.interestedCountries.join(', ')
+                  : lead.interestedCountry}
+              </p>
               <p className="mt-1 text-muted-foreground">{lead.interestedLevel}</p>
             </div>
           </div>
@@ -261,11 +311,11 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
             <p className="mt-1 text-muted-foreground">{lead.address ?? 'No address captured yet.'}</p>
           </div>
 
-          {/* Missing email prompt input before upgrading */}
-          {isMissingEmail && (showEmailPrompt || lead.stage === 'interested') && (
+          {/* Missing email prompt — shown for counseling & interested stages */}
+          {isMissingEmail && showEmailPromptSection && (
             <div className="rounded-lg border border-amber-300 bg-amber-50/80 p-3 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-200">
               <p className="font-semibold flex items-center gap-1.5 mb-1.5">
-                <AlertCircle className="size-4 text-amber-600" /> Enter Email for Student Credentials & Notifications
+                <AlertCircle className="size-4 text-amber-600" /> Enter Email for Student Credentials &amp; Notifications (Optional)
               </p>
               <Input
                 type="email"
@@ -278,8 +328,8 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true }
             </div>
           )}
 
-          {/* Register as Permanent Student Button */}
-          {lead.stage === 'interested' && !registeredStudent && canChangeStage && (
+          {/* Register as Permanent Student — available from Counseling OR Interested stage */}
+          {canRegisterAsStudent && (
             <Button onClick={handleRegisterLead} disabled={isRegistering} className="w-full bg-brand-600 hover:bg-brand-700 text-white">
               <GraduationCap className="mr-2 size-4" />
               {isRegistering ? 'Registering student…' : 'Register as Permanent Student'}
