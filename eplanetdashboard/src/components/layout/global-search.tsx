@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, User, UserPlus, Landmark, CornerDownLeft } from 'lucide-react'
+import { Search, User, UserPlus, Landmark, Navigation, CornerDownLeft } from 'lucide-react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { students, leads, universities } from '@/mock'
+import { universities } from '@/mock'
 import { useAuthStore } from '@/store/auth-store'
+import { useStudentsStore } from '@/features/students/store'
+import { useLeadsStore } from '@/features/leads/store'
 import { searchScopesByRole, visibleLeads, visibleStudents } from '@/lib/data-visibility'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -14,27 +16,51 @@ interface GlobalSearchProps {
   onOpenChange: (open: boolean) => void
 }
 
+const navPages = [
+  { name: 'Dashboard', path: '/dashboard/super-admin', keywords: ['home', 'analytics', 'stats', 'overview'] },
+  { name: 'Students', path: '/students', keywords: ['pupil', 'enrolled', 'active'] },
+  { name: 'Leads', path: '/leads', keywords: ['prospect', 'new lead', 'inquiry'] },
+  { name: 'Follow-ups', path: '/followups', keywords: ['call', 'remind', 'task'] },
+  { name: 'Appointments', path: '/appointments', keywords: ['meeting', 'counseling', 'schedule'] },
+  { name: 'Applications', path: '/applications', keywords: ['offer letter', 'admission', 'university'] },
+  { name: 'Visa Processing', path: '/visa', keywords: ['embassy', 'cas', 'coe', 'permit'] },
+  { name: 'Classes & Batches', path: '/classes', keywords: ['ielts', 'pte', 'toefl', 'batch', 'tuition'] },
+  { name: 'Fees & Payments', path: '/fees', keywords: ['finance', 'receipt', 'invoice', 'due'] },
+  { name: 'Reports', path: '/reports', keywords: ['analytics', 'export', 'conversion'] },
+  { name: 'Settings', path: '/settings', keywords: ['profile', 'account', 'password'] },
+]
+
 export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const [query, setQuery] = useState('')
   const navigate = useNavigate()
   const currentUser = useAuthStore((state) => state.currentUser)
   const searchScopes = searchScopesByRole[currentUser.role]
 
+  const liveStudents = useStudentsStore((s) => s.students)
+  const liveLeads = useLeadsStore((s) => s.leads)
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return null
 
-    const studentMatches = visibleStudents(currentUser, students)
-      .filter((s) => [s.name, s.studentId, s.passportNumber, s.phone, s.email].some((f) => f.toLowerCase().includes(q)))
+    const studentMatches = visibleStudents(currentUser, liveStudents)
+      .filter((s) => [s.name, s.studentId, s.passportNumber ?? '', s.phone ?? '', s.email].some((f) => f.toLowerCase().includes(q)))
       .slice(0, 4)
-    const leadMatches = visibleLeads(currentUser, leads)
-      .filter((l) => [l.name, l.email, l.phone].some((f) => f.toLowerCase().includes(q)))
+
+    const leadMatches = visibleLeads(currentUser, liveLeads)
+      .filter((l) => [l.name, l.email, l.phone ?? '', l.interestedCountry ?? ''].some((f) => f.toLowerCase().includes(q)))
       .slice(0, 4)
+
     const uniMatches = searchScopes.includes('universities')
-      ? universities.filter((u) => u.name.toLowerCase().includes(q)).slice(0, 4)
+      ? universities.filter((u) => u.name.toLowerCase().includes(q) || u.countryName.toLowerCase().includes(q)).slice(0, 4)
       : []
-    return { studentMatches, leadMatches, uniMatches }
-  }, [currentUser, query, searchScopes])
+
+    const pageMatches = navPages.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.keywords.some((k) => k.includes(q))
+    ).slice(0, 3)
+
+    return { studentMatches, leadMatches, uniMatches, pageMatches }
+  }, [currentUser, query, searchScopes, liveStudents, liveLeads])
 
   function go(path: string) {
     onOpenChange(false)
@@ -51,7 +77,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={searchScopes.length ? 'Search authorized records...' : 'Global search is unavailable for your role'}
+            placeholder={searchScopes.length ? 'Search students, leads, universities, pages...' : 'Global search is unavailable for your role'}
             disabled={!searchScopes.length}
             className="h-auto border-0 shadow-none px-0 focus-visible:ring-0"
           />
@@ -66,53 +92,82 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
           )}
 
           {searchScopes.length > 0 && !results && (
-            <p className="px-3 py-8 text-center text-sm text-muted-foreground">
-              Start typing to search across the CRM.
-            </p>
+            <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Quick Search CRM</p>
+              <p className="text-xs text-muted-foreground mt-1">Search by student name, lead phone number, passport, university, or page name.</p>
+            </div>
           )}
 
           {results && (
             <div className="space-y-3">
-              {searchScopes.includes('students') && <ResultGroup
-                icon={User}
-                label="Students"
-                empty={results.studentMatches.length === 0}
-              >
-                {results.studentMatches.map((s) => (
-                  <ResultRow
-                    key={s.id}
-                    onClick={() => go(`/students/${s.id}`)}
-                    leading={<PersonAvatar name={s.name} color={s.photoColor} className="size-7" />}
-                    title={s.name}
-                    subtitle={`${s.studentId} · ${s.preferredCountries[0] ?? ''}`}
-                  />
-                ))}
-              </ResultGroup>}
+              {results.pageMatches.length > 0 && (
+                <ResultGroup icon={Navigation} label="Pages & Tools" empty={false}>
+                  {results.pageMatches.map((p) => (
+                    <ResultRow
+                      key={p.path}
+                      onClick={() => go(p.path)}
+                      leading={<Navigation className="size-4 text-primary" />}
+                      title={p.name}
+                      subtitle={`Jump to ${p.name}`}
+                    />
+                  ))}
+                </ResultGroup>
+              )}
 
-              {searchScopes.includes('leads') && <ResultGroup icon={UserPlus} label="Leads" empty={results.leadMatches.length === 0}>
-                {results.leadMatches.map((l) => (
-                  <ResultRow
-                    key={l.id}
-                    onClick={() => go('/leads')}
-                    leading={<PersonAvatar name={l.name} color={l.photoColor} className="size-7" />}
-                    title={l.name}
-                    subtitle={`${l.interestedCountry} · ${l.stage.replace('_', ' ')}`}
-                  />
-                ))}
-              </ResultGroup>}
+              {searchScopes.includes('students') && (
+                <ResultGroup
+                  icon={User}
+                  label="Students"
+                  empty={results.studentMatches.length === 0}
+                >
+                  {results.studentMatches.map((s) => (
+                    <ResultRow
+                      key={s.id}
+                      onClick={() => go(`/students/${s.id}`)}
+                      leading={<PersonAvatar name={s.name} color={s.photoColor} className="size-7" />}
+                      title={s.name}
+                      subtitle={`${s.studentId} · ${s.email} · ${s.preferredCountries[0] ?? ''}`}
+                    />
+                  ))}
+                </ResultGroup>
+              )}
 
-              {searchScopes.includes('universities') && <ResultGroup icon={Landmark} label="Universities" empty={results.uniMatches.length === 0}>
-                {results.uniMatches.map((u) => (
-                  <ResultRow
-                    key={u.id}
-                    onClick={() => go('/universities')}
-                    leading={<span className="text-lg">{u.flag}</span>}
-                    title={u.name}
-                    subtitle={`${u.city}, ${u.countryName}`}
-                  />
-                ))}
-              </ResultGroup>}
+              {searchScopes.includes('leads') && (
+                <ResultGroup icon={UserPlus} label="Leads" empty={results.leadMatches.length === 0}>
+                  {results.leadMatches.map((l) => (
+                    <ResultRow
+                      key={l.id}
+                      onClick={() => go('/leads')}
+                      leading={<PersonAvatar name={l.name} color={l.photoColor} className="size-7" />}
+                      title={l.name}
+                      subtitle={`${l.phone ?? l.email} · ${l.interestedCountry} · ${l.stage.replace('_', ' ')}`}
+                    />
+                  ))}
+                </ResultGroup>
+              )}
 
+              {searchScopes.includes('universities') && (
+                <ResultGroup icon={Landmark} label="Universities" empty={results.uniMatches.length === 0}>
+                  {results.uniMatches.map((u) => (
+                    <ResultRow
+                      key={u.id}
+                      onClick={() => go('/universities')}
+                      leading={<span className="text-lg">{u.flag}</span>}
+                      title={u.name}
+                      subtitle={`${u.city}, ${u.countryName}`}
+                    />
+                  ))}
+                </ResultGroup>
+              )}
+
+              {results.pageMatches.length === 0 &&
+                results.studentMatches.length === 0 &&
+                results.leadMatches.length === 0 &&
+                results.uniMatches.length === 0 && (
+                  <p className="px-3 py-8 text-center text-sm text-muted-foreground">
+                    No results found for "{query}".
+                  </p>
+                )}
             </div>
           )}
         </div>
