@@ -13,6 +13,7 @@ import { isMockMode } from '@/lib/api-client'
 import { studentApi, type CreateStudentBody } from '@/api/student-api'
 import { studentKeys, useStudents } from '@/hooks/use-students'
 import { useAuthStore } from '@/store/auth-store'
+import { useLeadsStore } from '@/features/leads/store'
 import type { Lead, LeadStage, LeadSource } from '@/types'
 
 // ── Stage mapping: backend stage → frontend lead stage ──────────────────────
@@ -129,6 +130,8 @@ function adaptStudentToLead(student: {
 /** Returns live leads (LEAD + PROSPECT students) in live mode, or an empty array in mock mode. */
 export function useLiveLeads() {
   const currentUser = useAuthStore((s) => s.currentUser)
+  // Read the persisted stage overrides so sub-stages (contacted, interested) survive refetches
+  const stageOverrides = useLeadsStore((s) => s.stageOverrides)
 
   // Scope by counselor in live mode: counselors only see their own students
   const counselorId =
@@ -142,8 +145,17 @@ export function useLiveLeads() {
 
   const leads: Lead[] = useMemo(() => {
     if (isMockMode() || !data?.students) return []
-    return data.students.map(adaptStudentToLead)
-  }, [data])
+    return data.students.map((s) => {
+      const adapted = adaptStudentToLead(s)
+      // Apply persisted frontend stage override if present — this prevents snap-back
+      // for stages like 'contacted' and 'interested' that map to the same backend stage
+      const override = stageOverrides[adapted.id]
+      if (override) {
+        return { ...adapted, stage: override }
+      }
+      return adapted
+    })
+  }, [data, stageOverrides])
 
   const totalCount = data?.pagination?.total ?? leads.length
 
@@ -162,10 +174,20 @@ export function useMoveLiveLead() {
       if (!backendStage) return Promise.resolve(null as never)
       return studentApi.changePipeline(id, { stage: backendStage })
     },
+    onMutate: ({ id, stage }) => {
+      // Persist the frontend stage override immediately so the card stays in place
+      // even after React Query refetches (because LEAD→new/contacted and PROSPECT→counseling/interested
+      // both collapse to a single backend stage).
+      if (!isMockMode()) {
+        useLeadsStore.getState().setStageOverride(id, stage)
+      }
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: studentKeys.lists() })
     },
-    onError: (err: Error) => {
+    onError: (err: Error, { id }) => {
+      // Revert the override if the backend call failed
+      useLeadsStore.getState().clearStageOverride(id)
       if (err.message && err.message.includes('already at this stage')) {
         qc.invalidateQueries({ queryKey: studentKeys.lists() })
         return
@@ -247,5 +269,23 @@ export function useUpdateLiveLead() {
       toast.success('Lead updated successfully')
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to update lead'),
+  })
+}
+
+// ── Mutation: delete a lead from the backend ──────────────────────────────────
+
+export function useDeleteLiveLead() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (isMockMode()) return null
+      return studentApi.remove(id)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: studentKeys.lists() })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to delete lead'),
   })
 }

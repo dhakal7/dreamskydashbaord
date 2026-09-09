@@ -1,16 +1,22 @@
+import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import dayjs from 'dayjs'
-import { Phone, MoreHorizontal, Pencil } from 'lucide-react'
+import { Phone, MoreHorizontal, Pencil, GraduationCap, Trash2 } from 'lucide-react'
 import type { Lead } from '@/types'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { toast } from 'sonner'
 import { useLeadsStore } from '../store'
 import { LeadStageBadge, PriorityBadge } from '@/components/shared/status-badges'
+import { convertLeadToStudent } from '@/lib/lead-conversion'
+import { useDeleteLiveLead } from '@/hooks/use-leads-live'
+import { isMockMode } from '@/lib/api-client'
+import { useAuthStore } from '@/store/auth-store'
+import { hasPermission } from '@/lib/rbac'
 
 export const leadColumns: ColumnDef<Lead, any>[] = [
   {
@@ -94,6 +100,88 @@ export const leadColumns: ColumnDef<Lead, any>[] = [
   },
 ]
 
+/**
+ * ActionsCell is a component so it can use hooks (useDeleteLiveLead, useAuthStore, etc.)
+ */
+function ActionsCell({ lead, onEdit }: { lead: Lead; onEdit?: (lead: Lead) => void }) {
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const removeLead = useLeadsStore((s) => s.removeLead)
+  const deleteLiveLead = useDeleteLiveLead()
+  const [isConverting, setIsConverting] = useState(false)
+
+  const canManageLeads = hasPermission(currentUser.role, 'leads.manage')
+  const canChangeStage = hasPermission(currentUser.role, 'leads.change-stage')
+  const isRegisterable = (lead.stage === 'counseling' || lead.stage === 'interested') && canChangeStage
+
+  function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (window.confirm(`Are you sure you want to delete lead "${lead.name}"?`)) {
+      if (isMockMode()) {
+        removeLead(lead.id)
+        toast.success(`Lead "${lead.name}" deleted.`)
+      } else {
+        deleteLiveLead.mutate(lead.id, {
+          onSuccess: () => toast.success(`Lead "${lead.name}" deleted.`),
+        })
+      }
+    }
+  }
+
+  async function handleConvert(e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!window.confirm(`Convert "${lead.name}" to a permanent student? This cannot be undone.`)) return
+    setIsConverting(true)
+    try {
+      const result = await convertLeadToStudent(lead)
+      if (result) {
+        toast.success(`${lead.name} has been registered as a student!`)
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to register student. Please try again.')
+    } finally {
+      setIsConverting(false)
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {onEdit && canManageLeads && (
+          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(lead); }}>
+            <Pencil className="mr-2 size-3.5" /> Edit Details
+          </DropdownMenuItem>
+        )}
+        {isRegisterable && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleConvert}
+              disabled={isConverting}
+              className="text-brand-600 focus:text-brand-700 focus:bg-brand-50 dark:focus:bg-brand-950/50"
+            >
+              <GraduationCap className="mr-2 size-3.5" />
+              {isConverting ? 'Converting...' : 'Convert to Student'}
+            </DropdownMenuItem>
+          </>
+        )}
+        {canManageLeads && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem destructive onClick={handleDelete}>
+              <Trash2 className="mr-2 size-3.5" /> Delete Lead
+            </DropdownMenuItem>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export function getLeadColumns(onEdit?: (lead: Lead) => void): ColumnDef<Lead, any>[] {
   return [
     ...leadColumns.filter(c => c.id !== 'actions'),
@@ -101,39 +189,7 @@ export function getLeadColumns(onEdit?: (lead: Lead) => void): ColumnDef<Lead, a
       id: 'actions',
       header: '',
       enableSorting: false,
-      cell: ({ row }) => {
-        const handleDelete = (e: React.MouseEvent) => {
-          e.stopPropagation()
-          if (window.confirm(`Are you sure you want to delete lead "${row.original.name}"?`)) {
-            useLeadsStore.getState().removeLead(row.original.id)
-            toast.success(`Lead "${row.original.name}" deleted.`)
-          }
-        }
-
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
-                <MoreHorizontal className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {onEdit && (
-                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(row.original); }}>
-                  <Pencil className="mr-2 size-3.5" /> Edit Details
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Log a call</DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Send email</DropdownMenuItem>
-              <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Convert to student</DropdownMenuItem>
-              <DropdownMenuItem destructive onClick={handleDelete}>
-                Delete lead
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
+      cell: ({ row }) => <ActionsCell lead={row.original} onEdit={onEdit} />,
     },
   ]
 }
-

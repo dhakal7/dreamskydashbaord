@@ -3,18 +3,19 @@ import { useStudentsStore } from '@/features/students/store'
 import { useCommissionStore } from '@/features/commissions/store'
 import { useAuthStore } from '@/store/auth-store'
 import { commissionRules } from '@/mock'
-import { studentApi, type CreateStudentBody } from '@/api/student-api'
+import { studentApi } from '@/api/student-api'
 import { studentKeys } from '@/hooks/use-students'
 import { queryClient } from '@/lib/query-client'
 import { isMockMode } from '@/lib/api-client'
+import type { Lead } from '@/types'
 
 /**
  * Converts a lead to a permanent student.
  *
- * REAL mode: creates the student in the backend (POST /students), then moves
- * them to ENROLLED (PATCH /students/:id/pipeline) which makes the backend
- * provision the student portal account and email the temporary credentials
- * from dreamskyadmission@gmail.com.
+ * REAL mode: the lead already exists in the backend as a student with
+ * currentStage=LEAD or PROSPECT. We simply promote them to ENROLLED via
+ * PATCH /students/:id/pipeline — the backend provisions the portal account
+ * and emails temporary credentials from dreamskyadmission@gmail.com.
  *
  * MOCK mode: maps Lead fields to Student fields locally (no backend).
  */
@@ -25,19 +26,50 @@ export interface LeadConversionResult {
   portalPassword: string | null
 }
 
-export async function convertLeadToStudent(leadId: string): Promise<LeadConversionResult | null> {
-  const leadsState = useLeadsStore.getState()
-  const lead = leadsState.leads.find((l) => l.id === leadId)
+/**
+ * Accepts the full Lead object to avoid the "lead not found in local store"
+ * bug that occurred in live mode where leads come from the backend, not local store.
+ */
+export async function convertLeadToStudent(lead: Lead): Promise<LeadConversionResult | null> {
   if (!lead) {
-    console.warn(`[lead-conversion] Lead ${leadId} not found`)
+    console.warn('[lead-conversion] No lead provided')
     return null
   }
 
   const currentUser = useAuthStore.getState().currentUser
-  if (currentUser.role !== 'super_admin' && currentUser.role !== 'front_desk' && currentUser.role !== 'counselor') {
+  if (
+    currentUser.role !== 'super_admin' &&
+    currentUser.role !== 'front_desk' &&
+    currentUser.role !== 'counselor'
+  ) {
     console.warn('[lead-conversion] Only front desk, counselors, and super admin can register leads as permanent students')
     return null
   }
+
+  // ── REAL MODE: promote the existing backend record to ENROLLED ─────────────
+  if (!isMockMode()) {
+    // The lead is already stored in the backend as a student at LEAD/PROSPECT stage.
+    // Just change the pipeline stage to ENROLLED — no new record is created.
+    // The backend will provision the student portal account and email credentials.
+    await studentApi.changePipeline(lead.id, { stage: 'ENROLLED' })
+
+    // Clean up any persisted frontend stage override for this lead
+    useLeadsStore.getState().clearStageOverride(lead.id)
+
+    // Invalidate leads + students queries so both lists refresh immediately.
+    queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
+
+    return {
+      studentId: lead.id,
+      email: lead.email,
+      portalPassword: null,
+    }
+  }
+
+  // ── MOCK MODE: keep full local-store behavior (no backend) ─────────────────
+  const leadsState = useLeadsStore.getState()
+  const addStudent = useStudentsStore.getState().addStudent
+  const addCommission = useCommissionStore.getState().addCommission
 
   const selectedCounselorId = lead.selectedCounselorId ?? lead.counselorId
   const selectedCounselorName = lead.selectedCounselorName ?? lead.counselorName
@@ -48,35 +80,6 @@ export async function convertLeadToStudent(leadId: string): Promise<LeadConversi
     counselorName: selectedCounselorName,
   }
 
-  let backendStudentId: string | null = null
-
-  // ── REAL MODE: persist the student and enroll them so the welcome email fires ──
-  if (!isMockMode()) {
-    const nameParts = lead.name.trim().split(/\s+/)
-    const firstName = nameParts[0] || 'Unknown'
-    const lastName = nameParts.slice(1).join(' ') || firstName || 'Student'
-    const body: CreateStudentBody = {
-      firstName,
-      lastName,
-      email: lead.email && lead.email.trim() ? lead.email.trim() : undefined,
-      phone: lead.phone?.trim() || undefined,
-      nationality: 'Nepali',
-      source: 'OTHER',
-      assignedCounselorId: selectedCounselorId ?? undefined,
-      referredByAgentId: lead.referralAgentId ?? undefined,
-    }
-
-    const created = await studentApi.create(body)
-    await studentApi.changePipeline(created.id, { stage: 'ENROLLED' })
-    backendStudentId = created.id
-
-    // Refresh the students list so the new student appears immediately.
-    queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
-  }
-
-  // ── LOCAL STORE: keep the UI consistent in both modes ──────────────────────────
-  const addStudent = useStudentsStore.getState().addStudent
-  const addCommission = useCommissionStore.getState().addCommission
   const portalPassword = `DreamSky@${(lead.phone.replace(/\D/g, '').slice(-4) || '0000')}`
   const newStudent = addStudent({
     name: lead.name,
@@ -98,9 +101,7 @@ export async function convertLeadToStudent(leadId: string): Promise<LeadConversi
     preferredCountries: [selectedCountry],
     preferredLevel: lead.interestedLevel,
     budgetUsd: lead.budgetUsd ?? 0,
-    englishTest: {
-      type: 'None',
-    },
+    englishTest: { type: 'None' },
     academics: [],
     parents: [],
     tags: [],
@@ -143,14 +144,12 @@ export async function convertLeadToStudent(leadId: string): Promise<LeadConversi
     }
   }
 
-  // Remove the lead from the leads list entirely — they are now a student.
-  // In mock mode this keeps the stores in sync.
-  // In real mode the lead was never in the backend, so only the local store needs updating.
-  leadsState.removeLead(leadId)
+  // Remove the lead from the local leads list — they are now a student.
+  leadsState.removeLead(lead.id)
 
   return {
-    studentId: backendStudentId ?? newStudent.id,
+    studentId: newStudent.id,
     email: lead.email,
-    portalPassword: isMockMode() ? portalPassword : null,
+    portalPassword,
   }
 }

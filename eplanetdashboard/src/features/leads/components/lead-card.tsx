@@ -19,6 +19,8 @@ import { useAuthStore } from '@/store/auth-store'
 import { useLeadsStore } from '../store'
 import { LeadFormDialog } from './lead-form-dialog'
 import { hasPermission } from '@/lib/rbac'
+import { useDeleteLiveLead } from '@/hooks/use-leads-live'
+import { isMockMode } from '@/lib/api-client'
 
 const sourceLabel: Record<string, string> = {
   website: 'Website', facebook: 'Facebook', referral_agent: 'Referral Agent', walk_in: 'Walk-in',
@@ -48,6 +50,7 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
   const moveLead = useLeadsStore((s) => s.moveLead)
   const updateLead = useLeadsStore((s) => s.updateLead)
   const removeLead = useLeadsStore((s) => s.removeLead)
+  const deleteLiveLead = useDeleteLiveLead()
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isRegistering, setIsRegistering] = useState(false)
@@ -85,18 +88,24 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
         return
       }
       finalEmail = missingEmailInput.trim()
-      updateLead(lead.id, { email: finalEmail })
+      // Only update locally in mock mode (live mode patches are handled by the backend)
+      if (isMockMode()) {
+        updateLead(lead.id, { email: finalEmail })
+      }
     }
 
     setIsRegistering(true)
     try {
-      const result = await convertLeadToStudent(lead.id)
+      // Pass the full lead object — live mode no longer searches local store
+      const result = await convertLeadToStudent(lead)
       if (result) {
         setRegisteredStudent({
           studentId: result.studentId,
           email: finalEmail || result.email,
           portalPassword: result.portalPassword,
         })
+        toast.success(`${lead.name} has been registered as a student!`)
+        setIsDetailOpen(false)
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to register student. Please try again.')
@@ -108,9 +117,17 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
   function handleDeleteLead(e?: React.MouseEvent) {
     if (e) e.stopPropagation()
     if (window.confirm(`Are you sure you want to permanently delete lead "${lead.name}"?`)) {
-      removeLead(lead.id)
       setIsDetailOpen(false)
-      toast.success(`Lead "${lead.name}" deleted.`)
+      if (isMockMode()) {
+        // Mock mode: remove from local store only
+        removeLead(lead.id)
+        toast.success(`Lead "${lead.name}" deleted.`)
+      } else {
+        // Live mode: call backend delete, then refresh list
+        deleteLiveLead.mutate(lead.id, {
+          onSuccess: () => toast.success(`Lead "${lead.name}" deleted.`),
+        })
+      }
     }
   }
 
