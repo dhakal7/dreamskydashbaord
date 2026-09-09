@@ -56,8 +56,12 @@ export async function convertLeadToStudent(lead: Lead): Promise<LeadConversionRe
     // Clean up any persisted frontend stage override for this lead
     useLeadsStore.getState().clearStageOverride(lead.id)
 
-    // Invalidate leads + students queries so both lists refresh immediately.
-    queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
+    // Invalidate ALL student queries — this refreshes:
+    //   1. The leads list (LEAD/PROSPECT) so the card disappears from Leads page
+    //   2. The students list (ENROLLED+) so the student appears on Students page
+    //   3. The dashboard stats
+    queryClient.invalidateQueries({ queryKey: studentKeys.all })
+    queryClient.invalidateQueries({ queryKey: ['dashboard'] })
 
     return {
       studentId: lead.id,

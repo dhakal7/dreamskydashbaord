@@ -185,7 +185,7 @@ const listStudents = async ({ search, stage, stageIn, type, counselorId, source,
     }
 
     const pageNum = Math.max(parseInt(page) || 1, 1);
-    const pageSize = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+    const pageSize = Math.min(Math.max(parseInt(limit) || 20, 1), 500);
     const skip = (pageNum - 1) * pageSize;
 
     const allowedSorts = ["createdAt", "firstName", "lastName", "currentStage"];
@@ -305,7 +305,8 @@ const changePipelineStage = async (id, { stage, reasonCode }, changedById) => {
 const softDeleteStudent = async (id) => {
     const student = await prisma.student.findUnique({ where: { id } });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
-    if (!student.isActive) throw AppError.badRequest("Student is already deactivated.", "ALREADY_INACTIVE");
+    // Idempotent: if already deactivated, just return without error
+    if (!student.isActive) return student;
 
     return prisma.student.update({ where: { id }, data: { isActive: false } });
 };
