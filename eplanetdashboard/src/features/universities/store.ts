@@ -15,8 +15,10 @@ interface UniversitiesState {
   removeUniversity: (id: string) => void
 }
 
+import { isMockMode } from '@/lib/api-client'
+
 export const useUniversitiesStore = create<UniversitiesState>((set, get) => ({
-  universities: seedUniversities,
+  universities: isMockMode() ? seedUniversities : [],
 
   addUniversity: (data) => {
     const country = useCountriesStore.getState().countries.find((c) => c.id === data.countryId)

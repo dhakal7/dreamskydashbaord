@@ -12,8 +12,10 @@ interface ApplicationsState {
   removeApplication: (id: string) => void
 }
 
+import { isMockMode } from '@/lib/api-client'
+
 export const useApplicationsStore = create<ApplicationsState>((set, get) => ({
-  applications: seedApplications,
+  applications: isMockMode() ? seedApplications : [],
   moveApplication: (id, stage) =>
     set((state) => {
       const app = state.applications.find((a) => a.id === id)
