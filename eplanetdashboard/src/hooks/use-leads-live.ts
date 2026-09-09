@@ -283,7 +283,7 @@ export function useDeleteLiveLead() {
       return studentApi.remove(id)
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: studentKeys.lists() })
+      qc.invalidateQueries({ queryKey: studentKeys.all })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to delete lead'),

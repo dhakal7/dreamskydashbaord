@@ -123,7 +123,8 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
         removeLead(lead.id)
         toast.success(`Lead "${lead.name}" deleted.`)
       } else {
-        // Live mode: call backend delete, then refresh list
+        // Live mode: call backend delete, clear stage override, then refresh list
+        useLeadsStore.getState().clearStageOverride(lead.id)
         deleteLiveLead.mutate(lead.id, {
           onSuccess: () => toast.success(`Lead "${lead.name}" deleted.`),
         })
