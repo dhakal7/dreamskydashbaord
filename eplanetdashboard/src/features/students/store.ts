@@ -15,9 +15,11 @@ interface StudentsState {
   addPartnerConsultancy: (name: string) => PartnerConsultancy
 }
 
+import { isMockMode } from '@/lib/api-client'
+
 export const useStudentsStore = create<StudentsState>((set, get) => ({
-  students: seedStudents,
-  partnerConsultancies: seedPartners,
+  students: isMockMode() ? seedStudents : [],
+  partnerConsultancies: isMockMode() ? seedPartners : [],
 
   addStudent: (data) => {
     const current = get().students

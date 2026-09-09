@@ -7,6 +7,9 @@ import { universities } from '@/mock'
 import { useAuthStore } from '@/store/auth-store'
 import { useStudentsStore } from '@/features/students/store'
 import { useLeadsStore } from '@/features/leads/store'
+import { useStudents } from '@/hooks/use-students'
+import { useLiveLeads } from '@/hooks/use-leads-live'
+import { isMockMode } from '@/lib/api-client'
 import { searchScopesByRole, visibleLeads, visibleStudents } from '@/lib/data-visibility'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
@@ -36,18 +39,49 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const currentUser = useAuthStore((state) => state.currentUser)
   const searchScopes = searchScopesByRole[currentUser.role]
 
-  const liveStudents = useStudentsStore((s) => s.students)
-  const liveLeads = useLeadsStore((s) => s.leads)
+  const mockStudents = useStudentsStore((s) => s.students)
+  const mockLeads = useLeadsStore((s) => s.leads)
+
+  // Fetch live records from backend API when query is typed
+  const { data: apiStudentsData } = useStudents({
+    search: query.trim() || undefined,
+    limit: 20,
+  })
+  const liveLeads = useLiveLeads()
+
+  const activeStudents = useMemo(() => {
+    if (!isMockMode() && apiStudentsData?.students) {
+      return apiStudentsData.students.map((s) => ({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`.trim(),
+        studentId: (s as any).studentId ?? s.id,
+        email: s.email,
+        phone: s.phone ?? '',
+        passportNumber: (s.academicBackground as any)?.passportNumber ?? '',
+        preferredCountries: s.nationality ? [s.nationality] : [],
+        photoColor: '#64748B',
+        status: s.currentStage as any,
+      }))
+    }
+    return isMockMode() ? mockStudents : []
+  }, [apiStudentsData, mockStudents])
+
+  const activeLeads = useMemo(() => {
+    if (!isMockMode()) {
+      return liveLeads
+    }
+    return mockLeads
+  }, [liveLeads, mockLeads])
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return null
 
-    const studentMatches = visibleStudents(currentUser, liveStudents)
+    const studentMatches = visibleStudents(currentUser, activeStudents as any)
       .filter((s) => [s.name, s.studentId, s.passportNumber ?? '', s.phone ?? '', s.email].some((f) => f.toLowerCase().includes(q)))
       .slice(0, 4)
 
-    const leadMatches = visibleLeads(currentUser, liveLeads)
+    const leadMatches = visibleLeads(currentUser, activeLeads as any)
       .filter((l) => [l.name, l.email, l.phone ?? '', l.interestedCountry ?? ''].some((f) => f.toLowerCase().includes(q)))
       .slice(0, 4)
 
@@ -60,7 +94,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
     ).slice(0, 3)
 
     return { studentMatches, leadMatches, uniMatches, pageMatches }
-  }, [currentUser, query, searchScopes, liveStudents, liveLeads])
+  }, [currentUser, query, searchScopes, activeStudents, activeLeads])
 
   function go(path: string) {
     onOpenChange(false)
