@@ -8,17 +8,31 @@ import { leadStageMeta } from '@/components/shared/status-badges'
 
 interface LeadsState {
   leads: Lead[]
+  /**
+   * Persisted map of leadId → frontend stage override.
+   *
+   * Used in live mode to remember frontend sub-stages (new, contacted, interested)
+   * that don't exist as separate backend stages. Without this, every React Query
+   * refetch would snap leads back to 'new' or 'counseling' because the backend only
+   * knows LEAD and PROSPECT.
+   */
+  stageOverrides: Record<string, LeadStage>
   addLead: (data: Omit<Lead, 'id' | 'createdAt' | 'lastContact' | 'nextFollowUp' | 'value'>) => Lead
   moveLead: (id: string, stage: LeadStage) => void
   updateLead: (id: string, data: Partial<Lead>) => void
   /** Permanently remove a lead from the list — used after converting a lead to a student. */
   removeLead: (id: string) => void
+  /** Save a frontend stage override so it survives React Query refetches. */
+  setStageOverride: (id: string, stage: LeadStage) => void
+  /** Remove stage override (called when lead is deleted or converted). */
+  clearStageOverride: (id: string) => void
 }
 
 export const useLeadsStore = create<LeadsState>()(
   persist(
     (set, get) => ({
       leads: isMockMode() ? seedLeads : [],
+      stageOverrides: {},
 
       addLead: (data) => {
         const current = get().leads
@@ -62,9 +76,27 @@ export const useLeadsStore = create<LeadsState>()(
         }),
 
       removeLead: (id) =>
+        set((state) => {
+          // Also clean up any stage override for this lead
+          const overrides = { ...state.stageOverrides }
+          delete overrides[id]
+          return {
+            leads: state.leads.filter((l) => l.id !== id),
+            stageOverrides: overrides,
+          }
+        }),
+
+      setStageOverride: (id, stage) =>
         set((state) => ({
-          leads: state.leads.filter((l) => l.id !== id),
+          stageOverrides: { ...state.stageOverrides, [id]: stage },
         })),
+
+      clearStageOverride: (id) =>
+        set((state) => {
+          const overrides = { ...state.stageOverrides }
+          delete overrides[id]
+          return { stageOverrides: overrides }
+        }),
     }),
     {
       name: 'dreamsky-leads-store',
