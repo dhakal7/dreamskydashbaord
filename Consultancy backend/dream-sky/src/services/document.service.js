@@ -78,7 +78,8 @@ const uploadDocument = async (file, data, uploadedById) => {
     const category = data.category ? data.category.toUpperCase() : deriveCategory(data.type);
     const documentType = data.type ? data.type.toUpperCase() : "OTHER";
     const customName = data.customName?.trim() || null;
-    const initialStatus = data.status ? data.status.toUpperCase() : "UPLOADED";
+    // Default to PENDING — "UPLOADED" may not exist in the live DB enum yet
+    const initialStatus = data.status ? data.status.toUpperCase() : "PENDING";
 
     return prisma.document.create({
         data: {
@@ -142,7 +143,8 @@ const replaceDocument = async (id, file, data, uploadedById) => {
     const relativePath = `students/${doc.studentId}/${Date.now()}_v${nextVersion}.enc`;
     await saveFile(relativePath, encryptedBuffer);
 
-    const newStatus = "RE_UPLOADED";
+    // Use PENDING — "RE_UPLOADED" may not exist in the live DB enum yet
+    const newStatus = "PENDING";
 
     // Create new version entry
     await prisma.documentVersion.create({
