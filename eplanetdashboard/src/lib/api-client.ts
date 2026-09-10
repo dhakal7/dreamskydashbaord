@@ -261,6 +261,30 @@ axiosInstance.interceptors.response.use(
   },
 )
 
+// Response interceptor for uploadAxiosInstance
+uploadAxiosInstance.interceptors.response.use(
+  (response: AxiosResponse<DreamSkyEnvelope<unknown>>) => {
+    // Pass through binary/blob responses (e.g. file downloads) unchanged
+    if (response.config.responseType === 'blob' || response.data instanceof Blob) {
+      return response.data as unknown as AxiosResponse
+    }
+    if (response.data && typeof response.data === 'object' && 'success' in response.data) {
+      return response.data.data as unknown as AxiosResponse
+    }
+    return response.data as unknown as AxiosResponse
+  },
+  async (error) => {
+    const message: string =
+      (error.response?.data as DreamSkyEnvelope<unknown>)?.message ??
+      (error.response?.data as any)?.error ??
+      error.message ??
+      'Upload failed on server'
+
+    return Promise.reject(new Error(message))
+  },
+)
+
+
 // ─── Typed helpers ────────────────────────────────────────────────────────────
 
 /**

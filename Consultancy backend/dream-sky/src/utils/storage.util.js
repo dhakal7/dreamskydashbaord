@@ -1,5 +1,6 @@
 const fs = require("fs/promises");
 const path = require("path");
+const AppError = require("./apiError");
 
 // Support a configurable upload directory via env (important for cPanel deployments
 // where process.cwd() may not be writable, but a specific path is).
@@ -32,7 +33,10 @@ const saveFile = async (relativePath, buffer) => {
         await fs.writeFile(fullPath, buffer);
     } catch (err) {
         console.error("[storage] Failed to save file:", fullPath, err);
-        throw err;
+        throw AppError.internal(
+            `Failed to save uploaded file on server disk (${err.code || err.message}). Please verify write permissions for "${UPLOAD_DIR}".`,
+            "FILE_STORAGE_ERROR"
+        );
     }
     return relativePath;
 };
@@ -42,7 +46,14 @@ const saveFile = async (relativePath, buffer) => {
  */
 const readFile = async (relativePath) => {
     const fullPath = path.join(UPLOAD_DIR, relativePath);
-    return fs.readFile(fullPath);
+    try {
+        return await fs.readFile(fullPath);
+    } catch (err) {
+        if (err.code === "ENOENT") {
+            throw AppError.notFound("File content not found on server disk.", "FILE_NOT_FOUND");
+        }
+        throw AppError.internal(`Failed to read file from server disk: ${err.message}`, "FILE_READ_ERROR");
+    }
 };
 
 /**
@@ -58,4 +69,5 @@ const deleteFile = async (relativePath) => {
 };
 
 module.exports = { saveFile, readFile, deleteFile, initUploadDir };
+
 

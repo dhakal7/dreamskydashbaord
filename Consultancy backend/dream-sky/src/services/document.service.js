@@ -1,4 +1,11 @@
-const sharp = require("sharp");
+// ─── Optional sharp import (native module — may not be available on all hosts) ─
+let sharp = null;
+try {
+    sharp = require("sharp");
+} catch (e) {
+    console.warn("[document.service] sharp not available — image compression disabled. Files will be stored as-is.");
+}
+
 const prisma = require("../prisma");
 const AppError = require("../utils/apiError");
 const { encrypt, decrypt } = require("../utils/encryption.util");
@@ -7,22 +14,31 @@ const { sendNotificationEmail } = require("./email.service");
 
 // ─── Image compression ───────────────────────────────────────────────────────
 const compressImage = async (buffer, mimetype) => {
-    let pipeline = sharp(buffer).rotate();
+    // If sharp is not available (e.g. cPanel shared hosting), skip compression
+    if (!sharp) return buffer;
 
-    if (mimetype === "image/png") {
-        pipeline = pipeline.png({ quality: 85 });
-    } else {
-        pipeline = pipeline.jpeg({ quality: 82 });
+    try {
+        let pipeline = sharp(buffer).rotate();
+
+        if (mimetype === "image/png") {
+            pipeline = pipeline.png({ quality: 85 });
+        } else {
+            pipeline = pipeline.jpeg({ quality: 82 });
+        }
+
+        const metadata = await sharp(buffer).metadata();
+        const longest = Math.max(metadata.width || 0, metadata.height || 0);
+        if (longest > 2500) {
+            pipeline = pipeline.resize({ width: 2500, height: 2500, fit: "inside", withoutEnlargement: true });
+        }
+
+        return pipeline.toBuffer();
+    } catch (err) {
+        console.warn("[document.service] Image compression failed, using original:", err.message);
+        return buffer;
     }
-
-    const metadata = await sharp(buffer).metadata();
-    const longest = Math.max(metadata.width || 0, metadata.height || 0);
-    if (longest > 2500) {
-        pipeline = pipeline.resize({ width: 2500, height: 2500, fit: "inside", withoutEnlargement: true });
-    }
-
-    return pipeline.toBuffer();
 };
+
 
 // Map sub-types to primary categories if category isn't explicitly provided
 const deriveCategory = (type) => {
@@ -42,6 +58,12 @@ const uploadDocument = async (file, data, uploadedById) => {
         select: { id: true, firstName: true, lastName: true, assignedCounselorId: true },
     });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
+
+    let validUploaderId = null;
+    if (uploadedById) {
+        const uploader = await prisma.user.findUnique({ where: { id: uploadedById }, select: { id: true } }).catch(() => null);
+        if (uploader) validUploaderId = uploader.id;
+    }
 
     const isImage = file.mimetype.startsWith("image/");
     let processedBuffer = file.buffer;
@@ -70,7 +92,7 @@ const uploadDocument = async (file, data, uploadedById) => {
             mimeType: file.mimetype,
             fileSize: processedBuffer.length,
             currentVersion: 1,
-            uploadedById,
+            uploadedById: validUploaderId,
             expiryDate: data.expiryDate ? new Date(data.expiryDate) : null,
             notes: data.notes?.trim() || null,
             versions: {
@@ -80,7 +102,7 @@ const uploadDocument = async (file, data, uploadedById) => {
                     originalName: file.originalname,
                     mimeType: file.mimetype,
                     fileSize: processedBuffer.length,
-                    uploadedById,
+                    uploadedById: validUploaderId,
                     status: initialStatus,
                     notes: data.notes?.trim() || null,
                 },
@@ -101,6 +123,13 @@ const replaceDocument = async (id, file, data, uploadedById) => {
         include: { student: { select: { id: true, firstName: true, lastName: true, assignedCounselorId: true } } },
     });
     if (!doc) throw AppError.notFound("Document not found.", "DOCUMENT_NOT_FOUND");
+
+    let validUploaderId = null;
+    if (uploadedById) {
+        const uploader = await prisma.user.findUnique({ where: { id: uploadedById }, select: { id: true } }).catch(() => null);
+        if (uploader) validUploaderId = uploader.id;
+    }
+
 
     const isImage = file.mimetype.startsWith("image/");
     let processedBuffer = file.buffer;
@@ -124,7 +153,7 @@ const replaceDocument = async (id, file, data, uploadedById) => {
             originalName: file.originalname,
             mimeType: file.mimetype,
             fileSize: processedBuffer.length,
-            uploadedById,
+            uploadedById: validUploaderId,
             status: newStatus,
             notes: data.notes?.trim() || doc.notes,
         },
@@ -140,7 +169,7 @@ const replaceDocument = async (id, file, data, uploadedById) => {
             fileSize: processedBuffer.length,
             currentVersion: nextVersion,
             status: newStatus,
-            uploadedById,
+            uploadedById: validUploaderId,
             notes: data.notes?.trim() || doc.notes,
             customName: data.customName?.trim() || doc.customName,
         },
