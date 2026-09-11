@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { Phone, Mail, Edit3, ArrowLeft, FileStack, FolderKanban, Clock3, CalendarClock } from 'lucide-react'
+import { useParams, Link, useNavigate } from 'react-router-dom'
+import { Phone, Mail, Edit3, ArrowLeft, FileStack, FolderKanban, Clock3, CalendarClock, Trash2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -9,6 +9,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EmptyState } from '@/components/shared/empty-state'
 import { StudentStatusBadge } from '@/components/shared/status-badges'
 import { useStudentsStore } from './store'
+import { useStudent, useDeleteStudent } from '@/hooks/use-students'
+import { adaptApiStudentToStudent } from '@/lib/student-adapter'
+import { isMockMode } from '@/lib/api-client'
+import { useAuthStore } from '@/store/auth-store'
+import { toast } from 'sonner'
 import { PersonalTab } from './components/profile-tabs/personal-tab'
 import { AcademicTab } from './components/profile-tabs/academic-tab'
 import { EnglishTestTab } from './components/profile-tabs/english-test-tab'
@@ -39,13 +44,33 @@ const tabs = [
 
 export default function StudentProfilePage() {
   const { id } = useParams<{ id: string }>()
-  const students = useStudentsStore((s) => s.students)
+  const navigate = useNavigate()
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const isAdmin = currentUser.role === 'super_admin'
+  const mockStudents = useStudentsStore((s) => s.students)
+  const deleteMutation = useDeleteStudent()
+  const { data: apiStudent } = useStudent(id || '')
+
   const [activeTab, setActiveTab] = useState('personal')
   const [followUpOpen, setFollowUpOpen] = useState(false)
-  const student =
-    students.find((candidate) => candidate.id === id || candidate.studentId === id) ||
-    students.find((candidate) => id && (candidate.id.includes(id) || id.includes(candidate.id))) ||
-    (students.length > 0 ? students[0] : undefined)
+
+  const student = !isMockMode() && apiStudent
+    ? adaptApiStudentToStudent(apiStudent)
+    : mockStudents.find((c) => c.id === id || c.studentId === id) ||
+      mockStudents.find((c) => id && (c.id.includes(id) || id.includes(c.id))) ||
+      (mockStudents.length > 0 ? mockStudents[0] : undefined)
+
+  const handleDeleteProfile = () => {
+    if (!student) return
+    if (confirm(`Are you sure you want to delete ${student.name}? This will permanently remove their profile and records.`)) {
+      deleteMutation.mutate(student.id, {
+        onSuccess: () => {
+          toast.success(`Student ${student.name} deleted successfully`)
+          navigate('/students')
+        },
+      })
+    }
+  }
 
   if (!student) {
     return (
@@ -116,6 +141,18 @@ export default function StudentProfilePage() {
             <Button variant="outline" size="sm" className="h-8 shadow-none">
               <Edit3 /> Edit
             </Button>
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 shadow-none text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/40"
+                onClick={handleDeleteProfile}
+                disabled={deleteMutation.isPending}
+              >
+                <Trash2 className="size-3.5 mr-1" />
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              </Button>
+            )}
           </div>
         </div>
       </Card>
