@@ -76,9 +76,15 @@ const list = async (req, res, next) => {
 const download = async (req, res, next) => {
     try {
         const { buffer, originalName, mimeType } = await documentService.downloadDocument(req.params.id);
+        // Use "inline" so the browser renders the file natively in a new tab
+        // (PDFs open as PDFs, images display as images). Pass ?download=true to force save.
+        const forceDownload = req.query.download === 'true';
+        const disposition = forceDownload
+            ? `attachment; filename="${originalName}"`
+            : `inline; filename="${originalName}"`;
         res.set({
             "Content-Type": mimeType,
-            "Content-Disposition": `attachment; filename="${originalName}"`,
+            "Content-Disposition": disposition,
             "Content-Length": buffer.length,
         });
         res.send(buffer);

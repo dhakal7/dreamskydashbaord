@@ -107,7 +107,7 @@ export function useVerifyDocument() {
 export function useDownloadDocument() {
   return async (id: string, filename: string) => {
     try {
-      const blob = await documentApi.download(id)
+      const blob = await documentApi.download(id, true) // forceDownload=true → browser saves to disk
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url

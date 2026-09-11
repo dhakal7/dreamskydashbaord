@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
+import { toast } from 'sonner'
 import {
-  FolderKanban, Eye, Download, Edit2, Replace, History, Trash2, AlertCircle, Plus, FileText
+  FolderKanban, Eye, Download, Edit2, Replace, History, Trash2, AlertCircle, Plus, Loader2
 } from 'lucide-react'
 import {
   Dialog,
@@ -19,6 +20,7 @@ import { PersonAvatar } from '@/components/ui/avatar'
 import { DocumentUploadDialog } from './document-upload-dialog'
 import { VersionHistoryDialog } from './version-history-dialog'
 import { useDownloadDocument, useReplaceDocument, useRenameDocument, useDeleteDocument } from '@/hooks/use-documents'
+import { documentApi } from '@/api/document-api'
 import type { StudentDocumentProfile, StudentDocument, DocumentCategory } from '@/types'
 import { Input } from '@/components/ui/input'
 
@@ -47,7 +49,7 @@ export function StudentDocumentProfileDialog({
   const [activeCategory, setActiveCategory] = useState<DocumentCategory>('identity')
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
   const [historyDocId, setHistoryDocId] = useState<string | null>(null)
-  const [previewDoc, setPreviewDoc] = useState<StudentDocument | null>(null)
+  const [previewLoadingId, setPreviewLoadingId] = useState<string | null>(null)
   const [replaceDoc, setReplaceDoc] = useState<StudentDocument | null>(null)
   const [replaceFile, setReplaceFile] = useState<File | null>(null)
   const [replaceNotes, setReplaceNotes] = useState('')
@@ -58,6 +60,31 @@ export function StudentDocumentProfileDialog({
   const replaceMutation = useReplaceDocument()
   const renameMutation = useRenameDocument()
   const deleteMutation = useDeleteDocument()
+
+  /**
+   * Opens a document in a new browser tab by fetching it through the
+   * secure /documents/:id/download API endpoint (decrypts the .enc file
+   * on the backend and returns the real content). This avoids the
+   * "page not found" error that occurred when trying to open the raw
+   * encrypted file path directly as a URL.
+   */
+  const previewInNewTab = async (doc: StudentDocument) => {
+    setPreviewLoadingId(doc.id)
+    try {
+      const blob = await documentApi.download(doc.id)
+      const blobUrl = URL.createObjectURL(blob)
+      const tab = window.open(blobUrl, '_blank')
+      if (!tab) {
+        toast.error('Pop-up blocked — please allow pop-ups for this site and try again.')
+      }
+      // Revoke after a short delay so the new tab has time to load the blob
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not open document. Try downloading instead.')
+    } finally {
+      setPreviewLoadingId(null)
+    }
+  }
 
   if (!profile) return null
 
@@ -260,10 +287,13 @@ export function StudentDocumentProfileDialog({
                                   variant="ghost"
                                   size="icon"
                                   className="size-7 text-muted-foreground hover:text-foreground"
-                                  title="Preview"
-                                  onClick={() => setPreviewDoc(doc)}
+                                  title="Open in new tab"
+                                  disabled={previewLoadingId === doc.id}
+                                  onClick={() => previewInNewTab(doc)}
                                 >
-                                  <Eye className="size-3.5" />
+                                  {previewLoadingId === doc.id
+                                    ? <Loader2 className="size-3.5 animate-spin" />
+                                    : <Eye className="size-3.5" />}
                                 </Button>
                                 <Button
                                   variant="ghost"
@@ -356,30 +386,7 @@ export function StudentDocumentProfileDialog({
         onOpenChange={(op) => !op && setHistoryDocId(null)}
       />
 
-      {/* Preview Modal */}
-      {previewDoc && (
-        <Dialog open={Boolean(previewDoc)} onOpenChange={(op) => !op && setPreviewDoc(null)}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>{previewDoc.customName || previewDoc.fileName || previewDoc.type}</DialogTitle>
-              <DialogDescription>Document Preview</DialogDescription>
-            </DialogHeader>
-            <div className="py-4 flex flex-col items-center justify-center bg-accent/20 rounded-xl min-h-[300px]">
-              {previewDoc.previewUrl ? (
-                <img src={previewDoc.previewUrl} alt="Preview" className="max-h-[400px] object-contain rounded-lg shadow-soft" />
-              ) : (
-                <div className="text-center space-y-3">
-                  <FileText className="size-16 text-primary mx-auto" />
-                  <p className="text-sm font-medium">{previewDoc.fileName}</p>
-                  <Button variant="outline" size="sm" onClick={() => downloadFn(previewDoc.id, previewDoc.fileName)}>
-                    <Download className="size-4 mr-2" /> Download File
-                  </Button>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* Preview is handled by previewInNewTab — no modal needed */}
 
       {/* Replace Document Modal */}
       {replaceDoc && (
