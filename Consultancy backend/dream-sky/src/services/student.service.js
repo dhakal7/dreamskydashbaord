@@ -95,7 +95,7 @@ const createStudent = async (data) => {
         partnerConsultancyId = partner.id;
     }
 
-    const initialStage = (data.currentStage || data.stage || "ENROLLED").toUpperCase();
+    const initialStage = (data.currentStage || data.stage || "LEAD").toUpperCase();
 
     const student = await prisma.student.create({
         data: {
