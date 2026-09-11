@@ -383,6 +383,33 @@ const listStudentProfiles = async (query) => {
         const latestDocDate = docs.length > 0 ? docs[0].updatedAt : student.updatedAt;
         const completionPercentage = Math.min(Math.round((verifiedDocuments / REQUIRED_STANDARD_DOCS) * 100), 100);
 
+        const mappedDocs = docs.map((d) => {
+            const uploaderName = d.uploadedBy
+                ? `${d.uploadedBy.firstName || ""} ${d.uploadedBy.lastName || ""}`.trim() || "Counselor"
+                : "Counselor";
+            return {
+                id: d.id,
+                studentId: d.studentId,
+                category: (d.category || "OTHER").toLowerCase(),
+                type: d.type,
+                customName: d.customName,
+                fileName: d.originalName || `${d.type}.pdf`,
+                originalName: d.originalName,
+                mimeType: d.mimeType,
+                fileSize: d.fileSize,
+                fileSizeKb: d.fileSize ? Math.round(d.fileSize / 1024) : 0,
+                version: d.currentVersion || 1,
+                currentVersion: d.currentVersion || 1,
+                uploadedAt: d.createdAt,
+                createdAt: d.createdAt,
+                uploadedBy: uploaderName,
+                status: (d.status || "PENDING").toLowerCase(),
+                reviewComment: d.reviewComment,
+                reviewedAt: d.reviewedAt,
+                notes: d.notes,
+            };
+        });
+
         return {
             studentId: student.id,
             studentName: `${student.firstName} ${student.lastName}`.trim(),
@@ -397,7 +424,7 @@ const listStudentProfiles = async (query) => {
             changesRequestedDocuments,
             completionPercentage,
             lastUpdated: latestDocDate,
-            documents: docs,
+            documents: mappedDocs,
         };
     });
 

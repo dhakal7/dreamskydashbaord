@@ -40,6 +40,17 @@ const CATEGORIES: { id: DocumentCategory; label: string }[] = [
   { id: 'other', label: 'Other' },
 ]
 
+export function formatUploaderName(uploadedBy: unknown): string {
+  if (!uploadedBy) return 'Counselor'
+  if (typeof uploadedBy === 'string') return uploadedBy
+  if (typeof uploadedBy === 'object' && uploadedBy !== null) {
+    const obj = uploadedBy as { firstName?: string; lastName?: string; name?: string; email?: string }
+    const fullName = `${obj.firstName || ''} ${obj.lastName || ''}`.trim()
+    return fullName || obj.name || obj.email || 'Counselor'
+  }
+  return 'Counselor'
+}
+
 export function StudentDocumentProfileDialog({
   profile,
   open,
@@ -234,7 +245,8 @@ export function StudentDocumentProfileDialog({
                   ) : (
                     docsByCategory[cat.id].map((doc) => {
                       const isRenaming = renameDocId === doc.id
-                      const docTitle = doc.customName || doc.fileName || doc.type.replace(/_/g, ' ')
+                      const docTitle = doc.customName || doc.fileName || (doc as any).originalName || doc.type?.replace(/_/g, ' ') || 'Document'
+                      const sizeKb = doc.fileSizeKb ?? ((doc as any).fileSize ? Math.round((doc as any).fileSize / 1024) : 0)
 
                       return (
                         <Card key={doc.id} className="p-4 space-y-3 border-border/80 hover:border-primary/40 transition shadow-soft">
@@ -260,19 +272,19 @@ export function StudentDocumentProfileDialog({
                                   <>
                                     <h4 className="text-sm font-semibold text-foreground truncate">{docTitle}</h4>
                                     <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-                                      v{doc.version || 1}
+                                      v{doc.version || (doc as any).currentVersion || 1}
                                     </span>
                                   </>
                                 )}
                               </div>
                               <p className="text-xs text-muted-foreground mt-1 flex flex-wrap items-center gap-2">
-                                <span>Uploaded {dayjs(doc.uploadedAt).format('MMM D, YYYY')}</span>
+                                <span>Uploaded {dayjs(doc.uploadedAt || (doc as any).createdAt).format('MMM D, YYYY')}</span>
                                 <span>•</span>
-                                <span>By {doc.uploadedBy || 'Counselor'}</span>
-                                {doc.fileSizeKb > 0 && (
+                                <span>By {formatUploaderName(doc.uploadedBy)}</span>
+                                {sizeKb > 0 && (
                                   <>
                                     <span>•</span>
-                                    <span>{doc.fileSizeKb} KB</span>
+                                    <span>{sizeKb} KB</span>
                                   </>
                                 )}
                               </p>
@@ -300,7 +312,7 @@ export function StudentDocumentProfileDialog({
                                   size="icon"
                                   className="size-7 text-muted-foreground hover:text-foreground"
                                   title="Download"
-                                  onClick={() => downloadFn(doc.id, doc.fileName || `${doc.type}.pdf`)}
+                                  onClick={() => downloadFn(doc.id, doc.fileName || (doc as any).originalName || `${doc.type}.pdf`)}
                                 >
                                   <Download className="size-3.5" />
                                 </Button>
@@ -311,7 +323,7 @@ export function StudentDocumentProfileDialog({
                                   title="Rename"
                                   onClick={() => {
                                     setRenameDocId(doc.id)
-                                    setRenameValue(doc.customName || doc.fileName || doc.type)
+                                    setRenameValue(doc.customName || doc.fileName || (doc as any).originalName || doc.type)
                                   }}
                                 >
                                   <Edit2 className="size-3.5" />

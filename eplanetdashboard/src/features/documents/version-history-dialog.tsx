@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { DocumentStatusBadge } from '@/components/shared/status-badges'
 import { useDocumentHistory, useDownloadDocument } from '@/hooks/use-documents'
+import { formatUploaderName } from './student-document-profile-dialog'
 import type { DocumentVersion } from '@/types'
 
 interface VersionHistoryDialogProps {
@@ -31,7 +32,7 @@ export function VersionHistoryDialog({ documentId, open, onOpenChange }: Version
         originalName: v.originalName || (doc as any).originalName || doc.fileName || 'document',
         mimeType: v.mimeType,
         fileSizeKb: v.fileSize ? Math.round(v.fileSize / 1024) : 0,
-        uploadedBy: v.uploadedBy ? `${v.uploadedBy.firstName} ${v.uploadedBy.lastName}` : 'Counselor',
+        uploadedBy: formatUploaderName(v.uploadedBy),
         uploadedAt: v.createdAt,
         status: (v.status || doc.status || 'uploaded').toLowerCase() as any,
         notes: v.notes,
@@ -45,7 +46,7 @@ export function VersionHistoryDialog({ documentId, open, onOpenChange }: Version
           fileUrl: (doc as any).fileUrl || '',
           originalName: doc.fileName || (doc as any).originalName || 'document',
           fileSizeKb: doc.fileSizeKb || 0,
-          uploadedBy: doc.uploadedBy || 'Counselor',
+          uploadedBy: formatUploaderName(doc.uploadedBy),
           uploadedAt: doc.uploadedAt,
           status: doc.status,
           notes: doc.notes,
