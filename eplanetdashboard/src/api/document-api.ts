@@ -93,8 +93,9 @@ export const documentApi = {
     return api.patch(`/documents/${id}/verify`, { status: 'VERIFIED', notes })
   },
 
-  download(id: string): Promise<Blob> {
-    return uploadAxiosInstance.get(`/documents/${id}/download`, {
+  /** Fetch document blob — forceDownload=true sends ?download=true so browser saves to disk */
+  download(id: string, forceDownload = false): Promise<Blob> {
+    return uploadAxiosInstance.get(`/documents/${id}/download${forceDownload ? '?download=true' : ''}`, {
       responseType: 'blob',
     }) as Promise<Blob>
   },
