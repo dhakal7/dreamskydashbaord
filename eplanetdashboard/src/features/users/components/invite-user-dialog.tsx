@@ -16,12 +16,12 @@ import type { Role } from '@/types'
 const formSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Valid email is required'),
-  role: z.enum(['super_admin', 'front_desk', 'counselor', 'teacher', 'student', 'referral_agent']),
+  role: z.enum(['super_admin', 'front_desk', 'counselor', 'teacher', 'referral_agent']),
 })
 
 type FormData = z.infer<typeof formSchema>
 
-const assignableRoles: Role[] = ['front_desk', 'counselor', 'teacher', 'student', 'referral_agent']
+const assignableRoles: Role[] = ['front_desk', 'counselor', 'teacher', 'referral_agent']
 
 interface InviteUserDialogProps {
   open: boolean

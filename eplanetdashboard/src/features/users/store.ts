@@ -36,7 +36,8 @@ export const useUsersStore = create<UsersState>((set) => ({
 
     try {
       const rawUsers: any = await api.get('/users')
-      const userList = Array.isArray(rawUsers) ? rawUsers : rawUsers?.data || []
+      const userList = (Array.isArray(rawUsers) ? rawUsers : rawUsers?.data || [])
+        .filter((u: any) => u.role?.toUpperCase() !== 'STUDENT')
       const mapped: UserAccount[] = userList.map((u: any) => ({
         id: u.id,
         name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
