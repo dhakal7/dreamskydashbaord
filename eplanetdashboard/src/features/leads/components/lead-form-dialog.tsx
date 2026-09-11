@@ -53,6 +53,7 @@ const DEFAULT_TARGET_COUNTRIES = [
   { id: 'c-ca', name: 'Canada', flag: '🇨🇦' },
   { id: 'c-us', name: 'United States', flag: '🇺🇸' },
   { id: 'c-nz', name: 'New Zealand', flag: '🇳🇿' },
+  { id: 'c-other', name: 'Other', flag: '🌐' },
 ]
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -67,14 +68,21 @@ interface LeadFormDialogProps {
 
 export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialogProps) {
   const storeCountries = useCountriesStore((s) => s.countries)
-  const countries = (storeCountries && storeCountries.length > 0)
+  const baseCountries = (storeCountries && storeCountries.length > 0)
     ? storeCountries
     : (seedCountries && seedCountries.length > 0 ? seedCountries : DEFAULT_TARGET_COUNTRIES)
+
+  const countries = useMemo(() => {
+    if (baseCountries.some((c) => c.name.toLowerCase() === 'other')) return baseCountries
+    return [...baseCountries, { id: 'c-other', name: 'Other', flag: '🌐' }]
+  }, [baseCountries])
+
   const addLead = useLeadsStore((s) => s.addLead)
   const updateLead = useLeadsStore((s) => s.updateLead)
   const createLiveLead = useCreateLiveLead()
   const updateLiveLead = useUpdateLiveLead()
   const [agentQuery, setAgentQuery] = useState('')
+  const [otherCountryText, setOtherCountryText] = useState('')
 
   const {
     register,
@@ -103,12 +111,25 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
       const existingCountries = leadToEdit.interestedCountries && leadToEdit.interestedCountries.length > 0
         ? leadToEdit.interestedCountries
         : (leadToEdit.interestedCountry ? leadToEdit.interestedCountry.split(',').map((c) => c.trim()) : [])
+
+      const otherEntry = existingCountries.find((c) => c.toLowerCase().startsWith('other'))
+      if (otherEntry) {
+        const match = otherEntry.match(/other\s*\(([^)]+)\)/i)
+        setOtherCountryText(match ? match[1].trim() : '')
+      } else {
+        setOtherCountryText('')
+      }
+
+      const normalizedFormCountries = existingCountries.map((c) =>
+        c.toLowerCase().startsWith('other') ? 'Other' : c
+      )
+
       reset({
         name: leadToEdit.name,
         email: leadToEdit.email,
         phone: leadToEdit.phone,
         source: leadToEdit.source || 'website',
-        interestedCountries: existingCountries,
+        interestedCountries: normalizedFormCountries,
         interestedLevel: leadToEdit.interestedLevel || 'bachelor',
         address: leadToEdit.address || '',
         priority: leadToEdit.priority || 'medium',
@@ -128,6 +149,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
         counselorIds: [],
       })
       setAgentQuery('')
+      setOtherCountryText('')
     }
   }, [open, leadToEdit, reset])
 
@@ -149,11 +171,16 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
   }, [agentQuery])
 
   function onSubmit(data: FormData) {
-    const targetCountries = Array.isArray(data.interestedCountries)
-      ? data.interestedCountries
+    let targetCountries = Array.isArray(data.interestedCountries)
+      ? [...data.interestedCountries]
       : (typeof data.interestedCountries === 'string' && data.interestedCountries
           ? (data.interestedCountries as string).split(',').map((s) => s.trim())
           : [])
+
+    if (targetCountries.includes('Other') && otherCountryText.trim()) {
+      targetCountries = targetCountries.map((c) => c === 'Other' ? `Other (${otherCountryText.trim()})` : c)
+    }
+
     const selectedCounselors = counselors.filter((c) => (data.counselorIds || []).includes(c.id))
     const primaryCounselor = selectedCounselors[0]
     const resolvedAgent = showAgentField ? createReferralAgent(agentQuery) : null
@@ -452,6 +479,24 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                           </div>
                         )
                       })}
+
+                      {/* Custom input when Other is selected */}
+                      {currentValues.includes('Other') && (
+                        <div className="col-span-2 sm:col-span-3 mt-1.5 space-y-1 rounded-md border border-border/70 bg-background p-2.5">
+                          <label className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                            <span>🌐</span> Specify Other Country
+                          </label>
+                          <Input
+                            placeholder="e.g. Japan, Germany, Ireland, UAE, France"
+                            value={otherCountryText}
+                            onChange={(e) => setOtherCountryText(e.target.value)}
+                            className="h-8 text-xs bg-background"
+                          />
+                          <p className="text-[10px] text-muted-foreground">
+                            Specify which country or destination the prospect is interested in.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )
                 }}

@@ -1,7 +1,7 @@
 const prisma = require("../prisma");
 const AppError = require("../utils/apiError");
 const { hashPassword, generateTempPassword } = require("../utils/password.util");
-const { sendWelcomeStudentEmail } = require("./email.service");
+const { sendWelcomeStudentEmail, isValidEmail } = require("./email.service");
 
 // ─── Valid forward transitions ────────────────────────────────────────────────
 const STAGE_ORDER = [
@@ -43,9 +43,9 @@ const LIST_SELECT = {
 // Creates a STUDENT portal account (or updates existing) and emails the temporary
 // credentials. Fire-and-forget: never blocks or fails the surrounding request.
 const provisionPortalAndSendWelcome = async (student) => {
-    if (!student?.email) {
-        console.warn(`[student] No email for student ${student.id} — skipping portal provisioning`);
-        return { success: false, reason: "NO_EMAIL" };
+    if (!student?.email || !isValidEmail(student.email)) {
+        console.warn(`[student] No valid email for student ${student?.id} ("${student?.email}") — skipping portal provisioning`);
+        return { success: false, reason: "INVALID_OR_MISSING_EMAIL" };
     }
 
     try {
@@ -315,10 +315,10 @@ const changePipelineStage = async (id, { stage, reasonCode, email }, changedById
     // If transitioning to ENROLLED, email is mandatory so student portal credentials can be sent
     if (stage === "ENROLLED") {
         const finalEmail = normalizedEmail || student.email;
-        if (!finalEmail || !finalEmail.includes("@")) {
+        if (!finalEmail || !isValidEmail(finalEmail)) {
             throw AppError.badRequest(
-                "Student email is required to register as an enrolled student and create portal access.",
-                "EMAIL_REQUIRED"
+                "A valid student email address is required to register as an enrolled student and send portal credentials.",
+                "INVALID_OR_MISSING_EMAIL"
             );
         }
         if (normalizedEmail && normalizedEmail !== student.email) {
