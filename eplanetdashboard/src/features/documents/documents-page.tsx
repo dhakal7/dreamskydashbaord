@@ -9,7 +9,7 @@ import { PersonAvatar } from '@/components/ui/avatar'
 import { Progress } from '@/components/ui/progress'
 import { EmptyState } from '@/components/shared/empty-state'
 import { DocumentUploadDialog } from './document-upload-dialog'
-import { StudentDocumentProfileDialog } from './student-document-profile-dialog'
+import { StudentDocumentProfileDialog, formatUploaderName } from './student-document-profile-dialog'
 import { useStudentDocumentProfiles, useDocuments, useDeleteDocument } from '@/hooks/use-documents'
 import { useStudentsStore } from '@/features/students/store'
 import { useDocumentsStore } from './store'
@@ -49,7 +49,18 @@ export default function DocumentsPage() {
   // Generate fallback student profile cards if using mock store or before backend response
   const profiles: StudentDocumentProfile[] = useMemo(() => {
     if (!isMockMode()) {
-      return apiProfiles ?? []
+      return (apiProfiles ?? []).map((p: any) => ({
+        ...p,
+        documents: (p.documents || []).map((d: any) => ({
+          ...d,
+          uploadedBy: formatUploaderName(d.uploadedBy),
+          fileName: d.fileName || d.originalName || `${d.type || 'document'}.pdf`,
+          fileSizeKb: d.fileSizeKb ?? (d.fileSize ? Math.round(d.fileSize / 1024) : 0),
+          version: d.version || d.currentVersion || 1,
+          uploadedAt: d.uploadedAt || d.createdAt || new Date().toISOString(),
+          status: (d.status || 'pending').toLowerCase(),
+        })),
+      }))
     }
 
     // Adapt students + documents store into Student Profile Cards
