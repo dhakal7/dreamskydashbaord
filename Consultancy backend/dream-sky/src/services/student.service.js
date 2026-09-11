@@ -40,38 +40,64 @@ const LIST_SELECT = {
 };
 
 // ─── PORTAL PROVISIONING + WELCOME EMAIL ───────────────────────────────────────
-// Creates a STUDENT portal account (if none exists) and emails the temporary
+// Creates a STUDENT portal account (or updates existing) and emails the temporary
 // credentials. Fire-and-forget: never blocks or fails the surrounding request.
 const provisionPortalAndSendWelcome = async (student) => {
-    if (!student?.email) return;
+    if (!student?.email) {
+        console.warn(`[student] No email for student ${student.id} — skipping portal provisioning`);
+        return { success: false, reason: "NO_EMAIL" };
+    }
 
     try {
-        const existing = await prisma.user.findFirst({ where: { studentId: student.id } });
-        if (existing) return;
-
         const tempPassword = generateTempPassword();
         const passwordHash = await hashPassword(tempPassword);
+        const normalizedEmail = student.email.toLowerCase().trim();
 
-        await prisma.user.create({
-            data: {
-                email: student.email,
-                passwordHash,
-                firstName: student.firstName,
-                lastName: student.lastName,
-                role: "STUDENT",
-                status: "ACTIVE",
-                mustChangePassword: true,
-                studentId: student.id,
-            },
-        });
+        // Check if user account already exists by studentId OR by email
+        let user = await prisma.user.findFirst({ where: { studentId: student.id } });
+        if (!user) {
+            user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+        }
 
-        await sendWelcomeStudentEmail({
-            to: student.email,
+        if (user) {
+            // Update credentials and ensure studentId is linked
+            await prisma.user.update({
+                where: { id: user.id },
+                data: {
+                    studentId: student.id,
+                    passwordHash,
+                    mustChangePassword: true,
+                    status: "ACTIVE",
+                },
+            });
+            console.log(`[student] Updated portal account credentials for ${normalizedEmail}`);
+        } else {
+            // Create new portal user account
+            await prisma.user.create({
+                data: {
+                    email: normalizedEmail,
+                    passwordHash,
+                    firstName: student.firstName,
+                    lastName: student.lastName,
+                    role: "STUDENT",
+                    status: "ACTIVE",
+                    mustChangePassword: true,
+                    studentId: student.id,
+                },
+            });
+            console.log(`[student] Created new portal account for ${normalizedEmail}`);
+        }
+
+        const mailResult = await sendWelcomeStudentEmail({
+            to: normalizedEmail,
             studentName: `${student.firstName} ${student.lastName}`.trim(),
             tempPassword,
         });
+
+        return { success: true, tempPassword, mailResult };
     } catch (err) {
         console.error("[student] portal provisioning / welcome email failed:", err.message);
+        return { success: false, error: err.message };
     }
 };
 
@@ -122,6 +148,10 @@ const createStudent = async (data) => {
     await prisma.pipelineStageHistory.create({
         data: { studentId: student.id, stage: initialStage },
     });
+
+    if (initialStage === "ENROLLED") {
+        provisionPortalAndSendWelcome(student);
+    }
 
     return student;
 };
@@ -351,4 +381,5 @@ module.exports = {
     deleteStudent,
     softDeleteStudent,
     getTimeline,
+    provisionPortalAndSendWelcome,
 };

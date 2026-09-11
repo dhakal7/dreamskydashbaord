@@ -136,4 +136,9 @@ export const studentApi = {
   remove(id: string): Promise<void> {
     return api.delete(`/students/${id}`)
   },
+
+  /** POST /students/:id/resend-credentials */
+  resendCredentials(id: string): Promise<{ success: boolean; message: string }> {
+    return api.post(`/students/${id}/resend-credentials`, {})
+  },
 }
