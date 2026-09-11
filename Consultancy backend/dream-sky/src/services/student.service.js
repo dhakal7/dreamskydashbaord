@@ -297,21 +297,52 @@ const updateStudent = async (id, data) => {
 };
 
 // ─── CHANGE PIPELINE STAGE ───────────────────────────────────────────────────
-const changePipelineStage = async (id, { stage, reasonCode }, changedById) => {
+const changePipelineStage = async (id, { stage, reasonCode, email }, changedById) => {
     const student = await prisma.student.findUnique({ where: { id } });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
 
-    if (student.currentStage === stage) return student;
+    if (student.currentStage === stage && !email) return student;
 
-    if (!isValidTransition(student.currentStage, stage))
+    if (student.currentStage !== stage && !isValidTransition(student.currentStage, stage))
         throw AppError.badRequest(
             `Cannot move from ${student.currentStage} to ${stage}. Only forward transitions or LOST are allowed.`,
             "INVALID_TRANSITION"
         );
 
+    const updateData = { currentStage: stage };
+    const normalizedEmail = email?.trim()?.toLowerCase();
+
+    // If transitioning to ENROLLED, email is mandatory so student portal credentials can be sent
+    if (stage === "ENROLLED") {
+        const finalEmail = normalizedEmail || student.email;
+        if (!finalEmail || !finalEmail.includes("@")) {
+            throw AppError.badRequest(
+                "Student email is required to register as an enrolled student and create portal access.",
+                "EMAIL_REQUIRED"
+            );
+        }
+        if (normalizedEmail && normalizedEmail !== student.email) {
+            const dup = await prisma.student.findFirst({
+                where: { email: normalizedEmail, NOT: { id } },
+            });
+            if (dup) {
+                throw AppError.conflict("Another student already has this email address.", "DUPLICATE_EMAIL");
+            }
+            updateData.email = normalizedEmail;
+        }
+    } else if (normalizedEmail && normalizedEmail !== student.email) {
+        const dup = await prisma.student.findFirst({
+            where: { email: normalizedEmail, NOT: { id } },
+        });
+        if (dup) {
+            throw AppError.conflict("Another student already has this email address.", "DUPLICATE_EMAIL");
+        }
+        updateData.email = normalizedEmail;
+    }
+
     // Update stage and record history in a single transaction
     const [updated] = await prisma.$transaction([
-        prisma.student.update({ where: { id }, data: { currentStage: stage } }),
+        prisma.student.update({ where: { id }, data: updateData }),
         prisma.pipelineStageHistory.create({
             data: {
                 studentId: id,

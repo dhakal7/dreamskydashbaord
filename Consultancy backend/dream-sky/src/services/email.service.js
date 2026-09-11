@@ -16,13 +16,22 @@ const transporter = nodemailer.createTransport({
 const isConfigured = () => Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS);
 
 const sendMail = async ({ to, subject, text, html }) => {
+    if (!to || typeof to !== "string" || !to.includes("@")) {
+        console.warn(`[email] Missing or invalid recipient "${to}" — skipping email.`);
+        return { skipped: true, reason: "INVALID_RECIPIENT" };
+    }
     if (!isConfigured()) {
         console.warn(`[email] SMTP not configured — skipping email to ${to}`);
-        return { skipped: true };
+        return { skipped: true, reason: "SMTP_NOT_CONFIGURED" };
     }
-    const info = await transporter.sendMail({ from: EMAIL_FROM, to, subject, text, html });
-    console.log(`[email] sent "${subject}" to ${to} (messageId: ${info.messageId})`);
-    return info;
+    try {
+        const info = await transporter.sendMail({ from: EMAIL_FROM, to, subject, text, html });
+        console.log(`[email] sent "${subject}" to ${to} (messageId: ${info.messageId})`);
+        return info;
+    } catch (err) {
+        console.error(`[email] Failed to send "${subject}" to ${to}:`, err.message);
+        return { error: err.message };
+    }
 };
 
 const welcomeHtml = (studentName, email, tempPassword) => `

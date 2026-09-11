@@ -97,6 +97,8 @@ export interface UpdateStudentBody extends Partial<CreateStudentBody> {}
 export interface ChangePipelineBody {
   stage: string
   notes?: string
+  reasonCode?: string
+  email?: string
 }
 
 // ─── API functions ────────────────────────────────────────────────────────────

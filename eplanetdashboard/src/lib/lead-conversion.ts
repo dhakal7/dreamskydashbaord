@@ -30,7 +30,7 @@ export interface LeadConversionResult {
  * Accepts the full Lead object to avoid the "lead not found in local store"
  * bug that occurred in live mode where leads come from the backend, not local store.
  */
-export async function convertLeadToStudent(lead: Lead): Promise<LeadConversionResult | null> {
+export async function convertLeadToStudent(lead: Lead, emailOverride?: string): Promise<LeadConversionResult | null> {
   if (!lead) {
     console.warn('[lead-conversion] No lead provided')
     return null
@@ -46,12 +46,17 @@ export async function convertLeadToStudent(lead: Lead): Promise<LeadConversionRe
     return null
   }
 
+  const finalEmail = (emailOverride?.trim() || lead.email)?.trim()
+
   // ── REAL MODE: promote the existing backend record to ENROLLED ─────────────
   if (!isMockMode()) {
     // The lead is already stored in the backend as a student at LEAD/PROSPECT stage.
-    // Just change the pipeline stage to ENROLLED — no new record is created.
-    // The backend will provision the student portal account and email credentials.
-    await studentApi.changePipeline(lead.id, { stage: 'ENROLLED' })
+    // Promote pipeline stage to ENROLLED with the mandatory student email.
+    // The backend provisions the student portal account and emails temporary credentials.
+    await studentApi.changePipeline(lead.id, {
+      stage: 'ENROLLED',
+      email: finalEmail || undefined,
+    })
 
     // Clean up any persisted frontend stage override for this lead
     useLeadsStore.getState().clearStageOverride(lead.id)
@@ -65,7 +70,7 @@ export async function convertLeadToStudent(lead: Lead): Promise<LeadConversionRe
 
     return {
       studentId: lead.id,
-      email: lead.email,
+      email: finalEmail,
       portalPassword: null,
     }
   }
@@ -87,7 +92,7 @@ export async function convertLeadToStudent(lead: Lead): Promise<LeadConversionRe
   const portalPassword = `DreamSky@${(lead.phone.replace(/\D/g, '').slice(-4) || '0000')}`
   const newStudent = addStudent({
     name: lead.name,
-    email: lead.email,
+    email: finalEmail || lead.email,
     phone: lead.phone,
     photoColor: lead.photoColor,
     dob: '2000-01-01',

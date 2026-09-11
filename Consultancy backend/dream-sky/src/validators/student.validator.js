@@ -23,12 +23,14 @@ const validateUpdateStudent = (body) => {
         throw AppError.badRequest("Email format is invalid.", "VALIDATION_ERROR");
 };
 
-const validatePipelineChange = ({ stage, reasonCode }) => {
+const validatePipelineChange = ({ stage, reasonCode, email }) => {
     if (!stage) throw AppError.badRequest("Stage is required.", "VALIDATION_ERROR");
     if (!VALID_STAGES.includes(stage))
         throw AppError.badRequest(`Invalid stage. Must be one of: ${VALID_STAGES.join(", ")}`, "VALIDATION_ERROR");
     if (stage === "LOST" && !reasonCode?.trim())
         throw AppError.badRequest("Reason code is required when moving to LOST.", "VALIDATION_ERROR");
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
+        throw AppError.badRequest("Email format is invalid.", "VALIDATION_ERROR");
 };
 
 module.exports = {

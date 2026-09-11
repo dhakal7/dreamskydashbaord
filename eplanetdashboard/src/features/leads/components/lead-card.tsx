@@ -6,7 +6,6 @@ import { toast } from 'sonner'
 import type { Lead, LeadStage } from '@/types'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -14,10 +13,10 @@ import {
 import { PersonAvatar } from '@/components/ui/avatar'
 import { PriorityBadge } from '@/components/shared/status-badges'
 import { cn } from '@/lib/utils'
-import { convertLeadToStudent } from '@/lib/lead-conversion'
 import { useAuthStore } from '@/store/auth-store'
 import { useLeadsStore } from '../store'
 import { LeadFormDialog } from './lead-form-dialog'
+import { ConvertLeadDialog } from './convert-lead-dialog'
 import { hasPermission } from '@/lib/rbac'
 import { useDeleteLiveLead } from '@/hooks/use-leads-live'
 import { isMockMode } from '@/lib/api-client'
@@ -48,14 +47,11 @@ interface LeadCardProps {
 export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, onMove }: LeadCardProps) {
   const currentUser = useAuthStore((s) => s.currentUser)
   const moveLead = useLeadsStore((s) => s.moveLead)
-  const updateLead = useLeadsStore((s) => s.updateLead)
   const removeLead = useLeadsStore((s) => s.removeLead)
   const deleteLiveLead = useDeleteLiveLead()
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
-  const [isRegistering, setIsRegistering] = useState(false)
-  const [missingEmailInput, setMissingEmailInput] = useState('')
-  const [showEmailPrompt] = useState(false)
+  const [isConvertOpen, setIsConvertOpen] = useState(false)
   const [registeredStudent, setRegisteredStudent] = useState<{ studentId: string; email: string; portalPassword: string | null } | null>(null)
 
   // Track the card DOM node separately — used only to apply isDragging opacity
@@ -80,40 +76,6 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
     }
   }
 
-  async function handleRegisterLead() {
-    let finalEmail = lead.email
-    if (isMissingEmail && missingEmailInput.trim()) {
-      if (!missingEmailInput.includes('@')) {
-        toast.error('Please enter a valid email address or leave it blank')
-        return
-      }
-      finalEmail = missingEmailInput.trim()
-      // Only update locally in mock mode (live mode patches are handled by the backend)
-      if (isMockMode()) {
-        updateLead(lead.id, { email: finalEmail })
-      }
-    }
-
-    setIsRegistering(true)
-    try {
-      // Pass the full lead object — live mode no longer searches local store
-      const result = await convertLeadToStudent(lead)
-      if (result) {
-        setRegisteredStudent({
-          studentId: result.studentId,
-          email: finalEmail || result.email,
-          portalPassword: result.portalPassword,
-        })
-        toast.success(`${lead.name} has been registered as a student!`)
-        setIsDetailOpen(false)
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to register student. Please try again.')
-    } finally {
-      setIsRegistering(false)
-    }
-  }
-
   function handleDeleteLead(e?: React.MouseEvent) {
     if (e) e.stopPropagation()
     if (window.confirm(`Are you sure you want to permanently delete lead "${lead.name}"?`)) {
@@ -133,7 +95,6 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
   }
 
   const canRegisterAsStudent = REGISTERABLE_STAGES.includes(lead.stage) && !registeredStudent && canChangeStage
-  const showEmailPromptSection = isMissingEmail && (showEmailPrompt || REGISTERABLE_STAGES.includes(lead.stage))
 
   return (
     <>
@@ -197,7 +158,7 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
                 {canRegisterAsStudent && (
                   <>
                     <DropdownMenuItem
-                      onClick={() => setIsDetailOpen(true)}
+                      onClick={() => setIsConvertOpen(true)}
                       className="text-xs text-brand-600 focus:text-brand-700 focus:bg-brand-50 dark:focus:bg-brand-950/50"
                     >
                       <GraduationCap className="mr-1.5 size-3.5" /> Register as Student
@@ -329,28 +290,11 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
             <p className="mt-1 text-muted-foreground">{lead.address ?? 'No address captured yet.'}</p>
           </div>
 
-          {/* Missing email prompt — shown for counseling & interested stages */}
-          {isMissingEmail && showEmailPromptSection && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50/80 p-3 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-200">
-              <p className="font-semibold flex items-center gap-1.5 mb-1.5">
-                <AlertCircle className="size-4 text-amber-600" /> Enter Email for Student Credentials &amp; Notifications (Optional)
-              </p>
-              <Input
-                type="email"
-                placeholder="student.email@example.com"
-                value={missingEmailInput}
-                onChange={(e) => setMissingEmailInput(e.target.value)}
-                className="bg-background text-foreground h-8 text-xs"
-              />
-              <p className="mt-1 text-[11px] text-muted-foreground">This email will be assigned to the student profile for automated notifications.</p>
-            </div>
-          )}
-
           {/* Register as Permanent Student — available from Counseling OR Interested stage */}
           {canRegisterAsStudent && (
-            <Button onClick={handleRegisterLead} disabled={isRegistering} className="w-full bg-brand-600 hover:bg-brand-700 text-white">
+            <Button onClick={() => setIsConvertOpen(true)} className="w-full bg-brand-600 hover:bg-brand-700 text-white">
               <GraduationCap className="mr-2 size-4" />
-              {isRegistering ? 'Registering student…' : 'Register as Permanent Student'}
+              Register as Permanent Student
             </Button>
           )}
 
@@ -389,6 +333,21 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
       open={isEditOpen}
       onOpenChange={setIsEditOpen}
       leadToEdit={lead}
+    />
+
+    {/* Lead Conversion Dialog with mandatory email verification */}
+    <ConvertLeadDialog
+      open={isConvertOpen}
+      onOpenChange={setIsConvertOpen}
+      lead={lead}
+      onSuccess={(result) => {
+        setRegisteredStudent({
+          studentId: result.studentId,
+          email: result.email,
+          portalPassword: result.portalPassword,
+        })
+        setIsDetailOpen(false)
+      }}
     />
     </>
   )
