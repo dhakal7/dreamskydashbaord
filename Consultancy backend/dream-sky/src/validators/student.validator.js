@@ -12,7 +12,6 @@ const VALID_SOURCES = [
 const validateCreateStudent = ({ firstName, lastName, email }) => {
     const errors = [];
     if (!firstName?.trim()) errors.push("First name is required.");
-    if (!lastName?.trim()) errors.push("Last name is required.");
     if (email && email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
         errors.push("Email format is invalid.");
     if (errors.length) throw AppError.badRequest(errors.join(" "), "VALIDATION_ERROR");
