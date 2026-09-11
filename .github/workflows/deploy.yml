@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
           cache: 'npm'
           cache-dependency-path: 'eplanetdashboard/package-lock.json'
 
@@ -25,9 +25,11 @@ jobs:
           npm ci
           npm run build
 
-      # FTP Deploy to cPanel (Requires FTP_SERVER, FTP_USERNAME, FTP_PASSWORD set in GitHub Secrets)
+      # FTP Deploy to cPanel (Runs if FTP_SERVER secret is configured in GitHub repository settings)
       - name: FTP Deploy Frontend to cPanel
+        if: ${{ secrets.FTP_SERVER != '' }}
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        continue-on-error: true
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
