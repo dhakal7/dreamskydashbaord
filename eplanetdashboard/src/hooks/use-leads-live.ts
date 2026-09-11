@@ -222,8 +222,8 @@ export function useCreateLiveLead() {
         source: body.source ? SOURCE_TO_BACKEND[body.source] : undefined,
         assignedCounselorId: body.assignedCounselorId,
         notes: body.notes,
+        currentStage: 'LEAD', // Always start as LEAD — never skip the pipeline
       }
-      // Student is created at LEAD stage by default (backend sets currentStage='LEAD')
       return studentApi.create(payload)
     },
     onSuccess: () => {
