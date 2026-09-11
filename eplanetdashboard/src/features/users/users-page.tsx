@@ -14,7 +14,7 @@ import { InviteUserDialog } from './components/invite-user-dialog'
 
 export default function UsersPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
-  const users = useUsersStore((s) => s.users)
+  const rawUsers = useUsersStore((s) => s.users)
   const fetchUsers = useUsersStore((s) => s.fetchUsers)
 
   useEffect(() => {
@@ -27,23 +27,28 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [inviteOpen, setInviteOpen] = useState(false)
 
+  // Strictly exclude any student accounts from the staff user management view
+  const staffUsers = useMemo(() => {
+    return rawUsers.filter((u) => (u.role as string)?.toLowerCase() !== 'student')
+  }, [rawUsers])
+
   const filtered = useMemo(() => {
-    return users.filter((u) => {
+    return staffUsers.filter((u) => {
       if (roleFilter !== 'all' && u.role !== roleFilter) return false
       if (statusFilter !== 'all' && u.status !== statusFilter) return false
       return true
     })
-  }, [users, roleFilter, statusFilter])
+  }, [staffUsers, roleFilter, statusFilter])
 
   const columns = useMemo(() => getUserColumns(canManage), [canManage])
 
   const stats = useMemo(() => {
-    const total = users.length
-    const active = users.filter((u) => u.status === 'active').length
-    const suspended = users.filter((u) => u.status === 'suspended').length
-    const invited = users.filter((u) => u.status === 'invited').length
+    const total = staffUsers.length
+    const active = staffUsers.filter((u) => u.status === 'active').length
+    const suspended = staffUsers.filter((u) => u.status === 'suspended').length
+    const invited = staffUsers.filter((u) => u.status === 'invited').length
     return { total, active, suspended, invited }
-  }, [users])
+  }, [staffUsers])
 
   return (
     <div className="space-y-6">

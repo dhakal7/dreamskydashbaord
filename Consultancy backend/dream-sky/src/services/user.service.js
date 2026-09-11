@@ -15,7 +15,12 @@ function generateTempPassword() {
 const listUsers = async (query = {}) => {
     const { role, status, branchId } = query;
     const where = {};
-    if (role) where.role = role;
+    if (role) {
+        where.role = role;
+    } else {
+        // Exclude student portal accounts from staff user management
+        where.role = { not: "STUDENT" };
+    }
     if (status) where.status = status;
     if (branchId) where.branchId = branchId;
 

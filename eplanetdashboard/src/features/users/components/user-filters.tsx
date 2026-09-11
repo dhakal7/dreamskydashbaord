@@ -13,7 +13,7 @@ interface UserFiltersProps {
   setStatusFilter: (v: string) => void
 }
 
-const allRoles: Role[] = ['super_admin', 'front_desk', 'counselor', 'teacher', 'student', 'referral_agent']
+const allRoles: Role[] = ['super_admin', 'front_desk', 'counselor', 'teacher', 'referral_agent']
 
 export function UserFiltersBar({
   roleFilter, setRoleFilter,
