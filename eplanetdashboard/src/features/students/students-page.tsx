@@ -18,7 +18,9 @@ import type { Student } from '@/types'
 import { useAuthStore } from '@/store/auth-store'
 import { visibleStudents } from '@/lib/data-visibility'
 
-import { useStudents } from '@/hooks/use-students'
+import { useStudents, studentKeys } from '@/hooks/use-students'
+import { studentApi } from '@/api/student-api'
+import { useQueryClient } from '@tanstack/react-query'
 import { adaptApiStudentToStudent } from '@/lib/student-adapter'
 import { isMockMode } from '@/lib/api-client'
 
@@ -37,11 +39,32 @@ export default function StudentsPage() {
     [currentUser.role, currentUser.linkedId],
   )
   const { data: studentResponse } = useStudents(listParams)
+  const queryClient = useQueryClient()
 
   const deleteStudents = useStudentsStore((s) => s.deleteStudents)
   const assignCounselor = useStudentsStore((s) => s.assignCounselor)
   const [filters, setFilters] = useState<StudentFilters>(defaultStudentFilters)
   const [formOpen, setFormOpen] = useState(false)
+
+  const handleBulkDelete = async (selected: Student[]) => {
+    if (!confirm(`Are you sure you want to delete ${selected.length} student${selected.length > 1 ? 's' : ''}? This will permanently remove their records.`)) return
+
+    if (mockMode) {
+      deleteStudents(selected.map((s) => s.id))
+      return
+    }
+
+    try {
+      await Promise.all(selected.map((s) => studentApi.remove(s.id)))
+      deleteStudents(selected.map((s) => s.id))
+      queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+      toast.success(`${selected.length} student${selected.length > 1 ? 's' : ''} deleted successfully`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete students')
+    }
+  }
 
   const students = useMemo(() => {
     if (!mockMode) {
@@ -147,7 +170,7 @@ export default function StudentsPage() {
                   <Download className="size-3.5" /> Export
                 </Button>
                 {currentUser.role === 'super_admin' && (
-                  <Button variant="outline" size="sm" className="h-7 text-xs text-danger-500 hover:text-danger-600" onClick={() => deleteStudents(selected.map((s) => s.id))}>
+                  <Button variant="outline" size="sm" className="h-7 text-xs text-danger-500 hover:text-danger-600" onClick={() => handleBulkDelete(selected)}>
                     <Trash2 className="size-3.5" /> Delete
                   </Button>
                 )}

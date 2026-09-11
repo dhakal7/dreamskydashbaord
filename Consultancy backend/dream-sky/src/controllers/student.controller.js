@@ -34,9 +34,13 @@ const changePipeline = async (req, res) => {
     sendSuccess(res, { message: "Pipeline stage updated.", data: student });
 };
 
-const remove = async (req, res) => {
-    await studentService.softDeleteStudent(req.params.id);
-    sendSuccess(res, { message: "Student deactivated successfully." });
+const remove = async (req, res, next) => {
+    try {
+        await studentService.deleteStudent(req.params.id);
+        sendSuccess(res, { message: "Student deleted successfully." });
+    } catch (err) {
+        next(err);
+    }
 };
 
 const timeline = async (req, res) => {

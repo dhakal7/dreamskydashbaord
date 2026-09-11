@@ -194,3 +194,29 @@ export function useChangePipelineStage() {
     onError: (err: Error) => toast.error(err.message),
   })
 }
+
+// ─── Delete mutation ──────────────────────────────────────────────────────────
+
+export function useDeleteStudent() {
+  const queryClient = useQueryClient()
+  const mockDelete = useStudentsStore((s) => s.deleteStudents)
+
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isMockMode()) {
+        mockDelete([id])
+        return Promise.resolve()
+      }
+      return studentApi.remove(id)
+    },
+    onSuccess: (_data, id) => {
+      mockDelete([id])
+      queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: studentKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+

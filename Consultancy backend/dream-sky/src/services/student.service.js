@@ -301,15 +301,34 @@ const changePipelineStage = async (id, { stage, reasonCode }, changedById) => {
     return updated;
 };
 
-// ─── SOFT DELETE ──────────────────────────────────────────────────────────────
-const softDeleteStudent = async (id) => {
+// ─── DELETE / DEACTIVATE ───────────────────────────────────────────────────────
+const deleteStudent = async (id) => {
     const student = await prisma.student.findUnique({ where: { id } });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
-    // Idempotent: if already deactivated, just return without error
-    if (!student.isActive) return student;
 
-    return prisma.student.update({ where: { id }, data: { isActive: false } });
+    try {
+        // Attempt full cascade delete so student is completely removed
+        await prisma.$transaction([
+            prisma.pipelineStageHistory.deleteMany({ where: { studentId: id } }),
+            prisma.testScore.deleteMany({ where: { studentId: id } }),
+            prisma.document.deleteMany({ where: { studentId: id } }),
+            prisma.communicationLog.deleteMany({ where: { studentId: id } }),
+            prisma.appointment.deleteMany({ where: { studentId: id } }),
+            prisma.attendanceRecord.deleteMany({ where: { studentId: id } }),
+            prisma.enrollment.deleteMany({ where: { studentId: id } }),
+            prisma.application.deleteMany({ where: { studentId: id } }),
+            prisma.payment.deleteMany({ where: { studentId: id } }),
+            prisma.commission.deleteMany({ where: { studentId: id } }),
+            prisma.student.delete({ where: { id } }),
+        ]);
+        return { id, deleted: true };
+    } catch (err) {
+        console.warn("[student.service] Hard delete failed, falling back to soft delete:", err.message);
+        return prisma.student.update({ where: { id }, data: { isActive: false } });
+    }
 };
+
+const softDeleteStudent = deleteStudent;
 
 // ─── TIMELINE ─────────────────────────────────────────────────────────────────
 const getTimeline = async (id) => {
@@ -329,6 +348,7 @@ module.exports = {
     listStudents,
     updateStudent,
     changePipelineStage,
+    deleteStudent,
     softDeleteStudent,
     getTimeline,
 };

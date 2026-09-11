@@ -10,8 +10,56 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { StudentStatusBadge } from '@/components/shared/status-badges'
 import { useAuthStore } from '@/store/auth-store'
-import { useStudentsStore } from '../store'
+import { useDeleteStudent } from '@/hooks/use-students'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
+
+function StudentRowActions({ student }: { student: Student }) {
+  const navigate = useNavigate()
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const isAdmin = currentUser.role === 'super_admin'
+  const deleteMutation = useDeleteStudent()
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirm(`Are you sure you want to delete ${student.name}? This will permanently remove their profile and records.`)) {
+      deleteMutation.mutate(student.id, {
+        onSuccess: () => {
+          toast.success(`Student ${student.name} deleted successfully`)
+        },
+      })
+    }
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
+          <MoreHorizontal className="size-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => navigate(`/students/${student.id}`)}>
+          View profile
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate(`/students/${student.id}`)}>
+          Edit details
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => window.open(`tel:${student.phone}`)}>
+          Log a call
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => window.open(`mailto:${student.email}`)}>
+          Send email
+        </DropdownMenuItem>
+        {isAdmin && (
+          <DropdownMenuItem destructive onClick={handleDelete} disabled={deleteMutation.isPending}>
+            {deleteMutation.isPending ? 'Deleting...' : 'Delete student'}
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 export const studentColumns: ColumnDef<Student, any>[] = [
   {
@@ -103,36 +151,6 @@ export const studentColumns: ColumnDef<Student, any>[] = [
     id: 'actions',
     header: '',
     enableSorting: false,
-    cell: ({ row }) => {
-      const student = row.original
-      const currentUser = useAuthStore.getState().currentUser
-      const isAdmin = currentUser.role === 'super_admin'
-
-      const handleDelete = () => {
-        useStudentsStore.getState().deleteStudents([student.id])
-        toast.success(`Student ${student.name} deleted successfully`)
-      }
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
-              <MoreHorizontal className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem>View profile</DropdownMenuItem>
-            <DropdownMenuItem>Edit details</DropdownMenuItem>
-            <DropdownMenuItem>Log a call</DropdownMenuItem>
-            <DropdownMenuItem>Send email</DropdownMenuItem>
-            {isAdmin && (
-              <DropdownMenuItem destructive onClick={handleDelete}>
-                Delete student
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
+    cell: ({ row }) => <StudentRowActions student={row.original} />,
   },
 ]
