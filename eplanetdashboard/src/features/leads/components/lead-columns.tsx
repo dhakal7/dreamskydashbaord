@@ -12,11 +12,11 @@ import {
 import { toast } from 'sonner'
 import { useLeadsStore } from '../store'
 import { LeadStageBadge, PriorityBadge } from '@/components/shared/status-badges'
-import { convertLeadToStudent } from '@/lib/lead-conversion'
 import { useDeleteLiveLead } from '@/hooks/use-leads-live'
 import { isMockMode } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
 import { hasPermission } from '@/lib/rbac'
+import { ConvertLeadDialog } from './convert-lead-dialog'
 
 export const leadColumns: ColumnDef<Lead, any>[] = [
   {
@@ -107,7 +107,7 @@ function ActionsCell({ lead, onEdit }: { lead: Lead; onEdit?: (lead: Lead) => vo
   const currentUser = useAuthStore((s) => s.currentUser)
   const removeLead = useLeadsStore((s) => s.removeLead)
   const deleteLiveLead = useDeleteLiveLead()
-  const [isConverting, setIsConverting] = useState(false)
+  const [convertOpen, setConvertOpen] = useState(false)
 
   const canManageLeads = hasPermission(currentUser.role, 'leads.manage')
   const canChangeStage = hasPermission(currentUser.role, 'leads.change-stage')
@@ -127,58 +127,52 @@ function ActionsCell({ lead, onEdit }: { lead: Lead; onEdit?: (lead: Lead) => vo
     }
   }
 
-  async function handleConvert(e: React.MouseEvent) {
-    e.stopPropagation()
-    if (!window.confirm(`Convert "${lead.name}" to a permanent student? This cannot be undone.`)) return
-    setIsConverting(true)
-    try {
-      const result = await convertLeadToStudent(lead)
-      if (result) {
-        toast.success(`${lead.name} has been registered as a student!`)
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to register student. Please try again.')
-    } finally {
-      setIsConverting(false)
-    }
-  }
-
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
-          <MoreHorizontal className="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        {onEdit && canManageLeads && (
-          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(lead); }}>
-            <Pencil className="mr-2 size-3.5" /> Edit Details
-          </DropdownMenuItem>
-        )}
-        {isRegisterable && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleConvert}
-              disabled={isConverting}
-              className="text-brand-600 focus:text-brand-700 focus:bg-brand-50 dark:focus:bg-brand-950/50"
-            >
-              <GraduationCap className="mr-2 size-3.5" />
-              {isConverting ? 'Converting...' : 'Convert to Student'}
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {onEdit && canManageLeads && (
+            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(lead); }}>
+              <Pencil className="mr-2 size-3.5" /> Edit Details
             </DropdownMenuItem>
-          </>
-        )}
-        {canManageLeads && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem destructive onClick={handleDelete}>
-              <Trash2 className="mr-2 size-3.5" /> Delete Lead
-            </DropdownMenuItem>
-          </>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          )}
+          {isRegisterable && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setConvertOpen(true)
+                }}
+                className="text-brand-600 focus:text-brand-700 focus:bg-brand-50 dark:focus:bg-brand-950/50"
+              >
+                <GraduationCap className="mr-2 size-3.5" />
+                Convert to Student
+              </DropdownMenuItem>
+            </>
+          )}
+          {canManageLeads && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem destructive onClick={handleDelete}>
+                <Trash2 className="mr-2 size-3.5" /> Delete Lead
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <ConvertLeadDialog
+        open={convertOpen}
+        onOpenChange={setConvertOpen}
+        lead={lead}
+      />
+    </>
   )
 }
 
