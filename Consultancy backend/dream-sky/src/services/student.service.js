@@ -126,7 +126,7 @@ const createStudent = async (data) => {
     const student = await prisma.student.create({
         data: {
             firstName: data.firstName.trim(),
-            lastName: data.lastName.trim(),
+            lastName: data.lastName?.trim() || data.firstName.trim(),
             email: studentEmail,
             phone: data.phone?.trim() || null,
             dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,

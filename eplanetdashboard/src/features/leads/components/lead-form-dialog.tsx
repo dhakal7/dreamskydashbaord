@@ -196,12 +196,14 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
     if (leadToEdit) {
       if (!isMockMode()) {
         const nameParts = data.name.trim().split(/\s+/)
+        const firstName = nameParts[0] || 'Unknown'
+        const lastName = nameParts.slice(1).join(' ') || firstName
         updateLiveLead.mutate(
           {
             id: leadToEdit.id,
             data: {
-              firstName: nameParts[0] || 'Unknown',
-              lastName: nameParts.slice(1).join(' ') || '',
+              firstName,
+              lastName,
               email: data.email || '',
               phone: data.phone || '',
               source: data.source,
@@ -240,10 +242,12 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
     } else if (!isMockMode()) {
       // Live mode: create a student record with stage=LEAD in the backend
       const nameParts = data.name.trim().split(/\s+/)
+      const firstName = nameParts[0] || 'Unknown'
+      const lastName = nameParts.slice(1).join(' ') || firstName
       createLiveLead.mutate(
         {
-          firstName: nameParts[0] || 'Unknown',
-          lastName: nameParts.slice(1).join(' ') || '',
+          firstName,
+          lastName,
           email: data.email || '',
           phone: data.phone || '',
           source: data.source,
