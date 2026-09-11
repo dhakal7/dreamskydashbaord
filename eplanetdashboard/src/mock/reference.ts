@@ -23,6 +23,10 @@ export const countries: Country[] = [
     id: 'c-nz', name: 'New Zealand', code: 'NZ', flag: '🇳🇿', universityCount: 2, studentCount: 33,
     popularCourses: ['Agriculture', 'IT', 'Hospitality'], visaDifficulty: 'easy', avgTuitionUsd: 19500,
   },
+  {
+    id: 'c-other', name: 'Other', code: 'OTHER', flag: '🌐', universityCount: 0, studentCount: 0,
+    popularCourses: ['Language', 'General'], visaDifficulty: 'moderate', avgTuitionUsd: 15000,
+  },
 ]
 
 const universitySeeds: Array<[string, string, string, number]> = [

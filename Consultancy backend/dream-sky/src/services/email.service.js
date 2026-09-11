@@ -15,21 +15,39 @@ const transporter = nodemailer.createTransport({
 
 const isConfigured = () => Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS);
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+const isValidEmail = (email) => {
+    if (!email || typeof email !== "string") return false;
+    const trimmed = email.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(trimmed)) return false;
+    if (
+        trimmed.includes("@no-email") ||
+        trimmed.endsWith("@example.com") ||
+        trimmed.endsWith("@test.com") ||
+        trimmed.endsWith("@placeholder.com")
+    ) {
+        return false;
+    }
+    return true;
+};
+
 const sendMail = async ({ to, subject, text, html }) => {
-    if (!to || typeof to !== "string" || !to.includes("@")) {
-        console.warn(`[email] Missing or invalid recipient "${to}" — skipping email.`);
-        return { skipped: true, reason: "INVALID_RECIPIENT" };
+    const recipient = typeof to === "string" ? to.trim() : "";
+    if (!isValidEmail(recipient)) {
+        console.warn(`[email] Invalid or placeholder recipient email "${to}" — skipping email.`);
+        return { skipped: true, reason: "INVALID_EMAIL_FORMAT" };
     }
     if (!isConfigured()) {
-        console.warn(`[email] SMTP not configured — skipping email to ${to}`);
+        console.warn(`[email] SMTP not configured — skipping email to ${recipient}`);
         return { skipped: true, reason: "SMTP_NOT_CONFIGURED" };
     }
     try {
-        const info = await transporter.sendMail({ from: EMAIL_FROM, to, subject, text, html });
-        console.log(`[email] sent "${subject}" to ${to} (messageId: ${info.messageId})`);
+        const info = await transporter.sendMail({ from: EMAIL_FROM, to: recipient, subject, text, html });
+        console.log(`[email] sent "${subject}" to ${recipient} (messageId: ${info.messageId})`);
         return info;
     } catch (err) {
-        console.error(`[email] Failed to send "${subject}" to ${to}:`, err.message);
+        console.error(`[email] Failed to send "${subject}" to ${recipient}:`, err.message);
         return { error: err.message };
     }
 };
@@ -186,6 +204,7 @@ module.exports = {
     sendEventNotificationEmail,
     sendNotificationEmail,
     sendFeeDueEmail,
+    isValidEmail,
     isConfigured
 };
 

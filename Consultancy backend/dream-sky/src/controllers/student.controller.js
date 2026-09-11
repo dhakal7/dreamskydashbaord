@@ -1,5 +1,6 @@
 const studentService = require("../services/student.service");
 const { sendSuccess, sendCreated } = require("../utils/response.util");
+const { isValidEmail } = require("../services/email.service");
 const {
     validateCreateStudent,
     validateUpdateStudent,
@@ -51,8 +52,8 @@ const timeline = async (req, res) => {
 const resendCredentials = async (req, res, next) => {
     try {
         const student = await studentService.getStudentById(req.params.id);
-        if (!student.email) {
-            return res.status(400).json({ success: false, message: "This student has no email address." });
+        if (!student.email || !isValidEmail(student.email)) {
+            return res.status(400).json({ success: false, message: "This student does not have a valid email address." });
         }
         const result = await studentService.provisionPortalAndSendWelcome(student);
         if (!result.success) {

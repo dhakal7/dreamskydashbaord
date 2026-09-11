@@ -56,9 +56,20 @@ export function ConvertLeadDialog({
       return
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
     if (!emailRegex.test(trimmedEmail)) {
-      setError('Please enter a valid email address (e.g. name@domain.com).')
+      setError('Please enter a valid email address (e.g. student@gmail.com).')
+      return
+    }
+
+    if (
+      trimmedEmail.includes('@no-email') ||
+      trimmedEmail.endsWith('@example.com') ||
+      trimmedEmail.endsWith('@test.com') ||
+      trimmedEmail.endsWith('@domain.com') ||
+      trimmedEmail.endsWith('@placeholder.com')
+    ) {
+      setError('Please enter an active personal email address (test or placeholder domains are not allowed).')
       return
     }
 
