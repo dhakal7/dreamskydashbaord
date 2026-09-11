@@ -220,3 +220,21 @@ export function useDeleteStudent() {
   })
 }
 
+// ─── Resend Credentials mutation ──────────────────────────────────────────────
+
+export function useResendCredentials() {
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isMockMode()) {
+        return Promise.resolve({ success: true, message: 'Credentials sent (mock mode)' })
+      }
+      return studentApi.resendCredentials(id)
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || 'Portal credentials emailed successfully!')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to send credentials email'),
+  })
+}
+
+

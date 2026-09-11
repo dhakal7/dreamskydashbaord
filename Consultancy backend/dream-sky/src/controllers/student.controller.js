@@ -48,4 +48,20 @@ const timeline = async (req, res) => {
     sendSuccess(res, { data: history });
 };
 
-module.exports = { create, getOne, list, update, changePipeline, remove, timeline };
+const resendCredentials = async (req, res, next) => {
+    try {
+        const student = await studentService.getStudentById(req.params.id);
+        if (!student.email) {
+            return res.status(400).json({ success: false, message: "This student has no email address." });
+        }
+        const result = await studentService.provisionPortalAndSendWelcome(student);
+        if (!result.success) {
+            return res.status(500).json({ success: false, message: result.error || "Failed to send portal credentials email." });
+        }
+        sendSuccess(res, { message: `Portal access credentials sent to ${student.email}.` });
+    } catch (err) {
+        next(err);
+    }
+};
+
+module.exports = { create, getOne, list, update, changePipeline, remove, timeline, resendCredentials };

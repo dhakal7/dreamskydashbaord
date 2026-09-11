@@ -48,4 +48,12 @@ router.patch(
 
 router.get("/:id/timeline", studentController.timeline);
 
+// ─── Credentials / Welcome Email ─────────────────────────────────────────────
+
+router.post(
+    "/:id/resend-credentials",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    studentController.resendCredentials
+);
+
 module.exports = router;

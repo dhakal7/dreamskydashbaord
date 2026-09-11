@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { StudentStatusBadge } from '@/components/shared/status-badges'
 import { useAuthStore } from '@/store/auth-store'
-import { useDeleteStudent } from '@/hooks/use-students'
+import { useDeleteStudent, useResendCredentials } from '@/hooks/use-students'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 
@@ -19,6 +19,7 @@ function StudentRowActions({ student }: { student: Student }) {
   const currentUser = useAuthStore((s) => s.currentUser)
   const isAdmin = currentUser.role === 'super_admin'
   const deleteMutation = useDeleteStudent()
+  const resendMutation = useResendCredentials()
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -44,6 +45,15 @@ function StudentRowActions({ student }: { student: Student }) {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate(`/students/${student.id}`)}>
           Edit details
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation()
+            resendMutation.mutate(student.id)
+          }}
+          disabled={resendMutation.isPending || !student.email}
+        >
+          {resendMutation.isPending ? 'Sending credentials...' : 'Send portal credentials'}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => window.open(`tel:${student.phone}`)}>
           Log a call

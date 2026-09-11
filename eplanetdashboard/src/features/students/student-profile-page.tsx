@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Phone, Mail, Edit3, ArrowLeft, FileStack, FolderKanban, Clock3, CalendarClock, Trash2 } from 'lucide-react'
+import { Phone, Mail, Edit3, ArrowLeft, FileStack, FolderKanban, Clock3, CalendarClock, Trash2, KeyRound } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EmptyState } from '@/components/shared/empty-state'
 import { StudentStatusBadge } from '@/components/shared/status-badges'
 import { useStudentsStore } from './store'
-import { useStudent, useDeleteStudent } from '@/hooks/use-students'
+import { useStudent, useDeleteStudent, useResendCredentials } from '@/hooks/use-students'
 import { adaptApiStudentToStudent } from '@/lib/student-adapter'
 import { isMockMode } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
@@ -49,6 +49,7 @@ export default function StudentProfilePage() {
   const isAdmin = currentUser.role === 'super_admin'
   const mockStudents = useStudentsStore((s) => s.students)
   const deleteMutation = useDeleteStudent()
+  const resendMutation = useResendCredentials()
   const { data: apiStudent } = useStudent(id || '')
 
   const [activeTab, setActiveTab] = useState('personal')
@@ -138,6 +139,19 @@ export default function StudentProfilePage() {
             <Button variant="outline" size="sm" className="h-8 shadow-none" onClick={() => window.open(`mailto:${student.email}`)}>
               <Mail /> Email
             </Button>
+            {student.email && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 shadow-none gap-1.5"
+                onClick={() => resendMutation.mutate(student.id)}
+                disabled={resendMutation.isPending}
+                title="Send or resend portal login credentials to student email"
+              >
+                <KeyRound className="size-3.5" />
+                {resendMutation.isPending ? 'Sending...' : 'Send Portal Credentials'}
+              </Button>
+            )}
             <Button variant="outline" size="sm" className="h-8 shadow-none">
               <Edit3 /> Edit
             </Button>
