@@ -1,7 +1,8 @@
+import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import {
   ArrowLeft, ShieldAlert, ChevronRight, CheckCircle2, Clock, Circle,
-  MapPin, GraduationCap, Mail, Phone,
+  MapPin, GraduationCap, Mail, Phone, Loader2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -14,7 +15,25 @@ import { useAuthStore } from '@/store/auth-store'
 import { hasPermission } from '@/lib/rbac'
 import { Stepper, type Step, type TerminalStep } from '@/components/shared/stepper'
 import { VisaStatusBadge, visaStatusMeta } from '@/components/shared/status-badges'
-import type { VisaStep, VisaStatus } from '@/types'
+import type { VisaCase, VisaStep, VisaStatus } from '@/types'
+import { isMockMode } from '@/lib/api-client'
+import { useVisaCase, useChangeVisaStatus } from '@/hooks/use-visa'
+import { useStudent } from '@/hooks/use-students'
+import { adaptApiStudentToStudent } from '@/lib/student-adapter'
+
+const BACKEND_VISA_STATUS_MAP: Record<string, VisaStatus> = {
+  NOT_APPLIED: 'not_started',
+  PREPARING: 'in_progress',
+  SUBMITTED: 'submitted',
+  APPROVED: 'approved',
+  REFUSED: 'rejected',
+  RESUBMITTING: 'in_progress',
+}
+
+function resolveVisaStatus(status?: string): VisaStatus {
+  if (!status) return 'not_started'
+  return BACKEND_VISA_STATUS_MAP[status.toUpperCase()] ?? (status.toLowerCase() as VisaStatus)
+}
 
 const visaStepLabels: Record<VisaStep, string> = {
   medical: 'Medical Exam',
@@ -44,14 +63,110 @@ export default function VisaCaseDetailPage() {
   const students = useStudentsStore((s) => s.students)
   const currentUser = useAuthStore((s) => s.currentUser)
 
-  const visaCase =
-    visaCases.find((vc) => vc.id === id || (vc as any).caseRef === id) ||
-    visaCases.find((vc) => id && (vc.id.includes(id) || id.includes(vc.id))) ||
-    (visaCases.length > 0 ? visaCases[0] : undefined)
+  const { data: apiVisaCase, isLoading: isLoadingVisaCase } = useVisaCase(id ?? '')
+  const changeVisaStatusMutation = useChangeVisaStatus()
 
-  const student = visaCase ? (students.find((s) => s.id === visaCase.studentId) || students[0]) : null
-  const canView = Boolean(visaCase && student)
+  const visaCase: VisaCase | undefined = useMemo(() => {
+    if (!isMockMode()) {
+      if (!apiVisaCase) return undefined
+      const studentObj = apiVisaCase.application?.student || apiVisaCase.student
+      const studentName = studentObj
+        ? `${studentObj.firstName} ${studentObj.lastName}`.trim()
+        : 'Student'
+      const studentId = studentObj?.id || apiVisaCase.studentId || ''
+      const universityName = apiVisaCase.application?.university?.name || 'University'
+      const countryName = apiVisaCase.country || (apiVisaCase.application?.university as any)?.country?.name || 'General'
+      const status = resolveVisaStatus(apiVisaCase.status)
+
+      return {
+        id: apiVisaCase.id,
+        studentId,
+        studentName,
+        countryName,
+        universityName,
+        checklist: [],
+        overallStatus: status,
+        progress: status === 'approved' ? 100 : status === 'rejected' ? 0 : status === 'submitted' ? 75 : 40,
+        submissionDate: apiVisaCase.submittedAt ?? apiVisaCase.createdAt,
+        appointmentDate: apiVisaCase.appointmentDate ?? undefined,
+      }
+    }
+    return (
+      visaCases.find((vc) => vc.id === id || (vc as any).caseRef === id) ||
+      visaCases.find((vc) => id && (vc.id.includes(id) || id.includes(vc.id))) ||
+      (visaCases.length > 0 ? visaCases[0] : undefined)
+    )
+  }, [apiVisaCase, visaCases, id])
+
+  const targetStudentId = visaCase?.studentId ?? ''
+  const { data: apiStudentData } = useStudent(targetStudentId)
+
+  const student = useMemo(() => {
+    if (!isMockMode()) {
+      if (apiStudentData) return adaptApiStudentToStudent(apiStudentData)
+      if (visaCase?.studentName) {
+        return {
+          id: visaCase.studentId,
+          studentId: visaCase.studentId.length > 12 ? `STU-${visaCase.studentId.slice(-6).toUpperCase()}` : visaCase.studentId,
+          name: visaCase.studentName,
+          photoColor: '#0F172A',
+          email: '',
+          phone: '',
+          dob: '',
+          gender: 'other',
+          nationality: '',
+          passportNumber: '',
+          address: '',
+          status: 'active',
+          counselorId: '',
+          counselorName: 'Counselor',
+          preferredCountries: [visaCase.countryName],
+          preferredLevel: 'bachelor',
+          budgetUsd: 0,
+          englishTest: { type: 'None', overallScore: 0, testDate: '' },
+          academics: [],
+          parents: [],
+          documentsUploaded: 0,
+          documentsRequired: 7,
+          createdAt: visaCase.submissionDate,
+          tags: [],
+        } as any
+      }
+      return null
+    }
+    return visaCase ? (students.find((s) => s.id === visaCase.studentId) || students[0]) : null
+  }, [apiStudentData, visaCase, students])
+
+  const canView = isMockMode() ? Boolean(visaCase && student) : Boolean(visaCase)
   const canManage = hasPermission(currentUser.role, 'visa.manage')
+
+  const handleStatusChange = (newStatus: VisaStatus) => {
+    if (!visaCase) return
+    if (isMockMode()) {
+      updateOverallStatus(visaCase.id, newStatus)
+    } else {
+      const statusToBackend: Record<VisaStatus, string> = {
+        not_started: 'NOT_APPLIED',
+        in_progress: 'PREPARING',
+        submitted: 'SUBMITTED',
+        approved: 'APPROVED',
+        rejected: 'REFUSED',
+      }
+      changeVisaStatusMutation.mutate({
+        id: visaCase.id,
+        status: statusToBackend[newStatus] ?? 'PREPARING',
+      })
+    }
+  }
+
+  if (!isMockMode() && isLoadingVisaCase) {
+    return (
+      <div className="py-16 flex flex-col items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-primary mb-2" />
+        <p className="text-sm text-muted-foreground">Loading visa case details...</p>
+      </div>
+    )
+  }
 
   if (!visaCase || !canView) {
     return (
@@ -135,7 +250,7 @@ export default function VisaCaseDetailPage() {
             {canManage && (
               <Select
                 value={visaCase.overallStatus}
-                onValueChange={(val) => updateOverallStatus(visaCase.id, val as VisaStatus)}
+                onValueChange={(val) => handleStatusChange(val as VisaStatus)}
               >
                 <SelectTrigger className="w-[160px] h-9 border-border/70">
                   <SelectValue />

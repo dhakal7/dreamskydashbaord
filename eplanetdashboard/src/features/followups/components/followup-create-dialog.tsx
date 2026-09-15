@@ -17,12 +17,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
-import { counselors, students } from '@/mock'
 import { useAuthStore } from '@/store/auth-store'
-import { visibleStudents } from '@/lib/data-visibility'
 import { useFollowUpsStore } from '../store'
 import { isMockMode } from '@/lib/api-client'
 import { useCreateFollowUp } from '@/hooks/use-followups'
+import { useStudents, useStudent } from '@/hooks/use-students'
+import { useStudentsStore } from '@/features/students/store'
+import { canViewStudent } from '@/lib/data-visibility'
+import { useUsersStore } from '@/features/users/store'
+import { counselors as mockCounselors } from '@/mock'
 import type { FollowUp } from '@/types'
 
 const channels: FollowUp['channel'][] = ['call', 'email', 'whatsapp', 'in_person', 'sms']
@@ -34,15 +37,83 @@ interface FollowUpCreateDialogProps {
   initialStudentId?: string
 }
 
+// ── Debounce helper ───────────────────────────────────────────────────────────
+function useDebouncedValue(value: string, delay = 300) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
+  return debounced
+}
+
 export function FollowUpCreateDialog({ open, onOpenChange, initialStudentId }: FollowUpCreateDialogProps) {
   const currentUser = useAuthStore((s) => s.currentUser)
   const addFollowUpMock = useFollowUpsStore((s) => s.addFollowUp)
   const createFollowUpApi = useCreateFollowUp()
 
-  const availableStudents = useMemo(
-    () => visibleStudents(currentUser, students),
-    [currentUser],
+  // ── Live students (server-side searchable) ──────────────────────────────
+  const [studentSearch, setStudentSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(studentSearch.trim(), 300)
+  const { data: apiStudentData, isLoading: isLoadingStudents, isError: isErrorStudents } = useStudents(
+    isMockMode() ? { limit: 500 } : { limit: 50, search: debouncedSearch || undefined, stageIn: 'LEAD,PROSPECT,ENROLLED,APPLIED,OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED,DEPARTED,LOST' }
   )
+  const mockStudents = useStudentsStore((s) => s.students)
+  const { data: initialStudent } = useStudent(initialStudentId ?? '')
+
+  const availableStudents = useMemo(() => {
+    if (!isMockMode()) {
+      const mapped = (apiStudentData?.students ?? []).map((s) => ({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`.trim(),
+        studentId: s.id.length > 12 ? `STU-${s.id.slice(-6).toUpperCase()}` : s.id,
+        email: s.email,
+        phone: s.phone ?? undefined,
+      }))
+      if (initialStudentId && initialStudent && !mapped.some((s) => s.id === initialStudentId)) {
+        mapped.unshift({
+          id: initialStudent.id,
+          name: `${initialStudent.firstName} ${initialStudent.lastName}`.trim(),
+          studentId: initialStudent.id.length > 12 ? `STU-${initialStudent.id.slice(-6).toUpperCase()}` : initialStudent.id,
+          email: initialStudent.email,
+          phone: initialStudent.phone ?? undefined,
+        })
+      }
+      return mapped
+    }
+    return mockStudents
+      .filter((s) => canViewStudent(currentUser, s))
+      .filter((s) => {
+        const q = debouncedSearch.toLowerCase()
+        if (!q) return true
+        return `${s.name} ${s.studentId} ${s.email} ${s.phone}`.toLowerCase().includes(q)
+      })
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        studentId: s.studentId,
+        email: s.email,
+        phone: s.phone,
+      }))
+  }, [apiStudentData, mockStudents, currentUser, debouncedSearch, initialStudent, initialStudentId])
+
+  // ── Counselors (live from users API or mock) ────────────────────────────
+  const users = useUsersStore((s) => s.users)
+  const fetchUsers = useUsersStore((s) => s.fetchUsers)
+  const counselors = useMemo(() => {
+    if (!isMockMode()) {
+      return users
+        .filter((u) => u.role === 'counselor' || u.role === 'super_admin' || u.role === 'front_desk')
+        .map((u) => ({ id: u.id, name: u.name, email: u.email }))
+    }
+    return mockCounselors.map((c) => ({ id: c.id, name: c.name, email: c.email }))
+  }, [users])
+
+  useEffect(() => {
+    if (open && !isMockMode()) {
+      fetchUsers()
+    }
+  }, [open, fetchUsers])
 
   const [studentId, setStudentId] = useState('')
   const [counselorId, setCounselorId] = useState('')
@@ -150,8 +221,10 @@ export function FollowUpCreateDialog({ open, onOpenChange, initialStudentId }: F
             students={availableStudents}
             value={studentId}
             onChange={setStudentId}
-            placeholder="Search student by name or ID"
-            emptyMessage="No students available"
+            onSearchChange={setStudentSearch}
+            searching={isMockMode() ? false : isLoadingStudents}
+            placeholder={isLoadingStudents ? "Loading students..." : "Search student by name or ID"}
+            emptyMessage={isErrorStudents ? "Failed to load students. Check your connection." : "No students available"}
           />
           {selectedStudent && (
             selectedStudent.email ? (

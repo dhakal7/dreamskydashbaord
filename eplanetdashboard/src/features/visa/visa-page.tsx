@@ -30,6 +30,20 @@ import { VisaFormDialog } from './components/visa-form-dialog'
 
 import { isMockMode } from '@/lib/api-client'
 
+const BACKEND_VISA_STATUS_MAP: Record<string, VisaStatus> = {
+  NOT_APPLIED: 'not_started',
+  PREPARING: 'in_progress',
+  SUBMITTED: 'submitted',
+  APPROVED: 'approved',
+  REFUSED: 'rejected',
+  RESUBMITTING: 'in_progress',
+}
+
+function resolveVisaStatus(status?: string): VisaStatus {
+  if (!status) return 'not_started'
+  return BACKEND_VISA_STATUS_MAP[status.toUpperCase()] ?? (status.toLowerCase() as VisaStatus)
+}
+
 export default function VisaPage() {
   const navigate = useNavigate()
   const mockVisaCases = useVisaStore((s) => s.visaCases)
@@ -39,21 +53,30 @@ export default function VisaPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
 
   const visaCases: VisaCase[] = !isMockMode()
-    ? (apiVisaData?.visaCases ?? []).map((vc) => ({
-        id: vc.id,
-        studentId: vc.studentId,
-        studentName: vc.student ? `${vc.student.firstName} ${vc.student.lastName}` : 'Unknown Student',
-        countryName: vc.country ?? 'USA',
-        universityName: 'University',
-        checklist: [],
-        overallStatus: vc.status.toLowerCase() as VisaStatus,
-        progress: vc.status === 'APPROVED' ? 100 : vc.status === 'REJECTED' ? 0 : 50,
-        submissionDate: vc.submittedAt ?? vc.createdAt,
-        appointmentDate: vc.appointmentDate ?? undefined,
-      }))
+    ? (apiVisaData?.visaCases ?? []).map((vc) => {
+        const studentObj = vc.application?.student || vc.student
+        const studentName = studentObj
+          ? `${studentObj.firstName} ${studentObj.lastName}`.trim()
+          : 'Student'
+        const studentId = studentObj?.id || vc.studentId || ''
+        const universityName = vc.application?.university?.name || 'University'
+        const countryName = vc.country || (vc.application?.university as any)?.country?.name || 'General'
+        const status = resolveVisaStatus(vc.status)
+
+        return {
+          id: vc.id,
+          studentId,
+          studentName,
+          countryName,
+          universityName,
+          checklist: [],
+          overallStatus: status,
+          progress: status === 'approved' ? 100 : status === 'rejected' ? 0 : status === 'submitted' ? 75 : 40,
+          submissionDate: vc.submittedAt ?? vc.createdAt,
+          appointmentDate: vc.appointmentDate ?? undefined,
+        }
+      })
     : mockVisaCases
-
-
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<VisaStatus | 'all'>('all')
@@ -61,7 +84,9 @@ export default function VisaPage() {
   const canManage = hasPermission(currentUser.role, 'visa.manage') || (currentUser.role !== 'student' && currentUser.role !== 'referral_agent')
   const [formOpen, setFormOpen] = useState(false)
 
-  const visible = visibleVisaCases(currentUser, visaCases, students)
+  const visible = isMockMode()
+    ? visibleVisaCases(currentUser, visaCases, students)
+    : visaCases
 
   const uniqueCountries = useMemo(() => {
     const countrySet = new Set(visible.map((vc) => vc.countryName))

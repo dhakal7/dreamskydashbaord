@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -22,6 +22,16 @@ import { useCreateApplication } from '@/hooks/use-applications'
 import { useAuthStore } from '@/store/auth-store'
 import { canViewStudent } from '@/lib/data-visibility'
 import { isMockMode } from '@/lib/api-client'
+
+// ── Debounce helper ───────────────────────────────────────────────────────────
+function useDebouncedValue(value: string, delay = 300) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
+  return debounced
+}
 
 // ── Zod Schema ───────────────────────────────────────────────────────────────
 
@@ -53,7 +63,12 @@ const MONTHS = [
 export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDialogProps) {
   const currentUser = useAuthStore((s) => s.currentUser)
   const mockStudents = useStudentsStore((s) => s.students)
-  const { data: apiStudentData, isLoading: isLoadingStudents } = useStudents({ limit: 500 })
+  const [studentSearch, setStudentSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(studentSearch.trim(), 300)
+
+  const { data: apiStudentData, isLoading: isLoadingStudents, isError: isErrorStudents } = useStudents(
+    isMockMode() ? { limit: 500 } : { limit: 50, search: debouncedSearch || undefined }
+  )
   
   // Resolve Universities
   const mockUniversities = useUniversitiesStore((s) => s.universities)
@@ -82,6 +97,11 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
     }
     return mockStudents
       .filter((s) => canViewStudent(currentUser, s))
+      .filter((s) => {
+        const q = debouncedSearch.toLowerCase()
+        if (!q) return true
+        return `${s.name} ${s.studentId} ${s.email} ${s.phone}`.toLowerCase().includes(q)
+      })
       .map((s) => ({
         id: s.id,
         name: s.name,
@@ -89,7 +109,7 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
         email: s.email,
         phone: s.phone,
       }))
-  }, [apiStudentData, mockStudents, currentUser])
+  }, [apiStudentData, mockStudents, currentUser, debouncedSearch])
 
   const createApplicationMutation = useCreateApplication()
   const addMockApplication = useApplicationsStore((s) => s.addApplication)
@@ -210,8 +230,10 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
                     students={availableStudents}
                     value={field.value}
                     onChange={field.onChange}
+                    onSearchChange={setStudentSearch}
+                    searching={isMockMode() ? false : isLoadingStudents}
                     placeholder={isLoadingStudents ? "Loading students..." : "Search student by name or ID"}
-                    emptyMessage={isLoadingStudents ? "Loading students..." : "No students found"}
+                    emptyMessage={isErrorStudents ? "Failed to load students. Check your connection." : (isLoadingStudents ? "Loading students..." : "No students found")}
                   />
                 )}
               />

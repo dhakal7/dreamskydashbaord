@@ -139,7 +139,7 @@ const listAppointments = async (query) => {
     }
 
     const pageNum = Math.max(parseInt(page) || 1, 1);
-    const pageSize = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
+    const pageSize = Math.min(Math.max(parseInt(limit) || 20, 1), 500);
     const skip = (pageNum - 1) * pageSize;
 
     const [appointments, total] = await Promise.all([

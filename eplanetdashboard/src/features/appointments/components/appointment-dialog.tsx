@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -19,13 +19,18 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 import { ChevronDown, Check } from 'lucide-react'
 import { appointmentStatusMeta } from '@/components/shared/status-badges'
-import { students, counselors } from '@/mock'
+import { counselors as mockCounselors } from '@/mock'
 import { useAppointmentsStore } from '../store'
 import type { Appointment } from '@/types'
 import { useAuthStore } from '@/store/auth-store'
 import { hasPermission } from '@/lib/rbac'
 import { isMockMode } from '@/lib/api-client'
 import { useCreateAppointment, useUpdateAppointment, useChangeAppointmentStatus } from '@/hooks/use-appointments'
+import { appointmentApi } from '@/api/appointment-api'
+import { useStudents } from '@/hooks/use-students'
+import { useStudentsStore } from '@/features/students/store'
+import { useUsersStore } from '@/features/users/store'
+import { toast } from 'sonner'
 
 // ── Zod Schema ───────────────────────────────────────────────────────────────
 
@@ -44,6 +49,38 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
+// ── Backend enum mappings ─────────────────────────────────────────────────────
+/** Map frontend local values to backend VALID_TYPES. */
+const TYPE_TO_BACKEND: Record<FormData['type'], string> = {
+  counseling: 'INITIAL_CONSULTATION',
+  document_review: 'DOCUMENT_REVIEW',
+  visa_prep: 'VISA_COUNSELING',
+  follow_up: 'FOLLOW_UP',
+  orientation: 'OTHER',
+}
+
+/** Map backend type values back to frontend local values. */
+const TYPE_FROM_BACKEND: Record<string, FormData['type']> = {
+  INITIAL_CONSULTATION: 'counseling',
+  FOLLOW_UP: 'follow_up',
+  DOCUMENT_REVIEW: 'document_review',
+  VISA_COUNSELING: 'visa_prep',
+  OTHER: 'orientation',
+}
+
+/** Map frontend local location values to backend VALID_MODES. */
+const LOCATION_TO_BACKEND: Record<FormData['location'], string> = {
+  branch_office: 'OFFICE',
+  video_call: 'ONLINE',
+  phone_call: 'ONLINE',
+}
+
+/** Map backend mode back to frontend local location values. */
+const LOCATION_FROM_BACKEND: Record<string, FormData['location']> = {
+  OFFICE: 'branch_office',
+  ONLINE: 'video_call',
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const typeLabels: Record<Appointment['type'], string> = {
@@ -58,6 +95,16 @@ const locationMeta: Record<Appointment['location'], { label: string; Icon: React
   branch_office: { label: 'Branch Office', Icon: MapPin },
   video_call: { label: 'Video Call', Icon: Monitor },
   phone_call: { label: 'Phone Call', Icon: Phone },
+}
+
+// ── Debounce helper ───────────────────────────────────────────────────────────
+function useDebouncedValue(value: string, delay = 300) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
+  return debounced
 }
 
 // ── Props ─────────────────────────────────────────────────────────────────────
@@ -92,6 +139,52 @@ export function AppointmentDialog({
 
   const isEditing = appointment !== null
 
+  // ── Live students (server-side searchable) ──────────────────────────────
+  const [studentSearch, setStudentSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(studentSearch.trim(), 300)
+  const { data: apiStudentData, isLoading: isLoadingStudents, isError: isErrorStudents } = useStudents(
+    isMockMode() ? { limit: 500 } : { limit: 50, search: debouncedSearch || undefined, stageIn: 'LEAD,PROSPECT,ENROLLED,APPLIED,OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED,DEPARTED,LOST' }
+  )
+
+  const mockStudents = useStudentsStore((s) => s.students)
+  const availableStudents = useMemo(() => {
+    if (!isMockMode()) {
+      return (apiStudentData?.students ?? []).map((s) => ({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`.trim(),
+        studentId: s.id.length > 12 ? `STU-${s.id.slice(-6).toUpperCase()}` : s.id,
+        email: s.email,
+        phone: s.phone ?? undefined,
+      }))
+    }
+    return mockStudents.map((s) => ({
+      id: s.id,
+      name: s.name,
+      studentId: s.studentId,
+      email: s.email,
+      phone: s.phone,
+    }))
+  }, [apiStudentData, mockStudents])
+
+  // ── Counselors (live from users API or mock) ────────────────────────────
+  const users = useUsersStore((s) => s.users)
+  const fetchUsers = useUsersStore((s) => s.fetchUsers)
+  const usedCounselors = useMemo(() => {
+    if (!isMockMode()) {
+      return users
+        .filter((u) => u.role === 'counselor' || u.role === 'super_admin' || u.role === 'front_desk')
+        .map((u) => ({ id: u.id, name: u.name, email: u.email }))
+    }
+    return mockCounselors.map((c) => ({ id: c.id, name: c.name, email: c.email }))
+  }, [users])
+
+  // Fetch staff users when dialog opens (live mode)
+  useEffect(() => {
+    if (open && !isMockMode()) {
+      fetchUsers()
+    }
+  }, [open, fetchUsers])
+
   const {
     register,
     handleSubmit,
@@ -119,11 +212,11 @@ export function AppointmentDialog({
         reset({
           studentId: appointment.studentId,
           counselorIds: appointment.counselorIds ?? (appointment.counselorId ? [appointment.counselorId] : []),
-          type: appointment.type,
+          type: TYPE_FROM_BACKEND[appointment.type?.toUpperCase()] ?? (TYPE_FROM_BACKEND[appointment.type] ?? 'counseling'),
           date: dayjs(appointment.start).format('YYYY-MM-DD'),
           startTime: dayjs(appointment.start).format('HH:mm'),
           endTime: dayjs(appointment.end).format('HH:mm'),
-          location: appointment.location,
+          location: LOCATION_FROM_BACKEND[appointment.location?.toUpperCase()] ?? (LOCATION_FROM_BACKEND[appointment.location] ?? 'branch_office'),
         })
       } else {
         reset({
@@ -140,8 +233,8 @@ export function AppointmentDialog({
   }, [open, appointment, defaultDate, reset])
 
   function onSubmit(data: FormData) {
-    const student = students.find((s) => s.id === data.studentId)
-    const selectedCounselors = counselors.filter((c) => data.counselorIds.includes(c.id))
+    const student = availableStudents.find((s) => s.id === data.studentId)
+    const selectedCounselors = usedCounselors.filter((c) => data.counselorIds.includes(c.id))
     const primaryCounselor = selectedCounselors[0]
     const start = `${data.date}T${data.startTime}:00`
     const end = `${data.date}T${data.endTime}:00`
@@ -152,6 +245,8 @@ export function AppointmentDialog({
     )
 
     if (!isMockMode()) {
+      const backendType = TYPE_TO_BACKEND[data.type]
+      const backendMode = LOCATION_TO_BACKEND[data.location]
       if (isEditing) {
         updateAppointmentApi.mutate(
           {
@@ -159,10 +254,10 @@ export function AppointmentDialog({
             body: {
               studentId: data.studentId,
               counselorId: primaryCounselor?.id,
-              type: type.toUpperCase(),
+              type: backendType,
               datetime: start,
               durationMin,
-              meetingMode: data.location.toUpperCase(),
+              meetingMode: backendMode,
             },
           },
           { onSuccess: () => onOpenChange(false) }
@@ -172,10 +267,10 @@ export function AppointmentDialog({
           {
             studentId: data.studentId,
             counselorId: primaryCounselor?.id,
-            type: type.toUpperCase(),
+            type: backendType,
             datetime: start,
             durationMin,
-            meetingMode: data.location.toUpperCase(),
+            meetingMode: backendMode,
           },
           { onSuccess: () => onOpenChange(false) }
         )
@@ -235,8 +330,17 @@ export function AppointmentDialog({
   function handleDelete() {
     if (appointment) {
       if (window.confirm(`Are you sure you want to permanently delete this appointment for "${appointment.studentName}"?`)) {
-        removeAppointmentMock(appointment.id)
-        onOpenChange(false)
+        if (!isMockMode()) {
+          appointmentApi.remove(appointment.id)
+            .then(() => {
+              onOpenChange(false)
+              toast.success('Appointment deleted')
+            })
+            .catch((err: Error) => toast.error(err.message || 'Failed to delete appointment'))
+        } else {
+          removeAppointmentMock(appointment.id)
+          onOpenChange(false)
+        }
       }
     }
   }
@@ -279,10 +383,13 @@ export function AppointmentDialog({
                 render={({ field }) => (
                   <SearchableStudentPicker
                     label=""
-                    students={students}
+                    students={availableStudents}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="Search student by name or ID"
+                    onSearchChange={setStudentSearch}
+                    searching={isMockMode() ? false : isLoadingStudents}
+                    placeholder={isLoadingStudents ? "Loading students..." : "Search student by name or ID"}
+                    emptyMessage={isErrorStudents ? "Failed to load students. Check your connection." : (isLoadingStudents ? "Loading students..." : "No students found")}
                     disabled={!canManage}
                   />
                 )}
@@ -294,7 +401,7 @@ export function AppointmentDialog({
               )}
               {(() => {
                 const selId = watch('studentId')
-                const selStu = students.find((s) => s.id === selId)
+                const selStu = availableStudents.find((s) => s.id === selId)
                 if (!selStu) return null
                 return selStu.email ? (
                   <div className="mt-1 flex items-center gap-2 rounded-md bg-emerald-500/10 p-2.5 text-[11px] text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
@@ -317,7 +424,7 @@ export function AppointmentDialog({
                 name="counselorIds"
                 control={control}
                 render={({ field }) => {
-                  const selectedCounselors = counselors.filter((c) => field.value.includes(c.id))
+                  const selectedCounselors = usedCounselors.filter((c) => field.value.includes(c.id))
                   return (
                     <div>
                       <Popover>
@@ -337,7 +444,7 @@ export function AppointmentDialog({
                         </PopoverTrigger>
                         <PopoverContent className="p-2">
                           <div className="max-h-56 space-y-1 overflow-y-auto">
-                            {counselors.map((c) => {
+                            {usedCounselors.map((c) => {
                               const checked = field.value.includes(c.id)
                               return (
                                 <button
