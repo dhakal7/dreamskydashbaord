@@ -79,7 +79,11 @@ export function ConvertLeadDialog({
     try {
       const result = await convertLeadToStudent(lead, trimmedEmail)
       if (result) {
-        toast.success(`${lead.name} successfully registered as an enrolled student!`)
+        if (result.portalEmailWarning) {
+          toast.warning(result.portalEmailWarning)
+        } else {
+          toast.success(`${lead.name} successfully registered as an enrolled student!`)
+        }
         onSuccess?.(result)
         onOpenChange(false)
       }

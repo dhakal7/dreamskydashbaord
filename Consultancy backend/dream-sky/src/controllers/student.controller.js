@@ -10,7 +10,16 @@ const {
 const create = async (req, res) => {
     validateCreateStudent(req.body);
     const student = await studentService.createStudent(req.body);
-    sendCreated(res, { message: "Student created successfully.", data: student });
+    let message = "Student created successfully.";
+    if (student?._portalProvision) {
+        const mailSkippedOrFailed = student._portalProvision.mailResult?.error || student._portalProvision.mailResult?.skipped;
+        if (student._portalProvision.success && !mailSkippedOrFailed) {
+            message = "Student created. Portal credentials emailed to the student.";
+        } else {
+            message = "Student created, but the portal credentials email could not be sent. Use 'Send Portal Credentials' on the student profile to retry.";
+        }
+    }
+    sendCreated(res, { message, data: student });
 };
 
 const getOne = async (req, res) => {
@@ -32,7 +41,17 @@ const update = async (req, res) => {
 const changePipeline = async (req, res) => {
     validatePipelineChange(req.body);
     const student = await studentService.changePipelineStage(req.params.id, req.body, req.user.userId);
-    sendSuccess(res, { message: "Pipeline stage updated.", data: student });
+    const provision = student?._portalProvision;
+    let message = "Pipeline stage updated.";
+    if (provision) {
+        const mailSkippedOrFailed = provision.mailResult?.error || provision.mailResult?.skipped;
+        if (provision.success && !mailSkippedOrFailed) {
+            message = "Pipeline stage updated. Portal credentials emailed to the student.";
+        } else {
+            message = "Pipeline stage updated, but the portal credentials email could not be sent. Use 'Send Portal Credentials' on the student profile to retry.";
+        }
+    }
+    sendSuccess(res, { message, data: student });
 };
 
 const remove = async (req, res, next) => {

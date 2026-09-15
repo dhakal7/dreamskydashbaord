@@ -22,6 +22,10 @@ interface SearchableStudentPickerProps {
   showDropdown?: boolean
   autoSelectOnSearch?: boolean
   disabled?: boolean
+  /** When provided, the picker delegates search to the parent (server-side). */
+  onSearchChange?: (query: string) => void
+  /** Show a loading indicator while server-side search is in progress. */
+  searching?: boolean
 }
 
 export function SearchableStudentPicker({
@@ -32,6 +36,8 @@ export function SearchableStudentPicker({
   label,
   emptyMessage = 'No students found',
   disabled = false,
+  onSearchChange,
+  searching = false,
 }: SearchableStudentPickerProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -39,6 +45,9 @@ export function SearchableStudentPicker({
   const selectedStudent = students.find((student) => student.id === value)
 
   const filteredStudents = useMemo(() => {
+    // When server-side search is enabled, the parent is responsible for filtering.
+    if (onSearchChange) return students
+
     const query = search.trim().toLowerCase()
     if (!query) return students
 
@@ -46,7 +55,20 @@ export function SearchableStudentPicker({
       const haystack = `${student.name} ${student.studentId || ''} ${student.email || ''} ${student.phone || ''}`.toLowerCase()
       return haystack.includes(query)
     })
-  }, [students, search])
+  }, [students, search, onSearchChange])
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearch(value)
+    if (onSearchChange) onSearchChange(value)
+  }
+
+  const handleSelect = (studentId: string) => {
+    onChange(studentId)
+    setOpen(false)
+    setSearch('')
+    if (onSearchChange) onSearchChange('')
+  }
 
   return (
     <div className="space-y-1">
@@ -77,24 +99,22 @@ export function SearchableStudentPicker({
             <Input
               placeholder="Search by name, email, or phone..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={handleSearchChange}
               className="h-9 pl-8 text-xs"
               autoFocus
             />
           </div>
           <div className="max-h-56 space-y-0.5 overflow-y-auto">
-            {filteredStudents.length > 0 ? (
+            {searching ? (
+              <p className="px-2 py-3 text-center text-xs text-muted-foreground">Searching...</p>
+            ) : filteredStudents.length > 0 ? (
               filteredStudents.map((student) => {
                 const isSelected = value === student.id
                 return (
                   <button
                     key={student.id}
                     type="button"
-                    onClick={() => {
-                      onChange(student.id)
-                      setOpen(false)
-                      setSearch('')
-                    }}
+                    onClick={() => handleSelect(student.id)}
                     className={`flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-left text-xs transition ${
                       isSelected ? 'bg-primary/10 font-medium text-primary' : 'hover:bg-accent'
                     }`}

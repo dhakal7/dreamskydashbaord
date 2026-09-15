@@ -12,6 +12,8 @@ import { SearchableStudentPicker } from '@/components/shared/searchable-student-
 import { useAuthStore } from '@/store/auth-store'
 import { useStudentsStore } from '@/features/students/store'
 import { useNotificationsStore } from '@/store/notifications-store'
+import { useStudents } from '@/hooks/use-students'
+import { isMockMode } from '@/lib/api-client'
 import { visibleStudents } from '@/lib/data-visibility'
 import type { AppNotification } from '@/types'
 
@@ -29,12 +31,27 @@ type RecipientScope = 'all_students' | 'staff_only' | 'individual'
 export function QuickNotificationComposer() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const addNotification = useNotificationsStore((s) => s.addNotification)
-  const allStudents = useStudentsStore((s) => s.students)
+  const mockStudents = useStudentsStore((s) => s.students)
+  const { data: apiStudentData } = useStudents({ limit: 500 })
 
-  const availableStudents = useMemo(
-    () => visibleStudents(currentUser, allStudents),
-    [currentUser, allStudents],
-  )
+  const availableStudents = useMemo(() => {
+    if (!isMockMode()) {
+      return (apiStudentData?.students ?? []).map((s) => ({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`.trim(),
+        studentId: s.id.length > 12 ? `STU-${s.id.slice(-6).toUpperCase()}` : s.id,
+        email: s.email,
+        phone: s.phone ?? undefined,
+      }))
+    }
+    return visibleStudents(currentUser, mockStudents).map((s) => ({
+      id: s.id,
+      name: s.name,
+      studentId: s.studentId,
+      email: s.email,
+      phone: s.phone,
+    }))
+  }, [apiStudentData, mockStudents, currentUser])
 
   const [open, setOpen] = useState(false)
   const [scope, setScope] = useState<RecipientScope>('all_students')

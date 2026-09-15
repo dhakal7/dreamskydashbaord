@@ -34,6 +34,13 @@ export interface ApiStudent {
   // Populated relations (from controller includes)
   assignedCounselor?: { id: string; firstName: string; lastName: string } | null
   stageHistory?: ApiPipelineHistory[]
+  /** Present after an ENROLLED transition — reports the portal credentials email status. */
+  _portalProvision?: {
+    success: boolean
+    reason?: string
+    error?: string
+    mailResult?: { error?: string; skipped?: boolean; reason?: string }
+  } | null
 }
 
 export interface ApiPipelineHistory {

@@ -14,9 +14,12 @@ import { useAuthStore } from '@/store/auth-store'
 import { hasPermission } from '@/lib/rbac'
 import { visibleAppointments, visibleFollowUps } from '@/lib/data-visibility'
 import { useAppointmentsStore } from '@/features/appointments/store'
+import { useAppointments } from '@/hooks/use-appointments'
+import { useChangeAppointmentStatus } from '@/hooks/use-appointments'
+import { isMockMode } from '@/lib/api-client'
 import { LeadFormDialog } from '@/features/leads/components/lead-form-dialog'
 import { followUps } from '@/mock'
-import type { AppointmentStatus } from '@/types'
+import type { Appointment, AppointmentStatus } from '@/types'
 
 import { FeeManagementPanel } from './components/fee-management-panel'
 
@@ -24,15 +27,38 @@ export default function ReceptionPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const allAppointments = useAppointmentsStore((s) => s.appointments)
   const updateAppointment = useAppointmentsStore((s) => s.updateAppointment)
+  const changeStatusApi = useChangeAppointmentStatus()
   const [leadDialogOpen, setLeadDialogOpen] = useState(false)
+
+  // Live mode: fetch today's appointments from the API
+  const counselorScope = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
+  const { data: apiAppointments } = useAppointments({ counselorId: counselorScope, limit: 500 })
+
+  const liveAppointments: Appointment[] = !isMockMode()
+    ? (apiAppointments?.appointments ?? []).map((a) => ({
+        id: a.id,
+        title: `${(a.type ?? 'Appointment').replace(/_/g, ' ')} — ${a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Student'}`,
+        studentId: a.studentId,
+        studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown Student',
+        counselorId: a.counselorId ?? '',
+        counselorName: a.counselor ? `${a.counselor.firstName} ${a.counselor.lastName}` : 'Counselor',
+        counselorIds: a.counselorId ? [a.counselorId] : [],
+        counselorNames: a.counselor ? [`${a.counselor.firstName} ${a.counselor.lastName}`] : [],
+        type: (a.type?.toLowerCase() as Appointment['type']) ?? 'counseling',
+        status: (a.status?.toLowerCase() as AppointmentStatus) ?? 'scheduled',
+        start: a.datetime,
+        end: new Date(new Date(a.datetime).getTime() + (a.durationMin ?? 30) * 60000).toISOString(),
+        location: (a.meetingMode?.toLowerCase() as Appointment['location']) ?? 'branch_office',
+      }))
+    : allAppointments
 
   const todayStr = dayjs().format('YYYY-MM-DD')
 
   const todaysAppointments = useMemo(() => {
-    return visibleAppointments(currentUser, allAppointments)
+    return visibleAppointments(currentUser, liveAppointments)
       .filter((a) => dayjs(a.start).format('YYYY-MM-DD') === todayStr)
       .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf())
-  }, [currentUser, allAppointments, todayStr])
+  }, [currentUser, liveAppointments, todayStr])
 
   const todaysFollowUps = useMemo(() => {
     return visibleFollowUps(currentUser, followUps)
@@ -41,7 +67,16 @@ export default function ReceptionPage() {
   }, [currentUser, todayStr])
 
   function handleCheckIn(appt: { id: string; status: AppointmentStatus; studentName: string }) {
-    if (appt.status === 'scheduled') {
+    // Backend only supports SCHEDULED → COMPLETED / CANCELLED / NO_SHOW,
+    // so in live mode a check-in marks the appointment as completed.
+    if (!isMockMode()) {
+      if (appt.status === 'scheduled') {
+        changeStatusApi.mutate({ id: appt.id, status: 'COMPLETED' }, {
+          onSuccess: () => toast.success(`${appt.studentName} checked in & completed`),
+          onError: () => toast.error('Failed to update appointment status'),
+        })
+      }
+    } else if (appt.status === 'scheduled') {
       updateAppointment(appt.id, { status: 'confirmed' })
       toast.success(`${appt.studentName} checked in`)
     } else if (appt.status === 'confirmed') {

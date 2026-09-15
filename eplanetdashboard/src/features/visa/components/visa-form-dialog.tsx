@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -14,11 +14,22 @@ import {
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 import { useStudentsStore } from '@/features/students/store'
 import { useVisaStore } from '@/features/visa/store'
+import { useStudents } from '@/hooks/use-students'
 import { useCreateVisaCase } from '@/hooks/use-visa'
 import { useAuthStore } from '@/store/auth-store'
 import { canViewStudent } from '@/lib/data-visibility'
 import { isMockMode } from '@/lib/api-client'
 import { countries } from '@/mock'
+
+// ── Debounce helper ───────────────────────────────────────────────────────────
+function useDebouncedValue(value: string, delay = 300) {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(t)
+  }, [value, delay])
+  return debounced
+}
 
 // ── Zod Schema ───────────────────────────────────────────────────────────────
 
@@ -42,10 +53,40 @@ interface VisaFormDialogProps {
 
 export function VisaFormDialog({ open, onOpenChange }: VisaFormDialogProps) {
   const currentUser = useAuthStore((s) => s.currentUser)
-  const students = useStudentsStore((s) => s.students)
+  const mockStudents = useStudentsStore((s) => s.students)
+  const [studentSearch, setStudentSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(studentSearch.trim(), 300)
+
+  const { data: apiStudentData, isLoading: isLoadingStudents, isError: isErrorStudents } = useStudents(
+    isMockMode() ? { limit: 500 } : { limit: 50, search: debouncedSearch || undefined }
+  )
   
   // Filtering students to only allowed ones (assigned students for counselors)
-  const availableStudents = students.filter((s) => canViewStudent(currentUser, s))
+  const availableStudents = useMemo(() => {
+    if (!isMockMode()) {
+      return (apiStudentData?.students ?? []).map((s) => ({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`.trim(),
+        studentId: s.id.length > 12 ? `STU-${s.id.slice(-6).toUpperCase()}` : s.id,
+        email: s.email,
+        phone: s.phone ?? undefined,
+      }))
+    }
+    return mockStudents
+      .filter((s) => canViewStudent(currentUser, s))
+      .filter((s) => {
+        const q = debouncedSearch.toLowerCase()
+        if (!q) return true
+        return `${s.name} ${s.studentId} ${s.email} ${s.phone}`.toLowerCase().includes(q)
+      })
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        studentId: s.studentId,
+        email: s.email,
+        phone: s.phone,
+      }))
+  }, [apiStudentData, mockStudents, currentUser, debouncedSearch])
 
   const createVisaCaseMutation = useCreateVisaCase()
   const addMockVisaCase = useVisaStore((s) => s.addVisaCase)
@@ -79,8 +120,6 @@ export function VisaFormDialog({ open, onOpenChange }: VisaFormDialogProps) {
   }, [open, reset])
 
   async function onSubmit(data: FormData) {
-    const student = students.find((s) => s.id === data.studentId)!
-
     if (!isMockMode()) {
       await createVisaCaseMutation.mutateAsync({
         studentId: data.studentId,
@@ -89,6 +128,8 @@ export function VisaFormDialog({ open, onOpenChange }: VisaFormDialogProps) {
         notes: data.notes,
       })
     } else {
+      const student = mockStudents.find((s) => s.id === data.studentId)
+      if (!student) return
       addMockVisaCase({
         studentId: student.id,
         studentName: student.name,
@@ -128,15 +169,13 @@ export function VisaFormDialog({ open, onOpenChange }: VisaFormDialogProps) {
                 control={control}
                 render={({ field }) => (
                   <SearchableStudentPicker
-                    students={availableStudents.map((s) => ({
-                      id: s.id,
-                      name: s.name,
-                      studentId: s.studentId,
-                      email: s.email,
-                    }))}
+                    students={availableStudents}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="Search student by name or ID"
+                    onSearchChange={setStudentSearch}
+                    searching={isMockMode() ? false : isLoadingStudents}
+                    placeholder={isLoadingStudents ? "Loading students..." : "Search student by name or ID"}
+                    emptyMessage={isErrorStudents ? "Failed to load students. Check your connection." : (isLoadingStudents ? "Loading students..." : "No students found")}
                   />
                 )}
               />

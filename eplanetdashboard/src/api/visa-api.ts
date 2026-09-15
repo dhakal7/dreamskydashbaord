@@ -8,7 +8,7 @@ import { api } from '@/lib/api-client'
 
 export interface ApiVisaCase {
   id: string
-  studentId: string
+  studentId?: string
   applicationId: string | null
   status: string
   country: string | null
@@ -20,6 +20,14 @@ export interface ApiVisaCase {
   createdAt: string
   updatedAt: string
   student?: { id: string; firstName: string; lastName: string }
+  application?: {
+    id: string
+    status: string
+    intake: string | null
+    student?: { id: string; firstName: string; lastName: string; email: string }
+    university?: { id: string; name: string } | null
+    course?: { id: string; name: string; level: string } | null
+  }
 }
 
 export interface VisaCaseListParams {

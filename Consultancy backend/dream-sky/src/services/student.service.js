@@ -150,7 +150,8 @@ const createStudent = async (data) => {
     });
 
     if (initialStage === "ENROLLED") {
-        provisionPortalAndSendWelcome(student);
+        const provisionResult = await provisionPortalAndSendWelcome(student);
+        student._portalProvision = provisionResult;
     }
 
     return student;
@@ -356,7 +357,9 @@ const changePipelineStage = async (id, { stage, reasonCode, email }, changedById
     // When a lead becomes an enrolled student, provision the portal account and
     // email the welcome message with temporary credentials.
     if (stage === "ENROLLED") {
-        provisionPortalAndSendWelcome(updated);
+        const provisionResult = await provisionPortalAndSendWelcome(updated);
+        // Attach the email status so the controller can surface it to the user.
+        return { ...updated, _portalProvision: provisionResult };
     }
 
     return updated;

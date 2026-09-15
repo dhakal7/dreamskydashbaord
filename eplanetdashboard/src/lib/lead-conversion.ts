@@ -24,6 +24,8 @@ export interface LeadConversionResult {
   email: string
   /** Only populated in mock mode — in real mode credentials are emailed. */
   portalPassword: string | null
+  /** Set when the portal credentials email failed or was skipped in real mode. */
+  portalEmailWarning?: string
 }
 
 /**
@@ -53,7 +55,7 @@ export async function convertLeadToStudent(lead: Lead, emailOverride?: string): 
     // The lead is already stored in the backend as a student at LEAD/PROSPECT stage.
     // Promote pipeline stage to ENROLLED with the mandatory student email.
     // The backend provisions the student portal account and emails temporary credentials.
-    await studentApi.changePipeline(lead.id, {
+    const updated = await studentApi.changePipeline(lead.id, {
       stage: 'ENROLLED',
       email: finalEmail || undefined,
     })
@@ -68,10 +70,21 @@ export async function convertLeadToStudent(lead: Lead, emailOverride?: string): 
     queryClient.invalidateQueries({ queryKey: studentKeys.all })
     queryClient.invalidateQueries({ queryKey: ['dashboard'] })
 
+    // If the portal credentials email failed or was skipped, surface a clear warning
+    // so the front desk can retry via the student profile's "Send Portal Credentials".
+    const provision = (updated as any)?._portalProvision
+    let portalEmailWarning: string | undefined
+    if (provision && (!provision.success || provision.mailResult?.error || provision.mailResult?.skipped)) {
+      console.warn('[lead-conversion] Portal credentials email failed — instructing user to resend', provision)
+      portalEmailWarning =
+        'Student registered, but the portal credentials email could not be sent. Use "Send Portal Credentials" on the student profile to resend.'
+    }
+
     return {
       studentId: lead.id,
       email: finalEmail,
       portalPassword: null,
+      portalEmailWarning,
     }
   }
 

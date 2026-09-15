@@ -2,9 +2,9 @@ const AppError = require("../utils/apiError");
 
 const VALID_STATUSES = ["NOT_APPLIED", "PREPARING", "SUBMITTED", "APPROVED", "REFUSED", "RESUBMITTING"];
 
-const validateCreateVisa = ({ applicationId }) => {
-    if (!applicationId?.trim())
-        throw AppError.badRequest("applicationId is required.", "VALIDATION_ERROR");
+const validateCreateVisa = ({ applicationId, studentId }) => {
+    if (!applicationId?.trim() && !studentId?.trim())
+        throw AppError.badRequest("applicationId or studentId is required.", "VALIDATION_ERROR");
 };
 
 const validateStatusChange = ({ status }) => {

@@ -27,24 +27,78 @@ const includeRelations = {
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
 const createVisaCase = async (data) => {
-    // Verify application exists and is ACCEPTED
+    let applicationId = data.applicationId;
+
+    if (!applicationId && data.studentId) {
+        const student = await prisma.student.findUnique({
+            where: { id: data.studentId },
+            select: { id: true },
+        });
+        if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
+
+        // Find existing application for this student
+        let app = await prisma.application.findFirst({
+            where: { studentId: data.studentId },
+            orderBy: { createdAt: "desc" },
+        });
+
+        if (!app) {
+            let university = null;
+            if (data.country) {
+                const country = await prisma.country.findFirst({
+                    where: { name: { contains: data.country, mode: "insensitive" } },
+                    include: { universities: true },
+                });
+                if (country && country.universities.length > 0) {
+                    university = country.universities[0];
+                }
+            }
+            if (!university) {
+                university = await prisma.university.findFirst();
+            }
+            const course = university
+                ? await prisma.course.findFirst({ where: { universityId: university.id } })
+                : await prisma.course.findFirst();
+
+            app = await prisma.application.create({
+                data: {
+                    studentId: data.studentId,
+                    universityId: university?.id || null,
+                    courseId: course?.id || null,
+                    status: "ACCEPTED",
+                    intake: "Upcoming",
+                    notes: "Created for Visa processing",
+                },
+            });
+        } else if (app.status !== "ACCEPTED") {
+            app = await prisma.application.update({
+                where: { id: app.id },
+                data: { status: "ACCEPTED" },
+            });
+        }
+
+        applicationId = app.id;
+    }
+
+    if (!applicationId) {
+        throw AppError.badRequest("Unable to link or create an application for this visa case.", "APPLICATION_REQUIRED");
+    }
+
     const app = await prisma.application.findUnique({
-        where: { id: data.applicationId },
+        where: { id: applicationId },
         select: { id: true, status: true },
     });
     if (!app) throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
-    if (app.status !== "ACCEPTED")
-        throw AppError.badRequest("Application must be in ACCEPTED status to create a visa case.", "APPLICATION_NOT_ACCEPTED");
 
     // Check for existing visa case (unique constraint will also catch this)
-    const existing = await prisma.visaCase.findUnique({ where: { applicationId: data.applicationId } });
+    const existing = await prisma.visaCase.findUnique({ where: { applicationId } });
     if (existing) throw AppError.conflict("A visa case already exists for this application.", "VISA_CASE_EXISTS");
 
     return prisma.visaCase.create({
         data: {
-            applicationId: data.applicationId,
+            applicationId,
             visaType: data.visaType?.trim() || null,
-            embassy: data.embassy?.trim() || null,
+            embassy: data.embassy?.trim() || data.country?.trim() || null,
             notes: data.notes?.trim() || null,
         },
         include: includeRelations,
