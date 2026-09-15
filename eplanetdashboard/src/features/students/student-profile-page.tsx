@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { Phone, Mail, Edit3, ArrowLeft, FileStack, FolderKanban, Clock3, CalendarClock, Trash2, KeyRound } from 'lucide-react'
+import { Phone, Mail, Edit3, ArrowLeft, FileStack, FolderKanban, Clock3, CalendarClock, Trash2, KeyRound, Loader2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -50,16 +50,18 @@ export default function StudentProfilePage() {
   const mockStudents = useStudentsStore((s) => s.students)
   const deleteMutation = useDeleteStudent()
   const resendMutation = useResendCredentials()
-  const { data: apiStudent } = useStudent(id || '')
+  const { data: apiStudent, isLoading: isLoadingStudent } = useStudent(id || '')
 
   const [activeTab, setActiveTab] = useState('personal')
   const [followUpOpen, setFollowUpOpen] = useState(false)
 
   const student = !isMockMode() && apiStudent
     ? adaptApiStudentToStudent(apiStudent)
-    : mockStudents.find((c) => c.id === id || c.studentId === id) ||
-      mockStudents.find((c) => id && (c.id.includes(id) || id.includes(c.id))) ||
-      (mockStudents.length > 0 ? mockStudents[0] : undefined)
+    : isMockMode()
+      ? (mockStudents.find((c) => c.id === id || c.studentId === id) ||
+         mockStudents.find((c) => id && (c.id.includes(id) || id.includes(c.id))) ||
+         (mockStudents.length > 0 ? mockStudents[0] : undefined))
+      : undefined
 
   const handleDeleteProfile = () => {
     if (!student) return
@@ -71,6 +73,15 @@ export default function StudentProfilePage() {
         },
       })
     }
+  }
+
+  if (!isMockMode() && isLoadingStudent) {
+    return (
+      <div className="py-24 flex flex-col items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-primary mb-2" />
+        <p className="text-sm text-muted-foreground">Loading student profile...</p>
+      </div>
+    )
   }
 
   if (!student) {

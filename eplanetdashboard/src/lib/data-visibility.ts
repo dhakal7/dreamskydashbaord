@@ -46,14 +46,17 @@ export function canViewLead(user: CurrentUser, _lead: Lead) {
 }
 
 export function visibleStudents(user: CurrentUser, records: readonly Student[]) {
+  if (!Array.isArray(records)) return []
   return records.filter((student) => canViewStudent(user, student))
 }
 
 export function visibleLeads(user: CurrentUser, records: readonly Lead[]) {
+  if (!Array.isArray(records)) return []
   return records.filter((lead) => canViewLead(user, lead))
 }
 
 export function visibleFollowUps(user: CurrentUser, records: readonly FollowUp[]) {
+  if (!Array.isArray(records)) return []
   return records.filter((followUp) => {
     if (isSuperAdmin(user) || user.role === 'front_desk') return true
     if (user.role === 'counselor') return followUp.counselorId === user.linkedId
@@ -62,6 +65,7 @@ export function visibleFollowUps(user: CurrentUser, records: readonly FollowUp[]
 }
 
 export function visibleAppointments(user: CurrentUser, records: readonly Appointment[]) {
+  if (!Array.isArray(records)) return []
   return records.filter((appointment) => {
     if (isSuperAdmin(user) || user.role === 'front_desk') return true
     if (user.role === 'counselor') return appointment.counselorId === user.linkedId
@@ -71,23 +75,28 @@ export function visibleAppointments(user: CurrentUser, records: readonly Appoint
 }
 
 function canViewStudentOwned(user: CurrentUser, studentId: string, students: readonly Student[]) {
+  if (!Array.isArray(students)) return false
   const student = students.find((candidate) => candidate.id === studentId)
   return Boolean(student && canViewStudent(user, student))
 }
 
 export function visibleApplications(user: CurrentUser, records: readonly Application[], students: readonly Student[]) {
+  if (!Array.isArray(records)) return []
   return records.filter((record) => canViewStudentOwned(user, record.studentId, students))
 }
 
 export function visibleVisaCases(user: CurrentUser, records: readonly VisaCase[], students: readonly Student[]) {
+  if (!Array.isArray(records)) return []
   return records.filter((record) => canViewStudentOwned(user, record.studentId, students))
 }
 
 export function visibleDocuments(user: CurrentUser, records: readonly StudentDocument[], students: readonly Student[]) {
+  if (!Array.isArray(records)) return []
   return records.filter((record) => canViewStudentOwned(user, record.studentId, students))
 }
 
 export function visibleClasses(user: CurrentUser, records: readonly ClassSession[]) {
+  if (!Array.isArray(records)) return []
   if (isSuperAdmin(user)) return records
   if (user.role === 'teacher') return records.filter((classSession) => classSession.teacherId === user.linkedId)
   if (user.role === 'student') {
@@ -98,12 +107,14 @@ export function visibleClasses(user: CurrentUser, records: readonly ClassSession
 }
 
 export function visibleCommissions(user: CurrentUser, records: readonly Commission[]) {
+  if (!Array.isArray(records)) return []
   if (isSuperAdmin(user)) return records
   if (user.role === 'counselor' || user.role === 'referral_agent') return records.filter((record) => record.earnerId === user.linkedId)
   return []
 }
 
 export function visibleReferrals(user: CurrentUser, records: readonly Referral[]) {
+  if (!Array.isArray(records)) return []
   if (isSuperAdmin(user)) return records
   if (user.role === 'referral_agent') return records.filter((record) => record.agentId === user.linkedId)
   return []

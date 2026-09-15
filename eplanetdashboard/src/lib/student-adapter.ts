@@ -45,7 +45,7 @@ export function adaptApiStudentToStudent(apiStudent: ApiStudent): Student {
 
   return {
     id: apiStudent.id,
-    studentId: apiStudent.id,
+    studentId: apiStudent.id.length > 12 ? `STU-${apiStudent.id.slice(-6).toUpperCase()}` : apiStudent.id,
     name: `${apiStudent.firstName} ${apiStudent.lastName}`.trim(),
     photoColor: '#0F172A',
     email: apiStudent.email,

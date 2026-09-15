@@ -83,7 +83,7 @@ export default function ReceptionPage() {
               />
             )}
             {todaysAppointments.map((a) => {
-              const meta = appointmentStatusMeta[a.status]
+              const meta = appointmentStatusMeta[a.status as AppointmentStatus] ?? appointmentStatusMeta.scheduled
               const canCheckIn = a.status === 'scheduled' || a.status === 'confirmed'
               return (
                 <div

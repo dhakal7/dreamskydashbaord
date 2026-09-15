@@ -52,6 +52,7 @@ export interface CreateApplicationBody {
   studentId: string
   universityId?: string
   courseId?: string
+  intake?: string
   intakeMonth?: string
   intakeYear?: number
   notes?: string

@@ -12,13 +12,33 @@ import { useAuthStore } from '@/store/auth-store'
 import { useStudentsStore } from '@/features/students/store'
 import { visibleApplications } from '@/lib/data-visibility'
 import { hasPermission } from '@/lib/rbac'
-import type { Application } from '@/types'
+import type { Application, ApplicationStage } from '@/types'
 import { useApplications } from '@/hooks/use-applications'
 import { ApplicationFormDialog } from './components/application-form-dialog'
 
 
 
 import { isMockMode } from '@/lib/api-client'
+
+const BACKEND_STATUS_TO_STAGE: Record<string, ApplicationStage> = {
+  DRAFT: 'submitted',
+  SUBMITTED: 'submitted',
+  UNDER_REVIEW: 'university_review',
+  ACCEPTED: 'accepted',
+  REJECTED: 'rejected',
+  DEFERRED: 'conditional_offer',
+  WITHDRAWN: 'rejected',
+}
+
+function resolveAppStage(status?: string, offers?: any[]): ApplicationStage {
+  if (offers && offers.length > 0) {
+    const latestOffer = offers[0]
+    if (latestOffer.type === 'CONDITIONAL') return 'conditional_offer'
+    if (latestOffer.type === 'UNCONDITIONAL') return 'unconditional_offer'
+  }
+  if (!status) return 'submitted'
+  return BACKEND_STATUS_TO_STAGE[status.toUpperCase()] ?? 'submitted'
+}
 
 export default function ApplicationsPage() {
   const navigate = useNavigate()
@@ -33,7 +53,7 @@ export default function ApplicationsPage() {
   const applications: Application[] = !isMockMode()
     ? (apiAppData?.applications ?? []).map((app) => ({
         id: app.id,
-        applicationRef: app.id,
+        applicationRef: app.id.length > 12 ? `APP-${app.id.slice(-6).toUpperCase()}` : app.id,
         studentId: app.studentId,
         studentName: app.student ? `${app.student.firstName} ${app.student.lastName}` : 'Unknown Student',
         universityId: app.universityId ?? '',
@@ -41,21 +61,23 @@ export default function ApplicationsPage() {
         courseId: app.courseId ?? '',
         courseName: app.course?.name ?? 'Course',
         countryName: 'General',
-        stage: (app.status.toLowerCase() ?? 'submitted') as any,
+        stage: resolveAppStage(app.status, app.offers),
         counselorId: '',
         counselorName: 'Counselor',
         submittedDate: app.submittedAt ?? app.createdAt,
-        intake: app.intakeMonth && app.intakeYear ? `${app.intakeMonth} ${app.intakeYear}` : 'Fall 2026',
+        intake: (app as any).intake || (app.intakeMonth && app.intakeYear ? `${app.intakeMonth} ${app.intakeYear}` : 'Upcoming'),
         tuitionUsd: 15000,
         lastUpdate: app.updatedAt ?? app.createdAt,
       }))
     : mockApplications
 
-
-
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase()
-    return visibleApplications(currentUser, applications, students).filter((app) => {
+    const baseList = isMockMode()
+      ? visibleApplications(currentUser, applications, students)
+      : applications
+
+    return baseList.filter((app) => {
       if (q && !`${app.studentName} ${app.applicationRef} ${app.courseName} ${app.universityName}`.toLowerCase().includes(q)) {
         return false
       }
