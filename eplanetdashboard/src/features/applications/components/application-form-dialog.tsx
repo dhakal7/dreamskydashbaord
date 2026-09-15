@@ -67,7 +67,7 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
   const debouncedSearch = useDebouncedValue(studentSearch.trim(), 300)
 
   const { data: apiStudentData, isLoading: isLoadingStudents, isError: isErrorStudents } = useStudents(
-    isMockMode() ? { limit: 500 } : { limit: 50, search: debouncedSearch || undefined }
+    isMockMode() ? { limit: 500 } : { limit: 100, search: debouncedSearch || undefined, stageIn: 'LEAD,PROSPECT,ENROLLED,APPLIED,OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED,DEPARTED,LOST' }
   )
   
   // Resolve Universities
