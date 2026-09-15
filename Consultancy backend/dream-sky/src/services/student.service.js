@@ -188,9 +188,17 @@ const listStudents = async ({ search, stage, stageIn, type, counselorId, source,
     if (stage) {
         where.currentStage = stage;
     } else if (stageIn) {
-        where.currentStage = { in: String(stageIn).split(",").map((s) => s.trim()) };
+        // Special value "ALL" means no stage filter — include every student
+        const stages = String(stageIn).split(",").map((s) => s.trim());
+        if (stages.length === 1 && stages[0].toUpperCase() === "ALL") {
+            // no currentStage filter
+        } else {
+            where.currentStage = { in: stages };
+        }
     } else if (type === "leads") {
         where.currentStage = { in: ["LEAD", "PROSPECT"] };
+    } else if (type === "all") {
+        // no currentStage filter — return every stage
     } else {
         // Backend Safety Guard: By default, GET /api/students returns enrolled/processing students, excluding un-enrolled leads ("LEAD", "PROSPECT")
         where.currentStage = { notIn: ["LEAD", "PROSPECT"] };
