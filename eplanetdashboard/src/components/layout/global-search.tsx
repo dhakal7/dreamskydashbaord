@@ -37,7 +37,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const [query, setQuery] = useState('')
   const navigate = useNavigate()
   const currentUser = useAuthStore((state) => state.currentUser)
-  const searchScopes = searchScopesByRole[currentUser.role]
+  const searchScopes = searchScopesByRole[currentUser.role] ?? []
 
   const mockStudents = useStudentsStore((s) => s.students)
   const mockLeads = useLeadsStore((s) => s.leads)
@@ -47,15 +47,21 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
     search: query.trim() || undefined,
     limit: 20,
   })
-  const liveLeads = useLiveLeads()
+  const { leads: liveLeads = [] } = useLiveLeads()
 
   const activeStudents = useMemo(() => {
-    if (!isMockMode() && apiStudentsData?.students) {
-      return apiStudentsData.students.map((s) => ({
+    const rawList = Array.isArray(apiStudentsData)
+      ? apiStudentsData
+      : Array.isArray(apiStudentsData?.students)
+      ? apiStudentsData.students
+      : null
+
+    if (!isMockMode() && rawList) {
+      return rawList.map((s) => ({
         id: s.id,
-        name: `${s.firstName} ${s.lastName}`.trim(),
+        name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Unnamed',
         studentId: (s as any).studentId ?? s.id,
-        email: s.email,
+        email: s.email || '',
         phone: s.phone ?? '',
         passportNumber: (s.academicBackground as any)?.passportNumber ?? '',
         preferredCountries: s.nationality ? [s.nationality] : [],
@@ -63,34 +69,34 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
         status: s.currentStage as any,
       }))
     }
-    return isMockMode() ? mockStudents : []
+    return isMockMode() ? (Array.isArray(mockStudents) ? mockStudents : []) : []
   }, [apiStudentsData, mockStudents])
 
   const activeLeads = useMemo(() => {
     if (!isMockMode()) {
-      return liveLeads
+      return Array.isArray(liveLeads) ? liveLeads : []
     }
-    return mockLeads
+    return Array.isArray(mockLeads) ? mockLeads : []
   }, [liveLeads, mockLeads])
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return null
 
-    const studentMatches = visibleStudents(currentUser, activeStudents as any)
-      .filter((s) => [s.name, s.studentId, s.passportNumber ?? '', s.phone ?? '', s.email].some((f) => f.toLowerCase().includes(q)))
+    const studentMatches = visibleStudents(currentUser, (activeStudents || []) as any)
+      .filter((s) => [s.name, s.studentId, s.passportNumber ?? '', s.phone ?? '', s.email].some((f) => String(f ?? '').toLowerCase().includes(q)))
       .slice(0, 4)
 
-    const leadMatches = visibleLeads(currentUser, activeLeads as any)
-      .filter((l) => [l.name, l.email, l.phone ?? '', l.interestedCountry ?? ''].some((f) => f.toLowerCase().includes(q)))
+    const leadMatches = visibleLeads(currentUser, (activeLeads || []) as any)
+      .filter((l) => [l.name, l.email, l.phone ?? '', l.interestedCountry ?? ''].some((f) => String(f ?? '').toLowerCase().includes(q)))
       .slice(0, 4)
 
     const uniMatches = searchScopes.includes('universities')
-      ? universities.filter((u) => u.name.toLowerCase().includes(q) || u.countryName.toLowerCase().includes(q)).slice(0, 4)
+      ? universities.filter((u) => (u.name ?? '').toLowerCase().includes(q) || (u.countryName ?? '').toLowerCase().includes(q)).slice(0, 4)
       : []
 
     const pageMatches = navPages.filter(
-      (p) => p.name.toLowerCase().includes(q) || p.keywords.some((k) => k.includes(q))
+      (p) => (p.name ?? '').toLowerCase().includes(q) || (p.keywords || []).some((k) => (k ?? '').toLowerCase().includes(q))
     ).slice(0, 3)
 
     return { studentMatches, leadMatches, uniMatches, pageMatches }
@@ -160,7 +166,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                       onClick={() => go(`/students/${s.id}`)}
                       leading={<PersonAvatar name={s.name} color={s.photoColor} className="size-7" />}
                       title={s.name}
-                      subtitle={`${s.studentId} · ${s.email} · ${s.preferredCountries[0] ?? ''}`}
+                      subtitle={`${s.studentId} · ${s.email} · ${s.preferredCountries?.[0] ?? ''}`}
                     />
                   ))}
                 </ResultGroup>
@@ -174,7 +180,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
                       onClick={() => go('/leads')}
                       leading={<PersonAvatar name={l.name} color={l.photoColor} className="size-7" />}
                       title={l.name}
-                      subtitle={`${l.phone ?? l.email} · ${l.interestedCountry} · ${l.stage.replace('_', ' ')}`}
+                      subtitle={`${l.phone || l.email || ''} · ${l.interestedCountry || ''} · ${(l.stage || '').replace('_', ' ')}`}
                     />
                   ))}
                 </ResultGroup>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -16,6 +16,7 @@ import { useStudentsStore } from '@/features/students/store'
 import { useUniversitiesStore } from '@/features/universities/store'
 import { useCoursesStore } from '@/features/courses/store'
 import { useApplicationsStore } from '@/features/applications/store'
+import { useStudents } from '@/hooks/use-students'
 import { useUniversities, useCourses } from '@/hooks/use-universities'
 import { useCreateApplication } from '@/hooks/use-applications'
 import { useAuthStore } from '@/store/auth-store'
@@ -51,24 +52,44 @@ const MONTHS = [
 
 export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDialogProps) {
   const currentUser = useAuthStore((s) => s.currentUser)
-  const students = useStudentsStore((s) => s.students)
+  const mockStudents = useStudentsStore((s) => s.students)
+  const { data: apiStudentData, isLoading: isLoadingStudents } = useStudents({ limit: 500 })
   
   // Resolve Universities
   const mockUniversities = useUniversitiesStore((s) => s.universities)
-  const { data: apiUniData } = useUniversities()
-  const universities = apiUniData?.universities && apiUniData.universities.length > 0
-    ? apiUniData.universities
-    : mockUniversities
+  const { data: apiUniData, isLoading: isLoadingUniversities } = useUniversities()
+  const universities = !isMockMode()
+    ? (apiUniData?.universities ?? [])
+    : (apiUniData?.universities && apiUniData.universities.length > 0 ? apiUniData.universities : mockUniversities)
 
   // Resolve Courses
   const mockCourses = useCoursesStore((s) => s.courses)
-  const { data: apiCourseData } = useCourses()
-  const courses = apiCourseData?.courses && apiCourseData.courses.length > 0
-    ? apiCourseData.courses
-    : mockCourses
+  const { data: apiCourseData, isLoading: isLoadingCourses } = useCourses()
+  const courses = !isMockMode()
+    ? (apiCourseData?.courses ?? [])
+    : (apiCourseData?.courses && apiCourseData.courses.length > 0 ? apiCourseData.courses : mockCourses)
 
   // Filtering students to only allowed ones
-  const availableStudents = students.filter((s) => canViewStudent(currentUser, s))
+  const availableStudents = useMemo(() => {
+    if (!isMockMode()) {
+      return (apiStudentData?.students ?? []).map((s) => ({
+        id: s.id,
+        name: `${s.firstName} ${s.lastName}`.trim(),
+        studentId: s.id.length > 12 ? `STU-${s.id.slice(-6).toUpperCase()}` : s.id,
+        email: s.email,
+        phone: s.phone ?? undefined,
+      }))
+    }
+    return mockStudents
+      .filter((s) => canViewStudent(currentUser, s))
+      .map((s) => ({
+        id: s.id,
+        name: s.name,
+        studentId: s.studentId,
+        email: s.email,
+        phone: s.phone,
+      }))
+  }, [apiStudentData, mockStudents, currentUser])
 
   const createApplicationMutation = useCreateApplication()
   const addMockApplication = useApplicationsStore((s) => s.addApplication)
@@ -117,28 +138,30 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
   const filteredCourses = courses.filter((c) => c.universityId === selectedUniId)
 
   async function onSubmit(data: FormData) {
-    const student = students.find((s) => s.id === data.studentId)!
-    const university = universities.find((u) => u.id === data.universityId)!
-    const course = courses.find((c) => c.id === data.courseId)!
-
-    const countryName = ('countryName' in university) 
-      ? (university.countryName as string) 
-      : (university.country?.name || 'General')
-
-    const tuitionUsd = ('tuitionUsd' in course)
-      ? (course.tuitionUsd as number)
-      : (course.tuitionFee || 15000)
-
     if (!isMockMode()) {
       await createApplicationMutation.mutateAsync({
         studentId: data.studentId,
         universityId: data.universityId,
         courseId: data.courseId,
+        intake: `${data.intakeMonth} ${data.intakeYear}`,
         intakeMonth: data.intakeMonth,
         intakeYear: data.intakeYear,
         notes: data.notes,
       })
     } else {
+      const student = mockStudents.find((s) => s.id === data.studentId)
+      const university = universities.find((u) => u.id === data.universityId)
+      const course = courses.find((c) => c.id === data.courseId)
+      if (!student || !university || !course) return
+
+      const countryName = ('countryName' in university) 
+        ? (university.countryName as string) 
+        : (university.country?.name || 'General')
+
+      const tuitionUsd = ('tuitionUsd' in course)
+        ? (course.tuitionUsd as number)
+        : (course.tuitionFee || 15000)
+
       addMockApplication({
         studentId: student.id,
         studentName: student.name,
@@ -184,15 +207,11 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
                 control={control}
                 render={({ field }) => (
                   <SearchableStudentPicker
-                    students={availableStudents.map((s) => ({
-                      id: s.id,
-                      name: s.name,
-                      studentId: s.studentId,
-                      email: s.email,
-                    }))}
+                    students={availableStudents}
                     value={field.value}
                     onChange={field.onChange}
-                    placeholder="Search student by name or ID"
+                    placeholder={isLoadingStudents ? "Loading students..." : "Search student by name or ID"}
+                    emptyMessage={isLoadingStudents ? "Loading students..." : "No students found"}
                   />
                 )}
               />
@@ -212,7 +231,7 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select university" />
+                      <SelectValue placeholder={isLoadingUniversities ? "Loading universities..." : "Select university"} />
                     </SelectTrigger>
                     <SelectContent>
                       {universities.map((uni) => {
@@ -249,7 +268,7 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
                     disabled={!selectedUniId}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={selectedUniId ? "Select course" : "Select university first"} />
+                      <SelectValue placeholder={!selectedUniId ? "Select university first" : (isLoadingCourses ? "Loading courses..." : "Select course")} />
                     </SelectTrigger>
                     <SelectContent>
                       {filteredCourses.map((c) => (

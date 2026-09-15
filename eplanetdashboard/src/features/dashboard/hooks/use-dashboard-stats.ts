@@ -23,7 +23,6 @@ import { visibleAppointments, visibleFollowUps } from '@/lib/data-visibility'
 import { studentApi } from '@/api/student-api'
 import { followUpApi } from '@/api/followup-api'
 import { appointmentApi } from '@/api/appointment-api'
-import { commissionApi } from '@/api/commission-api'
 import { dashboardApi } from '@/api/dashboard-api'
 import { getFrontDeskStats, getCounselorDashboard } from '../role-selectors'
 import { getUpcomingFollowUps, getDashboardStats } from '../selectors'
@@ -42,11 +41,6 @@ const dashboardKeys = {
 
 // ─── Real-mode stage helpers (dream-sky Student.currentStage enum) ───────────
 
-const ALL_STAGES = [
-  'LEAD', 'PROSPECT', 'ENROLLED', 'APPLIED', 'OFFER_RECEIVED',
-  'VISA_APPLIED', 'VISA_APPROVED', 'DEPARTED', 'LOST',
-]
-const PIPELINE_STAGES = ['LEAD', 'PROSPECT', 'APPLIED', 'OFFER_RECEIVED', 'VISA_APPLIED', 'VISA_APPROVED']
 const FEE_STAGES = 'OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED'
 
 // Map dream-sky stages onto the frontend lead-stage labels the pipeline card renders.
@@ -167,43 +161,28 @@ export function useCounselorDashboard(linkedId: string) {
   return useQuery<CounselorDashboardData>({
     queryKey: dashboardKeys.counselor(linkedId),
     queryFn: async () => {
-      const [stageResults, inactive, followUps, commissions] = await Promise.all([
-        Promise.all(ALL_STAGES.map((stage) => studentApi.list({ counselorId: linkedId, stage, limit: 1 }))),
-        studentApi.list({ counselorId: linkedId, isActive: false, limit: 1 }),
-        followUpApi.list({ authorId: linkedId, status: 'upcoming', limit: 6 }),
-        commissionApi.list({ recipientId: linkedId }).catch(() => []),
-      ])
+      const summary = await dashboardApi.getCounselorSummary(linkedId)
 
       const stageCounts = new Map<string, number>()
-      stageResults.forEach((resp, i) => {
-        const count = resp.pagination.total
+      summary.stageBreakdown.forEach(({ stage, count }) => {
         if (count <= 0) return
-        const mapped = STAGE_TO_LEAD_STAGE[ALL_STAGES[i]]
+        const mapped = STAGE_TO_LEAD_STAGE[stage]
         if (mapped) stageCounts.set(mapped, (stageCounts.get(mapped) ?? 0) + count)
       })
 
-      const activeTotal = stageResults.reduce((sum, resp) => sum + resp.pagination.total, 0)
-      const inactiveTotal = inactive.pagination.total
-      const totalStudents = activeTotal + inactiveTotal
+      const totalStudents = summary.totalStudents
+      const activeTotal = summary.activeStudents
+      const converted = stageCounts.get('completed') ?? 0
 
-      const converted =
-        (stageCounts.get('completed') ?? 0)
-
-      const followUpItems = followUps.followUps.map((f) => ({
+      const followUpItems = (summary.upcomingFollowUps ?? []).map((f) => ({
         id: f.id,
-        studentName: f.student ? `${f.student.firstName} ${f.student.lastName}`.trim() : 'Student',
-        reminder: f.content || 'Follow-up reminder',
-        date: f.nextFollowUpAt ?? f.createdAt,
+        studentName: f.studentName || 'Student',
+        reminder: f.reminder || 'Follow-up reminder',
+        date: f.date,
         priority: 'medium' as Priority,
       }))
 
-      const commissionList = Array.isArray(commissions) ? commissions : []
-      const paid = commissionList
-        .filter((c) => c.status === 'PAID')
-        .reduce((sum, c) => sum + (c.amount ?? 0), 0)
-      const pending = commissionList
-        .filter((c) => c.status !== 'PAID')
-        .reduce((sum, c) => sum + (c.amount ?? 0), 0)
+      const totalLeads = (stageCounts.get('new') ?? 0) + (stageCounts.get('contacted') ?? 0)
 
       return {
         counselor: {
@@ -213,13 +192,10 @@ export function useCounselorDashboard(linkedId: string) {
         },
         totalStudents,
         activeStudents: activeTotal,
-        totalLeads: PIPELINE_STAGES.reduce(
-          (sum, stage) => sum + stageResults[ALL_STAGES.indexOf(stage)].pagination.total,
-          0,
-        ),
+        totalLeads,
         stageBreakdown: Array.from(stageCounts.entries()).map(([stage, count]) => ({ stage, count })),
         upcomingFollowUps: followUpItems,
-        commission: { earned: paid + pending, paid, pending, count: commissionList.length },
+        commission: summary.commission ?? { earned: 0, paid: 0, pending: 0, count: 0 },
       }
     },
     enabled: !isMockMode() && !!linkedId,

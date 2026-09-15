@@ -1,5 +1,6 @@
+import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Mail, Phone, GraduationCap, MapPin, Calendar, DollarSign, User, ShieldAlert, Award, FileText, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, GraduationCap, MapPin, Calendar, DollarSign, User, ShieldAlert, Award, FileText, ChevronRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -7,10 +8,14 @@ import { useApplicationsStore } from './store'
 import { useStudentsStore } from '@/features/students/store'
 import { Stepper, type Step, type TerminalStep } from '@/components/shared/stepper'
 import { universities } from '@/mock'
-import type { ApplicationStage } from '@/types'
+import type { Application, ApplicationStage } from '@/types'
 import { ApplicationStageBadge, applicationStageMeta } from '@/components/shared/status-badges'
 import { useAuthStore } from '@/store/auth-store'
 import { hasPermission } from '@/lib/rbac'
+import { isMockMode } from '@/lib/api-client'
+import { useApplication, useChangeApplicationStatus } from '@/hooks/use-applications'
+import { useStudent } from '@/hooks/use-students'
+import { adaptApiStudentToStudent } from '@/lib/student-adapter'
 
 // Helper to add days to a YYYY-MM-DD string
 function addDays(dateStr: string, days: number): string {
@@ -26,6 +31,26 @@ function addDays(dateStr: string, days: number): string {
   }
 }
 
+const BACKEND_STATUS_TO_STAGE: Record<string, ApplicationStage> = {
+  DRAFT: 'submitted',
+  SUBMITTED: 'submitted',
+  UNDER_REVIEW: 'university_review',
+  ACCEPTED: 'accepted',
+  REJECTED: 'rejected',
+  DEFERRED: 'conditional_offer',
+  WITHDRAWN: 'rejected',
+}
+
+function resolveAppStage(status?: string, offers?: any[]): ApplicationStage {
+  if (offers && offers.length > 0) {
+    const latestOffer = offers[0]
+    if (latestOffer.type === 'CONDITIONAL') return 'conditional_offer'
+    if (latestOffer.type === 'UNCONDITIONAL') return 'unconditional_offer'
+  }
+  if (!status) return 'submitted'
+  return BACKEND_STATUS_TO_STAGE[status.toUpperCase()] ?? 'submitted'
+}
+
 export default function ApplicationDetailPage() {
   const { id } = useParams<{ id: string }>()
   
@@ -34,16 +59,90 @@ export default function ApplicationDetailPage() {
   
   const students = useStudentsStore((s) => s.students)
   const currentUser = useAuthStore((s) => s.currentUser)
-  
-  const app =
-    applications.find((candidate) => candidate.id === id || candidate.applicationRef === id) ||
-    applications.find((candidate) => id && (candidate.id.includes(id) || id.includes(candidate.id))) ||
-    (applications.length > 0 ? applications[0] : undefined)
 
-  const student = app ? (students.find((s) => s.id === app.studentId) || students[0]) : null
-  const canView = Boolean(app && student)
+  const { data: apiApp, isLoading: isLoadingApiApp } = useApplication(id ?? '')
+  const changeStatusMutation = useChangeApplicationStatus()
+
+  const app: Application | undefined = useMemo(() => {
+    if (!isMockMode()) {
+      if (!apiApp) return undefined
+      return {
+        id: apiApp.id,
+        applicationRef: apiApp.id.length > 12 ? `APP-${apiApp.id.slice(-6).toUpperCase()}` : apiApp.id,
+        studentId: apiApp.studentId,
+        studentName: apiApp.student ? `${apiApp.student.firstName} ${apiApp.student.lastName}` : 'Unknown Student',
+        universityId: apiApp.universityId ?? '',
+        universityName: apiApp.university?.name ?? 'Unknown University',
+        courseId: apiApp.courseId ?? '',
+        courseName: apiApp.course?.name ?? 'Course',
+        countryName: 'General',
+        stage: resolveAppStage(apiApp.status, apiApp.offers),
+        counselorId: '',
+        counselorName: 'Counselor',
+        submittedDate: apiApp.submittedAt ?? apiApp.createdAt,
+        intake: (apiApp as any).intake || (apiApp.intakeMonth && apiApp.intakeYear ? `${apiApp.intakeMonth} ${apiApp.intakeYear}` : 'Upcoming'),
+        tuitionUsd: 15000,
+        lastUpdate: apiApp.updatedAt ?? apiApp.createdAt,
+      }
+    }
+    return (
+      applications.find((candidate) => candidate.id === id || candidate.applicationRef === id) ||
+      applications.find((candidate) => id && (candidate.id.includes(id) || id.includes(candidate.id))) ||
+      (applications.length > 0 ? applications[0] : undefined)
+    )
+  }, [apiApp, applications, id])
+
+  const targetStudentId = app?.studentId ?? ''
+  const { data: apiStudentData } = useStudent(targetStudentId)
+
+  const student = useMemo(() => {
+    if (!isMockMode()) {
+      if (apiStudentData) return adaptApiStudentToStudent(apiStudentData)
+      if (app?.studentName) {
+        return {
+          id: app.studentId,
+          studentId: app.studentId.length > 12 ? `STU-${app.studentId.slice(-6).toUpperCase()}` : app.studentId,
+          name: app.studentName,
+          photoColor: '#0F172A',
+          email: '',
+          phone: '',
+          dob: '',
+          gender: 'other',
+          nationality: '',
+          passportNumber: '',
+          address: '',
+          status: 'active',
+          counselorId: '',
+          counselorName: app.counselorName,
+          preferredCountries: [],
+          preferredLevel: 'bachelor',
+          budgetUsd: 0,
+          englishTest: { type: 'None', overallScore: 0, testDate: '' },
+          academics: [],
+          parents: [],
+          documentsUploaded: 0,
+          documentsRequired: 7,
+          createdAt: app.submittedDate,
+          tags: [],
+        } as any
+      }
+      return null
+    }
+    return app ? (students.find((s) => s.id === app.studentId) || students[0]) : null
+  }, [apiStudentData, app, students])
+
+  const canView = isMockMode() ? Boolean(app && student) : Boolean(app)
   const canManage = hasPermission(currentUser.role, 'applications.manage')
   const uni = app ? (universities.find((u) => u.id === app.universityId) || universities[0]) : null
+
+  if (!isMockMode() && isLoadingApiApp) {
+    return (
+      <div className="py-16 flex flex-col items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-primary mb-2" />
+        <p className="text-sm text-muted-foreground">Loading application details...</p>
+      </div>
+    )
+  }
 
   if (!app || !canView) {
     return (
@@ -108,14 +207,31 @@ export default function ApplicationDetailPage() {
   const nextStageIndex = linearFlow.indexOf(app.stage) + 1
   const nextStage = nextStageIndex < linearFlow.length ? linearFlow[nextStageIndex] : null
 
+  const handleStageChange = (newStage: ApplicationStage) => {
+    if (!app) return
+    if (isMockMode()) {
+      moveApplication(app.id, newStage)
+    } else {
+      const stageToBackend: Record<ApplicationStage, string> = {
+        submitted: 'SUBMITTED',
+        university_review: 'UNDER_REVIEW',
+        conditional_offer: 'UNDER_REVIEW',
+        unconditional_offer: 'UNDER_REVIEW',
+        accepted: 'ACCEPTED',
+        rejected: 'REJECTED',
+      }
+      changeStatusMutation.mutate({ id: app.id, status: stageToBackend[newStage] ?? 'UNDER_REVIEW' })
+    }
+  }
+
   const handleNextStage = () => {
     if (nextStage) {
-      moveApplication(app.id, nextStage)
+      handleStageChange(nextStage)
     }
   }
 
   const handleReopen = () => {
-    moveApplication(app.id, 'submitted')
+    handleStageChange('submitted')
   }
 
   return (
@@ -152,7 +268,7 @@ export default function ApplicationDetailPage() {
             {canManage ? (
               <div className="flex items-center gap-1.5 bg-card border border-border rounded-lg px-3 py-1.5 shadow-sm">
                 <span className="text-xs text-muted-foreground font-medium">Stage:</span>
-                <Select value={app.stage} onValueChange={(val) => moveApplication(app.id, val as ApplicationStage)}>
+                <Select value={app.stage} onValueChange={(val) => handleStageChange(val as ApplicationStage)}>
                   <SelectTrigger className="w-[170px] h-7 border-none bg-transparent shadow-none focus:ring-0 p-0 text-sm font-semibold">
                     <SelectValue />
                   </SelectTrigger>
