@@ -73,16 +73,32 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
   // Resolve Universities
   const mockUniversities = useUniversitiesStore((s) => s.universities)
   const { data: apiUniData, isLoading: isLoadingUniversities } = useUniversities()
-  const universities = !isMockMode()
-    ? (apiUniData?.universities ?? [])
-    : (apiUniData?.universities && apiUniData.universities.length > 0 ? apiUniData.universities : mockUniversities)
+  const universities = useMemo(() => {
+    let list: any[] = []
+    if (Array.isArray(apiUniData)) {
+      list = apiUniData
+    } else if (apiUniData && typeof apiUniData === 'object' && Array.isArray((apiUniData as any).universities)) {
+      list = (apiUniData as any).universities
+    } else if (apiUniData && typeof apiUniData === 'object' && Array.isArray((apiUniData as any).data)) {
+      list = (apiUniData as any).data
+    }
+    return list.length > 0 ? list : mockUniversities
+  }, [apiUniData, mockUniversities])
 
   // Resolve Courses
   const mockCourses = useCoursesStore((s) => s.courses)
   const { data: apiCourseData, isLoading: isLoadingCourses } = useCourses()
-  const courses = !isMockMode()
-    ? (apiCourseData?.courses ?? [])
-    : (apiCourseData?.courses && apiCourseData.courses.length > 0 ? apiCourseData.courses : mockCourses)
+  const courses = useMemo(() => {
+    let list: any[] = []
+    if (Array.isArray(apiCourseData)) {
+      list = apiCourseData
+    } else if (apiCourseData && typeof apiCourseData === 'object' && Array.isArray((apiCourseData as any).courses)) {
+      list = (apiCourseData as any).courses
+    } else if (apiCourseData && typeof apiCourseData === 'object' && Array.isArray((apiCourseData as any).data)) {
+      list = (apiCourseData as any).data
+    }
+    return list.length > 0 ? list : mockCourses
+  }, [apiCourseData, mockCourses])
 
   // Filtering students to only allowed ones
   const availableStudents = useMemo(() => {
@@ -155,7 +171,12 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
     }
   }, [open, reset])
 
-  const filteredCourses = courses.filter((c) => c.universityId === selectedUniId)
+  const filteredCourses = useMemo(() => {
+    if (!selectedUniId) return []
+    const matching = courses.filter((c) => c.universityId === selectedUniId)
+    if (matching.length > 0) return matching
+    return courses
+  }, [courses, selectedUniId])
 
   async function onSubmit(data: FormData) {
     if (!isMockMode()) {
