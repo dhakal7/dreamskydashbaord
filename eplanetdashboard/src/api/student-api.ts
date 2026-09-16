@@ -23,6 +23,7 @@ export interface ApiStudent {
   referredByAgentId: string | null
   academicBackground: Record<string, unknown> | null
   financialBackground: Record<string, unknown> | null
+  familyBackground?: Record<string, unknown> | null
   notes: string | null
   isActive: boolean
   createdAt: string
@@ -83,6 +84,7 @@ export interface CreateStudentBody {
   lastName: string
   email?: string
   phone?: string
+  dateOfBirth?: string
   nationality?: string
   source?: string
   currentStage?: string
@@ -91,6 +93,7 @@ export interface CreateStudentBody {
   notes?: string
   academicBackground?: Record<string, unknown>
   financialBackground?: Record<string, unknown>
+  familyBackground?: Record<string, unknown>
   /** 'SELF' = DreamSky handles directly, 'PARTNER_CONSULTANCY' = referred to B2B partner */
   processingType?: 'SELF' | 'PARTNER_CONSULTANCY'
   /** ID of an existing PartnerConsultancy record */

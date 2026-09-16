@@ -30,6 +30,12 @@ router.put(
     studentController.update
 );
 
+router.patch(
+    "/:id",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    studentController.update
+);
+
 router.delete(
     "/:id",
     requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),

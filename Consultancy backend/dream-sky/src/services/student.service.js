@@ -276,6 +276,8 @@ const updateStudent = async (id, data) => {
     if (data.assignedCounselorId !== undefined) update.assignedCounselorId = data.assignedCounselorId || null;
     if (data.notes !== undefined) update.notes = data.notes;
     if (data.academicBackground !== undefined) update.academicBackground = data.academicBackground;
+    if (data.financialBackground !== undefined) update.financialBackground = data.financialBackground;
+    if (data.familyBackground !== undefined) update.familyBackground = data.familyBackground;
     // Handle processingType & partner consultancy updates
     if (data.processingType !== undefined) {
         update.processingType = data.processingType === "PARTNER_CONSULTANCY" ? "PARTNER_CONSULTANCY" : "SELF";

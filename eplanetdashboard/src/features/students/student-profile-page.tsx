@@ -27,6 +27,7 @@ import { TimelineTab } from './components/profile-tabs/timeline-tab'
 import { LifecycleTab } from './components/profile-tabs/lifecycle-tab'
 import { ProfileNotes } from './components/profile-notes'
 import { FollowUpCreateDialog } from '@/features/followups/components/followup-create-dialog'
+import { StudentFormDialog } from './components/student-form-dialog'
 
 const tabs = [
   { id: 'personal', label: 'Personal' },
@@ -54,6 +55,7 @@ export default function StudentProfilePage() {
 
   const [activeTab, setActiveTab] = useState('personal')
   const [followUpOpen, setFollowUpOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
 
   const student = !isMockMode() && apiStudent
     ? adaptApiStudentToStudent(apiStudent)
@@ -163,8 +165,13 @@ export default function StudentProfilePage() {
                 {resendMutation.isPending ? 'Sending...' : 'Send Portal Credentials'}
               </Button>
             )}
-            <Button variant="outline" size="sm" className="h-8 shadow-none">
-              <Edit3 /> Edit
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 shadow-none gap-1.5"
+              onClick={() => setEditOpen(true)}
+            >
+              <Edit3 className="size-3.5" /> Edit
             </Button>
             {isAdmin && (
               <Button
@@ -186,6 +193,12 @@ export default function StudentProfilePage() {
         open={followUpOpen}
         onOpenChange={setFollowUpOpen}
         initialStudentId={student.id}
+      />
+
+      <StudentFormDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        student={student}
       />
 
       {/* ── Profile Notes ── */}
