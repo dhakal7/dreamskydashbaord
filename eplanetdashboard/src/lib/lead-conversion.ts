@@ -74,10 +74,18 @@ export async function convertLeadToStudent(lead: Lead, emailOverride?: string): 
     // so the front desk can retry via the student profile's "Send Portal Credentials".
     const provision = (updated as any)?._portalProvision
     let portalEmailWarning: string | undefined
+
+    // The api-client unwraps the envelope, so check the provision object on the student data.
+    // Also check the response message for email failure indicators (the controller now embeds the reason).
     if (provision && (!provision.success || provision.mailResult?.error || provision.mailResult?.skipped)) {
+      const reason = provision.mailResult?.error
+        || provision.mailResult?.reason
+        || provision.error
+        || provision.reason
+        || 'unknown'
       console.warn('[lead-conversion] Portal credentials email failed — instructing user to resend', provision)
       portalEmailWarning =
-        'Student registered, but the portal credentials email could not be sent. Use "Send Portal Credentials" on the student profile to resend.'
+        `Student registered, but the portal credentials email could not be sent (${reason}). Use "Send Portal Credentials" on the student profile to resend.`
     }
 
     return {

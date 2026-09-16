@@ -44,11 +44,19 @@ const changePipeline = async (req, res) => {
     const provision = student?._portalProvision;
     let message = "Pipeline stage updated.";
     if (provision) {
-        const mailSkippedOrFailed = provision.mailResult?.error || provision.mailResult?.skipped;
+        const mailResult = provision.mailResult;
+        const mailSkippedOrFailed = mailResult?.error || mailResult?.skipped;
         if (provision.success && !mailSkippedOrFailed) {
             message = "Pipeline stage updated. Portal credentials emailed to the student.";
         } else {
-            message = "Pipeline stage updated, but the portal credentials email could not be sent. Use 'Send Portal Credentials' on the student profile to retry.";
+            // Build a descriptive reason for the frontend
+            let reason = "unknown";
+            if (!provision.success) reason = provision.error || provision.reason || "provisioning failed";
+            else if (mailResult?.skipped) reason = mailResult.reason === "SMTP_NOT_CONFIGURED"
+                ? "SMTP is not configured on the server"
+                : mailResult.reason || "email skipped";
+            else if (mailResult?.error) reason = mailResult.error;
+            message = `Pipeline stage updated, but the portal credentials email could not be sent (${reason}). Use 'Send Portal Credentials' on the student profile to retry.`;
         }
     }
     sendSuccess(res, { message, data: student });
