@@ -231,9 +231,13 @@ export function useResendCredentials() {
       return studentApi.resendCredentials(id)
     },
     onSuccess: (data) => {
-      toast.success(data.message || 'Portal credentials emailed successfully!')
+      const msg = data?.message || 'Portal credentials emailed successfully!'
+      toast.success(msg)
     },
-    onError: (err: Error) => toast.error(err.message || 'Failed to send credentials email'),
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : 'Failed to send credentials email'
+      toast.error(msg)
+    },
   })
 }
 

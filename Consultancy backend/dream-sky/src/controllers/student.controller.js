@@ -76,9 +76,25 @@ const resendCredentials = async (req, res, next) => {
         }
         const result = await studentService.provisionPortalAndSendWelcome(student);
         if (!result.success) {
-            return res.status(500).json({ success: false, message: result.error || "Failed to send portal credentials email." });
+            const errorMsg = result.error || result.reason || "Failed to send portal credentials email.";
+            return res.status(500).json({ success: false, message: errorMsg, data: { message: errorMsg } });
         }
-        sendSuccess(res, { message: `Portal access credentials sent to ${student.email}.` });
+        // Check if the email itself was actually sent (provisioning can succeed but email can be skipped/failed)
+        const mailResult = result.mailResult;
+        if (mailResult?.skipped) {
+            const reason = mailResult.reason === "SMTP_NOT_CONFIGURED"
+                ? "Email not sent: SMTP is not configured on the server. Please set SMTP_HOST, SMTP_USER, and SMTP_PASS in your .env file."
+                : mailResult.reason === "INVALID_EMAIL_FORMAT"
+                    ? "Email not sent: The student's email address appears to be invalid or a placeholder."
+                    : `Email was skipped (reason: ${mailResult.reason || "unknown"}).`;
+            return res.status(500).json({ success: false, message: reason, data: { message: reason } });
+        }
+        if (mailResult?.error) {
+            const reason = `Email sending failed: ${mailResult.error}`;
+            return res.status(500).json({ success: false, message: reason, data: { message: reason } });
+        }
+        const msg = `Portal access credentials sent to ${student.email}.`;
+        sendSuccess(res, { message: msg, data: { success: true, message: msg } });
     } catch (err) {
         next(err);
     }
