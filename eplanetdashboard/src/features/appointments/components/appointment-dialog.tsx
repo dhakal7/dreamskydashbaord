@@ -361,9 +361,17 @@ export function AppointmentDialog({
           </DialogTitle>
           {isEditing && (
             <DialogDescription className="flex items-center gap-2 mt-1">
-              <Badge variant={appointmentStatusMeta[appointment.status].variant}>
-                {appointmentStatusMeta[appointment.status].label}
-              </Badge>
+              {(() => {
+                const meta = (appointment.status && appointmentStatusMeta[appointment.status]) || {
+                  label: appointment.status || 'Scheduled',
+                  variant: 'info' as const,
+                }
+                return (
+                  <Badge variant={meta.variant}>
+                    {meta.label}
+                  </Badge>
+                )
+              })()}
               <span className="text-xs text-muted-foreground">
                 {dayjs(appointment.start).format('MMM D, YYYY · h:mm A')} – {dayjs(appointment.end).format('h:mm A')}
               </span>
