@@ -10,40 +10,55 @@ import type { Appointment } from '@/types'
 
 // ── Shared Helpers ────────────────────────────────────────────────────────────
 
-const locationIcons: Record<Appointment['location'], React.ElementType> = {
+const locationIcons: Record<string, React.ElementType> = {
   branch_office: MapPin,
+  office: MapPin,
   video_call: Monitor,
+  online: Monitor,
   phone_call: Phone,
+  phone: Phone,
 }
 
-const locationLabels: Record<Appointment['location'], string> = {
+const locationLabels: Record<string, string> = {
   branch_office: 'Branch Office',
+  office: 'Branch Office',
   video_call: 'Video Call',
+  online: 'Video Call',
   phone_call: 'Phone Call',
+  phone: 'Phone Call',
 }
 
-const typeColors: Record<Appointment['type'], string> = {
+const typeColors: Record<string, string> = {
   counseling: 'bg-brand-500',
   document_review: 'bg-warning-500',
   visa_prep: 'bg-violet-500',
   follow_up: 'bg-success-500',
   orientation: 'bg-sky-500',
+  initial_consultation: 'bg-brand-500',
+  visa_counseling: 'bg-violet-500',
+  other: 'bg-sky-500',
 }
 
-const typeBorderColors: Record<Appointment['type'], string> = {
+const typeBorderColors: Record<string, string> = {
   counseling: 'border-brand-500',
   document_review: 'border-warning-500',
   visa_prep: 'border-violet-500',
   follow_up: 'border-success-500',
   orientation: 'border-sky-500',
+  initial_consultation: 'border-brand-500',
+  visa_counseling: 'border-violet-500',
+  other: 'border-sky-500',
 }
 
-const typeLabels: Record<Appointment['type'], string> = {
+const typeLabels: Record<string, string> = {
   counseling: 'Counseling',
   document_review: 'Doc Review',
   visa_prep: 'Visa Prep',
   follow_up: 'Follow-up',
   orientation: 'Orientation',
+  initial_consultation: 'Counseling',
+  visa_counseling: 'Visa Prep',
+  other: 'Other',
 }
 
 // Build a student color map once
@@ -81,10 +96,14 @@ function formatCounselorLabel(appt: Appointment) {
 }
 
 function AppointmentCard({ appt, studentColors, compact = false, onClick }: AppointmentCardProps) {
-  const LocationIcon = locationIcons[appt.location]
-  const statusMeta = appointmentStatusMeta[appt.status]
+  const LocationIcon = (appt.location && locationIcons[appt.location]) || MapPin
+  const locationLabel = (appt.location && locationLabels[appt.location]) || 'Branch Office'
+  const statusMeta = (appt.status && appointmentStatusMeta[appt.status]) || { label: appt.status || 'Scheduled', variant: 'info' as const }
   const todayHighlight = isToday(appt.start)
   const counselorLabel = formatCounselorLabel(appt)
+  const borderColor = (appt.type && typeBorderColors[appt.type]) || 'border-brand-500'
+  const colorClass = (appt.type && typeColors[appt.type]) || 'bg-brand-500'
+  const typeLabelText = (appt.type && typeLabels[appt.type]) || (appt.type ? appt.type.replace(/_/g, ' ') : 'Appointment')
 
   return (
     <button
@@ -92,7 +111,7 @@ function AppointmentCard({ appt, studentColors, compact = false, onClick }: Appo
       className={cn(
         'group w-full text-left rounded-lg border bg-card shadow-soft transition-all hover:shadow-card hover:border-border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring relative overflow-hidden',
         'border-l-[3px]',
-        typeBorderColors[appt.type],
+        borderColor,
         appt.status === 'cancelled' && 'opacity-55',
         compact ? 'p-2' : 'p-3',
         todayHighlight && 'bg-accent/40 ring-1 ring-brand-200 dark:ring-brand-900'
@@ -135,13 +154,13 @@ function AppointmentCard({ appt, studentColors, compact = false, onClick }: Appo
         <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground border-t border-border/40 pt-2 mt-2">
           <div className="flex items-center gap-1.5">
             <span
-              className={cn('size-1.5 rounded-full shrink-0', typeColors[appt.type])}
+              className={cn('size-1.5 rounded-full shrink-0', colorClass)}
             />
-            <span className="font-medium">{typeLabels[appt.type]}</span>
+            <span className="font-medium">{typeLabelText}</span>
           </div>
           <div className="flex items-center gap-1 font-tabular">
             <LocationIcon className="size-3 shrink-0" />
-            <span>{locationLabels[appt.location]}</span>
+            <span>{locationLabel}</span>
           </div>
         </div>
       )}
@@ -268,7 +287,7 @@ export function MonthView({
                       onClick={(e) => { e.stopPropagation(); onSelectAppointment(a) }}
                       className={cn(
                         'text-[10px] font-medium rounded px-1 py-0.5 truncate cursor-pointer text-white transition-opacity hover:opacity-80',
-                        typeColors[a.type],
+                        (a.type && typeColors[a.type]) || 'bg-brand-500',
                         a.status === 'cancelled' && 'opacity-40'
                       )}
                     >

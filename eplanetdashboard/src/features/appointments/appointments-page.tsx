@@ -54,6 +54,49 @@ export default function AppointmentsPage() {
   const counselorId = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
   const { data: apiData } = useAppointments({ counselorId, limit: 200 })
 
+function normalizeAppointmentType(raw?: string): Appointment['type'] {
+  if (!raw) return 'counseling'
+  const upper = raw.toUpperCase()
+  if (upper === 'INITIAL_CONSULTATION' || upper === 'COUNSELING') return 'counseling'
+  if (upper === 'DOCUMENT_REVIEW') return 'document_review'
+  if (upper === 'VISA_COUNSELING' || upper === 'VISA_PREP') return 'visa_prep'
+  if (upper === 'FOLLOW_UP') return 'follow_up'
+  if (upper === 'OTHER' || upper === 'ORIENTATION') return 'orientation'
+  const lower = raw.toLowerCase()
+  if (lower === 'counseling' || lower === 'document_review' || lower === 'visa_prep' || lower === 'follow_up' || lower === 'orientation') {
+    return lower as Appointment['type']
+  }
+  return 'counseling'
+}
+
+function normalizeAppointmentLocation(raw?: string): Appointment['location'] {
+  if (!raw) return 'branch_office'
+  const upper = raw.toUpperCase()
+  if (upper === 'OFFICE' || upper === 'BRANCH_OFFICE' || upper === 'PHYSICAL') return 'branch_office'
+  if (upper === 'ONLINE' || upper === 'VIDEO_CALL' || upper === 'VIRTUAL') return 'video_call'
+  if (upper === 'PHONE' || upper === 'PHONE_CALL') return 'phone_call'
+  const lower = raw.toLowerCase()
+  if (lower === 'branch_office' || lower === 'video_call' || lower === 'phone_call') {
+    return lower as Appointment['location']
+  }
+  return 'branch_office'
+}
+
+function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
+  if (!raw) return 'scheduled'
+  const upper = raw.toUpperCase()
+  if (upper === 'SCHEDULED') return 'scheduled'
+  if (upper === 'CONFIRMED') return 'confirmed'
+  if (upper === 'COMPLETED') return 'completed'
+  if (upper === 'CANCELLED') return 'cancelled'
+  if (upper === 'NO_SHOW') return 'no_show'
+  const lower = raw.toLowerCase()
+  if (lower === 'scheduled' || lower === 'confirmed' || lower === 'completed' || lower === 'cancelled' || lower === 'no_show') {
+    return lower as AppointmentStatus
+  }
+  return 'scheduled'
+}
+
   const appointments: Appointment[] = !isMockMode()
     ? (apiData?.appointments ?? []).map((a) => ({
         id: a.id,
@@ -64,11 +107,11 @@ export default function AppointmentsPage() {
         counselorName: a.counselor ? `${a.counselor.firstName} ${a.counselor.lastName}` : 'Counselor',
         counselorIds: a.counselorId ? [a.counselorId] : [],
         counselorNames: a.counselor ? [`${a.counselor.firstName} ${a.counselor.lastName}`] : [],
-        type: (a.type?.toLowerCase() as Appointment['type']) ?? 'counseling',
-        status: (a.status?.toLowerCase() as AppointmentStatus) ?? 'scheduled',
+        type: normalizeAppointmentType(a.type),
+        status: normalizeAppointmentStatus(a.status),
         start: a.datetime,
         end: new Date(new Date(a.datetime).getTime() + (a.durationMin ?? 30) * 60000).toISOString(),
-        location: (a.meetingMode?.toLowerCase() as Appointment['location']) ?? 'branch_office',
+        location: normalizeAppointmentLocation(a.meetingMode),
         notes: a.notes ?? '',
       }))
     : mockAppointments
