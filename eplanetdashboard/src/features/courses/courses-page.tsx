@@ -43,8 +43,12 @@ export default function CoursesPage() {
   const storeUniversities = useUniversitiesStore((s) => s.universities)
   const { data: apiUniData } = useUniversities()
 
-  const universities = apiUniData?.universities && apiUniData.universities.length > 0
-    ? apiUniData.universities.map((u) => ({
+  const rawUnis = Array.isArray(apiUniData)
+    ? apiUniData
+    : (apiUniData?.universities ?? [])
+
+  const universities = rawUnis.length > 0
+    ? rawUnis.map((u) => ({
         id: u.id,
         name: u.name,
         countryId: u.countryId,
