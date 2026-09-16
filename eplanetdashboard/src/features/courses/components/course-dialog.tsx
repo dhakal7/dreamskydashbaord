@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { SearchableUniversityPicker } from '@/components/shared/searchable-university-picker'
 import { useUniversitiesStore } from '@/features/universities/store'
 import { useCoursesStore } from '../store'
 import type { StudyLevel } from '@/types'
@@ -150,18 +151,16 @@ export function CourseDialog({ course, open, onOpenChange }: CourseDialogProps) 
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">University</label>
-            <Select value={universityId} onValueChange={setUniversityId}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {universities.map((u) => (
-                  <SelectItem key={u.id} value={u.id}>
-                    {u.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableUniversityPicker
+              universities={universities.map((u) => ({
+                id: u.id,
+                name: u.name,
+                countryName: u.countryName,
+              }))}
+              value={universityId}
+              onChange={setUniversityId}
+              placeholder="Search university..."
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">

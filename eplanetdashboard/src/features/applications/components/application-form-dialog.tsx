@@ -12,6 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
+import { SearchableUniversityPicker } from '@/components/shared/searchable-university-picker'
 import { useStudentsStore } from '@/features/students/store'
 import { useUniversitiesStore } from '@/features/universities/store'
 import { useCoursesStore } from '@/features/courses/store'
@@ -84,6 +85,19 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
     }
     return list.length > 0 ? list : mockUniversities
   }, [apiUniData, mockUniversities])
+
+  const universityOptions = useMemo(() => {
+    return universities.map((uni) => {
+      const countryLabel = ('countryName' in uni) 
+        ? (uni.countryName as string) 
+        : (uni.country?.name || 'General')
+      return {
+        id: uni.id,
+        name: uni.name,
+        countryName: countryLabel,
+      }
+    })
+  }, [universities])
 
   // Resolve Courses
   const mockCourses = useCoursesStore((s) => s.courses)
@@ -265,30 +279,20 @@ export function ApplicationFormDialog({ open, onOpenChange }: ApplicationFormDia
               )}
             </div>
 
-            {/* University Select */}
+            {/* University Searchable Picker */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground">University</label>
               <Controller
                 name="universityId"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={isLoadingUniversities ? "Loading universities..." : "Select university"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {universities.map((uni) => {
-                        const countryLabel = ('countryName' in uni) 
-                          ? (uni.countryName as string) 
-                          : (uni.country?.name || 'General')
-                        return (
-                          <SelectItem key={uni.id} value={uni.id}>
-                            {uni.name} ({countryLabel})
-                          </SelectItem>
-                        )
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <SearchableUniversityPicker
+                    universities={universityOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    isLoading={isLoadingUniversities}
+                    placeholder={isLoadingUniversities ? "Loading universities..." : "Search university by name or country"}
+                  />
                 )}
               />
               {errors.universityId && (
