@@ -37,7 +37,7 @@ router.put(
 
 router.delete(
     "/:id",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"),
     visaController.remove
 );
 
