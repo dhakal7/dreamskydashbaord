@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm, useFieldArray, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Check, ChevronLeft, ChevronRight, Plus, Trash2, User } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
@@ -18,7 +19,8 @@ import { cn } from '@/lib/utils'
 import { countries } from '@/mock'
 import { isMockMode } from '@/lib/api-client'
 import { useStudentsStore } from '../store'
-import { useCreateStudent } from '@/hooks/use-students'
+import { useCreateStudent, useUpdateStudent } from '@/hooks/use-students'
+import type { Student } from '@/types'
 
 // ── Zod schema ──────────────────────────────────────────────────────────────
 
@@ -39,11 +41,21 @@ const parentSchema = z.object({
   occupation: z.string().optional().or(z.literal('')),
 })
 
+const optionalNumber = z.preprocess(
+  (v) => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? undefined : Number(v)),
+  z.number().optional()
+)
+
+const scoreNumber = z.preprocess(
+  (v) => (v === '' || v === null || v === undefined || Number.isNaN(Number(v)) ? undefined : Number(v)),
+  z.number().min(0).max(120).optional()
+)
+
 const formSchema = z.object({
   // Step 1: Personal Info
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Valid email is required').optional().or(z.literal('')),
-  phone: z.string().min(10, 'Phone must be at least 10 digits'),
+  phone: z.string().min(7, 'Phone must be at least 7 digits'),
   dob: z.string().optional().or(z.literal('')),
   gender: z.enum(['male', 'female', 'other']).optional(),
   nationality: z.string().optional().or(z.literal('')),
@@ -53,16 +65,16 @@ const formSchema = z.object({
   academics: z.array(academicSchema).optional(),
   // Step 3: English Test
   englishTestType: z.enum(['IELTS', 'PTE', 'TOEFL', 'Duolingo', 'None']).optional(),
-  overallScore: z.coerce.number().min(0).max(120).optional(),
-  listening: z.coerce.number().min(0).max(120).optional(),
-  reading: z.coerce.number().min(0).max(120).optional(),
-  writing: z.coerce.number().min(0).max(120).optional(),
-  speaking: z.coerce.number().min(0).max(120).optional(),
+  overallScore: scoreNumber,
+  listening: scoreNumber,
+  reading: scoreNumber,
+  writing: scoreNumber,
+  speaking: scoreNumber,
   testDate: z.string().optional(),
   // Step 4: Study Preferences
   preferredCountries: z.array(z.string()).optional(),
   preferredLevel: z.enum(['foundation', 'diploma', 'bachelor', 'master', 'phd']).optional(),
-  budgetUsd: z.coerce.number().optional(),
+  budgetUsd: optionalNumber,
   // Step 5: Parents
   parents: z.array(parentSchema).optional(),
 })
@@ -89,14 +101,18 @@ const stepFields: (keyof FormData)[][] = [
 interface StudentFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  student?: Student | null
 }
 
-export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps) {
+export function StudentFormDialog({ open, onOpenChange, student }: StudentFormDialogProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const navigate = useNavigate()
+  const isEdit = Boolean(student)
 
-  const { addStudent } = useStudentsStore()
+  const { addStudent, updateStudent } = useStudentsStore()
   const createStudent = useCreateStudent()
+  const updateStudentMutation = useUpdateStudent()
+  const isSubmitting = createStudent.isPending || updateStudentMutation.isPending
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
@@ -111,6 +127,64 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
     },
     mode: 'onTouched',
   })
+
+  // Pre-fill form when editing or reset when opening/closing
+  useEffect(() => {
+    if (open) {
+      setCurrentStep(0)
+      if (student) {
+        form.reset({
+          name: student.name || '',
+          email: student.email || '',
+          phone: student.phone || '',
+          dob: student.dob ? (student.dob.includes('T') ? student.dob.split('T')[0] : student.dob) : '',
+          gender: student.gender || 'male',
+          nationality: student.nationality || 'Nepali',
+          passportNumber: student.passportNumber || '',
+          address: student.address || '',
+          academics: student.academics && student.academics.length > 0
+            ? student.academics.map((a) => ({
+                level: a.level || '',
+                institution: a.institution || '',
+                board: a.board || '',
+                gpaOrPercentage: a.gpaOrPercentage || '',
+                passedYear: a.passedYear || '',
+              }))
+            : [],
+          englishTestType: (student.englishTest?.type as any) || 'None',
+          overallScore: student.englishTest?.overallScore,
+          listening: student.englishTest?.listening,
+          reading: student.englishTest?.reading,
+          writing: student.englishTest?.writing,
+          speaking: student.englishTest?.speaking,
+          testDate: student.englishTest?.testDate ? (student.englishTest.testDate.includes('T') ? student.englishTest.testDate.split('T')[0] : student.englishTest.testDate) : '',
+          preferredCountries: student.preferredCountries || [],
+          preferredLevel: student.preferredLevel || 'bachelor',
+          budgetUsd: student.budgetUsd ?? 15000,
+          parents: student.parents && student.parents.length > 0
+            ? student.parents.map((p) => ({
+                id: p.id,
+                name: p.name || '',
+                relation: p.relation || 'father',
+                phone: p.phone || '',
+                email: p.email || '',
+                occupation: p.occupation || '',
+              }))
+            : [],
+        })
+      } else {
+        form.reset({
+          name: '', email: '', phone: '', dob: '', gender: 'male', nationality: 'Nepali',
+          passportNumber: '', address: '',
+          academics: [],
+          englishTestType: 'None', overallScore: undefined, listening: undefined,
+          reading: undefined, writing: undefined, speaking: undefined, testDate: '',
+          preferredCountries: [], preferredLevel: 'bachelor', budgetUsd: 15000,
+          parents: [],
+        })
+      }
+    }
+  }, [open, student, form])
 
   const { fields: academicFields, append: addAcademic, remove: removeAcademic } = useFieldArray({
     control: form.control, name: 'academics',
@@ -137,6 +211,84 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
     const validAcademics = (data.academics || []).filter((a) => a.level || a.institution)
     const validParents = (data.parents || []).filter((p) => p.name || p.phone)
 
+    // ── EDIT MODE ──
+    if (isEdit && student) {
+      if (isMockMode()) {
+        updateStudent(student.id, {
+          name: data.name,
+          email: data.email || '',
+          phone: data.phone,
+          dob: data.dob || '',
+          gender: data.gender || 'other',
+          nationality: data.nationality || '',
+          passportNumber: data.passportNumber || '',
+          address: data.address || '',
+          preferredCountries: data.preferredCountries || [],
+          preferredLevel: data.preferredLevel || 'bachelor',
+          budgetUsd: data.budgetUsd || 0,
+          englishTest: {
+            type: data.englishTestType || 'None',
+            overallScore: data.overallScore,
+            listening: data.listening,
+            reading: data.reading,
+            writing: data.writing,
+            speaking: data.speaking,
+            testDate: data.testDate,
+          },
+          academics: validAcademics as any,
+          parents: validParents as any,
+        })
+        toast.success('Student updated successfully')
+        onOpenChange(false)
+        return
+      }
+
+      // Live API mode
+      const nameParts = data.name.trim().split(' ')
+      const firstName = nameParts[0]
+      const lastName = nameParts.slice(1).join(' ') || firstName || 'Student'
+      const countriesStr = (data.preferredCountries || []).join(', ')
+      const notesPayload = `Interested Countries: ${countriesStr || 'N/A'} | Level: ${data.preferredLevel || 'N/A'} | Address: ${data.address || 'N/A'}`
+
+      await updateStudentMutation.mutateAsync({
+        id: student.id,
+        body: {
+          firstName,
+          lastName,
+          email: data.email?.trim() || undefined,
+          phone: data.phone?.trim() || undefined,
+          nationality: data.nationality || undefined,
+          dateOfBirth: data.dob || undefined,
+          notes: notesPayload,
+          academicBackground: {
+            records: validAcademics,
+            preferredLevel: data.preferredLevel,
+            preferredCountries: data.preferredCountries,
+            budgetUsd: data.budgetUsd,
+            gender: data.gender,
+            address: data.address,
+            passportNumber: data.passportNumber,
+            englishTest: {
+              type: data.englishTestType || 'None',
+              overallScore: data.overallScore,
+              listening: data.listening,
+              reading: data.reading,
+              writing: data.writing,
+              speaking: data.speaking,
+              testDate: data.testDate,
+            },
+          },
+          familyBackground: {
+            parents: validParents,
+          },
+        },
+      })
+
+      onOpenChange(false)
+      return
+    }
+
+    // ── CREATE MODE ──
     if (isMockMode()) {
       // ── Mock path: write directly to Zustand store ──
       const newStudent = addStudent({
@@ -190,6 +342,7 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
       email: data.email?.trim() || undefined,
       phone: data.phone?.trim() || undefined,
       nationality: data.nationality || undefined,
+      dateOfBirth: data.dob || undefined,
       currentStage: 'ENROLLED',
       // Always SELF on creation — counselor sets B2B from the student profile later
       processingType: 'SELF',
@@ -198,6 +351,21 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
         preferredLevel: data.preferredLevel,
         preferredCountries: data.preferredCountries,
         budgetUsd: data.budgetUsd,
+        gender: data.gender,
+        address: data.address,
+        passportNumber: data.passportNumber,
+        englishTest: {
+          type: data.englishTestType || 'None',
+          overallScore: data.overallScore,
+          listening: data.listening,
+          reading: data.reading,
+          writing: data.writing,
+          speaking: data.speaking,
+          testDate: data.testDate,
+        },
+      },
+      familyBackground: {
+        parents: validParents,
       },
       notes: notesPayload,
     })
@@ -215,8 +383,12 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Student</DialogTitle>
-          <DialogDescription>Fill in all the required information to register a new student.</DialogDescription>
+          <DialogTitle>{isEdit ? `Edit Student: ${student?.name}` : 'Add New Student'}</DialogTitle>
+          <DialogDescription>
+            {isEdit
+              ? 'Update student personal details, academics, test scores, and guardians.'
+              : 'Fill in all the required information to register a new student.'}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Step Progress Indicator */}
@@ -225,10 +397,10 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
             <div key={step.title} className="flex items-center flex-1 last:flex-none">
               <button
                 type="button"
-                onClick={() => i < currentStep && setCurrentStep(i)}
+                onClick={() => (isEdit || i < currentStep) && setCurrentStep(i)}
                 className={cn(
                   'flex items-center gap-1.5 shrink-0',
-                  i <= currentStep ? 'cursor-pointer' : 'cursor-default',
+                  (isEdit || i <= currentStep) ? 'cursor-pointer' : 'cursor-default',
                 )}
               >
                 <span
@@ -508,15 +680,23 @@ export function StudentFormDialog({ open, onOpenChange }: StudentFormDialogProps
             <Button type="button" variant="outline" size="sm" onClick={handleBack} disabled={currentStep === 0}>
               <ChevronLeft /> Back
             </Button>
-            {currentStep < steps.length - 1 ? (
-              <Button type="button" size="sm" onClick={handleNext}>
-                Next <ChevronRight />
-              </Button>
-            ) : (
-              <Button type="submit" size="sm">
-                Create Student
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {isEdit && (
+                <Button type="submit" size="sm" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </Button>
+              )}
+              {currentStep < steps.length - 1 && (
+                <Button type="button" variant={isEdit ? 'outline' : 'default'} size="sm" onClick={handleNext}>
+                  Next <ChevronRight />
+                </Button>
+              )}
+              {!isEdit && currentStep === steps.length - 1 && (
+                <Button type="submit" size="sm" disabled={isSubmitting}>
+                  {isSubmitting ? 'Creating...' : 'Create Student'}
+                </Button>
+              )}
+            </div>
           </div>
         </form>
       </DialogContent>

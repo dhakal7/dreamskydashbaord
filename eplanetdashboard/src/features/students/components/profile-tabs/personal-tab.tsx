@@ -31,14 +31,14 @@ export function PersonalTab({ student }: { student: Student }) {
   const [partnerName, setPartnerName] = useState(student.partnerConsultancyName || '')
 
   const fields = [
-    { label: 'Full Name', value: student.name },
-    { label: 'Email', value: student.email },
-    { label: 'Phone', value: student.phone },
-    { label: 'Date of Birth', value: dayjs(student.dob).format('MMM D, YYYY') },
+    { label: 'Full Name', value: student.name || '-' },
+    { label: 'Email', value: student.email || '-' },
+    { label: 'Phone', value: student.phone || '-' },
+    { label: 'Date of Birth', value: student.dob ? dayjs(student.dob).format('MMM D, YYYY') : '-' },
     { label: 'Gender', value: student.gender, capitalize: true },
-    { label: 'Nationality', value: student.nationality },
-    { label: 'Passport', value: student.passportNumber },
-    { label: 'Address', value: student.address },
+    { label: 'Nationality', value: student.nationality || '-' },
+    { label: 'Passport', value: student.passportNumber || '-' },
+    { label: 'Address', value: student.address || '-' },
   ]
 
   const handleSaveProcessing = async () => {
