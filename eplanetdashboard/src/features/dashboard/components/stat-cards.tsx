@@ -15,7 +15,7 @@ interface StatCardsProps {
 
 export function StatCards({ stats }: StatCardsProps) {
   return (
-    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
       {stats.map((stat, i) => {
         const Icon = icons[i % icons.length]
         const color = iconColors[i % iconColors.length]
