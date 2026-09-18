@@ -74,10 +74,11 @@ const getSummary = async (req, res) => {
             where: { status: "ACCEPTED" },
         }),
 
-        // Visa processing — VisaCase records actively being processed
+        // Visa processing — all active visa cases (any non-terminal status)
+        // Default initial state is NOT_APPLIED, then PREPARING → SUBMITTED → APPROVED/REFUSED
         prisma.visaCase.count({
             where: {
-                status: { in: ["PREPARING", "SUBMITTED", "RESUBMITTING"] },
+                status: { notIn: ["APPROVED", "REFUSED"] },
             },
         }),
 
