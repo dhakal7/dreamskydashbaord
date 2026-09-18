@@ -21,12 +21,15 @@ export function SuperAdminDashboard() {
       />
 
       {isLoading && !displayStats ? (
-        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 7 }).map((_, i) => (
-            <div key={i} className="rounded-lg border bg-card p-3.5 animate-pulse">
-              <div className="h-3 w-20 rounded bg-muted" />
-              <div className="mt-2 h-7 w-12 rounded bg-muted" />
-              <div className="mt-1.5 h-2.5 w-16 rounded bg-muted" />
+            <div key={i} className="rounded-2xl border border-border/50 bg-card p-5 animate-pulse">
+              <div className="flex items-start justify-between">
+                <div className="h-3.5 w-24 rounded-md bg-muted" />
+                <div className="size-10 rounded-xl bg-muted" />
+              </div>
+              <div className="mt-3 h-10 w-16 rounded-md bg-muted" />
+              <div className="mt-3 h-3 w-20 rounded-md bg-muted" />
             </div>
           ))}
         </div>

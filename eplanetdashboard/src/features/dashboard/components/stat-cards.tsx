@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion'
 import { ArrowUpRight, Minus } from 'lucide-react'
-import { Card } from '@/components/ui/card'
 import { cn, formatNumber } from '@/lib/utils'
 import {
   Users, UserPlus, CalendarClock, FileStack, Mail, PlaneTakeoff, GraduationCap,
@@ -15,41 +14,59 @@ interface StatCardsProps {
 
 export function StatCards({ stats }: StatCardsProps) {
   return (
-    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {stats.map((stat, i) => {
         const Icon = icons[i % icons.length]
         const color = iconColors[i % iconColors.length]
         return (
           <motion.div
             key={stat.label}
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.04, duration: 0.3 }}
+            transition={{ delay: i * 0.05, duration: 0.35, ease: 'easeOut' }}
           >
-            <Card className="p-4 transition-shadow hover:shadow-elevated">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
-                  <p className="mt-1.5 text-2xl font-semibold tracking-tight font-tabular">{formatNumber(stat.value)}</p>
-                </div>
+            <div
+              className={cn(
+                'relative rounded-2xl border border-border/50 bg-card p-5',
+                'transition-all duration-200 hover:border-border hover:shadow-lg hover:shadow-black/10',
+                'group cursor-default',
+              )}
+            >
+              {/* Label + Icon row */}
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-sm font-medium text-muted-foreground leading-tight">
+                  {stat.label}
+                </p>
                 <span
-                  className="flex size-9 shrink-0 items-center justify-center rounded-lg"
-                  style={{ backgroundColor: `${color}18`, color }}
+                  className="flex size-10 shrink-0 items-center justify-center rounded-xl transition-transform duration-200 group-hover:scale-110"
+                  style={{ backgroundColor: `${color}22`, color }}
                 >
-                  <Icon className="size-4.5" />
+                  <Icon className="size-5" />
                 </span>
               </div>
-              <div className="mt-2.5 flex items-center gap-1 text-xs">
+
+              {/* Value */}
+              <p className="mt-3 text-4xl font-bold tracking-tight text-foreground font-tabular">
+                {formatNumber(stat.value)}
+              </p>
+
+              {/* Delta */}
+              <div className="mt-3 flex items-center gap-1 text-xs">
                 {stat.trend === 'up' ? (
-                  <ArrowUpRight className="size-3.5 text-success-600" />
+                  <ArrowUpRight className="size-3.5 text-emerald-500 shrink-0" />
                 ) : (
-                  <Minus className="size-3.5 text-muted-foreground" />
+                  <Minus className="size-3.5 text-muted-foreground shrink-0" />
                 )}
-                <span className={cn(stat.trend === 'up' ? 'text-success-600 font-medium' : 'text-muted-foreground')}>
+                <span
+                  className={cn(
+                    'font-medium',
+                    stat.trend === 'up' ? 'text-emerald-500' : 'text-muted-foreground',
+                  )}
+                >
                   {stat.delta}
                 </span>
               </div>
-            </Card>
+            </div>
           </motion.div>
         )
       })}
