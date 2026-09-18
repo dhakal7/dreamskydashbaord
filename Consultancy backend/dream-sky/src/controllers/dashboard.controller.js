@@ -61,29 +61,23 @@ const getSummary = async (req, res) => {
             },
         }),
 
-        // Active applications
-        prisma.student.count({
+        // Active applications — count directly from the Application table
+        // (same data source as the Applications page, so numbers always match)
+        prisma.application.count({
             where: {
-                isActive: true,
-                currentStage: {
-                    in: ["APPLIED", "OFFER_RECEIVED", "VISA_APPLIED", "VISA_APPROVED"],
-                },
+                status: { notIn: ["WITHDRAWN", "REJECTED"] },
             },
         }),
 
-        // Offer letters received
-        prisma.student.count({
-            where: {
-                isActive: true,
-                currentStage: "OFFER_RECEIVED",
-            },
+        // Offer letters — applications that have been ACCEPTED
+        prisma.application.count({
+            where: { status: "ACCEPTED" },
         }),
 
-        // Visa processing
-        prisma.student.count({
+        // Visa processing — VisaCase records actively being processed
+        prisma.visaCase.count({
             where: {
-                isActive: true,
-                currentStage: { in: ["VISA_APPLIED", "VISA_APPROVED"] },
+                status: { in: ["PREPARING", "SUBMITTED", "RESUBMITTING"] },
             },
         }),
 
