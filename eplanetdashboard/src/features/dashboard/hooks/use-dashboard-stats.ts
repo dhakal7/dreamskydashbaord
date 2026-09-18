@@ -19,13 +19,18 @@ import { useQuery } from '@tanstack/react-query'
 import { isMockMode } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
 import { useAppointmentsStore } from '@/features/appointments/store'
+import { useStudentsStore } from '@/features/students/store'
+import { useApplicationsStore } from '@/features/applications/store'
+import { useVisaStore } from '@/features/visa/store'
+import { useLeadsStore } from '@/features/leads/store'
+import { useFollowUpsStore } from '@/features/followups/store'
 import { visibleAppointments, visibleFollowUps } from '@/lib/data-visibility'
 import { studentApi } from '@/api/student-api'
 import { followUpApi } from '@/api/followup-api'
 import { appointmentApi } from '@/api/appointment-api'
 import { dashboardApi } from '@/api/dashboard-api'
 import { getFrontDeskStats, getCounselorDashboard } from '../role-selectors'
-import { getUpcomingFollowUps, getDashboardStats } from '../selectors'
+import { getUpcomingFollowUps } from '../selectors'
 import type { AppointmentStatus, LeadStage, Priority } from '@/types'
 
 // ─── Query keys ───────────────────────────────────────────────────────────────
@@ -65,7 +70,35 @@ export interface SuperAdminStatItem {
 }
 
 export function useSuperAdminStats() {
-  return useQuery<SuperAdminStatItem[]>({
+  // Subscribe to all relevant stores so cards update instantly in mock mode
+  const students     = useStudentsStore((s) => s.students)
+  const applications = useApplicationsStore((s) => s.applications)
+  const visaCases    = useVisaStore((s) => s.visaCases)
+  const leads        = useLeadsStore((s) => s.leads)
+  const followUps    = useFollowUpsStore((s) => s.followUps)
+
+  // Compute reactive mock stats directly from store data
+  const mockStats: SuperAdminStatItem[] | null = isMockMode() ? (() => {
+    const totalStudents     = students.length
+    const newLeads          = leads.filter((l) => dayjs(l.createdAt).isAfter(dayjs().subtract(30, 'day'))).length
+    const todayFollowUps    = followUps.filter((f) => dayjs(f.date).isSame(dayjs(), 'day') && f.status === 'pending').length
+    const totalApplications = applications.length
+    const offerLetters      = applications.filter((a) => a.stage === 'conditional_offer' || a.stage === 'unconditional_offer').length
+    const visaInProgress    = visaCases.filter((v) => v.overallStatus === 'in_progress' || v.overallStatus === 'submitted').length
+    const enrolledStudents  = students.filter((s) => s.status === 'enrolled').length
+
+    return [
+      { label: 'Total Students',     value: totalStudents,     delta: `${totalStudents} total`,           trend: 'up'   as const },
+      { label: 'New Leads',          value: newLeads,          delta: 'Last 30 days',                     trend: 'up'   as const },
+      { label: "Today's Follow-ups", value: todayFollowUps,    delta: 'Upcoming',                         trend: 'flat' as const },
+      { label: 'Applications',       value: totalApplications, delta: `${totalApplications} active`,      trend: 'up'   as const },
+      { label: 'Offer Letters',      value: offerLetters,      delta: `${offerLetters} received`,         trend: 'up'   as const },
+      { label: 'Visa Processing',    value: visaInProgress,    delta: `${visaCases.length} total cases`,  trend: 'flat' as const },
+      { label: 'Enrolled Students',  value: enrolledStudents,  delta: `${enrolledStudents} enrolled`,     trend: 'up'   as const },
+    ]
+  })() : null
+
+  const query = useQuery<SuperAdminStatItem[]>({
     queryKey: dashboardKeys.superAdmin(),
     queryFn: async () => {
       // Single consolidated request — backend runs all counts in parallel server-side
@@ -81,13 +114,19 @@ export function useSuperAdminStats() {
         { label: 'Enrolled Students',   value: summary.enrolledOnly,     delta: `${summary.enrolledOnly} enrolled`,     trend: 'up'   as const },
       ]
     },
-    staleTime: 2 * 60 * 1000,     // 2 minutes — refresh dashboard data more often
+    staleTime: 0, // always refetch when invalidated (e.g. after creating a student/application)
     enabled: !isMockMode(),
-    // In real mode: return undefined (not []) so the dashboard shows a loading state
-    // until the first successful fetch. In mock mode: return pre-computed mock data.
+    // In real mode show loading skeleton until first fetch; in mock mode supply reactive store data
     placeholderData: (previousData) =>
-      previousData ?? (isMockMode() ? getDashboardStats() : undefined),
+      previousData ?? (isMockMode() ? (mockStats ?? undefined) : undefined),
   })
+
+  // In mock mode return the reactive store-derived stats directly (bypasses React Query)
+  if (isMockMode()) {
+    return { ...query, data: mockStats ?? [] }
+  }
+
+  return query
 }
 
 // ─── Front Desk ───────────────────────────────────────────────────────────────

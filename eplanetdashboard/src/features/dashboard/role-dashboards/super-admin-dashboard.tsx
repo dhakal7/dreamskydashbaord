@@ -21,7 +21,7 @@ export function SuperAdminDashboard() {
       />
 
       {isLoading && !displayStats ? (
-        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4 lg:grid-cols-7">
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
           {Array.from({ length: 7 }).map((_, i) => (
             <div key={i} className="rounded-lg border bg-card p-3.5 animate-pulse">
               <div className="h-3 w-20 rounded bg-muted" />

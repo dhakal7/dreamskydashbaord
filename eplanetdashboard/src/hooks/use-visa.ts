@@ -37,7 +37,11 @@ export function useCreateVisaCase() {
       if (isMockMode()) return Promise.resolve(null as never)
       return visaApi.create(body)
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: visaKeys.lists() }); toast.success('Visa case created') },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: visaKeys.lists() })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Visa case created')
+    },
     onError: (err: Error) => toast.error(err.message),
   })
 }
@@ -52,6 +56,7 @@ export function useChangeVisaStatus() {
     onSuccess: (_d, { id }) => {
       qc.invalidateQueries({ queryKey: visaKeys.detail(id) })
       qc.invalidateQueries({ queryKey: visaKeys.lists() })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Visa status updated')
     },
     onError: (err: Error) => toast.error(err.message),

@@ -41,7 +41,11 @@ export function useCreateApplication() {
       if (isMockMode()) return Promise.resolve(null as never)
       return applicationApi.create(body)
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: applicationKeys.lists() }); toast.success('Application created') },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: applicationKeys.lists() })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Application created')
+    },
     onError: (err: Error) => toast.error(err.message),
   })
 }
@@ -56,6 +60,7 @@ export function useChangeApplicationStatus() {
     onSuccess: (_d, { id }) => {
       qc.invalidateQueries({ queryKey: applicationKeys.detail(id) })
       qc.invalidateQueries({ queryKey: applicationKeys.lists() })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Application status updated')
     },
     onError: (err: Error) => toast.error(err.message),
@@ -71,6 +76,7 @@ export function useRecordOffer() {
     },
     onSuccess: (_d, { id }) => {
       qc.invalidateQueries({ queryKey: applicationKeys.detail(id) })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Offer recorded')
     },
     onError: (err: Error) => toast.error(err.message),
