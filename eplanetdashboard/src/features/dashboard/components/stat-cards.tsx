@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { ArrowUpRight, Minus } from 'lucide-react'
 import { cn, formatNumber } from '@/lib/utils'
 import {
@@ -7,6 +8,17 @@ import {
 
 const icons = [Users, UserPlus, CalendarClock, FileStack, Mail, PlaneTakeoff, GraduationCap]
 const iconColors = ['#2563EB', '#7C3AED', '#D97706', '#0891B2', '#16A34A', '#DB2777', '#0EA5E9']
+
+// Map each stat label to its section route
+const LABEL_ROUTES: Record<string, string> = {
+  'Total Students':     '/students',
+  'New Leads':          '/leads',
+  "Today's Follow-ups": '/follow-ups',
+  'Applications':       '/applications',
+  'Offer Letters':      '/applications',
+  'Visa Processing':    '/visa-processing',
+  'Enrolled Students':  '/students',
+}
 
 interface StatCardsProps {
   stats: { label: string; value: number; delta: string; trend: 'up' | 'down' | 'flat' }[]
@@ -18,6 +30,8 @@ export function StatCards({ stats }: StatCardsProps) {
       {stats.map((stat, i) => {
         const Icon = icons[i % icons.length]
         const color = iconColors[i % iconColors.length]
+        const href = LABEL_ROUTES[stat.label] ?? '/'
+
         return (
           <motion.div
             key={stat.label}
@@ -25,11 +39,13 @@ export function StatCards({ stats }: StatCardsProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.05, duration: 0.35, ease: 'easeOut' }}
           >
-            <div
+            <Link
+              to={href}
               className={cn(
-                'relative rounded-2xl border border-border/50 bg-card p-5',
+                'relative block rounded-2xl border border-border/50 bg-card p-5',
                 'transition-all duration-200 hover:border-border hover:shadow-lg hover:shadow-black/10',
-                'group cursor-default',
+                'hover:-translate-y-0.5 active:translate-y-0',
+                'group no-underline',
               )}
             >
               {/* Label + Icon row */}
@@ -66,7 +82,7 @@ export function StatCards({ stats }: StatCardsProps) {
                   {stat.delta}
                 </span>
               </div>
-            </div>
+            </Link>
           </motion.div>
         )
       })}
