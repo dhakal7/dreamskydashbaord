@@ -20,10 +20,11 @@ interface DataTableProps<TData> {
   bulkActions?: (selected: TData[]) => React.ReactNode
   emptyState?: React.ReactNode
   onRowClick?: (row: TData) => void
+  onRowDoubleClick?: (row: TData) => void
 }
 
 export function DataTable<TData>({
-  columns, data, enableRowSelection, onRowSelectionChange, pageSize = 10, bulkActions, emptyState, onRowClick,
+  columns, data, enableRowSelection, onRowSelectionChange, pageSize = 10, bulkActions, emptyState, onRowClick, onRowDoubleClick,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
@@ -52,6 +53,7 @@ export function DataTable<TData>({
               onCheckedChange={(v) => row.toggleSelected(!!v)}
               aria-label="Select row"
               onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
             />
           ),
           enableSorting: false,
@@ -152,9 +154,10 @@ export function DataTable<TData>({
                 <tr
                   key={row.id}
                   onClick={() => onRowClick?.(row.original)}
+                  onDoubleClick={() => onRowDoubleClick?.(row.original)}
                   className={cn(
                     'border-b border-border/70 transition-colors last:border-0 hover:bg-accent/50',
-                    onRowClick && 'cursor-pointer hover:bg-muted/70',
+                    (onRowClick || onRowDoubleClick) && 'cursor-pointer hover:bg-muted/70',
                     row.getIsSelected() && 'bg-brand-50/60 dark:bg-brand-500/5'
                   )}
                 >

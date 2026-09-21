@@ -134,7 +134,11 @@ export function VisaStatusBadge({ status, className }: { status: VisaStatus; cla
 }
 
 export function StudentStatusBadge({ status, className }: { status: Student['status']; className?: string }) {
-  const meta = studentStatusMeta[status]
+  const normalized = (status || 'active').toLowerCase() as Student['status']
+  const meta = studentStatusMeta[normalized] ?? {
+    label: (status || 'Active').charAt(0).toUpperCase() + (status || 'Active').slice(1),
+    variant: 'success' as const,
+  }
   return (
     <Badge variant={meta.variant} className={cn(className)}>
       {meta.label}

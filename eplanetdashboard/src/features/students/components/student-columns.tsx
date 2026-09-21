@@ -1,10 +1,9 @@
 import type { ColumnDef } from '@tanstack/react-table'
 import dayjs from 'dayjs'
-import { MoreHorizontal } from 'lucide-react'
+import { MoreHorizontal, Phone } from 'lucide-react'
 import type { Student } from '@/types'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -35,7 +34,13 @@ function StudentRowActions({ student }: { student: Student }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+        >
           <MoreHorizontal className="size-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -103,11 +108,6 @@ export const studentColumns: ColumnDef<Student, any>[] = [
     cell: ({ row }) => <span className="text-[13px]">{row.original.counselorName}</span>,
   },
   {
-    accessorKey: 'status',
-    header: 'Status',
-    cell: ({ row }) => <StudentStatusBadge status={row.original.status} />,
-  },
-  {
     accessorKey: 'preferredCountries',
     header: 'Country / Level',
     cell: ({ row }) => (
@@ -119,34 +119,28 @@ export const studentColumns: ColumnDef<Student, any>[] = [
     enableSorting: false,
   },
   {
-    accessorKey: 'englishTest',
-    header: 'English Test',
-    cell: ({ row }) => {
-      const test = row.original.englishTest
-      if (test.type === 'None') return <span className="text-xs text-muted-foreground">—</span>
-      return (
-        <span className="font-tabular text-[13px]">
-          {test.type} {test.overallScore}
-        </span>
+    accessorKey: 'phone',
+    header: 'Phone Number',
+    cell: ({ row }) => (
+      row.original.phone ? (
+        <a
+          href={`tel:${row.original.phone}`}
+          className="inline-flex items-center gap-1.5 font-tabular text-xs text-muted-foreground hover:text-foreground hover:underline"
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
+        >
+          <Phone className="size-3 shrink-0 text-muted-foreground" />
+          <span>{row.original.phone}</span>
+        </a>
+      ) : (
+        <span className="text-xs text-muted-foreground">—</span>
       )
-    },
-    enableSorting: false,
+    ),
   },
   {
-    accessorKey: 'documentsUploaded',
-    header: 'Documents',
-    cell: ({ row }) => {
-      const pct = Math.round((row.original.documentsUploaded / row.original.documentsRequired) * 100)
-      return (
-        <div className="flex items-center gap-2 min-w-[100px]">
-          <Progress value={pct} className="h-1.5 flex-1" />
-          <span className="font-tabular text-xs text-muted-foreground shrink-0">
-            {row.original.documentsUploaded}/{row.original.documentsRequired}
-          </span>
-        </div>
-      )
-    },
-    enableSorting: false,
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ row }) => <StudentStatusBadge status={row.original.status} />,
   },
   {
     accessorKey: 'createdAt',
