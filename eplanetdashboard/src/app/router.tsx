@@ -77,6 +77,8 @@ export const router = createBrowserRouter([
       { path: 'applications/:id', element: protectedPage(<ApplicationDetailPage />, 'applications.view') },
       { path: 'visa', element: protectedPage(<VisaPage />, 'visa.view') },
       { path: 'visa/:id', element: protectedPage(<VisaCaseDetailPage />, 'visa.view') },
+      { path: 'visa-processing', element: <Navigate to="/visa" replace /> },
+      { path: 'visa-processing/:id', element: <Navigate to="/visa" replace /> },
       { path: 'documents', element: protectedPage(<DocumentsPage />, 'documents.view') },
       { path: 'universities', element: protectedPage(<UniversitiesPage />, 'universities.view') },
       { path: 'countries', element: protectedPage(<CountriesPage />, 'countries.view') },

@@ -16,7 +16,7 @@ const LABEL_ROUTES: Record<string, string> = {
   "Today's Follow-ups": '/follow-ups',
   'Applications':       '/applications',
   'Offer Letters':      '/applications',
-  'Visa Processing':    '/visa-processing',
+  'Visa Processing':    '/visa',
   'Enrolled Students':  '/students',
 }
 
