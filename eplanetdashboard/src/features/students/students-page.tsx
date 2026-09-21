@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Download, Plus, Trash2, UserCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared/page-header'
@@ -25,6 +26,7 @@ import { adaptApiStudentToStudent } from '@/lib/student-adapter'
 import { isMockMode } from '@/lib/api-client'
 
 export default function StudentsPage() {
+  const navigate = useNavigate()
   const mockStudents = useStudentsStore((s) => s.students)
   const currentUser = useAuthStore((s) => s.currentUser)
   const mockMode = isMockMode()
@@ -151,6 +153,7 @@ export default function StudentsPage() {
             data={filtered}
             enableRowSelection
             pageSize={10}
+            onRowDoubleClick={(student) => navigate(`/students/${student.id}`)}
             bulkActions={(selected: Student[]) => (
               <>
                 <Select onValueChange={(counselorId) => {
