@@ -1,12 +1,17 @@
+import { useState } from 'react'
 import dayjs from 'dayjs'
 import { Link } from 'react-router-dom'
-import { ExternalLink, Loader2 } from 'lucide-react'
+import { ExternalLink, Loader2, PlaneTakeoff } from 'lucide-react'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { ApplicationStageBadge } from '@/components/shared/status-badges'
 import { useApplicationsStore } from '@/features/applications/store'
 import { useApplications } from '@/hooks/use-applications'
 import { isMockMode } from '@/lib/api-client'
 import { formatCurrency } from '@/lib/utils'
+import { useAuthStore } from '@/store/auth-store'
+import { hasPermission } from '@/lib/rbac'
+import { StartVisaDialog } from './start-visa-dialog'
 import type { ApplicationStage, Student } from '@/types'
 
 const BACKEND_STATUS_TO_STAGE: Record<string, ApplicationStage> = {
@@ -32,6 +37,17 @@ function resolveAppStage(status?: string, offers?: any[]): ApplicationStage {
 export function ApplicationsTab({ student }: { student: Student }) {
   const { data: apiAppData, isLoading } = useApplications({ studentId: student.id })
   const mockApps = useApplicationsStore((s) => s.applications).filter((a) => a.studentId === student.id)
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const canStartVisa = hasPermission(currentUser.role, 'visa.manage') ||
+    (currentUser.role !== 'student' && currentUser.role !== 'referral_agent')
+
+  // Track which application's Start Visa dialog is open (null = none)
+  const [visaDialogApp, setVisaDialogApp] = useState<{
+    id: string
+    universityName: string
+    courseName: string
+    countryName: string
+  } | null>(null)
 
   const apps = !isMockMode()
     ? (apiAppData?.applications ?? []).map((app) => ({
@@ -79,6 +95,7 @@ export function ApplicationsTab({ student }: { student: Student }) {
                 <th className="whitespace-nowrap px-3.5 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Stage</th>
                 <th className="whitespace-nowrap px-3.5 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Intake</th>
                 <th className="whitespace-nowrap px-3.5 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Updated</th>
+                <th className="whitespace-nowrap px-3.5 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -106,11 +123,41 @@ export function ApplicationsTab({ student }: { student: Student }) {
                   <td className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground font-tabular">
                     {dayjs(app.lastUpdate).format('MMM D, YYYY')}
                   </td>
+                  <td className="whitespace-nowrap px-3.5 py-2.5">
+                    {canStartVisa && app.stage === 'accepted' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 text-xs gap-1 border-emerald-500/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:border-emerald-500 font-medium"
+                        onClick={() =>
+                          setVisaDialogApp({
+                            id: app.id,
+                            universityName: app.universityName,
+                            courseName: app.courseName,
+                            countryName: app.countryName,
+                          })
+                        }
+                      >
+                        <PlaneTakeoff className="size-3" />
+                        Start Visa Processing
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Pre-filled visa creation dialog */}
+      {visaDialogApp && (
+        <StartVisaDialog
+          open={!!visaDialogApp}
+          onOpenChange={(open) => { if (!open) setVisaDialogApp(null) }}
+          student={student}
+          application={visaDialogApp}
+        />
       )}
     </div>
   )
