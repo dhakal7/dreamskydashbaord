@@ -114,7 +114,10 @@ export function useSuperAdminStats() {
         { label: 'Enrolled Students',   value: summary.enrolledOnly,     delta: `${summary.enrolledOnly} enrolled`,     trend: 'up'   as const },
       ]
     },
-    staleTime: 0, // always refetch when invalidated (e.g. after creating a student/application)
+    staleTime: 0,              // always considered stale — refetch on every mount/focus
+    refetchOnMount: 'always',  // force a fresh fetch every time dashboard mounts
+    refetchOnWindowFocus: true, // refetch when user switches back to this browser tab
+    refetchInterval: 30_000,   // background poll every 30 s so numbers stay live
     enabled: !isMockMode(),
     // In real mode show loading skeleton until first fetch; in mock mode supply reactive store data
     placeholderData: (previousData) =>
@@ -165,6 +168,10 @@ export function useFrontDeskStats() {
         todaysAppointments: 0, // sourced live from the Today's Appointments panel
       }
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
     enabled: !isMockMode(),
     placeholderData: isMockMode() ? getFrontDeskStats() : ZERO_FRONT_DESK,
   })
@@ -237,6 +244,10 @@ export function useCounselorDashboard(linkedId: string) {
         commission: summary.commission ?? { earned: 0, paid: 0, pending: 0, count: 0 },
       }
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
     enabled: !isMockMode() && !!linkedId,
     placeholderData: isMockMode()
       ? (getCounselorDashboard(linkedId) as unknown as CounselorDashboardData)
