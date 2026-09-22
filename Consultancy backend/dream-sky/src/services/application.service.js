@@ -17,6 +17,7 @@ const includeRelations = {
     university: { select: { id: true, name: true } },
     course: { select: { id: true, name: true, level: true } },
     offers: true,
+    visaCase: { select: { id: true, status: true } },
 };
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
@@ -77,6 +78,7 @@ const listApplications = async (query) => {
                 university: { select: { id: true, name: true } },
                 course: { select: { id: true, name: true, level: true } },
                 offers: { select: { id: true, type: true, details: true, receivedAt: true } },
+                visaCase: { select: { id: true, status: true } },
             },
             orderBy: { createdAt: "desc" },
             skip,

@@ -14,6 +14,7 @@ import { visibleApplications } from '@/lib/data-visibility'
 import { hasPermission } from '@/lib/rbac'
 import type { Application, ApplicationStage } from '@/types'
 import { useApplications } from '@/hooks/use-applications'
+import { useVisaCases } from '@/hooks/use-visa'
 import { ApplicationFormDialog } from './components/application-form-dialog'
 
 
@@ -58,14 +59,28 @@ export default function ApplicationsPage() {
   const navigate = useNavigate()
   const mockApplications = useApplicationsStore((s) => s.applications)
   const { data: apiAppData } = useApplications()
+  const { data: apiVisaData } = useVisaCases()
   const students = useStudentsStore((s) => s.students)
   const currentUser = useAuthStore((s) => s.currentUser)
   const canManage = hasPermission(currentUser.role, 'applications.manage')
   const [filters, setFilters] = useState<ApplicationFilters>(defaultApplicationFilters)
   const [formOpen, setFormOpen] = useState(false)
 
+  const visaApplicationIds = useMemo(() => {
+    const set = new Set<string>()
+    if (!isMockMode() && apiVisaData?.visaCases) {
+      for (const vc of apiVisaData.visaCases) {
+        if (vc.applicationId) set.add(vc.applicationId)
+        if (vc.application?.id) set.add(vc.application.id)
+      }
+    }
+    return set
+  }, [apiVisaData])
+
   const applications: Application[] = !isMockMode()
-    ? (apiAppData?.applications ?? []).map((app) => ({
+    ? (apiAppData?.applications ?? [])
+        .filter((app) => !(app as any).visaCase && !visaApplicationIds.has(app.id))
+        .map((app) => ({
         id: app.id,
         applicationRef: app.id.length > 12 ? `APP-${app.id.slice(-6).toUpperCase()}` : app.id,
         studentId: app.studentId,
@@ -74,7 +89,7 @@ export default function ApplicationsPage() {
         universityName: app.university?.name ?? 'Unknown University',
         courseId: app.courseId ?? '',
         courseName: app.course?.name ?? 'Course',
-        countryName: 'General',
+        countryName: (app.university as any)?.country?.name || (app.university as any)?.countryName || 'General',
         stage: resolveAppStage(app.status, app.offers),
         counselorId: '',
         counselorName: 'Counselor',

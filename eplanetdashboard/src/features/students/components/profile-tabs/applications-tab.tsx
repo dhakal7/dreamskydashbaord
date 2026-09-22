@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
 import { Link } from 'react-router-dom'
 import { ExternalLink, Loader2, PlaneTakeoff } from 'lucide-react'
@@ -6,7 +6,9 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ApplicationStageBadge } from '@/components/shared/status-badges'
 import { useApplicationsStore } from '@/features/applications/store'
+import { useVisaStore } from '@/features/visa/store'
 import { useApplications } from '@/hooks/use-applications'
+import { useVisaCases } from '@/hooks/use-visa'
 import { isMockMode } from '@/lib/api-client'
 import { formatCurrency } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth-store'
@@ -50,10 +52,31 @@ function resolveAppStage(status?: string, offers?: any[]): ApplicationStage {
 
 export function ApplicationsTab({ student }: { student: Student }) {
   const { data: apiAppData, isLoading } = useApplications({ studentId: student.id })
+  const { data: visaData } = useVisaCases({ studentId: student.id })
   const mockApps = useApplicationsStore((s) => s.applications).filter((a) => a.studentId === student.id)
   const currentUser = useAuthStore((s) => s.currentUser)
   const canStartVisa = hasPermission(currentUser.role, 'visa.manage') ||
     (currentUser.role !== 'student' && currentUser.role !== 'referral_agent')
+
+  const mockVisaCases = useVisaStore((s) => s.visaCases)
+  const visaAppIds = useMemo(() => {
+    const ids = new Set<string>()
+    if (isMockMode()) {
+      for (const vc of mockVisaCases) {
+        if (vc.studentId === student.id) {
+          // If case matches student, mark all their apps or match
+          ids.add(student.id)
+        }
+      }
+      return ids
+    }
+    if (visaData?.visaCases) {
+      for (const vc of visaData.visaCases) {
+        if (vc.applicationId) ids.add(vc.applicationId)
+      }
+    }
+    return ids
+  }, [visaData, mockVisaCases, student.id])
 
   // Track which application's Start Visa dialog is open (null = none)
   const [visaDialogApp, setVisaDialogApp] = useState<{
@@ -81,6 +104,7 @@ export function ApplicationsTab({ student }: { student: Student }) {
         intake: (app as any).intake || (app.intakeMonth && app.intakeYear ? `${app.intakeMonth} ${app.intakeYear}` : 'Upcoming'),
         tuitionUsd: 15000,
         lastUpdate: app.updatedAt ?? app.createdAt,
+        visaCase: (app as any).visaCase,
       }))
     : mockApps
 
@@ -113,52 +137,70 @@ export function ApplicationsTab({ student }: { student: Student }) {
               </tr>
             </thead>
             <tbody>
-              {apps.map((app) => (
-                <tr key={app.id} className="border-b border-border/70 last:border-0 hover:bg-accent/50">
-                  <td className="whitespace-nowrap px-3.5 py-2.5">
-                    <Link
-                      to={`/applications/${app.id}`}
-                      className="text-[13px] font-medium flex items-center gap-1.5 hover:underline cursor-pointer text-primary"
-                    >
-                      {app.universityName} <ExternalLink className="size-3 text-muted-foreground" />
-                    </Link>
-                    <p className="text-xs text-muted-foreground font-tabular">{app.applicationRef} · {app.countryName}</p>
-                  </td>
-                  <td className="whitespace-nowrap px-3.5 py-2.5">
-                    <p className="text-[13px]">{app.courseName}</p>
-                    <p className="text-xs text-muted-foreground font-tabular">{formatCurrency(app.tuitionUsd)}</p>
-                  </td>
-                  <td className="whitespace-nowrap px-3.5 py-2.5">
-                    <ApplicationStageBadge stage={app.stage} />
-                  </td>
-                  <td className="whitespace-nowrap px-3.5 py-2.5 text-[13px]">
-                    {app.intake}
-                  </td>
-                  <td className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground font-tabular">
-                    {dayjs(app.lastUpdate).format('MMM D, YYYY')}
-                  </td>
-                  <td className="whitespace-nowrap px-3.5 py-2.5">
-                    {canStartVisa && app.stage === 'accepted' && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-7 text-xs gap-1 border-emerald-500/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:border-emerald-500 font-medium"
-                        onClick={() =>
-                          setVisaDialogApp({
-                            id: app.id,
-                            universityName: app.universityName,
-                            courseName: app.courseName,
-                            countryName: app.countryName,
-                          })
-                        }
+              {apps.map((app) => {
+                const hasStartedVisa = !!(app as any).visaCase || visaAppIds.has(app.id)
+
+                return (
+                  <tr key={app.id} className="border-b border-border/70 last:border-0 hover:bg-accent/50">
+                    <td className="whitespace-nowrap px-3.5 py-2.5">
+                      <Link
+                        to={`/applications/${app.id}`}
+                        className="text-[13px] font-medium flex items-center gap-1.5 hover:underline cursor-pointer text-primary"
                       >
-                        <PlaneTakeoff className="size-3" />
-                        Start Visa Processing
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                        {app.universityName} <ExternalLink className="size-3 text-muted-foreground" />
+                      </Link>
+                      <p className="text-xs text-muted-foreground font-tabular">{app.applicationRef} · {app.countryName}</p>
+                    </td>
+                    <td className="whitespace-nowrap px-3.5 py-2.5">
+                      <p className="text-[13px]">{app.courseName}</p>
+                      <p className="text-xs text-muted-foreground font-tabular">{formatCurrency(app.tuitionUsd)}</p>
+                    </td>
+                    <td className="whitespace-nowrap px-3.5 py-2.5">
+                      <ApplicationStageBadge stage={app.stage} />
+                    </td>
+                    <td className="whitespace-nowrap px-3.5 py-2.5 text-[13px]">
+                      {app.intake}
+                    </td>
+                    <td className="whitespace-nowrap px-3.5 py-2.5 text-xs text-muted-foreground font-tabular">
+                      {dayjs(app.lastUpdate).format('MMM D, YYYY')}
+                    </td>
+                    <td className="whitespace-nowrap px-3.5 py-2.5">
+                      {hasStartedVisa ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          asChild
+                          className="h-7 text-xs gap-1 border-blue-500/50 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:border-blue-500 font-medium"
+                        >
+                          <Link to="/visa">
+                            <PlaneTakeoff className="size-3" />
+                            In Visa Processing
+                          </Link>
+                        </Button>
+                      ) : (
+                        canStartVisa && app.stage === 'accepted' && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs gap-1 border-emerald-500/60 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 hover:border-emerald-500 font-medium"
+                            onClick={() =>
+                              setVisaDialogApp({
+                                id: app.id,
+                                universityName: app.universityName,
+                                courseName: app.courseName,
+                                countryName: app.countryName,
+                              })
+                            }
+                          >
+                            <PlaneTakeoff className="size-3" />
+                            Start Visa Processing
+                          </Button>
+                        )
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
