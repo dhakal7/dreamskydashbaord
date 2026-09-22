@@ -3,10 +3,10 @@ const AppError = require("../utils/apiError");
 
 // ─── Status transition rules ─────────────────────────────────────────────────
 const ALLOWED_TRANSITIONS = {
-    DRAFT: ["SUBMITTED", "WITHDRAWN"],
+    DRAFT: ["SUBMITTED", "UNDER_REVIEW", "WITHDRAWN"],
     SUBMITTED: ["UNDER_REVIEW", "WITHDRAWN"],
     UNDER_REVIEW: ["ACCEPTED", "REJECTED", "DEFERRED", "WITHDRAWN"],
-    DEFERRED: ["SUBMITTED", "WITHDRAWN"],
+    DEFERRED: ["SUBMITTED", "UNDER_REVIEW", "ACCEPTED", "WITHDRAWN"],
     ACCEPTED: ["WITHDRAWN"],
     REJECTED: [],
     WITHDRAWN: [],
@@ -35,6 +35,8 @@ const createApplication = async (data) => {
             studentId: data.studentId,
             universityId: data.universityId,
             courseId: data.courseId,
+            status: "SUBMITTED",
+            submittedAt: new Date(),
             intake: data.intake?.trim() || null,
             priority: data.priority || null,
             notes: data.notes?.trim() || null,
@@ -112,6 +114,10 @@ const changeStatus = async (id, { status }) => {
     const existing = await prisma.application.findUnique({ where: { id } });
     if (!existing) throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
 
+    if (existing.status === status) {
+        return existing;
+    }
+
     const allowed = ALLOWED_TRANSITIONS[existing.status] || [];
     if (!allowed.includes(status))
         throw AppError.badRequest(
@@ -120,7 +126,9 @@ const changeStatus = async (id, { status }) => {
         );
 
     const update = { status };
-    if (status === "SUBMITTED" && !existing.submittedAt) update.submittedAt = new Date();
+    if ((status === "SUBMITTED" || status === "UNDER_REVIEW") && !existing.submittedAt) {
+        update.submittedAt = new Date();
+    }
 
     return prisma.application.update({ where: { id }, data: update, include: includeRelations });
 };
