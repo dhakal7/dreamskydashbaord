@@ -47,11 +47,16 @@ export function Stepper({
       const step = steps[index]
       return !!stepDates[step.key]
     }
+    // When the final linear step is reached (e.g. 'accepted'), all steps are completed
+    if (currentStepKey === 'accepted' || (currentLinearIndex === steps.length - 1 && index <= currentLinearIndex)) {
+      return true
+    }
     return index < currentLinearIndex
   }
 
   const isStepActive = (index: number) => {
     if (isTerminalActive) return false
+    if (currentStepKey === 'accepted' || currentLinearIndex === steps.length - 1) return false
     return index === currentLinearIndex
   }
 
@@ -120,7 +125,11 @@ export function Stepper({
                     <span 
                       className={cn(
                         'text-sm font-semibold transition-colors',
-                        completed ? 'text-foreground font-medium' : active ? 'text-brand-600 font-bold' : 'text-muted-foreground'
+                        completed 
+                          ? (step.key === 'accepted' ? 'text-emerald-500 font-bold dark:text-emerald-400' : 'text-foreground font-medium')
+                          : active 
+                          ? 'text-brand-600 font-bold' 
+                          : 'text-muted-foreground'
                       )}
                     >
                       {step.label}
