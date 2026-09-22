@@ -25,13 +25,27 @@ const BACKEND_STATUS_TO_STAGE: Record<string, ApplicationStage> = {
 }
 
 function resolveAppStage(status?: string, offers?: any[]): ApplicationStage {
+  const normStatus = (status || '').toUpperCase()
+  if (normStatus === 'REJECTED' || normStatus === 'WITHDRAWN') return 'rejected'
+
   if (offers && offers.length > 0) {
-    const latestOffer = offers[0]
+    const sorted = [...offers].sort((a, b) => 
+      new Date(b.receivedAt || b.createdAt || 0).getTime() - new Date(a.receivedAt || a.createdAt || 0).getTime()
+    )
+    const latestOffer = sorted[0]
+    const stageInDetails = latestOffer.details?.stage as ApplicationStage | undefined
+    if (stageInDetails) return stageInDetails
+
     if (latestOffer.type === 'CONDITIONAL') return 'conditional_offer'
-    if (latestOffer.type === 'UNCONDITIONAL') return 'unconditional_offer'
+    if (latestOffer.type === 'UNCONDITIONAL') {
+      if (normStatus === 'ACCEPTED') return 'accepted'
+      return 'unconditional_offer'
+    }
   }
-  if (!status) return 'submitted'
-  return BACKEND_STATUS_TO_STAGE[status.toUpperCase()] ?? 'submitted'
+
+  if (normStatus === 'ACCEPTED') return 'accepted'
+  if (!normStatus) return 'submitted'
+  return BACKEND_STATUS_TO_STAGE[normStatus] ?? 'submitted'
 }
 
 export function ApplicationsTab({ student }: { student: Student }) {

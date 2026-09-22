@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Mail, Phone, GraduationCap, MapPin, Calendar, DollarSign, User, ShieldAlert, Award, FileText, ChevronRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -13,11 +13,12 @@ import { ApplicationStageBadge, applicationStageMeta } from '@/components/shared
 import { useAuthStore } from '@/store/auth-store'
 import { hasPermission } from '@/lib/rbac'
 import { isMockMode } from '@/lib/api-client'
-import { useApplication, useChangeApplicationStatus } from '@/hooks/use-applications'
+import { useApplication, useChangeApplicationStatus, applicationKeys } from '@/hooks/use-applications'
 import { useStudent } from '@/hooks/use-students'
 import { adaptApiStudentToStudent } from '@/lib/student-adapter'
 import { applicationApi } from '@/api/application-api'
 import { toast } from 'sonner'
+import { useQueryClient } from '@tanstack/react-query'
 
 // Helper to add days to a YYYY-MM-DD string
 function addDays(dateStr: string, days: number): string {
@@ -43,14 +44,28 @@ const BACKEND_STATUS_TO_STAGE: Record<string, ApplicationStage> = {
   WITHDRAWN: 'rejected',
 }
 
-function resolveAppStage(status?: string, offers?: any[]): ApplicationStage {
+export function resolveAppStage(status?: string, offers?: any[]): ApplicationStage {
+  const normStatus = (status || '').toUpperCase()
+  if (normStatus === 'REJECTED' || normStatus === 'WITHDRAWN') return 'rejected'
+
   if (offers && offers.length > 0) {
-    const latestOffer = offers[0]
+    const sorted = [...offers].sort((a, b) => 
+      new Date(b.receivedAt || b.createdAt || 0).getTime() - new Date(a.receivedAt || a.createdAt || 0).getTime()
+    )
+    const latestOffer = sorted[0]
+    const stageInDetails = latestOffer.details?.stage as ApplicationStage | undefined
+    if (stageInDetails) return stageInDetails
+
     if (latestOffer.type === 'CONDITIONAL') return 'conditional_offer'
-    if (latestOffer.type === 'UNCONDITIONAL') return 'unconditional_offer'
+    if (latestOffer.type === 'UNCONDITIONAL') {
+      if (normStatus === 'ACCEPTED') return 'accepted'
+      return 'unconditional_offer'
+    }
   }
-  if (!status) return 'submitted'
-  return BACKEND_STATUS_TO_STAGE[status.toUpperCase()] ?? 'submitted'
+
+  if (normStatus === 'ACCEPTED') return 'accepted'
+  if (!normStatus) return 'submitted'
+  return BACKEND_STATUS_TO_STAGE[normStatus] ?? 'submitted'
 }
 
 export default function ApplicationDetailPage() {
@@ -64,6 +79,8 @@ export default function ApplicationDetailPage() {
 
   const { data: apiApp, isLoading: isLoadingApiApp } = useApplication(id ?? '')
   const changeStatusMutation = useChangeApplicationStatus()
+  const queryClient = useQueryClient()
+  const [isUpdatingStage, setIsUpdatingStage] = useState(false)
 
   const app: Application | undefined = useMemo(() => {
     if (!isMockMode()) {
@@ -213,29 +230,67 @@ export default function ApplicationDetailPage() {
     if (!app) return
     if (isMockMode()) {
       moveApplication(app.id, newStage)
-    } else {
-      const stageToBackend: Record<ApplicationStage, string> = {
-        submitted: 'SUBMITTED',
-        university_review: 'UNDER_REVIEW',
-        conditional_offer: 'UNDER_REVIEW',
-        unconditional_offer: 'UNDER_REVIEW',
-        accepted: 'ACCEPTED',
-        rejected: 'REJECTED',
-      }
-      const targetStatus = stageToBackend[newStage] ?? 'UNDER_REVIEW'
+      return
+    }
 
-      // If application in backend is currently in DRAFT status,
-      // backend transition rules require DRAFT -> SUBMITTED before moving to UNDER_REVIEW
-      if (apiApp?.status === 'DRAFT' && targetStatus !== 'SUBMITTED') {
+    setIsUpdatingStage(true)
+    try {
+      if (newStage === 'conditional_offer') {
+        await applicationApi.recordOffer(app.id, {
+          type: 'CONDITIONAL',
+          details: { stage: 'conditional_offer' },
+        })
+        toast.success('Stage updated to Conditional Offer')
+      } else if (newStage === 'unconditional_offer') {
+        await applicationApi.recordOffer(app.id, {
+          type: 'UNCONDITIONAL',
+          details: { stage: 'unconditional_offer' },
+        })
+        toast.success('Stage updated to Unconditional Offer')
+      } else if (newStage === 'accepted') {
+        await applicationApi.recordOffer(app.id, {
+          type: 'UNCONDITIONAL',
+          details: { stage: 'accepted' },
+        })
         try {
-          await applicationApi.changeStatus(app.id, 'SUBMITTED')
-        } catch (err: any) {
-          toast.error(err?.response?.data?.message || err?.message || 'Failed to submit application')
-          return
+          await applicationApi.changeStatus(app.id, 'ACCEPTED')
+        } catch {
+          // Status might already be ACCEPTED
         }
+        toast.success('Application marked as Accepted')
+      } else if (newStage === 'university_review') {
+        if (apiApp?.offers && apiApp.offers.length > 0) {
+          await applicationApi.recordOffer(app.id, {
+            type: 'CONDITIONAL',
+            details: { stage: 'university_review' },
+          })
+        }
+        if (apiApp?.status === 'DRAFT') {
+          await applicationApi.changeStatus(app.id, 'SUBMITTED')
+        }
+        await applicationApi.changeStatus(app.id, 'UNDER_REVIEW')
+        toast.success('Stage updated to University Review')
+      } else if (newStage === 'submitted') {
+        if (apiApp?.offers && apiApp.offers.length > 0) {
+          await applicationApi.recordOffer(app.id, {
+            type: 'CONDITIONAL',
+            details: { stage: 'submitted' },
+          })
+        }
+        await applicationApi.changeStatus(app.id, 'SUBMITTED')
+        toast.success('Stage updated to Submitted')
+      } else if (newStage === 'rejected') {
+        await applicationApi.changeStatus(app.id, 'REJECTED')
+        toast.success('Application marked as Rejected')
       }
 
-      changeStatusMutation.mutate({ id: app.id, status: targetStatus })
+      await queryClient.invalidateQueries({ queryKey: applicationKeys.detail(app.id) })
+      await queryClient.invalidateQueries({ queryKey: applicationKeys.lists() })
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || 'Failed to update application stage')
+    } finally {
+      setIsUpdatingStage(false)
     }
   }
 
@@ -283,7 +338,11 @@ export default function ApplicationDetailPage() {
             {canManage ? (
               <div className="flex items-center gap-1.5 bg-card border border-border rounded-lg px-3 py-1.5 shadow-sm">
                 <span className="text-xs text-muted-foreground font-medium">Stage:</span>
-                <Select value={app.stage} onValueChange={(val) => handleStageChange(val as ApplicationStage)}>
+                <Select
+                  value={app.stage}
+                  onValueChange={(val) => handleStageChange(val as ApplicationStage)}
+                  disabled={isUpdatingStage || changeStatusMutation.isPending}
+                >
                   <SelectTrigger className="w-[170px] h-7 border-none bg-transparent shadow-none focus:ring-0 p-0 text-sm font-semibold">
                     <SelectValue />
                   </SelectTrigger>
@@ -304,7 +363,7 @@ export default function ApplicationDetailPage() {
             )}
 
             {canManage && app.stage === 'rejected' && (
-              <Button size="sm" variant="outline" onClick={handleReopen} className="h-9">
+              <Button size="sm" variant="outline" onClick={handleReopen} disabled={isUpdatingStage} className="h-9">
                 Reopen Application
               </Button>
             )}
@@ -312,10 +371,10 @@ export default function ApplicationDetailPage() {
               <Button
                 size="sm"
                 onClick={handleNextStage}
-                disabled={changeStatusMutation.isPending}
+                disabled={isUpdatingStage || changeStatusMutation.isPending}
                 className="h-9 bg-brand-600 hover:bg-brand-700 text-white font-medium disabled:opacity-70"
               >
-                {changeStatusMutation.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+                {(isUpdatingStage || changeStatusMutation.isPending) && <Loader2 className="mr-2 size-4 animate-spin" />}
                 Move to Next Stage
               </Button>
             )}
