@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, Mail, Phone, GraduationCap, MapPin, Calendar, DollarSign, User, ShieldAlert, Award, FileText, ChevronRight, Loader2 } from 'lucide-react'
+import { ArrowLeft, Mail, Phone, GraduationCap, MapPin, Calendar, DollarSign, User, ShieldAlert, Award, FileText, ChevronRight, Loader2, PlaneTakeoff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -19,6 +19,7 @@ import { adaptApiStudentToStudent } from '@/lib/student-adapter'
 import { applicationApi } from '@/api/application-api'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
+import { StartVisaDialog } from '@/features/students/components/profile-tabs/start-visa-dialog'
 
 // Helper to add days to a YYYY-MM-DD string
 function addDays(dateStr: string, days: number): string {
@@ -81,10 +82,19 @@ export default function ApplicationDetailPage() {
   const changeStatusMutation = useChangeApplicationStatus()
   const queryClient = useQueryClient()
   const [isUpdatingStage, setIsUpdatingStage] = useState(false)
+  const [visaDialogOpen, setVisaDialogOpen] = useState(false)
+  const canStartVisa = hasPermission(currentUser.role, 'visa.manage') ||
+    (currentUser.role !== 'student' && currentUser.role !== 'referral_agent')
 
   const app: Application | undefined = useMemo(() => {
     if (!isMockMode()) {
       if (!apiApp) return undefined
+      const resolvedCountry =
+        (apiApp.university as any)?.country?.name ||
+        (apiApp.university as any)?.countryName ||
+        universities.find((u) => u.id === apiApp.universityId || u.name === apiApp.university?.name)?.countryName ||
+        'Australia'
+
       return {
         id: apiApp.id,
         applicationRef: apiApp.id.length > 12 ? `APP-${apiApp.id.slice(-6).toUpperCase()}` : apiApp.id,
@@ -94,7 +104,7 @@ export default function ApplicationDetailPage() {
         universityName: apiApp.university?.name ?? 'Unknown University',
         courseId: apiApp.courseId ?? '',
         courseName: apiApp.course?.name ?? 'Course',
-        countryName: 'General',
+        countryName: resolvedCountry,
         stage: resolveAppStage(apiApp.status, apiApp.offers),
         counselorId: '',
         counselorName: 'Counselor',
@@ -378,6 +388,16 @@ export default function ApplicationDetailPage() {
                 Move to Next Stage
               </Button>
             )}
+            {canStartVisa && app.stage === 'accepted' && (
+              <Button
+                size="sm"
+                onClick={() => setVisaDialogOpen(true)}
+                className="h-9 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold gap-2 shadow-sm"
+              >
+                <PlaneTakeoff className="size-4" />
+                Start Visa Processing
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -560,6 +580,21 @@ export default function ApplicationDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Start Visa Processing Dialog */}
+      {student && app && (
+        <StartVisaDialog
+          open={visaDialogOpen}
+          onOpenChange={setVisaDialogOpen}
+          student={student}
+          application={{
+            id: app.id,
+            universityName: app.universityName,
+            courseName: app.courseName,
+            countryName: app.countryName,
+          }}
+        />
+      )}
     </div>
   )
 }
