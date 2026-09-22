@@ -16,6 +16,8 @@ import { isMockMode } from '@/lib/api-client'
 import { useApplication, useChangeApplicationStatus } from '@/hooks/use-applications'
 import { useStudent } from '@/hooks/use-students'
 import { adaptApiStudentToStudent } from '@/lib/student-adapter'
+import { applicationApi } from '@/api/application-api'
+import { toast } from 'sonner'
 
 // Helper to add days to a YYYY-MM-DD string
 function addDays(dateStr: string, days: number): string {
@@ -207,7 +209,7 @@ export default function ApplicationDetailPage() {
   const nextStageIndex = linearFlow.indexOf(app.stage) + 1
   const nextStage = nextStageIndex < linearFlow.length ? linearFlow[nextStageIndex] : null
 
-  const handleStageChange = (newStage: ApplicationStage) => {
+  const handleStageChange = async (newStage: ApplicationStage) => {
     if (!app) return
     if (isMockMode()) {
       moveApplication(app.id, newStage)
@@ -220,7 +222,20 @@ export default function ApplicationDetailPage() {
         accepted: 'ACCEPTED',
         rejected: 'REJECTED',
       }
-      changeStatusMutation.mutate({ id: app.id, status: stageToBackend[newStage] ?? 'UNDER_REVIEW' })
+      const targetStatus = stageToBackend[newStage] ?? 'UNDER_REVIEW'
+
+      // If application in backend is currently in DRAFT status,
+      // backend transition rules require DRAFT -> SUBMITTED before moving to UNDER_REVIEW
+      if (apiApp?.status === 'DRAFT' && targetStatus !== 'SUBMITTED') {
+        try {
+          await applicationApi.changeStatus(app.id, 'SUBMITTED')
+        } catch (err: any) {
+          toast.error(err?.response?.data?.message || err?.message || 'Failed to submit application')
+          return
+        }
+      }
+
+      changeStatusMutation.mutate({ id: app.id, status: targetStatus })
     }
   }
 
@@ -294,7 +309,13 @@ export default function ApplicationDetailPage() {
               </Button>
             )}
             {canManage && app.stage !== 'rejected' && nextStage && (
-              <Button size="sm" onClick={handleNextStage} className="h-9 bg-brand-600 hover:bg-brand-700 text-white font-medium">
+              <Button
+                size="sm"
+                onClick={handleNextStage}
+                disabled={changeStatusMutation.isPending}
+                className="h-9 bg-brand-600 hover:bg-brand-700 text-white font-medium disabled:opacity-70"
+              >
+                {changeStatusMutation.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
                 Move to Next Stage
               </Button>
             )}
