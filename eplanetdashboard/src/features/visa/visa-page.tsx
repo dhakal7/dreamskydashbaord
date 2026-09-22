@@ -20,9 +20,10 @@ import { useAuthStore } from '@/store/auth-store'
 import { visibleVisaCases } from '@/lib/data-visibility'
 import { VisaStatusBadge } from '@/components/shared/status-badges'
 import { EmptyState } from '@/components/shared/empty-state'
+import { toast } from 'sonner'
 import { countries } from '@/mock'
 import type { VisaCase, VisaStatus } from '@/types'
-import { useVisaCases } from '@/hooks/use-visa'
+import { useVisaCases, useDeleteVisaCase } from '@/hooks/use-visa'
 import { hasPermission } from '@/lib/rbac'
 import { VisaFormDialog } from './components/visa-form-dialog'
 
@@ -49,6 +50,7 @@ export default function VisaPage() {
   const mockVisaCases = useVisaStore((s) => s.visaCases)
   const removeVisaCase = useVisaStore((s) => s.removeVisaCase)
   const { data: apiVisaData } = useVisaCases()
+  const deleteVisaCaseMutation = useDeleteVisaCase()
   const students = useStudentsStore((s) => s.students)
   const currentUser = useAuthStore((s) => s.currentUser)
 
@@ -234,10 +236,20 @@ export default function VisaPage() {
                             variant="ghost"
                             size="icon"
                             className="size-6 text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                            onClick={(e) => {
+                            disabled={deleteVisaCaseMutation.isPending}
+                            onClick={async (e) => {
                               e.stopPropagation()
                               if (window.confirm(`Are you sure you want to delete visa case for "${vc.studentName}"?`)) {
-                                removeVisaCase(vc.id)
+                                if (!isMockMode()) {
+                                  try {
+                                    await deleteVisaCaseMutation.mutateAsync(vc.id)
+                                  } catch {
+                                    // Error handled by mutation onError toast
+                                  }
+                                } else {
+                                  removeVisaCase(vc.id)
+                                  toast.success('Visa case deleted')
+                                }
                               }
                             }}
                             title="Delete visa case"

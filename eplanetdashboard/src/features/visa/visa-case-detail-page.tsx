@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, ShieldAlert, ChevronRight, CheckCircle2, Clock, Circle,
-  MapPin, GraduationCap, Mail, Phone, Loader2,
+  MapPin, GraduationCap, Mail, Phone, Loader2, Trash2,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
@@ -17,7 +18,7 @@ import { Stepper, type Step, type TerminalStep } from '@/components/shared/stepp
 import { VisaStatusBadge, visaStatusMeta } from '@/components/shared/status-badges'
 import type { VisaCase, VisaStep, VisaStatus } from '@/types'
 import { isMockMode } from '@/lib/api-client'
-import { useVisaCase, useChangeVisaStatus } from '@/hooks/use-visa'
+import { useVisaCase, useChangeVisaStatus, useDeleteVisaCase } from '@/hooks/use-visa'
 import { useStudent } from '@/hooks/use-students'
 import { adaptApiStudentToStudent } from '@/lib/student-adapter'
 
@@ -55,8 +56,10 @@ const visaStepDescriptions: Record<VisaStep, string> = {
 
 export default function VisaCaseDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
 
   const visaCases = useVisaStore((s) => s.visaCases)
+  const removeVisaCase = useVisaStore((s) => s.removeVisaCase)
   const updateChecklistItem = useVisaStore((s) => s.updateChecklistItem)
   const updateOverallStatus = useVisaStore((s) => s.updateOverallStatus)
 
@@ -65,6 +68,7 @@ export default function VisaCaseDetailPage() {
 
   const { data: apiVisaCase, isLoading: isLoadingVisaCase } = useVisaCase(id ?? '')
   const changeVisaStatusMutation = useChangeVisaStatus()
+  const deleteVisaCaseMutation = useDeleteVisaCase()
 
   const visaCase: VisaCase | undefined = useMemo(() => {
     if (!isMockMode()) {
@@ -248,21 +252,48 @@ export default function VisaCaseDetailPage() {
           <div className="flex items-center gap-2.5">
             <VisaStatusBadge status={visaCase.overallStatus} className="text-sm" />
             {canManage && (
-              <Select
-                value={visaCase.overallStatus}
-                onValueChange={(val) => handleStatusChange(val as VisaStatus)}
-              >
-                <SelectTrigger className="w-[160px] h-9 border-border/70">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(visaStatusMeta).map(([k, meta]) => (
-                    <SelectItem key={k} value={k}>
-                      {meta.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <>
+                <Select
+                  value={visaCase.overallStatus}
+                  onValueChange={(val) => handleStatusChange(val as VisaStatus)}
+                >
+                  <SelectTrigger className="w-[160px] h-9 border-border/70">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(visaStatusMeta).map(([k, meta]) => (
+                      <SelectItem key={k} value={k}>
+                        {meta.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/50 dark:hover:bg-red-950/50"
+                  disabled={deleteVisaCaseMutation.isPending}
+                  onClick={async () => {
+                    if (window.confirm(`Are you sure you want to delete this visa case for "${visaCase.studentName}"?`)) {
+                      if (!isMockMode()) {
+                        try {
+                          await deleteVisaCaseMutation.mutateAsync(visaCase.id)
+                          navigate('/visa')
+                        } catch {
+                          // Error handled by hook
+                        }
+                      } else {
+                        removeVisaCase(visaCase.id)
+                        toast.success('Visa case deleted')
+                        navigate('/visa')
+                      }
+                    }
+                  }}
+                >
+                  <Trash2 className="mr-1.5 size-3.5" />
+                  Delete Case
+                </Button>
+              </>
             )}
           </div>
         </div>

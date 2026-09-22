@@ -63,3 +63,23 @@ export function useChangeVisaStatus() {
     onError: (err: Error) => toast.error(err.message),
   })
 }
+
+export function useDeleteVisaCase() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isMockMode()) return Promise.resolve()
+      return visaApi.remove(id)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: visaKeys.lists() })
+      qc.invalidateQueries({ queryKey: ['applications'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Visa case deleted')
+    },
+    onError: (err: any) => {
+      const msg = err.response?.data?.message || err.message || 'Failed to delete visa case'
+      toast.error(msg)
+    },
+  })
+}
