@@ -1,0 +1,1 @@
+import{s as e}from"./card-Bns9jp-P.js";var t={list(t){return e.get(`/visa-cases`,{params:t})},getOne(t){return e.get(`/visa-cases/${t}`)},create(t){return e.post(`/visa-cases`,t)},update(t,n){return e.put(`/visa-cases/${t}`,n)},changeStatus(t,n){return e.patch(`/visa-cases/${t}/status`,{status:n})},remove(t){return e.delete(`/visa-cases/${t}`)}};export{t};

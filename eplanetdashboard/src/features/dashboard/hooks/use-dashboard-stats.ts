@@ -29,6 +29,8 @@ import { studentApi } from '@/api/student-api'
 import { followUpApi } from '@/api/followup-api'
 import { appointmentApi } from '@/api/appointment-api'
 import { dashboardApi } from '@/api/dashboard-api'
+import { applicationApi } from '@/api/application-api'
+import { visaApi } from '@/api/visa-api'
 import { getFrontDeskStats, getCounselorDashboard } from '../role-selectors'
 import { getUpcomingFollowUps } from '../selectors'
 import type { AppointmentStatus, LeadStage, Priority } from '@/types'
@@ -101,17 +103,47 @@ export function useSuperAdminStats() {
   const query = useQuery<SuperAdminStatItem[]>({
     queryKey: dashboardKeys.superAdmin(),
     queryFn: async () => {
-      // Single consolidated request — backend runs all counts in parallel server-side
-      const summary = await dashboardApi.getSummary()
+      // Fetch summary + raw applications + visa cases in parallel so we can apply
+      // the exact same filter the Applications page uses:
+      // an application is only counted if it has NO linked visa case.
+      const [summary, appsResp, visaResp] = await Promise.all([
+        dashboardApi.getSummary(),
+        applicationApi.list({ limit: 1000 }),
+        visaApi.list({ limit: 1000 }),
+      ])
+
+      // Build a set of application IDs that have been moved to Visa Processing
+      const visaLinkedAppIds = new Set<string>()
+      for (const vc of visaResp.visaCases ?? []) {
+        if (vc.applicationId) visaLinkedAppIds.add(vc.applicationId)
+        if ((vc as any).application?.id) visaLinkedAppIds.add((vc as any).application.id)
+      }
+
+      // Mirror the Applications page filter: exclude apps that have a visaCase or
+      // whose ID appears in a visa case's applicationId
+      const pureApps = (appsResp.applications ?? []).filter(
+        (app) => !(app as any).visaCase && !visaLinkedAppIds.has(app.id)
+      )
+
+      // Offer letters: conditional or unconditional offers within pure apps
+      const offerCount = pureApps.filter((app) => {
+        if (!app.offers || app.offers.length === 0) return false
+        return app.offers.some(
+          (o) => o.type === 'CONDITIONAL' || o.type === 'UNCONDITIONAL'
+        )
+      }).length
+
+      const appCount = pureApps.length
+      const visaCount = visaResp.visaCases?.length ?? summary.visaCases
 
       return [
-        { label: 'Total Students',      value: summary.totalStudents,   delta: `${summary.totalStudents} total`,       trend: 'up'   as const },
-        { label: 'New Leads',           value: summary.newLeads,         delta: 'Last 30 days',                         trend: 'up'   as const },
-        { label: "Today's Follow-ups",  value: summary.pendingFollowUps, delta: 'Upcoming',                             trend: 'flat' as const },
-        { label: 'Applications',        value: summary.applications,     delta: `${summary.applications} active`,       trend: 'up'   as const },
-        { label: 'Offer Letters',       value: summary.offerLetters,     delta: `${summary.offerLetters} received`,     trend: 'up'   as const },
-        { label: 'Visa Processing',     value: summary.visaCases,        delta: `${summary.visaCases} total cases`,     trend: 'flat' as const },
-        { label: 'Enrolled Students',   value: summary.enrolledOnly,     delta: `${summary.enrolledOnly} enrolled`,     trend: 'up'   as const },
+        { label: 'Total Students',      value: summary.totalStudents,   delta: `${summary.totalStudents} total`,     trend: 'up'   as const },
+        { label: 'New Leads',           value: summary.newLeads,         delta: 'Last 30 days',                       trend: 'up'   as const },
+        { label: "Today's Follow-ups",  value: summary.pendingFollowUps, delta: 'Upcoming',                           trend: 'flat' as const },
+        { label: 'Applications',        value: appCount,                 delta: `${appCount} active`,                 trend: 'up'   as const },
+        { label: 'Offer Letters',       value: offerCount,               delta: `${offerCount} received`,             trend: 'up'   as const },
+        { label: 'Visa Processing',     value: visaCount,                delta: `${visaCount} total cases`,           trend: 'flat' as const },
+        { label: 'Enrolled Students',   value: summary.enrolledOnly,     delta: `${summary.enrolledOnly} enrolled`,   trend: 'up'   as const },
       ]
     },
     staleTime: 0,              // always considered stale — refetch on every mount/focus
