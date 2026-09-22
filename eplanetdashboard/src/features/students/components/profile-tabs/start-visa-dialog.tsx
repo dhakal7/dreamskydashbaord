@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { useVisaStore } from '@/features/visa/store'
+import { useApplicationsStore } from '@/features/applications/store'
 import { useCreateVisaCase } from '@/hooks/use-visa'
 import { isMockMode } from '@/lib/api-client'
 import type { Student } from '@/types'
@@ -54,6 +55,7 @@ export function StartVisaDialog({
       if (!isMockMode()) {
         await createVisaCaseMutation.mutateAsync({
           studentId: student.id,
+          applicationId: application.id,
           country,
           visaType: 'Student Visa',
           notes: notes.trim() || undefined,
@@ -65,6 +67,7 @@ export function StartVisaDialog({
           countryName: country,
           universityName: application.universityName,
         })
+        useApplicationsStore.getState().removeApplication(application.id)
       }
       onOpenChange(false)
       setNotes('')

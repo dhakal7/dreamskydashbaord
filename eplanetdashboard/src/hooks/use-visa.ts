@@ -39,6 +39,7 @@ export function useCreateVisaCase() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: visaKeys.lists() })
+      qc.invalidateQueries({ queryKey: ['applications'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Visa case created')
     },

@@ -19,6 +19,7 @@ import { adaptApiStudentToStudent } from '@/lib/student-adapter'
 import { applicationApi } from '@/api/application-api'
 import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
+import { useVisaCases } from '@/hooks/use-visa'
 import { StartVisaDialog } from '@/features/students/components/profile-tabs/start-visa-dialog'
 
 // Helper to add days to a YYYY-MM-DD string
@@ -79,12 +80,20 @@ export default function ApplicationDetailPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
 
   const { data: apiApp, isLoading: isLoadingApiApp } = useApplication(id ?? '')
+  const { data: apiVisaData } = useVisaCases()
   const changeStatusMutation = useChangeApplicationStatus()
   const queryClient = useQueryClient()
   const [isUpdatingStage, setIsUpdatingStage] = useState(false)
   const [visaDialogOpen, setVisaDialogOpen] = useState(false)
   const canStartVisa = hasPermission(currentUser.role, 'visa.manage') ||
     (currentUser.role !== 'student' && currentUser.role !== 'referral_agent')
+
+  const hasStartedVisa = useMemo(() => {
+    if (isMockMode()) return false
+    if ((apiApp as any)?.visaCase) return true
+    if (apiVisaData?.visaCases?.some((vc) => vc.applicationId === id || vc.application?.id === id)) return true
+    return false
+  }, [apiApp, apiVisaData, id])
 
   const app: Application | undefined = useMemo(() => {
     if (!isMockMode()) {
@@ -388,7 +397,15 @@ export default function ApplicationDetailPage() {
                 Move to Next Stage
               </Button>
             )}
-            {canStartVisa && app.stage === 'accepted' && (
+            {hasStartedVisa && (
+              <Button asChild size="sm" className="h-9 bg-brand-600 hover:bg-brand-700 text-white font-semibold gap-2 shadow-sm">
+                <Link to="/visa">
+                  <PlaneTakeoff className="size-4" />
+                  View in Visa Processing
+                </Link>
+              </Button>
+            )}
+            {!hasStartedVisa && canStartVisa && app.stage === 'accepted' && (
               <Button
                 size="sm"
                 onClick={() => setVisaDialogOpen(true)}
@@ -401,6 +418,17 @@ export default function ApplicationDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Visa Processing Active Alert */}
+      {hasStartedVisa && (
+        <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
+          <PlaneTakeoff className="size-4 shrink-0" />
+          <span>Visa processing has started for this student. This application is active in Visa Processing.</span>
+          <Link to="/visa" className="ml-auto underline font-semibold hover:opacity-80">
+            Open Visa Processing &rarr;
+          </Link>
+        </div>
+      )}
 
       {/* Stepper Card */}
       <Card className="p-6 md:p-8 border-border/70 shadow-sm bg-card/60 backdrop-blur">
