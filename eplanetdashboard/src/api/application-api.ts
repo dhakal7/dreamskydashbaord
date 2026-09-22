@@ -30,6 +30,7 @@ export interface ApiOffer {
   type: string
   conditions: string | null
   deadline: string | null
+  details?: any
   receivedAt: string
 }
 
@@ -74,7 +75,7 @@ export const applicationApi = {
   changeStatus(id: string, status: string): Promise<ApiApplication> {
     return api.patch(`/applications/${id}/status`, { status })
   },
-  recordOffer(id: string, offer: { type: string; conditions?: string; deadline?: string }): Promise<ApiOffer> {
+  recordOffer(id: string, offer: { type: string; conditions?: string; deadline?: string; details?: any }): Promise<ApiOffer> {
     return api.post(`/applications/${id}/offers`, offer)
   },
   remove(id: string): Promise<void> {

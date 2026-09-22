@@ -76,7 +76,7 @@ const listApplications = async (query) => {
                 student: { select: { id: true, firstName: true, lastName: true } },
                 university: { select: { id: true, name: true } },
                 course: { select: { id: true, name: true, level: true } },
-                offers: { select: { id: true, type: true, receivedAt: true } },
+                offers: { select: { id: true, type: true, details: true, receivedAt: true } },
             },
             orderBy: { createdAt: "desc" },
             skip,
@@ -145,11 +145,6 @@ const recordOffer = async (applicationId, data) => {
             details: data.details || null,
         },
     });
-
-    // Auto-transition to ACCEPTED when offer is recorded
-    if (app.status !== "ACCEPTED") {
-        await prisma.application.update({ where: { id: applicationId }, data: { status: "ACCEPTED" } });
-    }
 
     return offer;
 };
