@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/shared/page-header'
@@ -19,10 +19,18 @@ import { useAppointmentsStore } from '@/features/appointments/store'
 import { useDocumentsStore } from '@/features/documents/store'
 import { useReviewDocument, useDownloadDocument } from '@/hooks/use-documents'
 import type { StudentDocument } from '@/types'
+import { isMockMode } from '@/lib/api-client'
+import { useApplications } from '@/hooks/use-applications'
+import { useVisaCases } from '@/hooks/use-visa'
 
 export function StudentDashboard() {
   const linkedId = useAuthStore((s) => s.currentUser.linkedId)
-  const data = getStudentDashboard(linkedId)
+  const mockData = getStudentDashboard(linkedId)
+
+  // Live API data (only active in real mode)
+  const { data: apiApps } = useApplications(linkedId ? { studentId: linkedId } : {})
+  const { data: apiVisa } = useVisaCases()
+
   const appointments = useAppointmentsStore((s) => s.appointments)
   const { documents, updateDocumentStatus } = useDocumentsStore()
   const reviewMutation = useReviewDocument()
@@ -30,6 +38,49 @@ export function StudentDashboard() {
 
   const [requestDoc, setRequestDoc] = useState<StudentDocument | null>(null)
   const [requestComment, setRequestComment] = useState('')
+
+  // Resolve applications: live API in real mode, mock store in mock mode
+  const liveApplications = useMemo(() => {
+    if (isMockMode() || !apiApps) return mockData.applications
+    return (apiApps.applications ?? []).map((app) => ({
+      id: app.id,
+      applicationRef: app.id,
+      studentId: app.studentId,
+      studentName: app.student ? `${app.student.firstName} ${app.student.lastName}` : '',
+      universityId: app.universityId ?? '',
+      universityName: (app.university as any)?.name ?? 'Unknown University',
+      courseId: app.courseId ?? '',
+      courseName: (app.course as any)?.name ?? 'Course',
+      countryName: (app.university as any)?.country?.name ?? 'General',
+      stage: 'submitted' as const,
+      counselorId: '',
+      counselorName: '',
+      submittedDate: app.submittedAt ?? app.createdAt,
+      intake: (app as any).intake ?? 'Upcoming',
+      tuitionUsd: 15000,
+      lastUpdate: app.updatedAt ?? app.createdAt,
+    }))
+  }, [apiApps, mockData.applications])
+
+  // Resolve visa case: live API in real mode, mock store in mock mode
+  const liveVisaCase = useMemo(() => {
+    if (isMockMode() || !apiVisa) return mockData.visaCase
+    const myCase = (apiVisa.visaCases ?? []).find(
+      (v) => v.studentId === linkedId || (v as any).student?.id === linkedId
+    )
+    if (!myCase) return null
+    return {
+      ...myCase,
+      progress: (myCase as any).progress ?? 0,
+      overallStatus: (myCase as any).overallStatus ?? (myCase as any).status ?? 'in_progress',
+    }
+  }, [apiVisa, mockData.visaCase, linkedId])
+
+  const data = {
+    ...mockData,
+    applications: liveApplications,
+    visaCase: liveVisaCase,
+  }
 
   const totalTuition = data.applications.reduce((s, a) => s + a.tuitionUsd, 0)
   const myDocuments = documents.filter((d) => d.studentId === linkedId || !linkedId)
@@ -41,8 +92,8 @@ export function StudentDashboard() {
   const stats = [
     { label: 'Applications', value: data.applications.length, icon: FileStack, color: '#2563EB' },
     {
-      label: 'Visa Status', value: data.visaCase ? `${data.visaCase.progress}%` : 'Not started', icon: PlaneTakeoff, color: '#7C3AED',
-      sub: data.visaCase?.overallStatus.replace('_', ' '),
+      label: 'Visa Status', value: data.visaCase ? `${(data.visaCase as any).progress ?? 0}%` : 'Not started', icon: PlaneTakeoff, color: '#7C3AED',
+      sub: (data.visaCase as any)?.overallStatus?.replace('_', ' '),
     },
     {
       label: 'Documents', value: `${myDocuments.filter((d) => d.status === 'verified').length}/${myDocuments.length}`, icon: FolderKanban, color: '#16A34A',
@@ -50,6 +101,7 @@ export function StudentDashboard() {
     },
     { label: 'Est. Tuition', value: formatCurrency(totalTuition), icon: Wallet, color: '#D97706' },
   ]
+
 
   const handleApprove = (doc: StudentDocument) => {
     reviewMutation.mutate(

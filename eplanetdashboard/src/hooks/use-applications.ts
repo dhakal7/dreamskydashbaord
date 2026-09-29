@@ -10,6 +10,7 @@ import {
   type ApplicationListParams,
   type CreateApplicationBody,
 } from '@/api/application-api'
+import { useApplicationsStore } from '@/features/applications/store'
 
 export const applicationKeys = {
   all: ['applications'] as const,
@@ -78,6 +79,31 @@ export function useRecordOffer() {
       qc.invalidateQueries({ queryKey: applicationKeys.detail(id) })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Offer recorded')
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useDeleteApplication() {
+  const qc = useQueryClient()
+  // Subscribe to the store so we can call removeApplication in mock mode
+  const removeFromStore = useApplicationsStore((s) => s.removeApplication)
+
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isMockMode()) {
+        removeFromStore(id)
+        return Promise.resolve()
+      }
+      return applicationApi.remove(id)
+    },
+    onSuccess: (_d, id) => {
+      if (!isMockMode()) {
+        // Only invalidate React Query in real mode; mock mode updates via zustand
+        qc.invalidateQueries({ queryKey: applicationKeys.lists() })
+        qc.invalidateQueries({ queryKey: applicationKeys.detail(id) })
+        qc.invalidateQueries({ queryKey: ['dashboard'] })
+      }
     },
     onError: (err: Error) => toast.error(err.message),
   })
