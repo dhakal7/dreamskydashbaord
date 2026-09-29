@@ -3,10 +3,35 @@ import type { Application } from '@/types'
 import { ApplicationStageBadge } from '@/components/shared/status-badges'
 import { formatCurrency } from '@/lib/utils'
 import { Link } from 'react-router-dom'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { universities } from '@/mock'
-import { useApplicationsStore } from '../store'
+import { useDeleteApplication } from '@/hooks/use-applications'
+
+// ── Delete button component (needs hooks so must be a React component) ────────
+function DeleteApplicationButton({ app }: { app: Application }) {
+  const { mutate: deleteApp, isPending } = useDeleteApplication()
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (window.confirm(`Are you sure you want to delete application "${app.applicationRef}"?`)) {
+      deleteApp(app.id)
+    }
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+      onClick={handleDelete}
+      disabled={isPending}
+      title="Delete application"
+    >
+      {isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Trash2 className="size-3.5" />}
+    </Button>
+  )
+}
 
 export const applicationColumns: ColumnDef<Application>[] = [
   {
@@ -103,26 +128,6 @@ export const applicationColumns: ColumnDef<Application>[] = [
     id: 'actions',
     header: '',
     enableSorting: false,
-    cell: ({ row }) => {
-      const handleDelete = (e: React.MouseEvent) => {
-        e.stopPropagation()
-        if (window.confirm(`Are you sure you want to delete application "${row.original.applicationRef}"?`)) {
-          useApplicationsStore.getState().removeApplication(row.original.id)
-        }
-      }
-
-      return (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50"
-          onClick={handleDelete}
-          title="Delete application"
-        >
-          <Trash2 className="size-3.5" />
-        </Button>
-      )
-    },
+    cell: ({ row }) => <DeleteApplicationButton app={row.original} />,
   },
 ]
-
