@@ -14,7 +14,7 @@ const {
  *   3. Call service
  *   4. Send response
  *
- * No business logic lives here. No DB calls. No error catching needed —
+ * No business logic lives here. No DB calls. No error catching needed â€”
  * the global error handler in app.js catches everything thrown by the service.
  */
 
@@ -33,7 +33,7 @@ const refresh = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-    // refreshToken in body is optional — logout still succeeds without it
+    // refreshToken in body is optional â€” logout still succeeds without it
     const { refreshToken } = req.body;
     await authService.logout({ refreshToken });
     sendSuccess(res, { message: "Logged out successfully." });
@@ -55,7 +55,7 @@ const changePassword = async (req, res) => {
 const activateStudentPortal = async (req, res) => {
     const { studentId } = req.body;
     validateActivatePortal({ studentId });
-    const result = await authService.activateStudentPortal({ studentId });
+    const result = await authService.activateStudentPortal({ studentId, currentUser: req.user });
     sendSuccess(res, { message: result.message, data: result });
 };
 

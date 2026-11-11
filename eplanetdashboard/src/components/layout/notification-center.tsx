@@ -5,7 +5,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { useNotificationsStore } from '@/store/notifications-store'
-import { useNotifications } from '@/hooks/use-notifications'
+import { useNotifications, useMarkNotificationAsRead, useMarkAllNotificationsAsRead } from '@/hooks/use-notifications'
+import { isMockMode } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
@@ -26,31 +27,78 @@ export function NotificationCenter() {
   const storeNotifications = useNotificationsStore((s) => s.notifications)
   const markAsRead = useNotificationsStore((s) => s.markAsRead)
   const markAllAsRead = useNotificationsStore((s) => s.markAllAsRead)
-  const { data: apiNotifyData } = useNotifications()
+  const {
+    data: apiNotifyData,
+    isLoading: isNotifyLoading,
+    isError: isNotifyError,
+    refetch: refetchNotifications,
+  } = useNotifications()
+  const markAsReadMutation = useMarkNotificationAsRead()
+  const markAllAsReadMutation = useMarkAllNotificationsAsRead()
+  const isMock = isMockMode()
 
-  // Sync backend notifications when real mode API data arrives
+  // Sync backend notifications when real mode API data arrives.
+  // In live mode, the server response is authoritative so synthetic local or mock-template
+  // notifications persisted in localStorage never leak into the live notification center.
   useEffect(() => {
-    if (apiNotifyData?.notifications && apiNotifyData.notifications.length > 0) {
-      const mapped: AppNotification[] = apiNotifyData.notifications.map((n) => ({
-        id: n.id,
-        type: 'system' as const,
-        title: n.title,
-        description: n.body,
-        timestamp: n.createdAt,
-        read: !!n.readAt,
-      }))
-      
-      const currentIds = new Set(useNotificationsStore.getState().notifications.map((x) => x.id))
-      const newItems = mapped.filter((x) => !currentIds.has(x.id))
-      if (newItems.length > 0) {
-        useNotificationsStore.setState((state) => ({
-          notifications: [...newItems, ...state.notifications],
-        }))
-      }
-    }
-  }, [apiNotifyData])
+    if (isMock || apiNotifyData === undefined) return
 
-  const unreadCount = storeNotifications.filter((n) => !n.read).length
+    const list = Array.isArray(apiNotifyData)
+      ? apiNotifyData
+      : (apiNotifyData as { notifications?: any[] })?.notifications
+
+    if (Array.isArray(list)) {
+      const mapped: AppNotification[] = list.map((n: any) => {
+        const isFollowUp =
+          n.metadata?.action ||
+          n.payload?.action ||
+          String(n.title || n.subject || '').toLowerCase().includes('follow-up')
+        return {
+          id: n.id,
+          type: (isFollowUp ? 'follow_up' : 'system') as AppNotification['type'],
+          title: n.title || n.subject || 'Notification',
+          description: n.body,
+          timestamp: n.createdAt,
+          read: Boolean(n.read || n.readAt),
+        }
+      })
+
+      useNotificationsStore.setState((state) => {
+        const optimisticReadIds = new Set(
+          state.notifications.filter((x) => x.read).map((x) => x.id)
+        )
+        const reconciled = mapped.map((serverItem) => ({
+          ...serverItem,
+          read: Boolean(serverItem.read || optimisticReadIds.has(serverItem.id)),
+        }))
+        return {
+          notifications: reconciled,
+        }
+      })
+    }
+  }, [apiNotifyData, isMock])
+
+  const visibleNotifications = isMock
+    ? storeNotifications
+    : apiNotifyData !== undefined
+      ? storeNotifications.filter((n) => !String(n.id).startsWith('notif-template-'))
+      : []
+
+  const handleMarkAsRead = (id: string) => {
+    markAsRead(id)
+    if (!isMock) {
+      markAsReadMutation.mutate(id)
+    }
+  }
+
+  const handleMarkAllAsRead = () => {
+    markAllAsRead()
+    if (!isMock) {
+      markAllAsReadMutation.mutate()
+    }
+  }
+
+  const unreadCount = visibleNotifications.filter((n) => !n.read).length
 
   return (
     <DropdownMenu>
@@ -75,24 +123,39 @@ export function NotificationCenter() {
           {unreadCount > 0 && (
             <button
               className="text-xs font-medium text-primary hover:underline cursor-pointer"
-              onClick={() => markAllAsRead()}
+              onClick={handleMarkAllAsRead}
             >
               Mark all as read
             </button>
           )}
         </div>
         <div className="max-h-96 overflow-y-auto">
-          {storeNotifications.length === 0 ? (
+          {!isMock && isNotifyLoading ? (
+            <div className="p-6 text-center text-xs text-muted-foreground">
+              Loading notifications...
+            </div>
+          ) : !isMock && isNotifyError ? (
+            <div className="space-y-2 p-6 text-center text-xs text-danger-600 dark:text-danger-400">
+              <p className="font-medium">Unable to load notifications from server.</p>
+              <button
+                type="button"
+                onClick={() => refetchNotifications()}
+                className="font-semibold text-primary underline hover:no-underline cursor-pointer"
+              >
+                Retry
+              </button>
+            </div>
+          ) : visibleNotifications.length === 0 ? (
             <div className="p-6 text-center text-xs text-muted-foreground">
               No notifications yet
             </div>
           ) : (
-            storeNotifications.map((n) => {
+            visibleNotifications.map((n) => {
               const Icon = iconByType[n.type] || Settings2
               return (
                 <button
                   key={n.id}
-                  onClick={() => markAsRead(n.id)}
+                  onClick={() => handleMarkAsRead(n.id)}
                   className={cn(
                     'flex w-full items-start gap-3 border-b border-border/60 px-3.5 py-3 text-left transition-colors last:border-0 hover:bg-accent cursor-pointer',
                     !n.read && 'bg-brand-50/60 dark:bg-brand-500/5'

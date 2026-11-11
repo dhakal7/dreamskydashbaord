@@ -17,6 +17,7 @@ export interface ApiNotification {
   body: string
   sentAt: string | null
   readAt: string | null
+  read?: boolean
   metadata: Record<string, unknown> | null
   createdAt: string
 }
@@ -37,6 +38,7 @@ export interface NotificationListParams {
   page?: number
   limit?: number
   status?: string
+  read?: boolean | string
   channel?: string
 }
 
@@ -51,6 +53,12 @@ export const notificationApi = {
   // ── Notifications ─────────────────────────────────────────────────────────
   list(params?: NotificationListParams): Promise<NotificationListResponse> {
     return api.get('/notifications', { params })
+  },
+  markAsRead(id: string): Promise<ApiNotification> {
+    return api.patch(`/notifications/${id}/read`)
+  },
+  markAllAsRead(): Promise<{ success: boolean; count: number }> {
+    return api.patch('/notifications/read-all')
   },
 
   // ── Templates (SUPER_ADMIN only) ──────────────────────────────────────────

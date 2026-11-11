@@ -34,22 +34,35 @@ router.post(
 // ─── Student Review (Approve / Request Changes) ──────────────────────────────
 router.post(
     "/:id/review",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK", "STUDENT"),
     documentController.review
 );
 
 // ─── Version History ─────────────────────────────────────────────────────────
-router.get("/:id/history", documentController.getHistory);
+router.get(
+    "/:id/history",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK", "STUDENT"),
+    documentController.getHistory
+);
 
 // ─── List / Filter flat documents ─────────────────────────────────────────────
 router.get(
     "/",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK", "STUDENT"),
     documentController.list
 );
 
 // ─── Single document & download ──────────────────────────────────────────────
-router.get("/:id", documentController.getOne);
-router.get("/:id/download", documentController.download);
+router.get(
+    "/:id",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK", "STUDENT"),
+    documentController.getOne
+);
+router.get(
+    "/:id/download",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK", "STUDENT"),
+    documentController.download
+);
 
 // ─── Verify / Reject ──────────────────────────────────────────────────────────
 router.patch(
@@ -75,7 +88,7 @@ router.put(
 // ─── Delete ───────────────────────────────────────────────────────────────────
 router.delete(
     "/:id",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN"),
     documentController.remove
 );
 

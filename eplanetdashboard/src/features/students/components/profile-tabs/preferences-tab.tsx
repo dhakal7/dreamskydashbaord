@@ -19,13 +19,7 @@ export function PreferencesTab({ student }: { student: Student }) {
     })
   }
 
-  // Demo fallback results if in mock mode or before API response
-  const matches = latestRec?.results ?? [
-    { courseId: 'c1', universityId: 'u1', courseName: 'B.Sc. Computer Science & AI', universityName: 'University of Sydney', country: 'Australia', matchLevel: 'STRONG_MATCH', score: 94, tuitionFee: 28000, currency: 'USD' },
-    { courseId: 'c2', universityId: 'u2', courseName: 'Master of Data Analytics', universityName: 'University of Melbourne', country: 'Australia', matchLevel: 'STRONG_MATCH', score: 91, tuitionFee: 31000, currency: 'USD' },
-    { courseId: 'c3', universityId: 'u3', courseName: 'Bachelor of Software Engineering', universityName: 'University of Toronto', country: 'Canada', matchLevel: 'REACH', score: 82, tuitionFee: 34000, currency: 'USD' },
-    { courseId: 'c4', universityId: 'u4', courseName: 'B.A. Business Information Systems', universityName: 'Macquarie University', country: 'Australia', matchLevel: 'SAFETY', score: 76, tuitionFee: 24000, currency: 'USD' },
-  ]
+  const matches = latestRec?.results ?? []
 
   return (
     <div className="space-y-5">
@@ -75,28 +69,43 @@ export function PreferencesTab({ student }: { student: Student }) {
           </Button>
         </div>
 
-        <div className="space-y-2.5">
-          {matches.map((item) => (
-            <div key={item.courseId + item.universityName} className="flex items-center justify-between rounded-lg border border-border/80 bg-card p-3 shadow-xs">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm">{item.courseName}</span>
-                  {item.matchLevel === 'STRONG_MATCH' && <Badge variant="success" className="gap-1 text-[10px]"><CheckCircle2 className="size-3" /> Strong Match</Badge>}
-                  {item.matchLevel === 'REACH' && <Badge variant="warning" className="gap-1 text-[10px]"><TrendingUp className="size-3" /> Reach Target</Badge>}
-                  {item.matchLevel === 'SAFETY' && <Badge variant="info" className="gap-1 text-[10px]"><ShieldCheck className="size-3" /> Safety Choice</Badge>}
+        {isFetchingRec ? (
+          <div className="flex items-center justify-center py-8 text-center">
+            <Loader2 className="size-5 animate-spin text-primary mr-2" />
+            <span className="text-xs text-muted-foreground">Evaluating matching courses...</span>
+          </div>
+        ) : matches.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-6 text-center">
+            <Sparkles className="size-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm font-medium text-foreground">No AI recommendations generated yet</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+              Click &quot;Run AI Engine&quot; above to calculate matching courses and universities based on this student&apos;s academic background and study preferences.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {matches.map((item: any) => (
+              <div key={item.courseId + item.universityName} className="flex items-center justify-between rounded-lg border border-border/80 bg-card p-3 shadow-xs">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm">{item.courseName}</span>
+                    {item.matchLevel === 'STRONG_MATCH' && <Badge variant="success" className="gap-1 text-[10px]"><CheckCircle2 className="size-3" /> Strong Match</Badge>}
+                    {item.matchLevel === 'REACH' && <Badge variant="warning" className="gap-1 text-[10px]"><TrendingUp className="size-3" /> Reach Target</Badge>}
+                    {item.matchLevel === 'SAFETY' && <Badge variant="info" className="gap-1 text-[10px]"><ShieldCheck className="size-3" /> Safety Choice</Badge>}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{item.universityName} • {item.country}</p>
                 </div>
-                <p className="text-xs text-muted-foreground">{item.universityName} • {item.country}</p>
-              </div>
 
-              <div className="text-right">
-                <span className="text-sm font-bold font-tabular text-brand-600">{item.score}% Match</span>
-                {item.tuitionFee && (
-                  <p className="text-xs text-muted-foreground">{formatCurrency(item.tuitionFee)} / yr</p>
-                )}
+                <div className="text-right">
+                  <span className="text-sm font-bold font-tabular text-brand-600">{item.score}% Match</span>
+                  {item.tuitionFee && (
+                    <p className="text-xs text-muted-foreground">{formatCurrency(item.tuitionFee)} / yr</p>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   )

@@ -1,6 +1,6 @@
 // ── Shared enums ──────────────────────────────────────────────────────────
 
-export type Role = 'super_admin' | 'front_desk' | 'counselor' | 'teacher' | 'student' | 'referral_agent'
+export type Role = 'super_admin' | 'branch_admin' | 'front_desk' | 'counselor' | 'teacher' | 'student' | 'referral_agent'
 
 export type UserStatus = 'active' | 'suspended' | 'invited'
 
@@ -23,7 +23,9 @@ export type Priority = 'low' | 'medium' | 'high' | 'urgent'
 
 export type LeadStage =
   | 'new'
-  | 'contacted'
+  | 'follow_up'
+  | 'assigned'
+  | 'not_contracted'
   | 'counseling'
   | 'interested'
   | 'application'
@@ -31,6 +33,7 @@ export type LeadStage =
   | 'visa'
   | 'travel'
   | 'completed'
+  | 'trash'
 
 export type LeadSource =
   | 'website'
@@ -208,6 +211,7 @@ export interface Student {
   createdAt: string
   tags: string[]
   portalPassword?: string
+  isClassOnly?: boolean
 }
 
 export type StudentLifecycleStage =

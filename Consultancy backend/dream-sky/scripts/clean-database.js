@@ -3,6 +3,10 @@
  * Wipes all lead, student, class, application, visa, and log records from PostgreSQL,
  * preserving ONLY the 6 real staff user accounts.
  */
+const { assertDisposableTarget } = require('../src/config');
+
+// Pre-import guard: Destructive execution blocked unless positively targeting disposable test DB
+assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
 
 const prisma = require('../src/prisma');
 
@@ -26,6 +30,7 @@ async function safeDelete(modelName) {
 }
 
 async function main() {
+  assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
   console.log('🧹 Wiping all lead/student/class data from PostgreSQL database...\n');
 
   await safeDelete('communicationLog');

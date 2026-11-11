@@ -30,12 +30,17 @@ export default function DocumentsPage() {
   const [selectedProfile, setSelectedProfile] = useState<StudentDocumentProfile | null>(null)
 
   const handleDeleteProfile = (profile: StudentDocumentProfile) => {
-    if (confirm(`Are you sure you want to delete the document profile for ${profile.studentName}? This will permanently delete all ${profile.totalDocuments} documents.`)) {
+    if (!isMockMode()) {
+      toast.warning(
+        'Bulk document profile deletion is disabled in live mode to protect student files and version history. To archive a student, move their profile to Trash from the Students page.'
+      )
+      return
+    }
+    if (confirm(`Are you sure you want to delete the mock document profile for ${profile.studentName}?`)) {
       profile.documents.forEach((doc) => {
         deleteMockDoc(doc.id)
-        deleteMutation.mutate(doc.id)
       })
-      toast.success(`Deleted document profile for ${profile.studentName}`)
+      toast.success(`Deleted mock document profile for ${profile.studentName}`)
       if (selectedProfile?.studentId === profile.studentId) {
         setSelectedProfile(null)
       }
@@ -277,18 +282,20 @@ export default function DocumentsPage() {
                   Updated {dayjs(profile.lastUpdated).format('MMM D, YYYY')}
                 </span>
                 <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="size-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10"
-                    title="Delete Student Document Profile"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleDeleteProfile(profile)
-                    }}
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
+                  {isMockMode() && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+                      title="Delete Mock Student Document Profile"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleDeleteProfile(profile)
+                      }}
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  )}
                   <Button
                     onClick={() => setSelectedProfile(profile)}
                     size="sm"
@@ -315,8 +322,11 @@ export default function DocumentsPage() {
         open={Boolean(activeProfile)}
         onOpenChange={(open) => !open && setSelectedProfile(null)}
         onDeleteDocument={(docId) => {
-          deleteMockDoc(docId)
-          deleteMutation.mutate(docId)
+          if (isMockMode()) {
+            deleteMockDoc(docId)
+          } else {
+            deleteMutation.mutate(docId)
+          }
         }}
       />
     </div>

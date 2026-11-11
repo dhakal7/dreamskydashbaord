@@ -36,6 +36,35 @@ export interface CounselorSummary {
   }
 }
 
+export interface OverdueTask {
+  id: string
+  type: string
+  studentId: string
+  studentName: string
+  responsibleEmployee: string
+  responsibleEmployeeId: string | null
+  scheduledAt: string
+  hoursOverdue: number
+  description: string
+}
+
+export interface AdminMonitoringData {
+  counts: {
+    totalActiveLeads: number
+    newLeads: number
+    frontDeskFollowUps: number
+    assignedLeads: number
+    counselorFollowUps: number
+    notContracted: number
+    interestedLeads: number
+    trash: number
+    upcomingAppointments: number
+    overdueFollowUps: number
+  }
+  overdueTasks: OverdueTask[]
+  totalOverdueTasks: number
+}
+
 export const dashboardApi = {
   /** GET /dashboard/summary — consolidated super-admin stats */
   getSummary(): Promise<DashboardSummary> {
@@ -47,5 +76,10 @@ export const dashboardApi = {
     return api.get('/dashboard/counselor-summary', {
       params: counselorId ? { counselorId } : undefined,
     })
+  },
+
+  /** GET /dashboard/admin-monitoring — comprehensive lead metrics & overdue tasks */
+  getAdminMonitoring(): Promise<AdminMonitoringData> {
+    return api.get('/dashboard/admin-monitoring')
   },
 }

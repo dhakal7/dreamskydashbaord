@@ -30,6 +30,7 @@ export interface AppointmentListParams {
   studentId?: string
   counselorId?: string
   status?: string
+  statusNotIn?: string
   from?: string
   to?: string
 }

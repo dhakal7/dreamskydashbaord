@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { toFrontendRole } from './role-map'
 
 describe('role-map', () => {
-  it('maps admin aliases to the super admin dashboard role', () => {
+  it('maps admin roles to their respective frontend roles', () => {
     expect(toFrontendRole('SUPER_ADMIN')).toBe('super_admin')
-    expect(toFrontendRole('BRANCH_ADMIN')).toBe('super_admin')
+    expect(toFrontendRole('BRANCH_ADMIN')).toBe('branch_admin')
     expect(toFrontendRole('ADMIN')).toBe('super_admin')
   })
 

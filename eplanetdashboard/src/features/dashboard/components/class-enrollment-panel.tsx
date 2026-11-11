@@ -19,7 +19,7 @@ interface FormattedClass {
   subject: string
   teacherName: string
   schedule: string
-  capacity: number
+  capacity: number | null
   enrolledCount: number
   status: string
 }
@@ -30,7 +30,7 @@ export function ClassEnrollmentPanel() {
   const [selectedStudentId, setSelectedStudentId] = useState<string>('')
 
   // ── Data Fetching ─────────────────────────────────────────────────────────
-  const { data: liveClassesData, isLoading: isClassesLoading } = useClasses()
+  const { data: liveClassesData, isLoading: isClassesLoading, isError: isClassesError } = useClasses()
   const { data: liveStudentsData } = useStudents({ limit: 100 })
 
   const mockStudents = useStudentsStore((s) => s.students)
@@ -45,27 +45,24 @@ export function ClassEnrollmentPanel() {
         ? liveClassesData
         : (liveClassesData as any)?.classes || []
 
-      if (rawList.length > 0) {
-        return rawList.map((c: any) => {
-          const storeCount = mockEnroll.filter((e) => e.classId === c.id || e.classId === c.name).length
-          const enrolledCount = (Array.isArray(c.enrollments) && c.enrollments.length > 0)
-            ? c.enrollments.length
-            : storeCount
+      return rawList.map((c: any) => {
+        const enrolledCount = Array.isArray(c.enrollments)
+          ? c.enrollments.length
+          : (typeof c._count?.enrollments === 'number' ? c._count.enrollments : 0)
 
-          return {
-            id: c.id,
-            name: c.name,
-            subject: c.subject || 'IELTS',
-            teacherName: c.teacher
-              ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
-              : 'Assigned Instructor',
-            schedule: typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Mon-Fri (Morning)',
-            capacity: c.capacity || 25,
-            enrolledCount,
-            status: c.status || 'Active',
-          }
-        })
-      }
+        return {
+          id: c.id,
+          name: c.name,
+          subject: c.subject || 'General',
+          teacherName: c.teacher
+            ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim() || 'Assigned Instructor'
+            : 'Unassigned',
+          schedule: typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Schedule TBD',
+          capacity: typeof c.capacity === 'number' && c.capacity > 0 ? c.capacity : null,
+          enrolledCount,
+          status: c.status || 'Active',
+        }
+      })
     }
     return (mockClasses as ClassSession[]).map((c) => {
       const count = mockEnroll.filter((e) => e.classId === c.id).length
@@ -151,13 +148,16 @@ export function ClassEnrollmentPanel() {
         <CardContent>
           {isClassesLoading ? (
             <p className="py-6 text-center text-xs text-muted-foreground">Loading active classes...</p>
+          ) : isClassesError && !isMockMode() ? (
+            <p className="py-6 text-center text-xs text-danger-600">Unable to load classes from the server.</p>
           ) : activeClasses.length === 0 ? (
             <p className="py-6 text-center text-xs text-muted-foreground">No active classes found.</p>
           ) : (
             <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
               {activeClasses.map((cls: FormattedClass) => {
-                const isFull = cls.enrolledCount >= cls.capacity
-                const pct = Math.round((cls.enrolledCount / cls.capacity) * 100)
+                const hasCapacity = typeof cls.capacity === 'number' && cls.capacity > 0
+                const isFull = hasCapacity ? cls.enrolledCount >= (cls.capacity as number) : false
+                const pct = hasCapacity ? Math.round((cls.enrolledCount / (cls.capacity as number)) * 100) : null
 
                 return (
                   <div
@@ -170,7 +170,9 @@ export function ClassEnrollmentPanel() {
                           {cls.subject}
                         </Badge>
                         <Badge variant={isFull ? 'danger' : 'success'} className="text-[10px]">
-                          {cls.enrolledCount} / {cls.capacity} Enrolled ({pct}%)
+                          {hasCapacity
+                            ? `${cls.enrolledCount} / ${cls.capacity} Enrolled (${pct}%)`
+                            : `${cls.enrolledCount} Enrolled`}
                         </Badge>
                       </div>
 
@@ -236,7 +238,7 @@ export function ClassEnrollmentPanel() {
                 ) : (
                   activeClasses.map((cls: FormattedClass) => (
                     <option key={cls.id} value={cls.id}>
-                      {cls.name} ({cls.subject}) — {cls.enrolledCount}/{cls.capacity} Enrolled
+                      {cls.name} ({cls.subject}) — {cls.capacity ? `${cls.enrolledCount}/${cls.capacity}` : cls.enrolledCount} Enrolled
                     </option>
                   ))
                 )}

@@ -14,7 +14,7 @@ const getOne = async (req, res) => {
 };
 
 const list = async (req, res) => {
-    const result = await followUpService.listFollowUps(req.query);
+    const result = await followUpService.listFollowUps(req.query, req.user);
     sendSuccess(res, { data: result });
 };
 
@@ -25,13 +25,16 @@ const studentTimeline = async (req, res) => {
 
 const update = async (req, res) => {
     validateUpdateFollowUp(req.body);
-    const followUp = await followUpService.updateFollowUp(req.params.id, req.body);
+    const followUp = await followUpService.updateFollowUp(req.params.id, req.body, req.user);
     sendSuccess(res, { message: "Follow-up updated.", data: followUp });
 };
 
 const remove = async (req, res) => {
-    await followUpService.deleteFollowUp(req.params.id);
-    sendSuccess(res, { message: "Follow-up deleted." });
+    const result = await followUpService.deleteFollowUp(req.params.id, req.user);
+    sendSuccess(res, {
+        message: result.message || "Follow-up reminder cancelled.",
+        data: result,
+    });
 };
 
 const dashboard = async (req, res) => {

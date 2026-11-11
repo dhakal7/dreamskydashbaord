@@ -4,7 +4,7 @@ const AppError = require("../utils/apiError");
 
 const VALID_CHANNELS = ["IN_APP", "EMAIL", "SMS", "WHATSAPP"];
 const VALID_TEMPLATE_STATUSES = ["DRAFT", "PENDING_APPROVAL", "APPROVED", "REJECTED"];
-const VALID_NOTIFICATION_STATUSES = ["QUEUED", "SENT", "FAILED", "READ"];
+const VALID_NOTIFICATION_STATUSES = ["QUEUED", "SENT", "FAILED"];
 
 // ─── Notification Templates ───────────────────────────────────────────────────
 
@@ -114,7 +114,7 @@ const deleteTemplate = async (req, res, next) => {
 
 const listNotifications = async (req, res, next) => {
   try {
-    const { status } = req.query;
+    const { status, read } = req.query;
     if (status && !VALID_NOTIFICATION_STATUSES.includes(status)) {
       throw new AppError(
         `Invalid status '${status}'. Must be one of: ${VALID_NOTIFICATION_STATUSES.join(", ")}.`,
@@ -122,14 +122,49 @@ const listNotifications = async (req, res, next) => {
       );
     }
 
+    let parsedRead;
+    if (read !== undefined) {
+      if (read === "true" || read === true) {
+        parsedRead = true;
+      } else if (read === "false" || read === false) {
+        parsedRead = false;
+      } else {
+        throw new AppError(
+          "Invalid read filter. Must be 'true' or 'false'.",
+          400
+        );
+      }
+    }
+
     // Non-SUPER_ADMIN can only see their own notifications
     const query = { ...req.query };
+    if (parsedRead !== undefined) {
+      query.read = parsedRead;
+    }
     if (req.user.role !== "SUPER_ADMIN") {
       query.recipientUserId = req.user.id;
     }
 
     const notifications = await notificationService.listNotifications(query);
     sendSuccess(res, { data: notifications });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const markAsRead = async (req, res, next) => {
+  try {
+    const updated = await notificationService.markNotificationAsRead(req.params.id, req.user);
+    sendSuccess(res, { message: "Notification marked as read.", data: updated });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const markAllAsRead = async (req, res, next) => {
+  try {
+    const result = await notificationService.markAllNotificationsAsRead(req.user);
+    sendSuccess(res, { message: "All notifications marked as read.", data: result });
   } catch (err) {
     next(err);
   }
@@ -155,5 +190,7 @@ module.exports = {
   updateTemplate,
   deleteTemplate,
   listNotifications,
+  markAsRead,
+  markAllAsRead,
   sendDirectNotification,
 };

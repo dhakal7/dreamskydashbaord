@@ -1,9 +1,8 @@
 const { Client } = require('pg');
-require('dotenv').config({ path: './.env' });
+const { validateDatabaseUrl } = require('../src/config');
+
 (async () => {
-  const raw = process.env.DATABASE_URL;
-  if (!raw) { console.error('DATABASE_URL not set in .env'); process.exit(2); }
-  const connectionString = raw.replace(/\?.*$/, '');
+  const connectionString = validateDatabaseUrl(process.env.DATABASE_URL, process.env.NODE_ENV);
   const client = new Client({ connectionString });
   await client.connect();
   try{

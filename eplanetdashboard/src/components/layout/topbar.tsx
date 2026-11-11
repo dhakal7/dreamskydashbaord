@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { useUIStore } from '@/store/ui-store'
 import { useAuthStore } from '@/store/auth-store'
-import { roleLabels } from '@/mock/current-user'
+import { roleLabels } from '@/constants/roles'
 import { Breadcrumbs } from './breadcrumbs'
 import { GlobalSearch } from './global-search'
 import { NotificationCenter } from './notification-center'

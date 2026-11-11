@@ -43,6 +43,15 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
     'commissions.view', 'commission-rules.manage', 'events.view', 'events.manage',
     'users.view', 'users.manage',
   ],
+  branch_admin: [
+    'dashboard.view', 'leads.view', 'leads.manage', 'leads.change-stage', 'students.view', 'students.manage',
+    'followups.view', 'appointments.view', 'appointments.manage', 'applications.view', 'applications.manage',
+    'visa.view', 'visa.manage', 'documents.view', 'documents.manage',
+    'countries.view', 'universities.view', 'courses.view',
+    'classes.view', 'classes.manage', 'reports.view', 'settings.manage',
+    'commissions.view', 'events.view', 'events.manage',
+    'users.view', 'users.manage',
+  ],
   front_desk: [
     'dashboard.view', 'leads.view', 'leads.manage', 'leads.change-stage', 'students.view', 'students.manage',
     'followups.view', 'appointments.view', 'appointments.manage', 'applications.view', 'applications.manage',
@@ -54,13 +63,14 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
     'visa.view', 'visa.manage', 'documents.view', 'documents.manage',
     'commissions.view', 'events.view', 'reports.view', 'settings.manage',
   ],
-  teacher: ['dashboard.view', 'leads.view', 'students.view', 'classes.view', 'classes.manage', 'reports.view', 'settings.manage', 'events.view'],
+  teacher: ['dashboard.view', 'classes.view', 'reports.view', 'settings.manage', 'events.view'],
   student: ['dashboard.view', 'appointments.view', 'applications.view', 'visa.view', 'documents.view', 'classes.view', 'events.view', 'settings.manage'],
   referral_agent: ['dashboard.view', 'leads.view', 'commissions.view', 'events.view', 'settings.manage'],
 }
 
 export const dashboardPaths: Record<Role, string> = {
   super_admin: '/dashboard/super-admin',
+  branch_admin: '/dashboard/super-admin',
   front_desk: '/dashboard/frontdesk',
   counselor: '/dashboard/counselor',
   teacher: '/dashboard/teacher',

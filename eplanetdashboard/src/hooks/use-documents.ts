@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { isMockMode } from '@/lib/api-client'
 import { documentApi, type UploadDocumentBody, type ReplaceDocumentBody } from '@/api/document-api'
+import { useAuthStore } from '@/store/auth-store'
 
 export const documentKeys = {
   all: ['documents'] as const,
@@ -16,10 +17,11 @@ export const documentKeys = {
 }
 
 export function useStudentDocumentProfiles(search?: string) {
+  const role = useAuthStore.getState().currentUser?.role
   return useQuery({
     queryKey: documentKeys.profiles(search),
     queryFn: () => documentApi.listStudentProfiles(search),
-    enabled: !isMockMode(),
+    enabled: !isMockMode() && role !== 'student',
   })
 }
 

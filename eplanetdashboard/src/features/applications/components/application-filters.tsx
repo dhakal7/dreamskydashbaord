@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { counselors, countries, universities } from '@/mock'
+import { useCounselors } from '@/hooks/use-counselors'
+import { useCountries, useUniversities } from '@/hooks/use-universities'
 import { applicationStageMeta } from '@/components/shared/status-badges'
 
 export interface ApplicationFilters {
@@ -29,6 +30,14 @@ interface ApplicationFiltersBarProps {
 }
 
 export function ApplicationFiltersBar({ filters, onChange }: ApplicationFiltersBarProps) {
+  const { data: counselorData } = useCounselors()
+  const { data: countryData } = useCountries()
+  const { data: uniData } = useUniversities()
+
+  const counselorsList = counselorData || []
+  const countriesList = Array.isArray(countryData) ? countryData : (countryData?.countries ?? [])
+  const universitiesList = Array.isArray(uniData) ? uniData : (uniData?.universities ?? [])
+
   const isFiltered = JSON.stringify(filters) !== JSON.stringify(defaultApplicationFilters)
 
   return (
@@ -61,9 +70,9 @@ export function ApplicationFiltersBar({ filters, onChange }: ApplicationFiltersB
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Countries</SelectItem>
-          {countries.map((c) => (
+          {countriesList.map((c: any) => (
             <SelectItem key={c.id} value={c.name}>
-              {c.flag} {c.name}
+              {c.flagUrl || c.flag || '🌐'} {c.name}
             </SelectItem>
           ))}
         </SelectContent>
@@ -75,7 +84,7 @@ export function ApplicationFiltersBar({ filters, onChange }: ApplicationFiltersB
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Universities</SelectItem>
-          {universities.map((u) => (
+          {universitiesList.map((u: any) => (
             <SelectItem key={u.id} value={u.name}>
               {u.name}
             </SelectItem>
@@ -89,7 +98,7 @@ export function ApplicationFiltersBar({ filters, onChange }: ApplicationFiltersB
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Counselors</SelectItem>
-          {counselors.map((c) => (
+          {counselorsList.map((c: any) => (
             <SelectItem key={c.id} value={c.name}>
               {c.name}
             </SelectItem>

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { Link2, Users, ArrowRight, ExternalLink } from 'lucide-react'
+import { Link2, Users, ArrowRight, ExternalLink, Loader2, AlertCircle } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { DataTable } from '@/components/shared/data-table'
 import { EmptyState } from '@/components/shared/empty-state'
@@ -16,21 +16,25 @@ import {
 import { Button } from '@/components/ui/button'
 import { LeadStageBadge } from '@/components/shared/status-badges'
 import { useAuthStore } from '@/store/auth-store'
-import { visibleReferrals } from '@/lib/data-visibility'
-import { referrals, referralAgents } from '@/mock'
+import { isMockMode } from '@/lib/api-client'
+import { useReferrals, useReferralAgents } from '@/hooks/use-referrals'
+import { canBranchAdminViewRecord, visibleReferralAgents, visibleReferrals } from '@/lib/data-visibility'
+import { referrals as mockReferrals, referralAgents as mockReferralAgents } from '@/mock'
 import { formatCurrency } from '@/lib/utils'
-import type { Referral, LeadStage } from '@/types'
+import type { Referral, ReferralAgent, LeadStage } from '@/types'
 
 dayjs.extend(relativeTime)
 
 const stageOrder: LeadStage[] = [
-  'new', 'contacted', 'counseling', 'interested',
+  'new', 'follow_up', 'counseling', 'interested',
   'application', 'offer_letter', 'visa', 'travel', 'completed',
 ]
 
 const stageLabels: Record<LeadStage, string> = {
   new: 'New',
-  contacted: 'Contacted',
+  follow_up: 'Follow Up',
+  assigned: 'Assigned',
+  not_contracted: 'Not Contracted',
   counseling: 'Counseling',
   interested: 'Interested',
   application: 'Application',
@@ -38,6 +42,7 @@ const stageLabels: Record<LeadStage, string> = {
   visa: 'Visa',
   travel: 'Travel',
   completed: 'Completed',
+  trash: 'Trash',
 }
 
 // ── Referral Agent View (Pipeline) ────────────────────────────────────────
@@ -136,7 +141,7 @@ function AgentPipelineView({ data }: { data: readonly Referral[] }) {
 
 // ── Super Admin View (DataTable) ──────────────────────────────────────────
 
-function AdminDataTable({ data }: { data: readonly Referral[] }) {
+function AdminDataTable({ data, agents = mockReferralAgents }: { data: readonly Referral[]; agents?: readonly ReferralAgent[] }) {
   const [agentFilter, setAgentFilter] = useState('all')
   const [stageFilter, setStageFilter] = useState('all')
 
@@ -161,11 +166,12 @@ function AdminDataTable({ data }: { data: readonly Referral[] }) {
       accessorKey: 'agentId',
       header: 'Agent',
       cell: ({ row }) => {
-        const agent = referralAgents.find((a) => a.id === row.original.agentId)
+        const agent = agents.find((a) => a.id === row.original.agentId)
+        const agentName = agent?.name || (row.original as any).agentName || 'Unknown'
         return (
           <div className="flex items-center gap-2">
-            <PersonAvatar name={agent?.name ?? '?'} color={agent?.avatarColor} className="size-6" />
-            <span className="text-sm font-medium">{agent?.name ?? 'Unknown'}</span>
+            <PersonAvatar name={agentName} color={agent?.avatarColor} className="size-6" />
+            <span className="text-sm font-medium">{agentName}</span>
           </div>
         )
       },
@@ -210,7 +216,7 @@ function AdminDataTable({ data }: { data: readonly Referral[] }) {
         </span>
       ),
     },
-  ], [])
+  ], [agents])
 
   return (
     <div className="space-y-4">
@@ -239,7 +245,7 @@ function AdminDataTable({ data }: { data: readonly Referral[] }) {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Agents</SelectItem>
-            {referralAgents.map((a) => (
+            {agents.map((a) => (
               <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
             ))}
           </SelectContent>
@@ -284,8 +290,95 @@ function AdminDataTable({ data }: { data: readonly Referral[] }) {
 
 export default function ReferralsPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
-  const data = visibleReferrals(currentUser, referrals)
-  const isAdmin = currentUser.role === 'super_admin'
+  const { data: apiReferrals, isLoading, isError, error, refetch } = useReferrals()
+  const { data: apiAgents } = useReferralAgents()
+
+  const isAdmin = currentUser.role === 'super_admin' || currentUser.role === 'branch_admin'
+  const mockMode = isMockMode()
+
+  // In live mode, show distinct loading state; NEVER render mock records as temporary substitute
+  if (!mockMode && isLoading) {
+    return (
+      <div className="space-y-5">
+        <PageHeader
+          title={isAdmin ? 'All Referrals' : 'My Referrals'}
+          description={
+            isAdmin
+              ? 'Referral pipeline overview across all agents.'
+              : 'Track your referred students through the pipeline.'
+          }
+        />
+        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+          <Loader2 className="size-8 animate-spin text-primary mb-3" />
+          <p className="text-sm font-medium">Loading referral pipeline...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // In live mode, show explicit error state on request failure with retry; NEVER silently fall back to mock records
+  if (!mockMode && isError) {
+    return (
+      <div className="space-y-5">
+        <PageHeader
+          title={isAdmin ? 'All Referrals' : 'My Referrals'}
+          description={
+            isAdmin
+              ? 'Referral pipeline overview across all agents.'
+              : 'Track your referred students through the pipeline.'
+          }
+        />
+        <Card className="p-8 border-destructive/30 bg-destructive/5 text-center">
+          <div className="flex flex-col items-center justify-center">
+            <AlertCircle className="size-10 text-destructive mb-3" />
+            <h3 className="text-base font-semibold text-foreground">Failed to load referrals</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+              {error instanceof Error ? error.message : 'Unable to connect to the referral directory.'}
+            </p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => refetch()}>
+              Try again
+            </Button>
+          </div>
+        </Card>
+      </div>
+    )
+  }
+
+  // Deliberate separation: live mode uses strictly real data (empty array renders empty state); mock mode uses seed datasets
+  const data: readonly Referral[] = mockMode
+    ? visibleReferrals(currentUser, mockReferrals)
+    : visibleReferrals(currentUser, apiReferrals ?? [], { verifiedBranchScopedApi: true })
+
+  const agents: readonly ReferralAgent[] = useMemo(() => {
+    if (mockMode) {
+      return visibleReferralAgents(currentUser)
+    }
+    if (currentUser.role === 'branch_admin') {
+      const filteredAgents = (apiAgents ?? []).filter((agent) =>
+        canBranchAdminViewRecord(currentUser, agent as ReferralAgent & { branchId?: unknown }),
+      )
+      if (filteredAgents.length > 0) return filteredAgents
+      const seen = new Map<string, ReferralAgent>()
+      for (const ref of data) {
+        if (ref.agentId && !seen.has(ref.agentId)) {
+          seen.set(ref.agentId, {
+            id: ref.agentId,
+            name: (ref as any).agentName || 'Referral Agent',
+            email: (ref as any).agentEmail || '',
+            phone: (ref as any).agentPhone || '',
+            avatarColor: '#2563EB',
+            agencyName: 'Independent',
+            referralCode: (ref as any).referralCode || 'N/A',
+            totalReferrals: 0,
+            convertedReferrals: 0,
+            createdAt: ref.referredAt,
+          })
+        }
+      }
+      return Array.from(seen.values())
+    }
+    return apiAgents ?? []
+  }, [mockMode, currentUser, apiAgents, data])
 
   return (
     <div className="space-y-5">
@@ -299,7 +392,7 @@ export default function ReferralsPage() {
       />
 
       {isAdmin ? (
-        <AdminDataTable data={data} />
+        <AdminDataTable data={data} agents={agents} />
       ) : (
         <AgentPipelineView data={data} />
       )}

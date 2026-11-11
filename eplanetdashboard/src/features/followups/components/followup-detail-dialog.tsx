@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CalendarClock, CheckCircle, Clock, FileText, Phone, MessageSquare, Mail, User, Trash2 } from 'lucide-react'
+import { CalendarClock, CheckCircle, Clock, FileText, Phone, MessageSquare, Mail, User, BellOff } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PriorityBadge, FollowUpStatusBadge } from '@/components/shared/status-badges'
+import { isMockMode } from '@/lib/api-client'
+import { useCancelFollowUp } from '@/hooks/use-followups'
 import { useFollowUpsStore } from '../store'
 import type { FollowUp } from '@/types'
 
@@ -36,6 +38,7 @@ export function FollowUpDetailDialog({
   const reschedule = useFollowUpsStore((s) => s.reschedule)
   const addNote = useFollowUpsStore((s) => s.addNote)
   const removeFollowUp = useFollowUpsStore((s) => s.removeFollowUp)
+  const cancelMutation = useCancelFollowUp()
 
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
@@ -71,9 +74,13 @@ export function FollowUpDetailDialog({
     addNote(followup.id, notes)
   }
 
-  const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete this follow-up for "${followup.studentName}"?`)) {
-      removeFollowUp(followup.id)
+  const handleCancelReminder = () => {
+    if (window.confirm(`Are you sure you want to cancel the follow-up reminder for "${followup.studentName}"? Communication history will be preserved.`)) {
+      if (isMockMode()) {
+        removeFollowUp(followup.id)
+      } else {
+        cancelMutation.mutate(followup.id)
+      }
       onOpenChange(false)
     }
   }
@@ -188,10 +195,12 @@ export function FollowUpDetailDialog({
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-red-600 hover:bg-red-50 hover:text-red-700 gap-1 h-8"
-                onClick={handleDelete}
+                className="text-xs text-amber-600 hover:bg-amber-50 hover:text-amber-700 gap-1 h-8"
+                onClick={handleCancelReminder}
+                disabled={cancelMutation.isPending}
+                title="Cancel follow-up reminder (preserves communication history)"
               >
-                <Trash2 className="size-3.5" /> Delete Follow-up
+                <BellOff className="size-3.5" /> Cancel Reminder
               </Button>
               <Button
                 variant="secondary"

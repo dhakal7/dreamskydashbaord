@@ -98,11 +98,32 @@ const deleteRule = async (req, res, next) => {
 
 const listCommissions = async (req, res, next) => {
   try {
+    const user = req.user;
+    if (!user) throw AppError.unauthorized("Authentication required.");
+
     const { status } = req.query;
     if (status && !VALID_STATUSES.includes(status)) {
       throw new AppError(`Invalid status '${status}'. Must be one of: ${VALID_STATUSES.join(", ")}.`, 400);
     }
-    const commissions = await commissionService.listCommissions(req.query);
+
+    const query = { ...req.query };
+
+    // Role-based recipient scoping:
+    // COUNSELOR and REFERRAL_AGENT must only view commission records where they are the recipient.
+    // Client-supplied recipientId is strictly overridden to prevent scoping bypass.
+    if (user.role === "COUNSELOR" || user.role === "REFERRAL_AGENT") {
+      query.recipientId = user.id;
+      delete query.recipientUserId;
+    } else if (user.role === "BRANCH_ADMIN") {
+      if (!user.branchId) {
+        throw AppError.forbidden("Branch Admin lacks assigned branch context.", "NO_BRANCH_CONTEXT");
+      }
+      query.branchId = user.branchId;
+    } else if (user.role !== "SUPER_ADMIN") {
+      throw AppError.forbidden("You do not have permission to view commission records.", "FORBIDDEN");
+    }
+
+    const commissions = await commissionService.listCommissions(query);
     sendSuccess(res, { data: commissions });
   } catch (err) {
     next(err);
@@ -111,10 +132,37 @@ const listCommissions = async (req, res, next) => {
 
 const getCommission = async (req, res, next) => {
   try {
+    const user = req.user;
+    if (!user) throw AppError.unauthorized("Authentication required.");
+
     const commission = await commissionService.getCommissionById(req.params.id);
     if (!commission) {
       throw new AppError(`Commission with id '${req.params.id}' not found.`, 404);
     }
+
+    // Role-based ownership check:
+    // Counselors and referral agents can only view their own commission records.
+    if (user.role === "COUNSELOR" || user.role === "REFERRAL_AGENT") {
+      if (commission.recipientId !== user.id) {
+        throw new AppError(`Commission with id '${req.params.id}' not found.`, 404);
+      }
+    } else if (user.role === "BRANCH_ADMIN") {
+      if (!user.branchId) {
+        throw AppError.forbidden("Branch Admin lacks assigned branch context.", "NO_BRANCH_CONTEXT");
+      }
+      // Policy Option B: Strict Earner-Jurisdiction Model
+      const recipientBranchId = commission.recipient ? commission.recipient.branchId : null;
+      const belongsToBranch = recipientBranchId
+        ? recipientBranchId === user.branchId
+        : commission.rule?.scopeBranchId === user.branchId;
+
+      if (!belongsToBranch) {
+        throw new AppError(`Commission with id '${req.params.id}' not found.`, 404);
+      }
+    } else if (user.role !== "SUPER_ADMIN") {
+      throw AppError.forbidden("You do not have permission to view this commission.", "FORBIDDEN");
+    }
+
     sendSuccess(res, { data: commission });
   } catch (err) {
     next(err);
@@ -141,13 +189,42 @@ const markPaid = async (req, res, next) => {
 
 const dispute = async (req, res, next) => {
   try {
-    const { reason } = req.body;
-    if (!reason || typeof reason !== "string" || reason.trim().length === 0) {
+    const user = req.user;
+    if (!user) throw AppError.unauthorized("Authentication required.");
+
+    const reason = (req.body.reason || req.body.notes || "").trim();
+    if (!reason) {
       throw new AppError("`reason` is required and must be a non-empty string.", 400);
     }
 
-    const actorId = req.user ? req.user.id : null;
-    const result = await commissionService.disputeCommission(req.params.id, reason, actorId);
+    const existing = await commissionService.getCommissionById(req.params.id);
+    if (!existing) {
+      throw new AppError(`Commission with id '${req.params.id}' not found.`, 404);
+    }
+
+    // Role-based authorization for dispute:
+    if (user.role === "COUNSELOR" || user.role === "REFERRAL_AGENT") {
+      if (existing.recipientId !== user.id) {
+        throw new AppError(`Commission with id '${req.params.id}' not found.`, 404);
+      }
+    } else if (user.role === "BRANCH_ADMIN") {
+      if (!user.branchId) {
+        throw AppError.forbidden("Branch Admin lacks assigned branch context.", "NO_BRANCH_CONTEXT");
+      }
+      // Policy Option B: Strict Earner-Jurisdiction Model
+      const recipientBranchId = existing.recipient ? existing.recipient.branchId : null;
+      const belongsToBranch = recipientBranchId
+        ? recipientBranchId === user.branchId
+        : existing.rule?.scopeBranchId === user.branchId;
+
+      if (!belongsToBranch) {
+        throw new AppError(`Commission with id '${req.params.id}' not found.`, 404);
+      }
+    } else if (user.role !== "SUPER_ADMIN") {
+      throw AppError.forbidden("You do not have permission to dispute this commission.", "FORBIDDEN");
+    }
+
+    const result = await commissionService.disputeCommission(req.params.id, reason, user.id);
 
     if (!result) {
       throw new AppError(`Commission with id '${req.params.id}' not found.`, 404);

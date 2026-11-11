@@ -9,8 +9,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { MoreHorizontal, Shield, Ban, RotateCcw, Pencil } from 'lucide-react'
-import { roleLabels } from '@/mock'
+import { MoreHorizontal, Shield, Ban, RotateCcw, Pencil, Building2 } from 'lucide-react'
+import { roleLabels } from '@/constants/roles'
+import { useAuthStore } from '@/store/auth-store'
 import { useUsersStore } from '../store'
 import { EditUserDialog } from './edit-user-dialog'
 import dayjs from 'dayjs'
@@ -20,6 +21,7 @@ dayjs.extend(relativeTime)
 
 const roleBadgeVariant: Record<Role, 'danger' | 'info' | 'default' | 'success' | 'slate' | 'warning'> = {
   super_admin: 'danger',
+  branch_admin: 'danger',
   front_desk: 'info',
   counselor: 'default',
   teacher: 'success',
@@ -77,6 +79,18 @@ export function getUserColumns(canManage: boolean): ColumnDef<UserAccount>[] {
       },
     },
     {
+      accessorKey: 'branchName',
+      header: 'Branch',
+      cell: ({ row }) => {
+        const branchName = (row.getValue('branchName') as string) || 'Unassigned'
+        return (
+          <span className="text-xs font-medium text-muted-foreground">
+            {branchName}
+          </span>
+        )
+      },
+    },
+    {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => {
@@ -114,17 +128,99 @@ export function getUserColumns(canManage: boolean): ColumnDef<UserAccount>[] {
   return baseColumns
 }
 
-const allRoles: Role[] = ['super_admin', 'front_desk', 'counselor', 'teacher', 'student', 'referral_agent']
+const superAdminRoles: Role[] = ['super_admin', 'branch_admin', 'counselor', 'front_desk', 'teacher', 'referral_agent']
+const branchAdminRoles: Role[] = ['counselor', 'front_desk', 'teacher', 'referral_agent']
+
+const availableBranches = [
+  { id: 'cmt5tsb5x0000vrty2qel7x9c', name: 'DreamSky Head Office' },
+  { id: 'br-1', name: 'Chabahil Branch' },
+]
 
 function UserActionsDropdown({ user }: { user: UserAccount }) {
-  const { suspendUser, reactivateUser, changeUserRole } = useUsersStore()
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const { suspendUser, reactivateUser, changeUserRole, changeUserBranch } = useUsersStore()
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [isPending, setIsPending] = useState(false)
+
+  const isSuperAdminActor = currentUser.role === 'super_admin'
+  const isBranchAdminActor = currentUser.role === 'branch_admin'
+  const isTargetAdmin = user.role === 'super_admin' || user.role === 'branch_admin'
+  const isCrossBranchTarget = Boolean(
+    isBranchAdminActor && currentUser.branchId && user.branchId && user.branchId !== currentUser.branchId,
+  )
+
+  // Branch Admins cannot manage administrative accounts (Super Admin or Branch Admin) or staff outside their branch
+  if (isBranchAdminActor && (isTargetAdmin || isCrossBranchTarget)) {
+    return null
+  }
+
+  const allowedRoles = isSuperAdminActor ? superAdminRoles : branchAdminRoles
+
+  const handleRoleChange = async (newRole: Role) => {
+    if (newRole === user.role) return
+    const confirmed = window.confirm(
+      `Are you sure you want to change the role of "${user.name}" from ${roleLabels[user.role]} to ${roleLabels[newRole]}?`
+    )
+    if (!confirmed) return
+
+    try {
+      setIsPending(true)
+      await changeUserRole(user.id, newRole)
+    } catch {
+      // toast error already handled in store
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  const handleBranchChange = async (targetBranchId: string | null, targetBranchName: string) => {
+    if (user.branchId === targetBranchId) return
+    const confirmed = window.confirm(
+      `Are you sure you want to assign "${user.name}" to "${targetBranchName}"?`
+    )
+    if (!confirmed) return
+
+    try {
+      setIsPending(true)
+      await changeUserBranch(user.id, targetBranchId, targetBranchName)
+    } catch {
+      // toast error already handled in store
+    } finally {
+      setIsPending(false)
+    }
+  }
+
+  const handleSuspend = async () => {
+    if (window.confirm(`Are you sure you want to suspend "${user.name}"? This staff member will not be able to log in.`)) {
+      try {
+        setIsPending(true)
+        await suspendUser(user.id)
+      } catch {
+        // toast error already dispatched in store
+      } finally {
+        setIsPending(false)
+      }
+    }
+  }
+
+  const handleReactivate = async () => {
+    if (window.confirm(`Are you sure you want to reactivate "${user.name}"? This staff member will regain access to the CRM.`)) {
+      try {
+        setIsPending(true)
+        await reactivateUser(user.id)
+      } catch {
+        // toast error already dispatched in store
+      } finally {
+        setIsPending(false)
+      }
+    }
+  }
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="icon" className="size-7" onClick={(e) => e.stopPropagation()} disabled={isPending}>
             <MoreHorizontal className="size-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -136,28 +232,63 @@ function UserActionsDropdown({ user }: { user: UserAccount }) {
             Edit Profile
           </DropdownMenuItem>
           <DropdownMenuSub>
-            <DropdownMenuSubTrigger>Change Role</DropdownMenuSubTrigger>
+            <DropdownMenuSubTrigger>
+              <Shield className="size-4 mr-2" />
+              Change Role
+            </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               <DropdownMenuRadioGroup
                 value={user.role}
-                onValueChange={(v) => changeUserRole(user.id, v as Role)}
+                onValueChange={(v) => handleRoleChange(v as Role)}
               >
-                {allRoles.map((r) => (
-                  <DropdownMenuRadioItem key={r} value={r}>
+                {allowedRoles.map((r) => (
+                  <DropdownMenuRadioItem key={r} value={r} disabled={isPending}>
                     {roleLabels[r]}
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+
+          {isSuperAdminActor && (
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>
+                <Building2 className="size-4 mr-2" />
+                Change Branch
+              </DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {availableBranches.map((b) => (
+                  <DropdownMenuItem
+                    key={b.id}
+                    onClick={() => handleBranchChange(b.id, b.name)}
+                    disabled={isPending || user.branchId === b.id}
+                  >
+                    {b.name} {user.branchId === b.id ? '(Current)' : ''}
+                  </DropdownMenuItem>
+                ))}
+                {user.role === 'super_admin' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => handleBranchChange(null, 'Unassigned')}
+                      disabled={isPending || !user.branchId}
+                    >
+                      Unassigned (Global) {!user.branchId ? '(Current)' : ''}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          )}
+
           <DropdownMenuSeparator />
           {user.status === 'active' ? (
-            <DropdownMenuItem destructive onClick={() => suspendUser(user.id)}>
+            <DropdownMenuItem destructive onClick={handleSuspend} disabled={isPending}>
               <Ban className="size-4" />
               Suspend User
             </DropdownMenuItem>
           ) : (
-            <DropdownMenuItem onClick={() => reactivateUser(user.id)}>
+            <DropdownMenuItem onClick={handleReactivate} disabled={isPending}>
               <RotateCcw className="size-4" />
               Reactivate User
             </DropdownMenuItem>

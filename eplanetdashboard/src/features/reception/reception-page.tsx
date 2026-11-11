@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 import { Navigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CalendarDays, Clock, UserPlus, CheckCircle2 } from 'lucide-react'
+import { CalendarDays, Clock, UserPlus, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { EmptyState } from '@/components/shared/empty-state'
 import { PersonAvatar } from '@/components/ui/avatar'
@@ -16,10 +16,11 @@ import { visibleAppointments, visibleFollowUps } from '@/lib/data-visibility'
 import { useAppointmentsStore } from '@/features/appointments/store'
 import { useAppointments } from '@/hooks/use-appointments'
 import { useChangeAppointmentStatus } from '@/hooks/use-appointments'
+import { useFollowUps } from '@/hooks/use-followups'
+import { useFollowUpsStore } from '@/features/followups/store'
 import { isMockMode } from '@/lib/api-client'
 import { LeadFormDialog } from '@/features/leads/components/lead-form-dialog'
-import { followUps } from '@/mock'
-import type { Appointment, AppointmentStatus } from '@/types'
+import type { Appointment, AppointmentStatus, FollowUp } from '@/types'
 
 import { FeeManagementPanel } from './components/fee-management-panel'
 
@@ -28,11 +29,24 @@ export default function ReceptionPage() {
   const allAppointments = useAppointmentsStore((s) => s.appointments)
   const updateAppointment = useAppointmentsStore((s) => s.updateAppointment)
   const changeStatusApi = useChangeAppointmentStatus()
+  const allMockFollowUps = useFollowUpsStore((s) => s.followUps)
   const [leadDialogOpen, setLeadDialogOpen] = useState(false)
 
   // Live mode: fetch today's appointments from the API
   const counselorScope = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
   const { data: apiAppointments } = useAppointments({ counselorId: counselorScope, limit: 500 })
+
+  // Live mode: fetch recent follow-ups from the API
+  const {
+    data: apiFollowUps,
+    isLoading: isFollowUpsLoading,
+    isError: isFollowUpsError,
+    error: followUpsError,
+    refetch: refetchFollowUps,
+  } = useFollowUps({
+    authorId: counselorScope,
+    limit: 200,
+  })
 
   const liveAppointments: Appointment[] = !isMockMode()
     ? (apiAppointments?.appointments ?? []).map((a) => ({
@@ -52,19 +66,57 @@ export default function ReceptionPage() {
       }))
     : allAppointments
 
+  const liveFollowUps: FollowUp[] = useMemo(() => {
+    if (isMockMode()) {
+      return allMockFollowUps
+    }
+    return (apiFollowUps?.followUps ?? []).map((f) => {
+      const studentName = f.student
+        ? `${f.student.firstName} ${f.student.lastName}`.trim()
+        : 'Student'
+      const counselorName = f.author
+        ? `${f.author.firstName} ${f.author.lastName}`.trim()
+        : 'Counselor'
+      const dueDate = f.nextFollowUpAt
+        ? dayjs(f.nextFollowUpAt).format('YYYY-MM-DD')
+        : dayjs(f.createdAt).format('YYYY-MM-DD')
+      const dueTime = f.nextFollowUpAt
+        ? dayjs(f.nextFollowUpAt).format('h:mm A')
+        : dayjs(f.createdAt).format('h:mm A')
+      const isPending = f.nextFollowUpAt
+        ? dayjs(f.nextFollowUpAt).isSame(dayjs(), 'day') || dayjs(f.nextFollowUpAt).isAfter(dayjs())
+        : false
+
+      return {
+        id: f.id,
+        studentId: f.studentId,
+        studentName,
+        counselorId: f.authorId ?? '',
+        counselorName,
+        reminder: f.content || 'Follow-up reminder',
+        priority: 'medium' as FollowUp['priority'],
+        status: (isPending ? 'pending' : 'completed') as FollowUp['status'],
+        date: dueDate,
+        time: dueTime,
+        channel: (f.channel?.toLowerCase() as FollowUp['channel']) ?? 'call',
+        notes: '',
+      }
+    })
+  }, [apiFollowUps, allMockFollowUps])
+
   const todayStr = dayjs().format('YYYY-MM-DD')
 
   const todaysAppointments = useMemo(() => {
-    return visibleAppointments(currentUser, liveAppointments)
+    return visibleAppointments(currentUser, liveAppointments, { verifiedBranchScopedApi: !isMockMode() })
       .filter((a) => dayjs(a.start).format('YYYY-MM-DD') === todayStr)
       .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf())
   }, [currentUser, liveAppointments, todayStr])
 
   const todaysFollowUps = useMemo(() => {
-    return visibleFollowUps(currentUser, followUps)
+    return visibleFollowUps(currentUser, liveFollowUps, { verifiedBranchScopedApi: !isMockMode() })
       .filter((f) => f.date === todayStr && f.status === 'pending')
       .sort((a, b) => a.time.localeCompare(b.time))
-  }, [currentUser, todayStr])
+  }, [currentUser, liveFollowUps, todayStr])
 
   function handleCheckIn(appt: { id: string; status: AppointmentStatus; studentName: string }) {
     // Backend only supports SCHEDULED → COMPLETED / CANCELLED / NO_SHOW,
@@ -189,11 +241,52 @@ export default function ReceptionPage() {
                 Today's Follow-ups
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                {todaysFollowUps.length} pending
+                {!isMockMode() && isFollowUpsLoading
+                  ? 'Loading follow-ups...'
+                  : `${todaysFollowUps.length} pending`}
               </p>
             </CardHeader>
             <CardContent className="space-y-2 px-4 pb-4">
-              {todaysFollowUps.length === 0 && (
+              {!isMockMode() && isFollowUpsLoading && (
+                <div className="space-y-2">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-lg border border-border/70 p-2.5 animate-pulse">
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="h-3 w-28 rounded bg-muted" />
+                        <div className="h-2.5 w-40 rounded bg-muted" />
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <div className="h-2.5 w-12 rounded bg-muted" />
+                        <div className="h-4 w-14 rounded bg-muted" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {!isMockMode() && isFollowUpsError && (
+                <div className="rounded-lg border border-danger/40 bg-danger/5 p-3">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="size-4 text-danger shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="text-xs font-semibold text-danger">Failed to load follow-ups</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {followUpsError instanceof Error ? followUpsError.message : 'Unable to reach server'}
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => refetchFollowUps()}
+                        className="mt-2 h-6 gap-1 text-[10px]"
+                      >
+                        <RefreshCw className="size-2.5" /> Retry
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {(!(!isMockMode() && (isFollowUpsLoading || isFollowUpsError))) && todaysFollowUps.length === 0 && (
                 <EmptyState
                   icon={CalendarDays}
                   title="All clear"
@@ -201,23 +294,25 @@ export default function ReceptionPage() {
                   className="py-8"
                 />
               )}
-              {todaysFollowUps.slice(0, 8).map((f) => (
-                <div
-                  key={f.id}
-                  className="flex items-center gap-3 rounded-lg border border-border/70 p-2.5"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium">{f.studentName}</p>
-                    <p className="truncate text-[11px] text-muted-foreground">{f.reminder}</p>
+
+              {(!(!isMockMode() && (isFollowUpsLoading || isFollowUpsError))) &&
+                todaysFollowUps.slice(0, 8).map((f) => (
+                  <div
+                    key={f.id}
+                    className="flex items-center gap-3 rounded-lg border border-border/70 p-2.5 transition-colors hover:bg-accent/40"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-medium">{f.studentName}</p>
+                      <p className="truncate text-[11px] text-muted-foreground">{f.reminder}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      <span className="text-[11px] font-medium font-tabular text-muted-foreground">
+                        {f.time}
+                      </span>
+                      <PriorityBadge priority={f.priority} className="text-[9px] py-0" />
+                    </div>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="text-[11px] font-medium font-tabular text-muted-foreground">
-                      {f.time}
-                    </span>
-                    <PriorityBadge priority={f.priority} className="text-[9px] py-0" />
-                  </div>
-                </div>
-              ))}
+                ))}
             </CardContent>
           </Card>
         </div>

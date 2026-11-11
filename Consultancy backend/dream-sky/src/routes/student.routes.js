@@ -22,6 +22,12 @@ router.get(
     studentController.list
 );
 
+router.get(
+    "/trash",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"),
+    studentController.trash
+);
+
 router.get("/:id", studentController.getOne);
 
 router.put(
@@ -36,9 +42,27 @@ router.patch(
     studentController.update
 );
 
+router.patch(
+    "/:id/restore",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"),
+    studentController.restore
+);
+
+router.patch(
+    "/:id/assign",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"),
+    studentController.assign
+);
+
+router.patch(
+    "/:id/transfer-branch",
+    requireRole("SUPER_ADMIN"),
+    studentController.transferBranch
+);
+
 router.delete(
     "/:id",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"),
     studentController.remove
 );
 
@@ -58,7 +82,7 @@ router.get("/:id/timeline", studentController.timeline);
 
 router.post(
     "/:id/resend-credentials",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
     studentController.resendCredentials
 );
 

@@ -54,13 +54,13 @@ router.delete(
 // ─── Enrollments ──────────────────────────────────────────────────────────────
 router.post(
   "/:classId/enroll",
-  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"),
   classController.enrollStudent
 );
 
 router.post(
   "/:classId/unenroll",
-  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"),
   classController.unenrollStudent
 );
 
@@ -80,7 +80,7 @@ router.post(
 
 router.get(
   "/:classId/content",
-  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "TEACHER", "STUDENT"),
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK", "TEACHER", "STUDENT"),
   classController.listClassContent
 );
 

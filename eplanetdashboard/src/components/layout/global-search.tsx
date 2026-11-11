@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { Search, User, UserPlus, Landmark, Navigation, CornerDownLeft } from 'lucide-react'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { universities } from '@/mock'
+import { useUniversitiesStore } from '@/features/universities/store'
+import { useUniversities } from '@/hooks/use-universities'
 import { useAuthStore } from '@/store/auth-store'
 import { useStudentsStore } from '@/features/students/store'
 import { useLeadsStore } from '@/features/leads/store'
@@ -42,12 +43,24 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
   const mockStudents = useStudentsStore((s) => s.students)
   const mockLeads = useLeadsStore((s) => s.leads)
 
-  // Fetch live records from backend API when query is typed
-  const { data: apiStudentsData } = useStudents({
-    search: query.trim() || undefined,
-    limit: 20,
+  const canSearchStudents = !['teacher', 'student'].includes(currentUser.role) && searchScopes.includes('students')
+  const canSearchLeads = !['teacher', 'student'].includes(currentUser.role) && searchScopes.includes('leads')
+
+  // Fetch live records from backend API only when search dialog is open, query is entered, and role is authorized
+  const { data: apiStudentsData } = useStudents(
+    {
+      search: query.trim() || undefined,
+      limit: 20,
+    },
+    { enabled: canSearchStudents && open && Boolean(query.trim()) }
+  )
+  const { leads: liveLeads = [] } = useLiveLeads({
+    enabled: canSearchLeads && open && Boolean(query.trim()),
   })
-  const { leads: liveLeads = [] } = useLiveLeads()
+  const { data: apiUniversitiesData } = useUniversities({
+    search: query.trim() || undefined,
+    limit: 10,
+  })
 
   const activeStudents = useMemo(() => {
     const rawList = Array.isArray(apiStudentsData)
@@ -57,17 +70,30 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
       : null
 
     if (!isMockMode() && rawList) {
-      return rawList.map((s) => ({
-        id: s.id,
-        name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Unnamed',
-        studentId: (s as any).studentId ?? s.id,
-        email: s.email || '',
-        phone: s.phone ?? '',
-        passportNumber: (s.academicBackground as any)?.passportNumber ?? '',
-        preferredCountries: s.nationality ? [s.nationality] : [],
-        photoColor: '#64748B',
-        status: s.currentStage as any,
-      }))
+      return rawList.map((s) => {
+        const acad = (s.academicBackground as any) || {}
+        const resolvedBranchId =
+          typeof (s as any).branchId === 'string' && (s as any).branchId.trim().length > 0
+            ? (s as any).branchId
+            : typeof (s.assignedCounselor as any)?.branchId === 'string' &&
+                (s.assignedCounselor as any).branchId.trim().length > 0
+              ? (s.assignedCounselor as any).branchId
+              : typeof acad.branchId === 'string' && acad.branchId.trim().length > 0
+                ? acad.branchId
+                : undefined
+        return {
+          id: s.id,
+          name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Unnamed',
+          studentId: (s as any).studentId ?? s.id,
+          email: s.email || '',
+          phone: s.phone ?? '',
+          passportNumber: acad.passportNumber ?? '',
+          preferredCountries: s.nationality ? [s.nationality] : [],
+          photoColor: '#64748B',
+          status: s.currentStage as any,
+          ...(resolvedBranchId ? { branchId: resolvedBranchId } : {}),
+        }
+      })
     }
     return isMockMode() ? (Array.isArray(mockStudents) ? mockStudents : []) : []
   }, [apiStudentsData, mockStudents])
@@ -83,16 +109,27 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
     const q = query.trim().toLowerCase()
     if (!q) return null
 
-    const studentMatches = visibleStudents(currentUser, (activeStudents || []) as any)
+    const studentMatches = visibleStudents(currentUser, (activeStudents || []) as any, { verifiedBranchScopedApi: !isMockMode() })
       .filter((s) => [s.name, s.studentId, s.passportNumber ?? '', s.phone ?? '', s.email].some((f) => String(f ?? '').toLowerCase().includes(q)))
       .slice(0, 4)
 
-    const leadMatches = visibleLeads(currentUser, (activeLeads || []) as any)
+    const leadMatches = visibleLeads(currentUser, (activeLeads || []) as any, { verifiedBranchScopedApi: !isMockMode() })
       .filter((l) => [l.name, l.email, l.phone ?? '', l.interestedCountry ?? ''].some((f) => String(f ?? '').toLowerCase().includes(q)))
       .slice(0, 4)
 
+    const liveUniList = (apiUniversitiesData?.universities ?? []).map((u: any) => ({
+      id: u.id,
+      name: u.name,
+      countryName: u.country?.name || u.countryName || '',
+      city: u.city || '',
+      flag: u.flag || '🏛️',
+    }))
+
     const uniMatches = searchScopes.includes('universities')
-      ? universities.filter((u) => (u.name ?? '').toLowerCase().includes(q) || (u.countryName ?? '').toLowerCase().includes(q)).slice(0, 4)
+      ? (!isMockMode()
+          ? liveUniList.filter((u) => (u.name ?? '').toLowerCase().includes(q) || (u.countryName ?? '').toLowerCase().includes(q))
+          : useUniversitiesStore.getState().universities.filter((u) => (u.name ?? '').toLowerCase().includes(q) || (u.countryName ?? '').toLowerCase().includes(q))
+        ).slice(0, 4)
       : []
 
     const pageMatches = navPages.filter(
@@ -100,7 +137,7 @@ export function GlobalSearch({ open, onOpenChange }: GlobalSearchProps) {
     ).slice(0, 3)
 
     return { studentMatches, leadMatches, uniMatches, pageMatches }
-  }, [currentUser, query, searchScopes, activeStudents, activeLeads])
+  }, [currentUser, query, searchScopes, activeStudents, activeLeads, apiUniversitiesData])
 
   function go(path: string) {
     onOpenChange(false)

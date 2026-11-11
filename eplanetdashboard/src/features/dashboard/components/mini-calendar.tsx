@@ -4,9 +4,11 @@ import { CalendarDays, ChevronLeft, ChevronRight, Clock3, MapPin } from 'lucide-
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAppointmentsStore } from '@/features/appointments/store'
+import { useAppointments } from '@/hooks/use-appointments'
 import { useEventsStore } from '@/features/events/store'
 import { useAuthStore } from '@/store/auth-store'
 import { visibleAppointments } from '@/lib/data-visibility'
+import { isMockMode } from '@/lib/api-client'
 import { cn } from '@/lib/utils'
 import type { Appointment, Event } from '@/types'
 
@@ -22,11 +24,36 @@ export function MiniCalendar() {
   const allAppts = useAppointmentsStore((s) => s.appointments)
   const allEvents = useEventsStore((s) => s.events)
   const currentUser = useAuthStore((s) => s.currentUser)
+  const isMock = isMockMode()
+
+  const counselorScope = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
+  const { data: apiApptsData } = useAppointments({ counselorId: counselorScope, limit: 100 })
+
+  const liveAppointments: Appointment[] = useMemo(() => {
+    if (isMock || !apiApptsData?.appointments) return []
+    return apiApptsData.appointments.map((a) => ({
+      id: a.id,
+      title: `${(a.type ?? 'Appointment').replace(/_/g, ' ')} — ${a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Student'}`,
+      studentId: a.studentId,
+      studentName: a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Unknown Student',
+      counselorId: a.counselorId ?? '',
+      counselorName: a.counselor ? `${a.counselor.firstName} ${a.counselor.lastName}` : 'Counselor',
+      counselorIds: a.counselorId ? [a.counselorId] : [],
+      counselorNames: a.counselor ? [`${a.counselor.firstName} ${a.counselor.lastName}`] : [],
+      type: (a.type?.toLowerCase() === 'follow_up' ? 'follow_up' : 'counseling') as Appointment['type'],
+      status: (a.status?.toLowerCase() ?? 'scheduled') as any,
+      start: a.datetime,
+      end: new Date(new Date(a.datetime).getTime() + (a.durationMin ?? 30) * 60000).toISOString(),
+      location: (a.meetingMode?.toLowerCase() === 'online' ? 'video_call' : 'branch_office') as Appointment['location'],
+      notes: a.notes ?? '',
+    }))
+  }, [apiApptsData, isMock])
 
   const [currentDate, setCurrentDate] = useState(() => dayjs())
   const [selectedDate, setSelectedDate] = useState(() => dayjs().format('YYYY-MM-DD'))
 
-  const visibleAppts = visibleAppointments(currentUser, allAppts)
+  const apptsToUse = isMock ? allAppts : liveAppointments
+  const visibleAppts = visibleAppointments(currentUser, apptsToUse, { verifiedBranchScopedApi: !isMock })
   const visibleEvents = allEvents.filter((event) => eventIsVisibleForRole(currentUser.role, event))
 
   const appointmentsByDate = useMemo(() => {

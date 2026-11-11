@@ -5,7 +5,6 @@ import { PersonAvatar } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { appointmentStatusMeta } from '@/components/shared/status-badges'
-import { students } from '@/mock'
 import type { Appointment } from '@/types'
 
 // ── Shared Helpers ────────────────────────────────────────────────────────────
@@ -61,12 +60,23 @@ const typeLabels: Record<string, string> = {
   other: 'Other',
 }
 
-// Build a student color map once
+const PALETTE = ['#0284c7', '#0d9488', '#16a34a', '#d97706', '#dc2626', '#9333ea', '#4f46e5', '#e11d48']
+
+function getStudentColor(str?: string): string {
+  if (!str) return '#0284c7'
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return PALETTE[Math.abs(hash) % PALETTE.length]
+}
+
+// Build a dynamic student color resolver that works with any live student without mock imports
 function useStudentColorMap() {
   return useMemo(() => {
-    const map: Record<string, string> = {}
-    students.forEach((s) => { map[s.id] = s.photoColor })
-    return map
+    return new Proxy({} as Record<string, string>, {
+      get: (_target, prop: string) => getStudentColor(typeof prop === 'string' ? prop : ''),
+    })
   }, [])
 }
 

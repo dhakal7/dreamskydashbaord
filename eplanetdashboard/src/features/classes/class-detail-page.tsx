@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { BookOpen, Users, ClipboardCheck, ArrowLeft, GraduationCap, Check, X, Plus, FileText, Phone, Trash2, UserMinus } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared/page-header'
@@ -20,13 +21,22 @@ import {
 } from '@/components/ui/select'
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 import { useAuthStore } from '@/store/auth-store'
+import { hasPermission } from '@/lib/rbac'
 import { classes as mockAllClasses } from '@/mock'
 import { getClassEnrollments, getClassAttendance, getClassMaterials } from './selectors'
 import { useAttendanceStore, type StudentPresence } from './attendance-store'
 import { useClassMaterialsStore, type AddMaterialData } from './materials-store'
 import { StudentClassProfileDialog } from './components/student-class-profile-dialog'
 import { isMockMode } from '@/lib/api-client'
-import { useClass, useClasses, useMarkAttendance, useClassContent, useEnrollStudent } from '@/hooks/use-classes'
+import {
+  classKeys,
+  useClass,
+  useClasses,
+  useMarkAttendance,
+  useClassContent,
+  useEnrollStudent,
+  useUnenrollStudent,
+} from '@/hooks/use-classes'
 import { useStudents } from '@/hooks/use-students'
 import { useStudentsStore } from '@/features/students/store'
 import { classApi } from '@/api/class-api'
@@ -40,6 +50,7 @@ const tabs = [
 
 export default function ClassDetailPage() {
   const { id } = useParams<{ id: string }>()
+  const qc = useQueryClient()
   const role = useAuthStore((s) => s.currentUser?.role ?? 'front_desk')
   const submitAttendanceMock = useAttendanceStore((s) => s.submitAttendance)
   const unenrollStudentMock = useAttendanceStore((s) => s.unenrollStudent)
@@ -48,16 +59,65 @@ export default function ClassDetailPage() {
   const markAttendanceApi = useMarkAttendance()
   const enrollStudentMock = useAttendanceStore((s) => s.enrollStudent)
   const enrollMutation = useEnrollStudent()
-  const { data: liveStudentsData } = useStudents({ limit: 100 })
+  const unenrollMutation = useUnenrollStudent()
+  const canFetchStudents = !['teacher', 'student'].includes(role)
+  const { data: liveStudentsData } = useStudents({ limit: 100, type: 'all' }, { enabled: canFetchStudents })
   const mockStudents = useStudentsStore((s) => s.students)
   const [admitDialogOpen, setAdmitDialogOpen] = useState(false)
   const [targetStudentId, setTargetStudentId] = useState('')
   const [isAdmitting, setIsAdmitting] = useState(false)
 
+  const today = dayjs().format('YYYY-MM-DD')
+  const [todayPresence, setTodayPresence] = useState<Record<string, boolean>>({})
+
+  // Student profile dialog state
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false)
+  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null)
+
+  // Add material dialog state
+  const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
+  const [newMaterialTitle, setNewMaterialTitle] = useState('')
+  const [newMaterialType, setNewMaterialType] = useState<string>('material')
+  const [newMaterialDescription, setNewMaterialDescription] = useState('')
+  const [newMaterialDueDate, setNewMaterialDueDate] = useState('')
+  const [newMaterialUrl, setNewMaterialUrl] = useState('')
+  const [newMaterialFile, setNewMaterialFile] = useState<File | null> (null)
+  const [newMaterialFileName, setNewMaterialFileName] = useState('')
+  const [isUploadingMaterial, setIsUploadingMaterial] = useState(false)
+
+  const canManageMaterials = isMockMode()
+    ? role !== 'student'
+    : role === 'super_admin' || role === 'branch_admin' || role === 'teacher'
+
   // Live mode: fetch class from backend; mock mode: read from mock store
-  const { data: liveClass, isLoading: isClassLoading } = useClass(id!)
-  const { data: liveContent } = useClassContent(id!)
-  const { data: allClassesData } = useClasses()
+  const {
+    data: liveClass,
+    isLoading: isClassLoading,
+    isError: isClassError,
+    error: classError,
+    refetch: refetchClass,
+  } = useClass(id!)
+  const {
+    data: liveContent,
+    isLoading: isContentLoading,
+    isError: isContentError,
+    refetch: refetchContent,
+  } = useClassContent(id!)
+  const { data: allClassesData, isLoading: isClassesListLoading } = useClasses()
+
+  const availableStudents = useMemo(() => {
+    if (!isMockMode()) {
+      const rawStudents = liveStudentsData?.students || (Array.isArray(liveStudentsData) ? liveStudentsData : [])
+      return rawStudents.map((s: any) => ({
+        id: s.id,
+        studentId: s.studentId || s.id,
+        name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email || 'Student',
+        email: s.email || '',
+        phone: s.phone || '',
+      }))
+    }
+    return mockStudents.map((s) => ({ id: s.id, studentId: s.studentId || s.id, name: s.name, email: s.email, phone: s.phone || '' }))
+  }, [liveStudentsData, mockStudents])
 
   const liveClassFromList = Array.isArray(allClassesData)
     ? (allClassesData as any).find((c: any) => c.id === id)
@@ -65,41 +125,65 @@ export default function ClassDetailPage() {
 
   const activeLiveClass = liveClass || liveClassFromList
 
-  const mockCls =
-    mockAllClasses.find((c) => c.id === id) ||
-    (activeLiveClass?.name
-      ? mockAllClasses.find((c) => c.name.toLowerCase().trim() === activeLiveClass.name.toLowerCase().trim())
-      : undefined) ||
-    mockAllClasses[0]
+  const mockCls = mockAllClasses.find((c) => c.id === id)
+  const mockEnrollCount = getClassEnrollments(id!).length || mockCls?.enrolledCount || 0
 
-  // Build the class object: live takes priority, fall back to mock
-  const fallbackEnrollCount = getClassEnrollments(id!).length || mockCls?.enrolledCount || 0
-  const cls = activeLiveClass
-    ? {
-        id: activeLiveClass.id,
-        name: activeLiveClass.name,
-        subject: (activeLiveClass.subject ?? 'IELTS') as any,
-        teacherId: activeLiveClass.teacherId,
-        teacherName: activeLiveClass.teacher
-          ? `${activeLiveClass.teacher.firstName || ''} ${activeLiveClass.teacher.lastName || ''}`.trim()
-          : 'EPT Instructor',
-        schedule: (activeLiveClass.schedule as any)?.timing || String(activeLiveClass.schedule || '07:00-08:00 AM'),
-        room: 'Room 101',
-        startDate: activeLiveClass.startDate ?? activeLiveClass.createdAt,
-        endDate: activeLiveClass.endDate ?? activeLiveClass.createdAt,
-        capacity: activeLiveClass.capacity || 20,
-        enrolledCount: (Array.isArray(activeLiveClass.enrollments) && activeLiveClass.enrollments.length > 0)
-          ? activeLiveClass.enrollments.length
-          : fallbackEnrollCount,
-        status: (activeLiveClass.status?.toLowerCase() ?? 'ongoing') as any,
-        nextSessionAt: activeLiveClass.startDate ?? activeLiveClass.createdAt,
-      }
+  // In live mode, never fall back to mockCls or mock enrollment counts
+  const cls = !isMockMode()
+    ? activeLiveClass
+      ? {
+          id: activeLiveClass.id,
+          name: activeLiveClass.name,
+          subject: (activeLiveClass.subject ?? 'IELTS') as any,
+          teacherId: activeLiveClass.teacherId,
+          teacherName: activeLiveClass.teacher
+            ? `${activeLiveClass.teacher.firstName || ''} ${activeLiveClass.teacher.lastName || ''}`.trim()
+            : 'Unassigned',
+          schedule: (activeLiveClass.schedule as any)?.timing || String(activeLiveClass.schedule || 'Unscheduled'),
+          room: activeLiveClass.room || 'Assigned Room',
+          startDate: activeLiveClass.startDate ?? activeLiveClass.createdAt,
+          endDate: activeLiveClass.endDate ?? activeLiveClass.createdAt,
+          capacity: activeLiveClass.capacity || 20,
+          enrolledCount: Array.isArray(activeLiveClass.enrollments)
+            ? activeLiveClass.enrollments.length
+            : (activeLiveClass._count?.enrollments ?? 0),
+          status: (activeLiveClass.status?.toLowerCase() ?? 'ongoing') as any,
+          nextSessionAt: activeLiveClass.startDate ?? activeLiveClass.createdAt,
+        }
+      : null
     : mockCls
+      ? {
+          ...mockCls,
+          enrolledCount: mockEnrollCount,
+        }
+      : null
 
-  if (!isMockMode() && isClassLoading && !cls) {
+  if (!isMockMode() && (isClassLoading || isClassesListLoading) && !cls) {
     return (
       <div className="flex items-center justify-center p-12 text-sm text-muted-foreground">
         Loading class details...
+      </div>
+    )
+  }
+
+  if (!isMockMode() && isClassError && !cls) {
+    return (
+      <div className="space-y-5">
+        <PageHeader title="Class Details" />
+        <Card className="p-6 border-destructive/40 bg-destructive/5 flex flex-col items-center justify-center gap-2 text-center">
+          <p className="text-sm font-semibold text-destructive">Failed to load class details</p>
+          <p className="text-xs text-muted-foreground">
+            {(classError as Error)?.message || 'Unable to fetch class information from the server.'}
+          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <Button size="sm" variant="outline" onClick={() => refetchClass()}>
+              Retry
+            </Button>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/classes">Back to Classes</Link>
+            </Button>
+          </div>
+        </Card>
       </div>
     )
   }
@@ -121,22 +205,6 @@ export default function ClassDetailPage() {
       </div>
     )
   }
-
-  const today = dayjs().format('YYYY-MM-DD')
-  const [todayPresence, setTodayPresence] = useState<Record<string, boolean>>({})
-
-  // Student profile dialog state
-  const [profileDialogOpen, setProfileDialogOpen] = useState(false)
-  const [selectedStudent, setSelectedStudent] = useState<{ id: string; name: string } | null>(null)
-
-  // Add material dialog state
-  const [materialDialogOpen, setMaterialDialogOpen] = useState(false)
-  const [newMaterialTitle, setNewMaterialTitle] = useState('')
-  const [newMaterialType, setNewMaterialType] = useState<string>('material')
-  const [newMaterialDueDate, setNewMaterialDueDate] = useState('')
-  const [newMaterialFile, setNewMaterialFile] = useState<File | null>(null)
-  const [newMaterialFileName, setNewMaterialFileName] = useState('')
-  const [isUploadingMaterial, setIsUploadingMaterial] = useState(false)
 
   const handleTogglePresence = (studentId: string) => {
     setTodayPresence((prev) => ({
@@ -160,7 +228,6 @@ export default function ClassDetailPage() {
         {
           onSuccess: () => {
             setTodayPresence({})
-            toast.success('Attendance submitted successfully')
           },
         }
       )
@@ -187,12 +254,19 @@ export default function ClassDetailPage() {
     setIsUploadingMaterial(true)
     try {
       if (!isMockMode()) {
-        // Live mode: call backend API to create class content
+        const trimmedDescription = newMaterialDescription.trim() || undefined
+        const trimmedUrl = newMaterialUrl.trim() || undefined
+        // Live mode: call backend API to create class content with aligned fields
         await classApi.createContent(cls.id, {
           title: newMaterialTitle.trim(),
           type: newMaterialType.toUpperCase(),
-          description: newMaterialDueDate ? `Due: ${newMaterialDueDate}` : undefined,
+          body: trimmedDescription,
+          description: trimmedDescription,
+          fileUrl: trimmedUrl,
+          url: trimmedUrl,
+          dueDate: newMaterialDueDate || undefined,
         })
+        await qc.invalidateQueries({ queryKey: classKeys.content(cls.id) })
         toast.success('Material added successfully')
       } else {
         // Mock mode: write to local store
@@ -204,16 +278,18 @@ export default function ClassDetailPage() {
         })
         toast.success('Material added successfully')
       }
+      setNewMaterialTitle('')
+      setNewMaterialType('material')
+      setNewMaterialDescription('')
+      setNewMaterialDueDate('')
+      setNewMaterialUrl('')
+      setNewMaterialFile(null)
+      setNewMaterialFileName('')
+      setMaterialDialogOpen(false)
     } catch (err: any) {
       toast.error(err.message || 'Failed to add material')
     } finally {
-      setNewMaterialTitle('')
-      setNewMaterialType('material')
-      setNewMaterialDueDate('')
-      setNewMaterialFile(null)
-      setNewMaterialFileName('')
       setIsUploadingMaterial(false)
-      setMaterialDialogOpen(false)
     }
   }
 
@@ -227,38 +303,43 @@ export default function ClassDetailPage() {
 
   const handleUnenroll = (studentId: string, studentName: string) => {
     if (!cls) return
-    if (window.confirm(`Are you sure you want to remove "${studentName}" from this class?`)) {
+    if (!window.confirm(`Are you sure you want to remove "${studentName}" from this class?`)) {
+      return
+    }
+    if (!isMockMode()) {
+      unenrollMutation.mutate({ classId: cls.id, studentId })
+    } else {
       unenrollStudentMock(cls.id, studentId)
       toast.success(`${studentName} removed from class`)
     }
   }
 
-  const handleDeleteMaterial = (materialId: string, title: string) => {
-    if (window.confirm(`Are you sure you want to delete material "${title}"?`)) {
+  const handleDeleteMaterial = async (materialId: string, title: string) => {
+    if (!cls) return
+    if (!window.confirm(`Are you sure you want to delete material "${title}"?`)) {
+      return
+    }
+    if (!isMockMode()) {
+      try {
+        await classApi.deleteContent(cls.id, materialId)
+        await qc.invalidateQueries({ queryKey: classKeys.content(cls.id) })
+        toast.success(`Material "${title}" deleted`)
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to delete material')
+      }
+    } else {
       removeMaterialMock(materialId)
       toast.success(`Material "${title}" deleted`)
     }
   }
 
-  const availableStudents = useMemo(() => {
-    if (!isMockMode()) {
-      const rawStudents = liveStudentsData?.students || (Array.isArray(liveStudentsData) ? liveStudentsData : [])
-      if (rawStudents.length > 0) {
-        return rawStudents.map((s: any) => ({
-          id: s.id,
-          studentId: s.studentId || s.id,
-          name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email || 'Student',
-          email: s.email || '',
-          phone: s.phone || '',
-        }))
-      }
-    }
-    return mockStudents.map((s) => ({ id: s.id, studentId: s.studentId || s.id, name: s.name, email: s.email, phone: s.phone || '' }))
-  }, [liveStudentsData, mockStudents])
-
   const handleAdmitSubmit = () => {
     if (!cls || !targetStudentId) {
       toast.error('Please select a student to admit')
+      return
+    }
+    if (cls.capacity > 0 && cls.enrolledCount >= cls.capacity) {
+      toast.error(`Class has reached maximum capacity (${cls.capacity} seats).`)
       return
     }
     const student = availableStudents.find((s) => s.id === targetStudentId)
@@ -271,11 +352,9 @@ export default function ClassDetailPage() {
             setIsAdmitting(false)
             setAdmitDialogOpen(false)
             setTargetStudentId('')
-            toast.success(`Enrolled ${student?.name || 'Student'} into ${cls.name}!`)
           },
-          onError: (err: any) => {
+          onError: () => {
             setIsAdmitting(false)
-            toast.error(err.message || 'Failed to admit student')
           },
         }
       )
@@ -300,32 +379,39 @@ export default function ClassDetailPage() {
 
   const liveEnrollments = activeLiveClass?.enrollments
   const storeEnrollments = (getClassEnrollments(cls?.id ?? '').length > 0 ? getClassEnrollments(cls?.id ?? '') : getClassEnrollments(id!))
-  const roster = Array.isArray(liveEnrollments) && liveEnrollments.length > 0
-    ? liveEnrollments.map((e: any) => ({
-        id: e.id,
-        classId: cls?.id ?? '',
-        studentId: e.studentId,
-        studentName: e.student ? `${e.student.firstName} ${e.student.lastName}`.trim() : 'Student',
-        studentPhone: e.student?.phone || '',
-        enrolledAt: e.enrolledAt,
-        attendancePct: 0,
-        progress: 75,
-      }))
+  const roster = !isMockMode()
+    ? Array.isArray(liveEnrollments)
+      ? liveEnrollments.map((e: any) => ({
+          id: e.id,
+          classId: cls.id,
+          studentId: e.studentId,
+          studentName: e.student ? `${e.student.firstName || ''} ${e.student.lastName || ''}`.trim() : 'Student',
+          studentPhone: e.student?.phone || '',
+          enrolledAt: e.enrolledAt,
+          attendancePct: null as number | null,
+          progress: null as number | null,
+        }))
+      : []
     : storeEnrollments
-  const attendance = getClassAttendance(cls?.id ?? '')
-  const materials = !isMockMode() && liveContent
-    ? liveContent.map((c) => ({
-        id: c.id,
-        classId: c.classId,
-        title: c.title,
-        type: (c.type?.toLowerCase() as any) ?? 'material',
-        uploadedAt: c.createdAt,
-        dueDate: undefined,
-        fileUrl: c.url ?? undefined,
-        fileName: c.title,
-        fileSize: undefined,
-        fileType: undefined,
-      }))
+  const attendance = !isMockMode() ? [] : getClassAttendance(cls?.id ?? '')
+  const materials = !isMockMode()
+    ? (liveContent ?? []).map((c) => {
+        const resolvedFileUrl = c.fileUrl ?? c.url ?? undefined
+        const resolvedDescription = c.body ?? c.description ?? undefined
+        return {
+          id: c.id,
+          classId: c.classId,
+          title: c.title,
+          type: (c.type?.toLowerCase() as any) ?? 'material',
+          uploadedAt: c.createdAt,
+          dueDate: c.dueDate ?? undefined,
+          fileUrl: resolvedFileUrl,
+          fileName: resolvedFileUrl ? c.title : undefined,
+          fileSize: undefined,
+          fileType: undefined,
+          description: resolvedDescription,
+        }
+      })
     : getClassMaterials(cls?.id ?? '')
   const enrollmentPct = cls && cls.capacity > 0 ? Math.round((cls.enrolledCount / cls.capacity) * 100) : 0
 
@@ -376,14 +462,15 @@ export default function ClassDetailPage() {
                     <CardTitle>Class Roster</CardTitle>
                     <CardDescription>{roster.length} enrolled students</CardDescription>
                   </div>
-                  {role !== 'student' && (
+                  {hasPermission(role, 'classes.manage') && (
                     <Button
                       size="sm"
                       className="gap-1.5 h-8 text-xs bg-primary hover:bg-primary/90 text-white"
+                      disabled={cls.capacity > 0 && cls.enrolledCount >= cls.capacity}
                       onClick={() => setAdmitDialogOpen(true)}
                     >
                       <Plus className="size-3.5" />
-                      + Admit Student
+                      {cls.capacity > 0 && cls.enrolledCount >= cls.capacity ? 'Class Full' : '+ Admit Student'}
                     </Button>
                   )}
                 </CardHeader>
@@ -448,13 +535,18 @@ export default function ClassDetailPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span className="font-tabular">{e.progress}% progress</span>
-                            <span className="font-tabular">{e.attendancePct}% attendance</span>
-                            {role !== 'student' && (
+                            {e.progress !== null && e.progress !== undefined && (
+                              <span className="font-tabular">{e.progress}% progress</span>
+                            )}
+                            {e.attendancePct !== null && e.attendancePct !== undefined && (
+                              <span className="font-tabular">{e.attendancePct}% attendance</span>
+                            )}
+                            {hasPermission(role, 'classes.manage') && (
                               <Button
                                 variant="ghost"
                                 size="icon"
                                 className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50"
+                                disabled={unenrollMutation.isPending}
                                 onClick={(ev) => {
                                   ev.stopPropagation()
                                   handleUnenroll(e.studentId, e.studentName)
@@ -471,9 +563,9 @@ export default function ClassDetailPage() {
                   </div>
                   {role !== 'student' && roster.length > 0 && (
                     <div className="mt-4 flex justify-end border-t pt-4">
-                      <Button onClick={handleSubmitAttendance} className="gap-2">
+                      <Button onClick={handleSubmitAttendance} disabled={markAttendanceApi.isPending} className="gap-2">
                         <ClipboardCheck className="size-4" />
-                        Submit Attendance
+                        {markAttendanceApi.isPending ? 'Submitting…' : 'Submit Attendance'}
                       </Button>
                     </div>
                   )}
@@ -488,9 +580,16 @@ export default function ClassDetailPage() {
                   <CardDescription>Recent session records</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {attendance.length === 0 && (
+                  {!isMockMode() ? (
+                    <EmptyState
+                      icon={ClipboardCheck}
+                      title="Mark daily attendance from the Roster tab"
+                      description="Select present or absent for each student in the Roster tab and click 'Submit Attendance' to save daily attendance records to the server."
+                      className="py-8"
+                    />
+                  ) : attendance.length === 0 ? (
                     <EmptyState icon={ClipboardCheck} title="No attendance recorded yet" className="py-8" />
-                  )}
+                  ) : null}
                   <div className="space-y-2.5">
                     {attendance.map((a) => {
                       const pct = Math.round((a.presentCount / a.totalCount) * 100)
@@ -520,9 +619,9 @@ export default function ClassDetailPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle>Materials & Assignments</CardTitle>
-                      <CardDescription>{materials.length} files</CardDescription>
+                      <CardDescription>{materials.length} items</CardDescription>
                     </div>
-                    {role !== 'student' && (
+                    {canManageMaterials && (
                       <Button size="sm" onClick={() => setMaterialDialogOpen(true)} className="gap-1">
                         <Plus className="size-4" />
                         Add Material
@@ -531,9 +630,20 @@ export default function ClassDetailPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {materials.length === 0 && (
+                  {!isMockMode() && isContentLoading ? (
+                    <div className="py-8 text-center text-xs text-muted-foreground">
+                      Loading class materials…
+                    </div>
+                  ) : !isMockMode() && isContentError ? (
+                    <div className="py-6 flex flex-col items-center justify-center gap-2 text-center">
+                      <p className="text-xs font-semibold text-destructive">Failed to load class materials</p>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => refetchContent()}>
+                        Retry
+                      </Button>
+                    </div>
+                  ) : materials.length === 0 ? (
                     <EmptyState icon={GraduationCap} title="No materials uploaded yet" className="py-8" />
-                  )}
+                  ) : null}
                   <div className="space-y-2.5">
                     {materials.map((m) => (
                       <div key={m.id} className="rounded-lg border border-border/70 p-3 space-y-2">
@@ -545,24 +655,37 @@ export default function ClassDetailPage() {
                                 {m.type}
                               </Badge>
                             </div>
-                            {m.fileName && (
+                            {(m as any).description && (
+                              <p className="mt-1 text-xs text-muted-foreground">{(m as any).description}</p>
+                            )}
+                            {(m.fileName || m.fileUrl) && (
                               <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
                                 <FileText className="size-3" />
-                                <span>{m.fileName}</span>
-                                <span>•</span>
-                                <span>{m.fileSize} KB</span>
+                                <span>{m.fileName || m.title}</span>
+                                {m.fileSize !== undefined && (
+                                  <>
+                                    <span>•</span>
+                                    <span>{m.fileSize} KB</span>
+                                  </>
+                                )}
                                 {m.fileUrl && (
                                   <>
                                     <span>•</span>
-                                    <a href={m.fileUrl} download={m.fileName} className="text-primary hover:underline">
-                                      Download
+                                    <a
+                                      href={m.fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      download={isMockMode() ? m.fileName : undefined}
+                                      className="text-primary hover:underline"
+                                    >
+                                      {isMockMode() ? 'Download' : 'Open Resource'}
                                     </a>
                                   </>
                                 )}
                               </div>
                             )}
                           </div>
-                          {role !== 'student' && (
+                          {canManageMaterials && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -589,7 +712,7 @@ export default function ClassDetailPage() {
       </div>
 
       {/* ── Student Class Profile Dialog ── */}
-      {selectedStudent && (
+      {selectedStudent && isMockMode() && (
         <StudentClassProfileDialog
           open={profileDialogOpen}
           onOpenChange={setProfileDialogOpen}
@@ -605,7 +728,11 @@ export default function ClassDetailPage() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add Material</DialogTitle>
-            <DialogDescription>Upload a new material or assignment for this class.</DialogDescription>
+            <DialogDescription>
+              {isMockMode()
+                ? 'Upload a new material or assignment for this class.'
+                : 'Publish a material, assignment, or resource link for this class.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
@@ -630,6 +757,14 @@ export default function ClassDetailPage() {
               </Select>
             </div>
             <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Description / Notes (optional)</label>
+              <Input
+                placeholder="Instructions or summary..."
+                value={newMaterialDescription}
+                onChange={(e) => setNewMaterialDescription(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
               <label className="text-xs font-medium text-muted-foreground">Due Date (optional)</label>
               <Input
                 type="date"
@@ -637,42 +772,54 @@ export default function ClassDetailPage() {
                 onChange={(e) => setNewMaterialDueDate(e.target.value)}
               />
             </div>
-            
-            <div className="space-y-2">
-              <input
-                type="file"
-                id="class-material-file-input"
-                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
-                className="hidden"
-                onChange={handleMaterialFileChange}
-              />
-              <label htmlFor="class-material-file-input">
-                <Button variant="outline" size="sm" className="w-full cursor-pointer" asChild>
-                  <span>
-                    <FileText className="mr-2 size-4" /> Choose File to Upload
-                  </span>
-                </Button>
-              </label>
-              
-              {newMaterialFileName && (
-                <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5">
-                  <p className="text-xs text-muted-foreground">Selected file:</p>
-                  <p className="text-sm font-medium text-primary mt-1">{newMaterialFileName}</p>
-                  {newMaterialFile && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {(newMaterialFile.size / 1024).toFixed(1)} KB
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+
+            {!isMockMode() ? (
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Resource URL (optional)</label>
+                <Input
+                  type="url"
+                  placeholder="https://drive.google.com/..."
+                  value={newMaterialUrl}
+                  onChange={(e) => setNewMaterialUrl(e.target.value)}
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <input
+                  type="file"
+                  id="class-material-file-input"
+                  accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                  className="hidden"
+                  onChange={handleMaterialFileChange}
+                />
+                <label htmlFor="class-material-file-input">
+                  <Button variant="outline" size="sm" className="w-full cursor-pointer" asChild>
+                    <span>
+                      <FileText className="mr-2 size-4" /> Choose File to Upload
+                    </span>
+                  </Button>
+                </label>
+
+                {newMaterialFileName && (
+                  <div className="rounded-lg bg-primary/5 border border-primary/20 p-2.5">
+                    <p className="text-xs text-muted-foreground">Selected file:</p>
+                    <p className="text-sm font-medium text-primary mt-1">{newMaterialFileName}</p>
+                    {newMaterialFile && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {(newMaterialFile.size / 1024).toFixed(1)} KB
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMaterialDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleAddMaterial} disabled={isUploadingMaterial || !newMaterialTitle.trim()}>
-              {isUploadingMaterial ? 'Uploading...' : 'Add Material'}
+              {isUploadingMaterial ? 'Saving...' : 'Add Material'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -22,8 +22,9 @@ const includeRelations = {
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
 const createApplication = async (data) => {
-    const student = await prisma.student.findUnique({ where: { id: data.studentId }, select: { id: true } });
+    const student = await prisma.student.findUnique({ where: { id: data.studentId }, select: { id: true, isActive: true } });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
+    if (student.isActive === false) throw AppError.badRequest("Cannot create an application for a student in Trash. Please restore the student first.", "STUDENT_IN_TRASH");
 
     const university = await prisma.university.findUnique({ where: { id: data.universityId }, select: { id: true } });
     if (!university) throw AppError.notFound("University not found.", "UNIVERSITY_NOT_FOUND");
@@ -137,25 +138,59 @@ const changeStatus = async (id, { status }) => {
 
 // ─── RECORD OFFER ─────────────────────────────────────────────────────────────
 const recordOffer = async (applicationId, data) => {
-    const app = await prisma.application.findUnique({ where: { id: applicationId } });
-    if (!app) throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
+    return prisma.$transaction(async (tx) => {
+        const [lockedApp] = await tx.$queryRaw`
+            SELECT id FROM "Application" WHERE id = ${applicationId} FOR UPDATE
+        `;
+        if (!lockedApp) {
+            throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
+        }
 
-    const offer = await prisma.offer.create({
-        data: {
-            applicationId,
-            type: data.type,
-            details: data.details || null,
-        },
+        const offer = await tx.offer.create({
+            data: {
+                applicationId,
+                type: data.type,
+                details: data.details || null,
+            },
+        });
+
+        return offer;
     });
-
-    return offer;
 };
 
 // ─── DELETE ───────────────────────────────────────────────────────────────────
 const deleteApplication = async (id) => {
-    const existing = await prisma.application.findUnique({ where: { id } });
-    if (!existing) throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
-    await prisma.application.delete({ where: { id } });
+    return prisma.$transaction(async (tx) => {
+        const [locked] = await tx.$queryRaw`
+            SELECT id FROM "Application" WHERE id = ${id} FOR UPDATE
+        `;
+        if (!locked) {
+            throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
+        }
+
+        const [offersCount, visaCase] = await Promise.all([
+            tx.offer.count({ where: { applicationId: id } }),
+            tx.visaCase.findUnique({ where: { applicationId: id }, select: { id: true } }),
+        ]);
+
+        if (offersCount > 0 || visaCase) {
+            throw AppError.conflict(
+                "Cannot delete an application with associated offer letters or visa cases. Please mark the application status as WITHDRAWN instead.",
+                "CANNOT_DELETE_APPLICATION_WITH_DEPENDENCIES"
+            );
+        }
+
+        try {
+            await tx.application.delete({ where: { id } });
+        } catch (err) {
+            if (err.code === "P2025") {
+                throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
+            }
+            throw err;
+        }
+
+        return { message: "Application deleted successfully" };
+    });
 };
 
 // ─── DASHBOARD STATS ──────────────────────────────────────────────────────────

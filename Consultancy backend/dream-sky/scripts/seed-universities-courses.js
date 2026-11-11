@@ -1,5 +1,10 @@
 const path = require("path");
 require("dotenv").config({ path: path.join(__dirname, "../.env") });
+const { assertDisposableTarget } = require("../src/config");
+
+// Pre-import guard: Execution blocked unless positively targeting disposable test DB
+assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
+
 const prisma = require("../src/prisma");
 
 const targetCountries = [
@@ -52,6 +57,7 @@ const sampleCourses = [
 ];
 
 async function seedCatalog() {
+  assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
   console.log("==========================================");
   console.log("  SEEDING UNIVERSITIES & COURSES CATALOG  ");
   console.log("==========================================");

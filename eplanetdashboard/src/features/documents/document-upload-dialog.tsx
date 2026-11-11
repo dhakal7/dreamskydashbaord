@@ -64,14 +64,15 @@ export const TYPE_OPTIONS_BY_CATEGORY: Record<DocumentCategory, { value: string;
     { value: 'OTHER', label: 'Other Test Score' },
   ],
   finance: [
-    { value: 'BANK_BALANCE_CERTIFICATE', label: 'Bank Balance Certificate' },
     { value: 'BANK_STATEMENT', label: 'Bank Statement' },
-    { value: 'INCOME_SOURCE', label: 'Income Source' },
+    { value: 'BANK_CERTIFICATE', label: 'Bank Balance Certificate' },
+    { value: 'INCOME_CERTIFICATE', label: 'Income Certificate' },
     { value: 'TAX_CLEARANCE', label: 'Tax Clearance' },
-    { value: 'RELATIONSHIP_CERTIFICATE', label: 'Relationship Certificate' },
     { value: 'SPONSORSHIP_LETTER', label: 'Sponsorship Letter' },
+    { value: 'AFFIDAVIT', label: 'Affidavit of Support' },
     { value: 'LOAN_LETTER', label: 'Loan Letter' },
     { value: 'PROPERTY_VALUATION', label: 'Property Valuation' },
+    { value: 'FINANCIAL', label: 'General Financial Document' },
     { value: 'OTHER', label: 'Other Financial Doc' },
   ],
   visa: [
@@ -90,15 +91,21 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
   const fileInputId = useId()
   const currentUser = useAuthStore((s) => s.currentUser)
 
-  const { data: liveStudentsData } = useStudents({ limit: 500 })
+  const mockMode = isMockMode()
+  const {
+    data: liveStudentsData,
+    isLoading: isStudentsLoading,
+    isError: isStudentsError,
+    refetch: refetchStudents,
+  } = useStudents({ limit: 500 })
   const mockStudents = useStudentsStore((s) => s.students)
   const isCounselor = String(currentUser?.role).toLowerCase() === 'counselor'
 
   const students = useMemo(() => {
     let rawList: Array<{ id: string; name: string; studentId?: string; email?: string; phone?: string; counselorName?: string; counselorId?: string }> = []
 
-    if (!isMockMode() && liveStudentsData) {
-      const list = liveStudentsData.students || (Array.isArray(liveStudentsData) ? liveStudentsData : [])
+    if (!mockMode) {
+      const list = liveStudentsData?.students || (Array.isArray(liveStudentsData) ? liveStudentsData : [])
       rawList = list.map((s: any) => ({
         id: s.id,
         name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email || 'Student',
@@ -108,9 +115,7 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
         counselorName: s.assignedCounselor ? `${s.assignedCounselor.firstName} ${s.assignedCounselor.lastName}`.trim() : undefined,
         counselorId: s.assignedCounselorId,
       }))
-    }
-
-    if (rawList.length === 0) {
+    } else {
       rawList = mockStudents.map((s) => ({
         id: s.id,
         name: s.name,
@@ -128,7 +133,7 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
       const matchId = s.counselorId === currentUser?.id || s.counselorId === currentUser?.linkedId
       return matchName || matchId
     })
-  }, [liveStudentsData, mockStudents, currentUser, isCounselor])
+  }, [mockMode, liveStudentsData, mockStudents, currentUser, isCounselor])
 
   const uploadMutation = useUploadDocument()
 
@@ -223,16 +228,34 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {/* Student Picker if not pre-selected */}
           {!preselectedStudentId && (
-            <div>
+            <div className="space-y-1.5">
               <label className="mb-1 block text-xs font-medium text-muted-foreground">Select Student *</label>
               <SearchableStudentPicker
                 label="Student"
                 students={students}
                 value={studentId}
                 onChange={setStudentId}
-                placeholder="Search student by name, ID, or passport..."
+                placeholder={isStudentsLoading ? 'Loading students...' : 'Search student by name, ID, or passport...'}
                 showDropdown
               />
+              {!mockMode && isStudentsLoading && (
+                <p className="text-[11px] text-muted-foreground">Loading live student directory...</p>
+              )}
+              {!mockMode && isStudentsError && (
+                <div className="flex items-center justify-between rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
+                  <span>Unable to load students from server.</span>
+                  <button
+                    type="button"
+                    onClick={() => refetchStudents()}
+                    className="font-semibold underline hover:no-underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
+              {!mockMode && !isStudentsLoading && !isStudentsError && students.length === 0 && (
+                <p className="text-[11px] text-muted-foreground">No active students available for selection.</p>
+              )}
             </div>
           )}
 

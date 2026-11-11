@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import dayjs from 'dayjs'
 import { MoreHorizontal, Phone } from 'lucide-react'
@@ -8,71 +9,85 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { StudentStatusBadge } from '@/components/shared/status-badges'
+import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/store/auth-store'
 import { useDeleteStudent, useResendCredentials } from '@/hooks/use-students'
+import { TrashLeadDialog } from '@/features/leads/components/trash-lead-dialog'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 
 function StudentRowActions({ student }: { student: Student }) {
   const navigate = useNavigate()
   const currentUser = useAuthStore((s) => s.currentUser)
-  const isAdmin = currentUser.role === 'super_admin'
+  const isAdmin = currentUser.role === 'super_admin' || currentUser.role === 'branch_admin'
   const deleteMutation = useDeleteStudent()
   const resendMutation = useResendCredentials()
+  const [trashDialogOpen, setTrashDialogOpen] = useState(false)
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
-    if (confirm(`Are you sure you want to delete ${student.name}? This will permanently remove their profile and records.`)) {
-      deleteMutation.mutate(student.id, {
-        onSuccess: () => {
-          toast.success(`Student ${student.name} deleted successfully`)
-        },
-      })
-    }
+    setTrashDialogOpen(true)
+  }
+
+  const handleConfirmTrash = async (reason: string) => {
+    await deleteMutation.mutateAsync({ id: student.id, reason })
+    toast.success(`Student ${student.name} moved to Trash`)
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7"
-          onClick={(e) => e.stopPropagation()}
-          onDoubleClick={(e) => e.stopPropagation()}
-        >
-          <MoreHorizontal className="size-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => navigate(`/students/${student.id}`)}>
-          View profile
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => navigate(`/students/${student.id}`)}>
-          Edit details
-        </DropdownMenuItem>
-        <DropdownMenuItem
-          onClick={(e) => {
-            e.stopPropagation()
-            resendMutation.mutate(student.id)
-          }}
-          disabled={resendMutation.isPending || !student.email}
-        >
-          {resendMutation.isPending ? 'Sending credentials...' : 'Send portal credentials'}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => window.open(`tel:${student.phone}`)}>
-          Log a call
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => window.open(`mailto:${student.email}`)}>
-          Send email
-        </DropdownMenuItem>
-        {isAdmin && (
-          <DropdownMenuItem destructive onClick={handleDelete} disabled={deleteMutation.isPending}>
-            {deleteMutation.isPending ? 'Deleting...' : 'Delete student'}
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={(e) => e.stopPropagation()}
+            onDoubleClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => navigate(`/students/${student.id}`)}>
+            View profile
           </DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <DropdownMenuItem onClick={() => navigate(`/students/${student.id}`)}>
+            Edit details
+          </DropdownMenuItem>
+          {(currentUser?.role === 'super_admin' || currentUser?.role === 'branch_admin' || currentUser?.role === 'counselor') && (
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation()
+                resendMutation.mutate(student.id)
+              }}
+              disabled={resendMutation.isPending || !student.email}
+            >
+              {resendMutation.isPending ? 'Sending credentials...' : 'Send portal credentials'}
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={() => window.open(`tel:${student.phone}`)}>
+            Log a call
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => window.open(`mailto:${student.email}`)}>
+            Send email
+          </DropdownMenuItem>
+          {isAdmin && (
+            <DropdownMenuItem destructive onClick={handleDelete} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? 'Moving to Trash...' : 'Move to Trash'}
+            </DropdownMenuItem>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <TrashLeadDialog
+        open={trashDialogOpen}
+        onOpenChange={setTrashDialogOpen}
+        lead={{ id: student.id, name: student.name }}
+        onConfirm={handleConfirmTrash}
+        isSubmitting={deleteMutation.isPending}
+      />
+    </>
   )
 }
 
@@ -140,7 +155,16 @@ export const studentColumns: ColumnDef<Student, any>[] = [
   {
     accessorKey: 'status',
     header: 'Status',
-    cell: ({ row }) => <StudentStatusBadge status={row.original.status} />,
+    cell: ({ row }) => (
+      <div className="flex items-center gap-1.5 flex-wrap">
+        <StudentStatusBadge status={row.original.status} />
+        {row.original.isClassOnly && (
+          <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-semibold text-[10px] py-0">
+            Class Only
+          </Badge>
+        )}
+      </div>
+    ),
   },
   {
     accessorKey: 'createdAt',

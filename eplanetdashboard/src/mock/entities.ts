@@ -14,21 +14,18 @@ import {
   daysAgo, daysFromNow, pad, pick, pickMany, randFloat, randInt, randomDateWithinDays,
   randomEmail, randomFullName, randomPassport, randomPhone,
 } from './generators'
-import importedData from './imported-data.json'
 
 const levels: StudyLevel[] = ['bachelor', 'master', 'diploma', 'foundation']
 const sources: LeadSource[] = ['website', 'facebook', 'referral_agent', 'walk_in', 'education_fair', 'google_ads', 'instagram']
 const priorities: Priority[] = ['low', 'medium', 'high', 'urgent']
-const leadStages: LeadStage[] = ['new', 'contacted', 'counseling', 'interested']
+const leadStages: LeadStage[] = ['new', 'follow_up', 'counseling', 'interested']
 
 function randomCounselor() {
   return pick(counselors)
 }
 
-// ── Students (with fallback) ────────────────────────────────────────────
-export const students: Student[] = importedData.students && importedData.students.length > 0
-  ? (importedData.students as Student[])
-  : Array.from({ length: 50 }).map((_, i) => {
+// ── Students (procedural mock generator) ─────────────────────────────────
+export const students: Student[] = Array.from({ length: 50 }).map((_, i) => {
       const { name, gender } = randomFullName()
       const counselor = randomCounselor()
       const level = pick(levels)
@@ -79,10 +76,8 @@ export const students: Student[] = importedData.students && importedData.student
       }
     })
 
-// ── Leads (with fallback) ───────────────────────────────────────────────
-export const leads: Lead[] = importedData.leads && importedData.leads.length > 0
-  ? (importedData.leads as Lead[])
-  : Array.from({ length: 200 }).map((_, i) => {
+// ── Leads (procedural mock generator) ────────────────────────────────────
+export const leads: Lead[] = Array.from({ length: 200 }).map((_, i) => {
       const { name } = randomFullName()
       const counselor = randomCounselor()
       const stage = pick(leadStages)
@@ -115,11 +110,9 @@ export const leads: Lead[] = importedData.leads && importedData.leads.length > 0
       }
     })
 
-// ── Follow-ups (with fallback) ──────────────────────────────────────────
+// ── Follow-ups (procedural mock generator) ──────────────────────────────
 const followUpStatuses: FollowUpStatus[] = ['pending', 'completed', 'missed', 'rescheduled']
-export const followUps: FollowUp[] = importedData.followUps && importedData.followUps.length > 0
-  ? (importedData.followUps as FollowUp[])
-  : Array.from({ length: 100 }).map((_, i) => {
+export const followUps: FollowUp[] = Array.from({ length: 100 }).map((_, i) => {
       const student = pick(students)
       const counselor = randomCounselor()
       const dt = randomDateWithinDays(10)
@@ -146,12 +139,10 @@ export const followUps: FollowUp[] = importedData.followUps && importedData.foll
       }
     })
 
-// ── Appointments (with fallback) ────────────────────────────────────────
+// ── Appointments (procedural mock generator) ────────────────────────────
 const apptStatuses: AppointmentStatus[] = ['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show']
 const apptTypes: Appointment['type'][] = ['counseling', 'document_review', 'visa_prep', 'follow_up', 'orientation']
-export const appointments: Appointment[] = importedData.appointments && importedData.appointments.length > 0
-  ? (importedData.appointments as Appointment[])
-  : Array.from({ length: 30 }).map((_, i) => {
+export const appointments: Appointment[] = Array.from({ length: 30 }).map((_, i) => {
       const student = pick(students)
       const counselor = randomCounselor()
       const startOffset = randInt(-5, 14)
@@ -174,11 +165,9 @@ export const appointments: Appointment[] = importedData.appointments && imported
       }
     })
 
-// ── Applications (with fallback) ────────────────────────────────────────
+// ── Applications (procedural mock generator) ────────────────────────────
 const appStages: ApplicationStage[] = ['submitted', 'university_review', 'conditional_offer', 'unconditional_offer', 'accepted', 'rejected']
-export const applications: Application[] = importedData.applications && importedData.applications.length > 0
-  ? (importedData.applications as Application[])
-  : Array.from({ length: 50 }).map((_, i) => {
+export const applications: Application[] = Array.from({ length: 50 }).map((_, i) => {
       const student = pick(students)
       const uni = pick(universities)
       const course = courses.find((c) => c.universityId === uni.id) ?? pick(courses)
@@ -200,11 +189,9 @@ export const applications: Application[] = importedData.applications && imported
       }
     })
 
-// ── Visa Cases (with fallback) ──────────────────────────────────────────
+// ── Visa Cases (procedural mock generator) ──────────────────────────────
 const visaSteps: VisaStep[] = ['medical', 'biometric', 'financial', 'interview', 'embassy_submission', 'decision']
-export const visaCases: VisaCase[] = importedData.visaCases && importedData.visaCases.length > 0
-  ? (importedData.visaCases as VisaCase[])
-  : Array.from({ length: 20 }).map((_, i) => {
+export const visaCases: VisaCase[] = Array.from({ length: 20 }).map((_, i) => {
       const student = pick(students)
       const app = pick(applications)
       const completedCount = randInt(1, 6)
@@ -229,14 +216,9 @@ export const visaCases: VisaCase[] = importedData.visaCases && importedData.visa
       }
     })
 
-// ── Documents (with fallback) ───────────────────────────────────────────
+// ── Documents (procedural mock generator) ───────────────────────────────
 const docTypes: StudentDocument['type'][] = ['passport', 'citizenship', 'academic', 'cv', 'sop', 'recommendation', 'financial', 'offer_letter', 'visa_letter']
-export const studentDocuments: StudentDocument[] = importedData.studentDocuments && importedData.studentDocuments.length > 0
-  ? (importedData.studentDocuments as any[]).map((d) => ({
-      ...d,
-      category: d.category || (d.type === 'passport' || d.type === 'citizenship' ? 'identity' : d.type === 'academic' ? 'academic' : d.type === 'financial' ? 'finance' : 'other'),
-    }))
-  : Array.from({ length: 140 }).map((_, i) => {
+export const studentDocuments: StudentDocument[] = Array.from({ length: 140 }).map((_, i) => {
       const student = pick(students)
       const type = pick(docTypes)
       const category = type === 'passport' || type === 'citizenship' ? 'identity' : type === 'academic' ? 'academic' : type === 'financial' ? 'finance' : 'other'

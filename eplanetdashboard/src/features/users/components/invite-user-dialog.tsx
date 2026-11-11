@@ -10,18 +10,20 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { useUsersStore } from '../store'
-import { roleLabels } from '@/mock'
+import { useAuthStore } from '@/store/auth-store'
+import { roleLabels } from '@/constants/roles'
 import type { Role } from '@/types'
 
 const formSchema = z.object({
   name: z.string().min(2, 'Name is required'),
   email: z.string().email('Valid email is required'),
-  role: z.enum(['super_admin', 'front_desk', 'counselor', 'teacher', 'referral_agent']),
+  role: z.enum(['super_admin', 'branch_admin', 'front_desk', 'counselor', 'teacher', 'referral_agent']),
 })
 
 type FormData = z.infer<typeof formSchema>
 
-const assignableRoles: Role[] = ['front_desk', 'counselor', 'teacher', 'referral_agent']
+const superAdminAssignableRoles: Role[] = ['super_admin', 'branch_admin', 'front_desk', 'counselor', 'teacher', 'referral_agent']
+const branchAdminAssignableRoles: Role[] = ['front_desk', 'counselor', 'teacher', 'referral_agent']
 
 interface InviteUserDialogProps {
   open: boolean
@@ -30,6 +32,8 @@ interface InviteUserDialogProps {
 
 export function InviteUserDialog({ open, onOpenChange }: InviteUserDialogProps) {
   const inviteUser = useUsersStore((s) => s.inviteUser)
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const assignableRoles = currentUser.role === 'super_admin' ? superAdminAssignableRoles : branchAdminAssignableRoles
 
   const {
     register,

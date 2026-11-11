@@ -9,6 +9,7 @@ router.get(["/", "/health"], (req, res) => {
 // ─── Module Routers ───────────────────────────────────────────────
 router.use("/auth", require("./auth.routes"));
 router.use("/dashboard", require("./dashboard.routes"));
+router.use("/reports", require("./report.routes"));
 router.use("/users", require("./user.routes"));
 router.use("/students", require("./student.routes"));
 router.use("/follow-ups", require("./followup.routes"));
@@ -19,6 +20,7 @@ router.use("/visa-cases", require("./visa.routes"));
 router.use("/portal", require("./portal.routes"));
 
 router.use("/commissions", require("./commission.routes"));
+router.use("/referrals", require("./referral.routes"));
 router.use("/classes", require("./class.routes"));
 router.use("/events", require("./event.routes"));
 router.use("/partner-consultancies", require("./partner-consultancy.routes"));
@@ -27,9 +29,11 @@ router.use("/payments", require("./payment.routes"));
 
 // ─── M6: Notifications ────────────────────────────────────────────
 router.use("/notifications", require("./notification.routes"));
+router.use("/audit-logs", require("./audit.routes"));
 
 // ─── M7: University / Country / Course / Recommendation / Public ──
 router.use("/universities", require("./university.routes"));
+router.use("/countries", require("./country.routes"));
 router.use("/courses", require("./course.routes"));
 router.use("/recommendations", require("./recommendation.routes"));
 

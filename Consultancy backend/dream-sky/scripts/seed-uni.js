@@ -1,5 +1,11 @@
+const { assertDisposableTarget } = require('../src/config');
+
+// Pre-import guard: Execution blocked unless positively targeting disposable test DB
+assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
+
 const prisma = require('../src/prisma');
 (async () => {
+  assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
   let country = await prisma.country.findFirst({ where: { code: 'AU' } });
   if (!country) country = await prisma.country.create({ data: { name: 'Australia', code: 'AU' } });
   let uni = await prisma.university.findFirst({ where: { name: 'University of Melbourne' } });

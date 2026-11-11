@@ -9,7 +9,10 @@ import { useAuthStore } from '@/store/auth-store'
 import { hasPermission } from '@/lib/rbac'
 import { useUniversitiesStore } from '@/features/universities/store'
 import { toast } from 'sonner'
+import { isMockMode } from '@/lib/api-client'
+import { useCountries, useDeleteCountry } from '@/hooks/use-universities'
 import { useCountriesStore } from './store'
+import { EmptyState } from '@/components/shared/empty-state'
 import { CountryDialog } from './components/country-dialog'
 import type { Country } from '@/types'
 
@@ -22,8 +25,29 @@ const visaDifficultyMeta: Record<Country['visaDifficulty'], { label: string; var
 export default function CountriesPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const canManage = hasPermission(currentUser.role, 'countries.manage')
-  const { countries, removeCountry } = useCountriesStore()
+  const { countries: storeCountries, removeCountry } = useCountriesStore()
   const universities = useUniversitiesStore((s) => s.universities)
+  const { data: apiCountryData } = useCountries()
+  const deleteCountryMutation = useDeleteCountry()
+
+  const rawCountries = Array.isArray(apiCountryData)
+    ? apiCountryData
+    : (apiCountryData?.countries ?? [])
+
+  const isMock = isMockMode()
+  const countries: Country[] = !isMock
+    ? rawCountries.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        code: c.code,
+        flag: c.flagUrl || '🌐',
+        visaDifficulty: 'moderate' as const,
+        avgTuitionUsd: 15000,
+        universityCount: c._count?.universities ?? c.universities?.length ?? 0,
+        studentCount: 0,
+        popularCourses: [],
+      }))
+    : storeCountries
 
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingCountry, setEditingCountry] = useState<Country | null>(null)
@@ -51,7 +75,15 @@ export default function CountriesPage() {
       return
     }
     if (window.confirm(`Remove ${country.name}? This cannot be undone.`)) {
-      removeCountry(country.id)
+      if (!isMockMode()) {
+        deleteCountryMutation.mutate(country.id, {
+          onSuccess: () => {
+            removeCountry(country.id)
+          },
+        })
+      } else {
+        removeCountry(country.id)
+      }
     }
   }
 
@@ -106,67 +138,75 @@ export default function CountriesPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {countries.map((country) => {
-          const difficulty = visaDifficultyMeta[country.visaDifficulty]
-          const uniCount = universities.filter((u) => u.countryId === country.id).length
+      {countries.length === 0 ? (
+        <EmptyState
+          icon={Globe2}
+          title="No Countries Found"
+          description="No countries are currently configured. Add a country to begin."
+        />
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {countries.map((country) => {
+            const difficulty = visaDifficultyMeta[country.visaDifficulty]
+            const uniCount = universities.filter((u) => u.countryId === country.id).length
 
-          return (
-            <Card key={country.id} className="p-5 border-border/70 shadow-sm hover:shadow-elevated transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{country.flag}</span>
-                  <div>
-                    <h3 className="font-bold text-foreground">{country.name}</h3>
-                    <p className="text-xs text-muted-foreground">{country.code}</p>
+            return (
+              <Card key={country.id} className="p-5 border-border/70 shadow-sm hover:shadow-elevated transition-shadow">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{country.flag}</span>
+                    <div>
+                      <h3 className="font-bold text-foreground">{country.name}</h3>
+                      <p className="text-xs text-muted-foreground">{country.code}</p>
+                    </div>
+                  </div>
+                  <Badge variant={difficulty.variant} className="text-[10px] py-0">
+                    {difficulty.label}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <Landmark className="size-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">Universities:</span>
+                    <span className="font-semibold text-foreground">{uniCount}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Users className="size-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">Students:</span>
+                    <span className="font-semibold text-foreground">{country.studentCount}</span>
                   </div>
                 </div>
-                <Badge variant={difficulty.variant} className="text-[10px] py-0">
-                  {difficulty.label}
-                </Badge>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3 mb-4 text-xs">
-                <div className="flex items-center gap-1.5">
-                  <Landmark className="size-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">Universities:</span>
-                  <span className="font-semibold text-foreground">{uniCount}</span>
+                <div className="mb-3">
+                  <p className="text-xs text-muted-foreground mb-1">Avg. Tuition</p>
+                  <p className="font-semibold text-foreground font-tabular">{formatCurrency(country.avgTuitionUsd, 'USD')}/yr</p>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Users className="size-3.5 text-muted-foreground" />
-                  <span className="text-muted-foreground">Students:</span>
-                  <span className="font-semibold text-foreground">{country.studentCount}</span>
-                </div>
-              </div>
 
-              <div className="mb-3">
-                <p className="text-xs text-muted-foreground mb-1">Avg. Tuition</p>
-                <p className="font-semibold text-foreground font-tabular">{formatCurrency(country.avgTuitionUsd, 'USD')}/yr</p>
-              </div>
-
-              <div>
-                <p className="text-xs text-muted-foreground mb-1.5">Popular Courses</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {country.popularCourses.slice(0, 3).map((course) => (
-                    <Badge key={course} variant="secondary" className="text-[10px] py-0">{course}</Badge>
-                  ))}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">Popular Courses</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {country.popularCourses.slice(0, 3).map((course) => (
+                      <Badge key={course} variant="secondary" className="text-[10px] py-0">{course}</Badge>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {canManage && (
-                <div className="mt-3 pt-3 border-t border-border/60 flex items-center justify-end gap-1">
-                  <Button variant="ghost" size="icon" className="size-7 text-muted-foreground" onClick={() => handleEdit(country)} title="Edit">
-                    <Pencil className="size-3.5" />
-                  </Button>
-                  <Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(country)} title="Delete">
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
-              )}
-            </Card>
-          )
-        })}
-      </div>
+                {canManage && (
+                  <div className="mt-3 pt-3 border-t border-border/60 flex items-center justify-end gap-1">
+                    <Button variant="ghost" size="icon" className="size-7 text-muted-foreground" onClick={() => handleEdit(country)} title="Edit">
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-destructive" onClick={() => handleDelete(country)} title="Delete">
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                )}
+              </Card>
+            )
+          })}
+        </div>
+      )}
 
       <CountryDialog country={editingCountry} open={dialogOpen} onOpenChange={setDialogOpen} />
     </div>

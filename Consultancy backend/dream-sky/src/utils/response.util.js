@@ -1,6 +1,6 @@
 /**
  * Standardised HTTP response helpers.
- * Every controller uses these so the response shape is always consistent —
+ * Every controller uses these so the response shape is always consistent â€”
  * this is Contract #4 from the backend team split doc.
  *
  * Success:  { success: true,  message, data }

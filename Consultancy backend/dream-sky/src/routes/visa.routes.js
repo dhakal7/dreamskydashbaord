@@ -23,7 +23,7 @@ router.post(
 
 router.get(
     "/",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
     visaController.list
 );
 
@@ -37,7 +37,7 @@ router.put(
 
 router.delete(
     "/:id",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
     visaController.remove
 );
 

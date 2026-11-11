@@ -94,9 +94,14 @@ const enrollStudent = async (req, res, next) => {
       throw new AppError("Field `studentId` is required.", 400);
     }
 
-    const result = await classService.enrollStudent(req.params.classId, studentId);
+    const result = await classService.enrollStudent(req.params.classId, studentId, req.user);
+    if (result.error === "UNAUTHORIZED") throw new AppError(result.message || "Authentication required.", 401);
+    if (result.error === "FORBIDDEN") throw new AppError(result.message || "Access denied.", 403);
     if (result.error === "CLASS_NOT_FOUND") throw new AppError(`Class with id '${req.params.classId}' not found.`, 404);
+    if (result.error === "STUDENT_NOT_FOUND") throw new AppError(`Student with id '${studentId}' not found.`, 404);
+    if (result.error === "STUDENT_IN_TRASH") throw new AppError(result.message || "Cannot enroll a student in Trash.", 400);
     if (result.error === "ALREADY_ENROLLED") throw new AppError("Student is already enrolled in this class.", 409);
+    if (result.error === "CLASS_FULL") throw new AppError(result.message || "Class has reached its maximum capacity.", 409);
 
     sendCreated(res, { message: "Student enrolled in class.", data: result.enrollment });
   } catch (err) {
@@ -111,7 +116,12 @@ const unenrollStudent = async (req, res, next) => {
       throw new AppError("Field `studentId` is required.", 400);
     }
 
-    const result = await classService.unenrollStudent(req.params.classId, studentId);
+    const result = await classService.unenrollStudent(req.params.classId, studentId, req.user);
+    if (result.error === "UNAUTHORIZED") throw new AppError(result.message || "Authentication required.", 401);
+    if (result.error === "FORBIDDEN") throw new AppError(result.message || "Access denied.", 403);
+    if (result.error === "CLASS_NOT_FOUND") throw new AppError(`Class with id '${req.params.classId}' not found.`, 404);
+    if (result.error === "STUDENT_NOT_FOUND") throw new AppError(`Student with id '${studentId}' not found.`, 404);
+    if (result.error === "STUDENT_IN_TRASH") throw new AppError(result.message || "Cannot unenroll a student in Trash.", 400);
     if (result.error === "ENROLLMENT_NOT_FOUND") throw new AppError("Enrollment not found.", 404);
 
     sendSuccess(res, { message: "Student unenrolled.", data: result });
@@ -138,6 +148,7 @@ const markAttendance = async (req, res, next) => {
     const result = await classService.markAttendance(req.params.classId, date, records, req.user);
     if (result.error === "NOT_FOUND") throw new AppError(result.message, 404);
     if (result.error === "FORBIDDEN") throw new AppError(result.message, 403);
+    if (result.error === "INVALID_ENROLLMENT") throw new AppError(result.message, 400);
 
     sendSuccess(res, { message: "Attendance marked.", data: result.results });
   } catch (err) {
@@ -231,7 +242,16 @@ const getTeacherMeClasses = async (req, res, next) => {
 
 const getStudentEnrollments = async (req, res, next) => {
   try {
-    const formattedResults = await classService.getStudentEnrollments(req.params.studentId);
+    const formattedResults = await classService.getStudentEnrollments(req.params.studentId, req.user);
+    if (formattedResults && formattedResults.error === "UNAUTHORIZED") {
+      throw new AppError(formattedResults.message || "Authentication required.", 401);
+    }
+    if (formattedResults && formattedResults.error === "FORBIDDEN") {
+      throw new AppError(formattedResults.message || "Access denied.", 403);
+    }
+    if (formattedResults && formattedResults.error === "STUDENT_NOT_FOUND") {
+      throw new AppError(formattedResults.message || "Student not found.", 404);
+    }
     sendSuccess(res, { data: formattedResults });
   } catch (err) {
     next(err);

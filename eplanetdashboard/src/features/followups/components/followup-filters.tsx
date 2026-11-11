@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { counselors } from '@/mock'
+import { useCounselors } from '@/hooks/use-counselors'
 import { followUpStatusMeta } from '@/components/shared/status-badges'
 
 export interface FollowUpFilters {
@@ -33,6 +33,8 @@ export function FollowUpFiltersBar({
   filters: FollowUpFilters
   onChange: (f: FollowUpFilters) => void
 }) {
+  const { data: counselorData } = useCounselors()
+  const counselorsList = counselorData || []
   const isFiltered = JSON.stringify(filters) !== JSON.stringify(defaultFollowUpFilters)
 
   return (
@@ -79,7 +81,7 @@ export function FollowUpFiltersBar({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All counselors</SelectItem>
-          {counselors.map((c) => (
+          {counselorsList.map((c: any) => (
             <SelectItem key={c.id} value={c.id}>
               {c.name}
             </SelectItem>

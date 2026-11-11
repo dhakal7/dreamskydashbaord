@@ -46,3 +46,31 @@ export function useCreateNotificationTemplate() {
     onError: (err: Error) => toast.error(err.message),
   })
 }
+
+export function useMarkNotificationAsRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return notificationApi.markAsRead(id)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: notificationKeys.all })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useMarkAllNotificationsAsRead() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => {
+      if (isMockMode()) return Promise.resolve({ success: true, count: 0 })
+      return notificationApi.markAllAsRead()
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: notificationKeys.all })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}

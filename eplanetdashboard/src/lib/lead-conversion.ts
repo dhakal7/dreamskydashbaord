@@ -41,6 +41,7 @@ export async function convertLeadToStudent(lead: Lead, emailOverride?: string): 
   const currentUser = useAuthStore.getState().currentUser
   if (
     currentUser.role !== 'super_admin' &&
+    currentUser.role !== 'branch_admin' &&
     currentUser.role !== 'front_desk' &&
     currentUser.role !== 'counselor'
   ) {

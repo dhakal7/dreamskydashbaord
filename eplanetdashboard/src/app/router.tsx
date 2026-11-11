@@ -30,6 +30,7 @@ const EventsPage = lazy(() => import('@/features/events/events-page'))
 const ReportsPage = lazy(() => import('@/features/reports/reports-page'))
 const SettingsPage = lazy(() => import('@/features/settings/settings-page'))
 const UsersPage = lazy(() => import('@/features/users/users-page'))
+const AuditLogPage = lazy(() => import('@/features/audit/audit-log-page'))
 const ReceptionPage = lazy(() => import('@/features/reception/reception-page'))
 const FeesPage = lazy(() => import('@/features/reception/fees-page'))
 const ReferralsPage = lazy(() => import('@/features/referrals/referrals-page'))
@@ -60,14 +61,14 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardRedirect /> },
       { path: 'dashboard', element: <DashboardRedirect /> },
-      { path: 'dashboard/super-admin', element: roleDashboard(['super_admin']) },
+      { path: 'dashboard/super-admin', element: roleDashboard(['super_admin', 'branch_admin']) },
       { path: 'dashboard/frontdesk', element: roleDashboard(['front_desk']) },
       { path: 'dashboard/counselor', element: roleDashboard(['counselor']) },
       { path: 'dashboard/teacher', element: roleDashboard(['teacher']) },
       { path: 'dashboard/student', element: roleDashboard(['student']) },
       { path: 'dashboard/referral', element: roleDashboard(['referral_agent']) },
-      { path: 'reception', element: protectedPage(<ReceptionPage />, 'appointments.view') },
-      { path: 'fees', element: protectedPage(<FeesPage />, 'appointments.view') },
+      { path: 'reception', element: <RoleGuard roles={['super_admin', 'branch_admin', 'front_desk']}><ReceptionPage /></RoleGuard> },
+      { path: 'fees', element: <RoleGuard roles={['super_admin', 'branch_admin', 'front_desk']}><FeesPage /></RoleGuard> },
       { path: 'leads', element: protectedPage(<LeadsPage />, 'leads.view') },
       { path: 'students', element: protectedPage(<StudentsPage />, 'students.view') },
       { path: 'students/:id', element: protectedPage(<StudentProfilePage />, 'students.view') },
@@ -92,6 +93,7 @@ export const router = createBrowserRouter([
       { path: 'events', element: protectedPage(<EventsPage />, 'events.view') },
       { path: 'reports', element: protectedPage(<ReportsPage />, 'reports.view') },
       { path: 'users', element: protectedPage(<UsersPage />, 'users.view') },
+      { path: 'audit-logs', element: <RoleGuard roles={['super_admin', 'branch_admin']}><AuditLogPage /></RoleGuard> },
       { path: 'settings', element: protectedPage(<SettingsPage />, 'settings.manage') },
     ],
   },

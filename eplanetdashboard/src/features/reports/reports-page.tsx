@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
-import { BarChart3, BookOpen, ClipboardCheck, Download, FileText, GraduationCap, PlaneTakeoff, TrendingUp, Users } from 'lucide-react'
+import { AlertCircle, BarChart3, BookOpen, ClipboardCheck, Download, FileText, GraduationCap, Loader2, PlaneTakeoff, TrendingUp, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -11,9 +11,12 @@ import { useAuthStore } from '@/store/auth-store'
 import { useAttendanceStore } from '@/features/classes/attendance-store'
 import { useClassStudentNotesStore } from '@/features/classes/class-student-notes-store'
 import { visibleClasses } from '@/lib/data-visibility'
-import { classes as allClasses, enrollments as allEnrollments } from '@/mock'
+const allClasses: any[] = []
+const allEnrollments: any[] = []
 import { hasPermission } from '@/lib/rbac'
 import { exportCsv } from '@/lib/export'
+import { isMockMode } from '@/lib/api-client'
+import { useReportSummary, useTeacherReports } from '@/hooks/use-reports'
 import { ReportFiltersBar, defaultReportFilters } from './report-filters'
 import { getReportStats, type ReportFilters } from './report-selectors'
 import {
@@ -102,7 +105,7 @@ function TeacherReportsView() {
   )
 
   // 5. Per-class attendance trends
-  const perClassAttendance = useMemo(
+  const mockPerClassAttendance = useMemo(
     () => myClasses.map((cls) => {
       const classRecords = myAttendance.filter((a) => a.classId === cls.id)
       const weekly = computeWeeklyTrend(classRecords)
@@ -116,7 +119,7 @@ function TeacherReportsView() {
   )
 
   // 6. Per-student average test results per class
-  const perStudentTestResults = useMemo(
+  const mockPerStudentTestResults = useMemo(
     () => myEnrollments.map((enr) => {
       const studentResults = testResults.filter(
         (n) => n.studentId === enr.studentId && n.classId === enr.classId,
@@ -148,10 +151,54 @@ function TeacherReportsView() {
     [myEnrollments, testResults, myClasses],
   )
 
-  const totalStudents = myEnrollments.length
-  const overallAttendance = myAttendance.length
-    ? Math.round(myAttendance.reduce((s, a) => s + (a.presentCount / a.totalCount) * 100, 0) / myAttendance.length)
-    : 0
+  const { data: teacherApiData, isLoading, isError, refetch } = useTeacherReports()
+
+  if (!isMockMode() && isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <Loader2 className="size-8 animate-spin text-primary mb-3" />
+        <p className="text-sm text-muted-foreground">Loading teacher reports...</p>
+      </div>
+    )
+  }
+
+  if (!isMockMode() && isError) {
+    return (
+      <div className="p-6">
+        <Card className="border-destructive/30 bg-destructive/5 text-center p-8">
+          <AlertCircle className="size-8 text-destructive mx-auto mb-3" />
+          <h3 className="font-semibold text-foreground">Failed to load teacher reports</h3>
+          <p className="text-sm text-muted-foreground mt-1 mb-4">An error occurred while fetching teacher data from the server.</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="mx-auto">
+            Try again
+          </Button>
+        </Card>
+      </div>
+    )
+  }
+
+  const perClassAttendance = !isMockMode()
+    ? (teacherApiData?.perClassAttendance ?? [])
+    : mockPerClassAttendance
+
+  const perStudentTestResults = !isMockMode()
+    ? (teacherApiData?.perStudentTestResults ?? [])
+    : mockPerStudentTestResults
+
+  const totalClasses = !isMockMode() && teacherApiData?.stats
+    ? teacherApiData.stats.totalClasses
+    : myClasses.length
+  const totalStudents = !isMockMode() && teacherApiData?.stats
+    ? teacherApiData.stats.totalStudents
+    : myEnrollments.length
+  const overallAttendance = !isMockMode() && teacherApiData?.stats
+    ? teacherApiData.stats.overallAttendance
+    : (myAttendance.length
+      ? Math.round(myAttendance.reduce((s, a) => s + (a.presentCount / a.totalCount) * 100, 0) / myAttendance.length)
+      : 0)
+  const testsRecorded = !isMockMode() && teacherApiData?.stats
+    ? teacherApiData.stats.testsRecorded
+    : testResults.length
 
   return (
     <div className="space-y-5">
@@ -168,7 +215,7 @@ function TeacherReportsView() {
               <BookOpen className="size-4" />
               Classes
             </div>
-            <p className="mt-1 text-2xl font-bold font-tabular">{myClasses.length}</p>
+            <p className="mt-1 text-2xl font-bold font-tabular">{totalClasses}</p>
           </CardContent>
         </Card>
         <Card>
@@ -195,7 +242,7 @@ function TeacherReportsView() {
               <GraduationCap className="size-4" />
               Tests Recorded
             </div>
-            <p className="mt-1 text-2xl font-bold font-tabular">{testResults.length}</p>
+            <p className="mt-1 text-2xl font-bold font-tabular">{testsRecorded}</p>
           </CardContent>
         </Card>
       </div>
@@ -320,9 +367,46 @@ function StaffReportsView() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const [filters, setFilters] = useState<ReportFilters>(defaultReportFilters)
 
-  const showCounselorFilter = currentUser.role === 'super_admin' || currentUser.role === 'front_desk'
+  const showCounselorFilter = currentUser.role === 'super_admin' || currentUser.role === 'branch_admin' || currentUser.role === 'front_desk'
 
-  const stats = useMemo(() => getReportStats(currentUser, filters), [currentUser, filters])
+  const { data: apiData, isLoading, isError, refetch } = useReportSummary(filters)
+
+  const mockStats = useMemo(() => (isMockMode() ? getReportStats(currentUser, filters) : []), [currentUser, filters])
+
+  if (!isMockMode() && isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <Loader2 className="size-8 animate-spin text-primary mb-3" />
+        <p className="text-sm text-muted-foreground">Loading reports...</p>
+      </div>
+    )
+  }
+
+  if (!isMockMode() && isError) {
+    return (
+      <div className="p-6">
+        <Card className="border-destructive/30 bg-destructive/5 text-center p-8">
+          <AlertCircle className="size-8 text-destructive mx-auto mb-3" />
+          <h3 className="font-semibold text-foreground">Failed to load reports</h3>
+          <p className="text-sm text-muted-foreground mt-1 mb-4">An error occurred while fetching report data from the server.</p>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="mx-auto">
+            Try again
+          </Button>
+        </Card>
+      </div>
+    )
+  }
+
+  const isLive = !isMockMode() && !!apiData
+
+  const defaultEmptySummary = [
+    { label: 'Students', value: 0, sub: 'active students' },
+    { label: 'Leads', value: 0, sub: 'total leads' },
+    { label: 'Applications', value: 0, sub: 'submitted' },
+    { label: 'Visa Processing', value: 0, sub: 'in pipeline' },
+  ]
+
+  const stats = isLive && apiData.summary ? apiData.summary : (isMockMode() ? mockStats : defaultEmptySummary)
 
   const handleExportPdf = () => {
     toast.success('Export started — your PDF report will download shortly')
@@ -385,12 +469,12 @@ function StaffReportsView() {
 
       {/* ── Charts Grid ── */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <ApplicationsByMonthChart user={currentUser} filters={filters} />
-        <ConversionTrendChart user={currentUser} filters={filters} />
-        <CountryDistributionChart user={currentUser} filters={filters} />
-        <SourceDistributionChart user={currentUser} filters={filters} />
-        <LeadsByMonthChart user={currentUser} filters={filters} />
-        <CumulativeStudentsChart user={currentUser} filters={filters} />
+        <ApplicationsByMonthChart user={currentUser} filters={filters} liveData={apiData?.applicationsByMonth} />
+        <ConversionTrendChart user={currentUser} filters={filters} liveData={apiData?.conversionTrend} />
+        <CountryDistributionChart user={currentUser} filters={filters} liveData={apiData?.countryDistribution} />
+        <SourceDistributionChart user={currentUser} filters={filters} liveData={apiData?.sourceDistribution} />
+        <LeadsByMonthChart user={currentUser} filters={filters} liveData={apiData?.leadsByMonth} />
+        <CumulativeStudentsChart user={currentUser} filters={filters} liveData={apiData?.cumulativeStudents} />
       </div>
     </div>
   )

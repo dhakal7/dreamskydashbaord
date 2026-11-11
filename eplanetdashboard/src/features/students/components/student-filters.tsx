@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { counselors, countries } from '@/mock'
+import { useCounselors } from '@/hooks/use-counselors'
+import { useCountries } from '@/hooks/use-universities'
 import { studentStatusMeta } from '@/components/shared/status-badges'
 
 export interface StudentFilters {
@@ -27,6 +28,10 @@ export function StudentFiltersBar({
   filters: StudentFilters
   onChange: (f: StudentFilters) => void
 }) {
+  const { data: counselorData } = useCounselors()
+  const { data: countryData } = useCountries()
+  const counselorsList = counselorData || []
+  const countriesList = Array.isArray(countryData) ? countryData : (countryData?.countries ?? [])
   const isFiltered = JSON.stringify(filters) !== JSON.stringify(defaultStudentFilters)
 
   return (
@@ -53,7 +58,7 @@ export function StudentFiltersBar({
         <SelectTrigger className="w-[160px]"><SelectValue placeholder="Counselor" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All counselors</SelectItem>
-          {counselors.map((c) => (
+          {counselorsList.map((c: any) => (
             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
           ))}
         </SelectContent>
@@ -63,8 +68,8 @@ export function StudentFiltersBar({
         <SelectTrigger className="w-[160px]"><SelectValue placeholder="Country" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All countries</SelectItem>
-          {countries.map((c) => (
-            <SelectItem key={c.id} value={c.name}>{c.flag} {c.name}</SelectItem>
+          {countriesList.map((c: any) => (
+            <SelectItem key={c.id} value={c.name}>{c.flagUrl || c.flag || '🌐'} {c.name}</SelectItem>
           ))}
         </SelectContent>
       </Select>

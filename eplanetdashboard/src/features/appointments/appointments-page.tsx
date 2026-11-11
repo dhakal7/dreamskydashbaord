@@ -2,23 +2,24 @@ import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 import {
   Plus, ChevronLeft, ChevronRight, CalendarDays, CalendarRange, Clock3,
-  Search, SlidersHorizontal,
+  Search, SlidersHorizontal, ShieldAlert, Lock, RefreshCw, AlertTriangle, Loader2
 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { counselors } from '@/mock'
 import type { Appointment, AppointmentStatus } from '@/types'
 import { useAuthStore } from '@/store/auth-store'
 import { visibleAppointments } from '@/lib/data-visibility'
 import { hasPermission } from '@/lib/rbac'
 import { isMockMode } from '@/lib/api-client'
 import { useAppointments } from '@/hooks/use-appointments'
+import { useCounselors } from '@/hooks/use-counselors'
 import { useAppointmentsStore } from './store'
 import { AppointmentDialog } from './components/appointment-dialog'
 import {
@@ -36,10 +37,10 @@ const typeOptions = [
   { value: 'orientation', label: 'Orientation' },
 ]
 
+// Aligned strictly with database AppointmentStatus enum: SCHEDULED, COMPLETED, CANCELLED, NO_SHOW
 const statusOptions: { value: AppointmentStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All Statuses' },
   { value: 'scheduled', label: 'Scheduled' },
-  { value: 'confirmed', label: 'Confirmed' },
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
   { value: 'no_show', label: 'No Show' },
@@ -49,55 +50,70 @@ export default function AppointmentsPage() {
   const mockAppointments = useAppointmentsStore((s) => s.appointments)
   const currentUser = useAuthStore((s) => s.currentUser)
   const canManage = hasPermission(currentUser.role, 'appointments.manage')
+  const isMock = isMockMode()
 
   // Live mode: scope to counselor if role is counselor
   const counselorId = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
-  const { data: apiData } = useAppointments({ counselorId, limit: 200 })
 
-function normalizeAppointmentType(raw?: string): Appointment['type'] {
-  if (!raw) return 'counseling'
-  const upper = raw.toUpperCase()
-  if (upper === 'INITIAL_CONSULTATION' || upper === 'COUNSELING') return 'counseling'
-  if (upper === 'DOCUMENT_REVIEW') return 'document_review'
-  if (upper === 'VISA_COUNSELING' || upper === 'VISA_PREP') return 'visa_prep'
-  if (upper === 'FOLLOW_UP') return 'follow_up'
-  if (upper === 'OTHER' || upper === 'ORIENTATION') return 'orientation'
-  const lower = raw.toLowerCase()
-  if (lower === 'counseling' || lower === 'document_review' || lower === 'visa_prep' || lower === 'follow_up' || lower === 'orientation') {
-    return lower as Appointment['type']
+  // ── 1. TanStack Query for Live Appointments ────────────────────────────────
+  const {
+    data: apiData,
+    isLoading: isApptsLoading,
+    isError: isApptsError,
+    error: apptsError,
+    refetch: refetchAppts,
+    isFetching: isApptsFetching,
+  } = useAppointments({ counselorId, limit: 200 })
+
+  // ── 2. Query Live Counselors for Filter ────────────────────────────────────
+  const { data: counselorsData } = useCounselors()
+  const counselorOptions = useMemo(() => {
+    return counselorsData ?? []
+  }, [counselorsData])
+
+  function normalizeAppointmentType(raw?: string): Appointment['type'] {
+    if (!raw) return 'counseling'
+    const upper = raw.toUpperCase()
+    if (upper === 'INITIAL_CONSULTATION' || upper === 'COUNSELING') return 'counseling'
+    if (upper === 'DOCUMENT_REVIEW') return 'document_review'
+    if (upper === 'VISA_COUNSELING' || upper === 'VISA_PREP') return 'visa_prep'
+    if (upper === 'FOLLOW_UP') return 'follow_up'
+    if (upper === 'OTHER' || upper === 'ORIENTATION') return 'orientation'
+    const lower = raw.toLowerCase()
+    if (lower === 'counseling' || lower === 'document_review' || lower === 'visa_prep' || lower === 'follow_up' || lower === 'orientation') {
+      return lower as Appointment['type']
+    }
+    return 'counseling'
   }
-  return 'counseling'
-}
 
-function normalizeAppointmentLocation(raw?: string): Appointment['location'] {
-  if (!raw) return 'branch_office'
-  const upper = raw.toUpperCase()
-  if (upper === 'OFFICE' || upper === 'BRANCH_OFFICE' || upper === 'PHYSICAL') return 'branch_office'
-  if (upper === 'ONLINE' || upper === 'VIDEO_CALL' || upper === 'VIRTUAL') return 'video_call'
-  if (upper === 'PHONE' || upper === 'PHONE_CALL') return 'phone_call'
-  const lower = raw.toLowerCase()
-  if (lower === 'branch_office' || lower === 'video_call' || lower === 'phone_call') {
-    return lower as Appointment['location']
+  function normalizeAppointmentLocation(raw?: string): Appointment['location'] {
+    if (!raw) return 'branch_office'
+    const upper = raw.toUpperCase()
+    if (upper === 'OFFICE' || upper === 'BRANCH_OFFICE' || upper === 'PHYSICAL') return 'branch_office'
+    if (upper === 'ONLINE' || upper === 'VIDEO_CALL' || upper === 'VIRTUAL') return 'video_call'
+    if (upper === 'PHONE' || upper === 'PHONE_CALL') return 'phone_call'
+    const lower = raw.toLowerCase()
+    if (lower === 'branch_office' || lower === 'video_call' || lower === 'phone_call') {
+      return lower as Appointment['location']
+    }
+    return 'branch_office'
   }
-  return 'branch_office'
-}
 
-function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
-  if (!raw) return 'scheduled'
-  const upper = raw.toUpperCase()
-  if (upper === 'SCHEDULED') return 'scheduled'
-  if (upper === 'CONFIRMED') return 'confirmed'
-  if (upper === 'COMPLETED') return 'completed'
-  if (upper === 'CANCELLED') return 'cancelled'
-  if (upper === 'NO_SHOW') return 'no_show'
-  const lower = raw.toLowerCase()
-  if (lower === 'scheduled' || lower === 'confirmed' || lower === 'completed' || lower === 'cancelled' || lower === 'no_show') {
-    return lower as AppointmentStatus
+  function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
+    if (!raw) return 'scheduled'
+    const upper = raw.toUpperCase()
+    if (upper === 'SCHEDULED') return 'scheduled'
+    if (upper === 'COMPLETED') return 'completed'
+    if (upper === 'CANCELLED') return 'cancelled'
+    if (upper === 'NO_SHOW') return 'no_show'
+    const lower = raw.toLowerCase()
+    if (lower === 'scheduled' || lower === 'completed' || lower === 'cancelled' || lower === 'no_show') {
+      return lower as AppointmentStatus
+    }
+    return 'scheduled'
   }
-  return 'scheduled'
-}
 
-  const appointments: Appointment[] = !isMockMode()
+  const appointments: Appointment[] = !isMock
     ? (apiData?.appointments ?? []).map((a) => ({
         id: a.id,
         title: `${(a.type ?? 'Appointment').replace(/_/g, ' ')} — ${a.student ? `${a.student.firstName} ${a.student.lastName}` : 'Student'}`,
@@ -135,7 +151,7 @@ function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
   // ── Filtered appointments ────────────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
-    return visibleAppointments(currentUser, appointments).filter((a) => {
+    return visibleAppointments(currentUser, appointments, { verifiedBranchScopedApi: !isMock }).filter((a) => {
       if (q && !`${a.studentName} ${a.counselorName} ${a.type}`.toLowerCase().includes(q)) return false
       if (filterCounselor !== 'all' && a.counselorId !== filterCounselor) return false
       if (filterType !== 'all' && a.type !== filterType) return false
@@ -148,8 +164,7 @@ function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
   const totalCount = filtered.length
   const todayCount = filtered.filter((a) => dayjs(a.start).isSame(dayjs(), 'day')).length
   const upcomingCount = filtered.filter((a) =>
-    dayjs(a.start).isAfter(dayjs()) &&
-    (a.status === 'scheduled' || a.status === 'confirmed')
+    dayjs(a.start).isAfter(dayjs()) && a.status === 'scheduled'
   ).length
   const cancelledCount = filtered.filter((a) => a.status === 'cancelled').length
 
@@ -186,6 +201,34 @@ function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
 
   return (
     <div className="space-y-5">
+      {/* ── Phase 4A Safety Notice Banner ─────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-sky-200 bg-sky-50/80 px-3.5 py-2.5 text-xs text-sky-900">
+        <div className="flex items-start sm:items-center gap-2">
+          <ShieldAlert className="size-4 text-sky-600 shrink-0 mt-0.5 sm:mt-0" />
+          <div>
+            <span className="font-semibold">Phase 4A Read-Only Mode Active:</span>{' '}
+            Connected to live database appointments in read-only mode. Creating appointments, rescheduling, status updates, cancellations, and notification emails are safely locked.
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge variant="outline" className="bg-sky-100 text-sky-800 border-sky-300">
+            <Lock className="size-3 mr-1" /> Phase 4A Read-Only
+          </Badge>
+          {!isMock && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 px-2 text-[11px] gap-1 text-sky-700 hover:text-sky-900 hover:bg-sky-100"
+              onClick={() => refetchAppts()}
+              disabled={isApptsFetching}
+            >
+              <RefreshCw className={`size-3 ${isApptsFetching ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          )}
+        </div>
+      </div>
+
       <PageHeader
         title="Appointments"
         description="Schedule and manage counseling sessions, document reviews, and visa preparation meetings."
@@ -199,7 +242,33 @@ function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
         }
       />
 
-      {/* ── Metrics ──────────────────────────────────────────────────── */}
+      {/* ── Error State Banner ────────────────────────────────────────────── */}
+      {isApptsError && !isMock && (
+        <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-4 text-xs text-rose-900 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-semibold">
+              <AlertTriangle className="size-4 text-rose-600" />
+              Error Loading Appointments
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs border-rose-300 bg-white hover:bg-rose-100 text-rose-800"
+              onClick={() => refetchAppts()}
+            >
+              <RefreshCw className="size-3 mr-1" /> Retry Connection
+            </Button>
+          </div>
+          <p className="text-rose-700">
+            {apptsError instanceof Error ? apptsError.message : 'Failed to fetch appointments from GET /api/appointments.'}
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            Note: The system does not silently replace database appointments with hardcoded mock records upon failure.
+          </p>
+        </div>
+      )}
+
+      {/* ── Metrics ──────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
         <Card className="p-3.5 shadow-soft">
           <p className="text-xs text-muted-foreground">Total</p>
@@ -219,7 +288,7 @@ function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
         </Card>
       </div>
 
-      {/* ── Control Bar ──────────────────────────────────────────────── */}
+      {/* ── Control Bar ──────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
         {/* Row 1: Search + Filters */}
         <div className="flex flex-wrap items-center gap-2">
@@ -234,7 +303,7 @@ function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
             />
           </div>
 
-          {/* Counselor Filter */}
+          {/* Counselor Filter (Live database counselors) */}
           <Select value={filterCounselor} onValueChange={setFilterCounselor}>
             <SelectTrigger className="h-9 text-sm w-[170px]">
               <SlidersHorizontal className="size-3.5 text-muted-foreground mr-1.5 shrink-0" />
@@ -242,7 +311,7 @@ function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Counselors</SelectItem>
-              {counselors.map((c) => (
+              {counselorOptions.map((c) => (
                 <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
               ))}
             </SelectContent>
@@ -260,7 +329,7 @@ function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
             </SelectContent>
           </Select>
 
-          {/* Status Filter */}
+          {/* Status Filter (Aligned with Prisma enum) */}
           <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as AppointmentStatus | 'all')}>
             <SelectTrigger className="h-9 text-sm w-[150px]">
               <SelectValue />
@@ -296,7 +365,7 @@ function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
             </span>
           </div>
 
-          {/* View Toggle — same pattern as Leads (Table/Pipeline) */}
+          {/* View Toggle */}
           <div className="flex shrink-0 items-center gap-1 rounded-lg border border-border bg-secondary/50 p-1 self-start sm:self-auto shadow-soft">
             <button
               onClick={() => setView('day')}
@@ -335,41 +404,51 @@ function normalizeAppointmentStatus(raw?: string): AppointmentStatus {
         </div>
       </div>
 
-      {/* ── Main Calendar Content ────────────────────────────────────── */}
-      {hasNoResults ? (
-        <AppointmentsEmptyState onNew={canManage ? () => openNewDialog() : () => {}} />
-      ) : (
-        <>
-          {view === 'month' && (
-            <MonthView
-              appointments={filtered}
-              currentDate={currentDate}
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-              onSelectAppointment={openEditDialog}
-              onNewOnDate={canManage ? openNewDialog : () => {}}
-            />
-          )}
-          {view === 'week' && (
-            <WeekView
-              appointments={filtered}
-              currentDate={currentDate}
-              onSelectAppointment={openEditDialog}
-              onNewOnDate={canManage ? openNewDialog : () => {}}
-            />
-          )}
-          {view === 'day' && (
-            <DayView
-              appointments={filtered}
-              currentDate={currentDate}
-              onSelectAppointment={openEditDialog}
-              onNewOnDate={canManage ? openNewDialog : () => {}}
-            />
-          )}
-        </>
+      {/* ── Loading Skeleton / Indicator ─────────────────────────────────── */}
+      {isApptsLoading && !isMock && (
+        <div className="py-20 flex flex-col items-center justify-center gap-2">
+          <Loader2 className="size-7 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Loading verified appointments from database…</p>
+        </div>
       )}
 
-      {/* ── Dialog ───────────────────────────────────────────────────── */}
+      {/* ── Main Calendar Content ────────────────────────────────────────── */}
+      {!isApptsLoading && (
+        hasNoResults ? (
+          <AppointmentsEmptyState onNew={canManage ? () => openNewDialog() : () => {}} />
+        ) : (
+          <>
+            {view === 'month' && (
+              <MonthView
+                appointments={filtered}
+                currentDate={currentDate}
+                selectedDate={selectedDate}
+                onSelectDate={setSelectedDate}
+                onSelectAppointment={openEditDialog}
+                onNewOnDate={canManage ? openNewDialog : () => {}}
+              />
+            )}
+            {view === 'week' && (
+              <WeekView
+                appointments={filtered}
+                currentDate={currentDate}
+                onSelectAppointment={openEditDialog}
+                onNewOnDate={canManage ? openNewDialog : () => {}}
+              />
+            )}
+            {view === 'day' && (
+              <DayView
+                appointments={filtered}
+                currentDate={currentDate}
+                onSelectAppointment={openEditDialog}
+                onNewOnDate={canManage ? openNewDialog : () => {}}
+              />
+            )}
+          </>
+        )
+      )}
+
+      {/* ── Dialog ───────────────────────────────────────────────────────── */}
       <AppointmentDialog
         appointment={selectedAppt}
         defaultDate={newApptDate}

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import { Calendar, Clock, Table2, Plus, Phone, Mail, MessageSquare, User, Trash2 } from 'lucide-react'
+import { Calendar, Clock, Table2, Plus, Phone, Mail, MessageSquare, User, BellOff } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -14,7 +14,7 @@ import type { FollowUp } from '@/types'
 import { useAuthStore } from '@/store/auth-store'
 import { visibleFollowUps } from '@/lib/data-visibility'
 import { isMockMode } from '@/lib/api-client'
-import { useFollowUps } from '@/hooks/use-followups'
+import { useFollowUps, useCancelFollowUp } from '@/hooks/use-followups'
 import { useFollowUpsStore } from './store'
 import { FollowUpFiltersBar, defaultFollowUpFilters, type FollowUpFilters } from './components/followup-filters'
 import { FollowUpCreateDialog } from './components/followup-create-dialog'
@@ -40,6 +40,7 @@ export default function FollowUpsPage() {
   // Live mode: scope to counselor's own follow-ups
   const authorId = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
   const { data: apiData } = useFollowUps({ authorId, limit: 200 })
+  const cancelMutation = useCancelFollowUp()
 
   const followUps: FollowUp[] = !isMockMode()
     ? (apiData?.followUps ?? []).map((f) => ({
@@ -59,6 +60,9 @@ export default function FollowUpsPage() {
     : mockFollowUps
 
   const [view, setView] = useState<ViewMode>('calendar')
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'front_desk' | 'counselor'>(
+    currentUser.role === 'front_desk' ? 'front_desk' : currentUser.role === 'counselor' ? 'counselor' : 'all'
+  )
   const [filters, setFilters] = useState<FollowUpFilters>(defaultFollowUpFilters)
   const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUp | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -77,7 +81,14 @@ export default function FollowUpsPage() {
   // Filtered followups
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase()
-    return visibleFollowUps(currentUser, followUps).filter((f) => {
+    return visibleFollowUps(currentUser, followUps, { verifiedBranchScopedApi: !isMockMode() }).filter((f) => {
+      if (scopeFilter === 'front_desk') {
+        const isFd = !f.counselorId || f.counselorName?.toLowerCase().includes('front') || f.counselorName === 'Unassigned'
+        if (!isFd) return false
+      } else if (scopeFilter === 'counselor') {
+        const isFd = !f.counselorId || f.counselorName?.toLowerCase().includes('front') || f.counselorName === 'Unassigned'
+        if (isFd) return false
+      }
       if (q && !`${f.studentName} ${f.reminder} ${f.counselorName}`.toLowerCase().includes(q)) return false
       if (filters.status !== 'all' && f.status !== filters.status) return false
       if (filters.priority !== 'all' && f.priority !== filters.priority) return false
@@ -85,7 +96,7 @@ export default function FollowUpsPage() {
       if (filters.channel !== 'all' && f.channel !== filters.channel) return false
       return true
     })
-  }, [currentUser, followUps, filters])
+  }, [currentUser, followUps, filters, scopeFilter])
 
   // Count summaries
   const pendingCount = filtered.filter((f) => f.status === 'pending').length
@@ -164,10 +175,15 @@ export default function FollowUpsPage() {
         header: '',
         enableSorting: false,
         cell: ({ row }) => {
-          const handleDelete = (e: React.MouseEvent) => {
+          const isCancelling = cancelMutation.isPending && cancelMutation.variables === row.original.id
+          const handleCancel = (e: React.MouseEvent) => {
             e.stopPropagation()
-            if (window.confirm(`Are you sure you want to delete this follow-up for "${row.original.studentName}"?`)) {
-              useFollowUpsStore.getState().removeFollowUp(row.original.id)
+            if (window.confirm(`Are you sure you want to cancel the follow-up reminder for "${row.original.studentName}"? Communication history will be preserved.`)) {
+              if (isMockMode()) {
+                useFollowUpsStore.getState().removeFollowUp(row.original.id)
+              } else {
+                cancelMutation.mutate(row.original.id)
+              }
             }
           }
 
@@ -175,17 +191,18 @@ export default function FollowUpsPage() {
             <Button
               variant="ghost"
               size="icon"
-              className="size-7 text-muted-foreground hover:text-red-600 hover:bg-red-50"
-              onClick={handleDelete}
-              title="Delete follow-up"
+              className="size-7 text-muted-foreground hover:text-amber-600 hover:bg-amber-50"
+              onClick={handleCancel}
+              disabled={isCancelling}
+              title="Cancel follow-up reminder (preserves history)"
             >
-              <Trash2 className="size-3.5" />
+              <BellOff className="size-3.5" />
             </Button>
           )
         },
       },
     ],
-    [studentColors]
+    [studentColors, cancelMutation]
   )
 
   return (
@@ -222,6 +239,39 @@ export default function FollowUpsPage() {
           <p className="mt-1 text-xl font-semibold font-tabular text-danger-600">{missedCount}</p>
         </Card>
       </div>
+
+      {/* Segmented Calendar Views for Administrators */}
+      {(currentUser.role === 'super_admin' || currentUser.role === 'branch_admin') && (
+        <div className="flex items-center gap-1.5 bg-secondary/60 p-1 rounded-lg border w-fit text-xs">
+          <button
+            onClick={() => setScopeFilter('all')}
+            className={cn(
+              'px-3 py-1 rounded-md transition-colors',
+              scopeFilter === 'all' ? 'bg-background shadow-sm font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            All Reminders
+          </button>
+          <button
+            onClick={() => setScopeFilter('front_desk')}
+            className={cn(
+              'px-3 py-1 rounded-md transition-colors',
+              scopeFilter === 'front_desk' ? 'bg-background shadow-sm font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Front Desk Follow-ups
+          </button>
+          <button
+            onClick={() => setScopeFilter('counselor')}
+            className={cn(
+              'px-3 py-1 rounded-md transition-colors',
+              scopeFilter === 'counselor' ? 'bg-background shadow-sm font-semibold text-foreground' : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Counselor Follow-ups
+          </button>
+        </div>
+      )}
 
       {/* Filters and View Switcher */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

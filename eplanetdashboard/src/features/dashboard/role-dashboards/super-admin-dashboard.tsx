@@ -5,6 +5,7 @@ import { getDashboardStats } from '../selectors'
 import { useSuperAdminStats } from '../hooks/use-dashboard-stats'
 import { ClassEnrollmentPanel } from '../components/class-enrollment-panel'
 import { ClassAttendanceWidget } from '../components/class-attendance-widget'
+import { AdminMonitoringPanel } from '../components/admin-monitoring-panel'
 import { isMockMode } from '@/lib/api-client'
 
 export function SuperAdminDashboard() {
@@ -36,6 +37,9 @@ export function SuperAdminDashboard() {
       ) : (
         <StatCards stats={displayStats ?? []} />
       )}
+
+      {/* CRM Monitoring Engine: Lead Metrics & Employee Overdue Tasks */}
+      <AdminMonitoringPanel />
 
       {/* Universal Class Batches & Roster Panel */}
       <ClassEnrollmentPanel />

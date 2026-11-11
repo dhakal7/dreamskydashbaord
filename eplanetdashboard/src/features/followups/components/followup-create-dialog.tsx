@@ -1,5 +1,6 @@
 import { useMemo, useState, useEffect } from 'react'
 import { Plus, Mail, Phone } from 'lucide-react'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -165,6 +166,16 @@ export function FollowUpCreateDialog({ open, onOpenChange, initialStudentId }: F
     if (!studentId || !reminder.trim() || !date || !time) return
 
     const nextFollowUpAt = `${date}T${time}:00`
+    const parsedDate = new Date(nextFollowUpAt)
+    if (Number.isNaN(parsedDate.getTime())) {
+      toast.error('Invalid date or time selected.')
+      return
+    }
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+    if (parsedDate < fiveMinutesAgo) {
+      toast.error('Follow-up cannot be scheduled in the past. Please select a future date and time.')
+      return
+    }
 
     if (!isMockMode()) {
       createFollowUpApi.mutate(

@@ -18,6 +18,7 @@ export interface ApiStudent {
   dateOfBirth: string | null
   nationality: string | null
   currentStage: string
+  leadStage?: string
   source: string | null
   assignedCounselorId: string | null
   referredByAgentId: string | null
@@ -33,8 +34,19 @@ export interface ApiStudent {
   partnerConsultancyId: string | null
   partnerConsultancy: { id: string; name: string } | null
   // Populated relations (from controller includes)
-  assignedCounselor?: { id: string; firstName: string; lastName: string } | null
+  assignedCounselor?: { id: string; firstName: string; lastName: string; branchId?: string | null } | null
+  referredByAgent?: {
+    id: string
+    referralCode: string
+    user?: { id: string; firstName: string; lastName: string; email: string } | null
+  } | null
   stageHistory?: ApiPipelineHistory[]
+  trashReason?: string | null
+  trashedAt?: string | null
+  trashedById?: string | null
+  trashedBy?: { id: string; name: string; email?: string | null } | null
+  isClassOnly?: boolean
+
   /** Present after an ENROLLED transition — reports the portal credentials email status. */
   _portalProvision?: {
     success: boolean
@@ -58,6 +70,10 @@ export interface StudentsListParams {
   limit?: number
   search?: string
   stage?: string
+  /** 'all' returns all stages including pre-enrollment leads; 'leads' returns LEAD/PROSPECT; 'class_only' returns class inquiries */
+  type?: 'all' | 'leads' | 'class_only' | string
+  /** Dedicated filter to return only class-only students (via academicBackground JSON metadata) */
+  isClassOnly?: boolean | string
   /** Comma-separated list of stages to match (backend expands into `currentStage in [...]`). */
   stageIn?: string
   /** ISO datetime — include only students created on/after this instant. */
@@ -76,6 +92,9 @@ export interface StudentsListResponse {
     limit: number
     total: number
     totalPages: number
+    isFallback?: boolean
+    isTruncated?: boolean
+    candidatesEvaluated?: number
   }
 }
 
@@ -88,8 +107,8 @@ export interface CreateStudentBody {
   nationality?: string
   source?: string
   currentStage?: string
-  assignedCounselorId?: string
-  referredByAgentId?: string
+  assignedCounselorId?: string | null
+  referredByAgentId?: string | null
   notes?: string
   academicBackground?: Record<string, unknown>
   financialBackground?: Record<string, unknown>
@@ -106,6 +125,11 @@ export interface UpdateStudentBody extends Partial<CreateStudentBody> {}
 
 export interface ChangePipelineBody {
   stage: string
+  leadStage?: string
+  followUpDate?: string
+  followUpTime?: string
+  durationMin?: number
+  meetingMode?: string
   notes?: string
   reasonCode?: string
   email?: string
@@ -144,9 +168,41 @@ export const studentApi = {
     return api.patch(`/students/${id}/pipeline`, body)
   },
 
-  /** DELETE /students/:id */
-  remove(id: string): Promise<void> {
-    return api.delete(`/students/${id}`)
+  /** DELETE /students/:id (Soft-delete / move to Trash with required reason in request body) */
+  remove(id: string, reason: string): Promise<void> {
+    const trimmed = typeof reason === 'string' ? reason.trim() : ''
+    if (!trimmed) {
+      return Promise.reject(new Error('A non-empty reason is required to move a record to Trash.'))
+    }
+    return api.delete(`/students/${id}`, {
+      data: { reason: trimmed },
+    })
+  },
+
+  /** GET /students/trash — paginated list of trashed students */
+  listTrash(params?: StudentsListParams): Promise<StudentsListResponse> {
+    return api.get('/students/trash', { params })
+  },
+
+  /** PATCH /students/:id/restore — restore trashed student */
+  restore(id: string): Promise<ApiStudent> {
+    return api.patch(`/students/${id}/restore`, {})
+  },
+
+  /** PATCH /students/:id/assign — assign lead to counselor */
+  assignCounselor(id: string, counselorId: string): Promise<ApiStudent> {
+    return api.patch(`/students/${id}/assign`, {
+      assignedCounselorId: counselorId,
+      counselorId,
+    })
+  },
+
+  /** PATCH /students/:id/transfer-branch — transfer student to destination branch (Super Admin only) */
+  transferBranch(
+    id: string,
+    body: { destinationBranchId: string; newAssignedCounselorId?: string | null }
+  ): Promise<ApiStudent> {
+    return api.patch(`/students/${id}/transfer-branch`, body)
   },
 
   /** POST /students/:id/resend-credentials */

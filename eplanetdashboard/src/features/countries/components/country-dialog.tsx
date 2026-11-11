@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { isMockMode } from '@/lib/api-client'
+import { useCreateCountry, useUpdateCountry } from '@/hooks/use-universities'
 import { useCountriesStore } from '../store'
 import type { Country } from '@/types'
 
@@ -20,6 +22,8 @@ interface CountryDialogProps {
 export function CountryDialog({ country, open, onOpenChange }: CountryDialogProps) {
   const addCountry = useCountriesStore((s) => s.addCountry)
   const updateCountry = useCountriesStore((s) => s.updateCountry)
+  const createCountryMutation = useCreateCountry()
+  const updateCountryMutation = useUpdateCountry()
 
   const [name, setName] = useState('')
   const [code, setCode] = useState('')
@@ -61,6 +65,24 @@ export function CountryDialog({ country, open, onOpenChange }: CountryDialogProp
     }
 
     if (isEditing && country) {
+      if (!isMockMode()) {
+        updateCountryMutation.mutate(
+          { id: country.id, body: { name: name.trim(), code: code.trim().toUpperCase() } },
+          {
+            onSuccess: () => {
+              updateCountry(country.id, {
+                name: name.trim(),
+                code: code.trim().toUpperCase(),
+                flag: flag.trim(),
+                visaDifficulty,
+                avgTuitionUsd: tuition,
+              })
+              onOpenChange(false)
+            },
+          }
+        )
+        return
+      }
       updateCountry(country.id, {
         name: name.trim(),
         code: code.trim().toUpperCase(),
@@ -69,6 +91,27 @@ export function CountryDialog({ country, open, onOpenChange }: CountryDialogProp
         avgTuitionUsd: tuition,
       })
     } else {
+      if (!isMockMode()) {
+        createCountryMutation.mutate(
+          { name: name.trim(), code: code.trim().toUpperCase() },
+          {
+            onSuccess: () => {
+              addCountry({
+                name: name.trim(),
+                code: code.trim().toUpperCase(),
+                flag: flag.trim(),
+                visaDifficulty,
+                avgTuitionUsd: tuition,
+                universityCount: 0,
+                studentCount: 0,
+                popularCourses: [],
+              })
+              onOpenChange(false)
+            },
+          }
+        )
+        return
+      }
       addCountry({
         name: name.trim(),
         code: code.trim().toUpperCase(),

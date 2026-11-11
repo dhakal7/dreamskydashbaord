@@ -45,9 +45,13 @@ export interface ApiClassContent {
   classId: string
   title: string
   type: string
-  url: string | null
-  description: string | null
+  body: string | null
+  fileUrl: string | null
+  dueDate: string | null
+  url?: string | null
+  description?: string | null
   createdAt: string
+  updatedAt?: string
 }
 
 export interface ClassListParams {
@@ -106,7 +110,18 @@ export const classApi = {
   listContent(classId: string): Promise<ApiClassContent[]> {
     return api.get(`/classes/${classId}/content`)
   },
-  createContent(classId: string, body: { title: string; type: string; url?: string; description?: string }): Promise<ApiClassContent> {
+  createContent(
+    classId: string,
+    body: {
+      title: string
+      type: string
+      body?: string
+      fileUrl?: string
+      dueDate?: string
+      url?: string
+      description?: string
+    }
+  ): Promise<ApiClassContent> {
     return api.post(`/classes/${classId}/content`, body)
   },
   updateContent(classId: string, contentId: string, body: Partial<ApiClassContent>): Promise<ApiClassContent> {

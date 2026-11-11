@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/select'
 import { SearchableUniversityPicker } from '@/components/shared/searchable-university-picker'
 import { useUniversitiesStore } from '@/features/universities/store'
+import { useCreateCourse, useUpdateCourse } from '@/hooks/use-universities'
+import { isMockMode } from '@/lib/api-client'
 import { useCoursesStore } from '../store'
 import type { StudyLevel } from '@/types'
 
@@ -57,6 +59,8 @@ export function CourseDialog({ course, open, onOpenChange }: CourseDialogProps) 
   const universities = useUniversitiesStore((s) => s.universities)
   const addCourse = useCoursesStore((s) => s.addCourse)
   const updateCourse = useCoursesStore((s) => s.updateCourse)
+  const createCourseMutation = useCreateCourse()
+  const updateCourseMutation = useUpdateCourse()
 
   const [name, setName] = useState('')
   const [universityId, setUniversityId] = useState('')
@@ -113,6 +117,37 @@ export function CourseDialog({ course, open, onOpenChange }: CourseDialogProps) 
     const intakeArr = intake.split(',').map((s) => s.trim()).filter(Boolean)
 
     if (isEditing && course) {
+      if (!isMockMode()) {
+        updateCourseMutation.mutate(
+          {
+            id: course.id,
+            body: {
+              name: name.trim(),
+              universityId,
+              level: level.toUpperCase(),
+              durationMonths: parseInt(duration, 10) || 12,
+              intakeDates: intakeArr,
+              tuitionFee: tuition,
+              fieldOfStudy: field.trim(),
+            } as any,
+          },
+          {
+            onSuccess: () => {
+              updateCourse(course.id, {
+                name: name.trim(),
+                universityId,
+                level,
+                duration: duration.trim(),
+                intake: intakeArr,
+                tuitionUsd: tuition,
+                field: field.trim(),
+              })
+              onOpenChange(false)
+            },
+          }
+        )
+        return
+      }
       updateCourse(course.id, {
         name: name.trim(),
         universityId,
@@ -123,6 +158,34 @@ export function CourseDialog({ course, open, onOpenChange }: CourseDialogProps) 
         field: field.trim(),
       })
     } else {
+      if (!isMockMode()) {
+        createCourseMutation.mutate(
+          {
+            name: name.trim(),
+            universityId,
+            level: level.toUpperCase(),
+            durationMonths: parseInt(duration, 10) || 12,
+            intakeDates: intakeArr,
+            tuitionFee: tuition,
+            fieldOfStudy: field.trim(),
+          } as any,
+          {
+            onSuccess: () => {
+              addCourse({
+                name: name.trim(),
+                universityId,
+                level,
+                duration: duration.trim(),
+                intake: intakeArr,
+                tuitionUsd: tuition,
+                field: field.trim(),
+              })
+              onOpenChange(false)
+            },
+          }
+        )
+        return
+      }
       addCourse({
         name: name.trim(),
         universityId,

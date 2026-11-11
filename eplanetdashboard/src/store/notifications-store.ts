@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { sendEmailNotification } from '@/lib/email-notifications'
+import { isMockMode } from '@/lib/api-client'
 import type { AppNotification } from '@/types'
 import { appNotifications } from '@/mock/notifications'
 
@@ -15,9 +16,14 @@ interface NotificationsState {
 export const useNotificationsStore = create<NotificationsState>()(
   persist(
     (set) => ({
-      notifications: appNotifications,
+      notifications: isMockMode() ? appNotifications : [],
 
       addNotification: (notification) => {
+        if (!isMockMode()) {
+          // In live mode, notifications are persisted and fetched from the backend API.
+          // Do not inject synthetic client-only notifications into persisted localStorage.
+          return
+        }
         const newNotification: AppNotification = {
           ...notification,
           id: `notif-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,

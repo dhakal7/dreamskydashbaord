@@ -3,6 +3,15 @@ import type { Role, UserAccount, UserStatus } from '@/types'
 import { userAccounts } from '@/mock'
 import { toast } from 'sonner'
 import { api, isMockMode } from '@/lib/api-client'
+import { userApi } from '@/api/user-api'
+import { useAuthStore } from '@/store/auth-store'
+
+const BRANCH_ADMIN_OPERATIONAL_ROLES = new Set([
+  'counselor',
+  'front_desk',
+  'teacher',
+  'referral_agent',
+])
 
 export interface InviteUserData {
   name: string
@@ -18,26 +27,46 @@ interface UsersState {
   users: UserAccount[]
   fetchUsers: () => Promise<void>
   inviteUser: (data: InviteUserData) => Promise<void>
-  suspendUser: (id: string) => void
-  reactivateUser: (id: string) => void
-  changeUserRole: (id: string, role: Role) => void
+  suspendUser: (id: string) => Promise<void>
+  reactivateUser: (id: string) => Promise<void>
+  changeUserRole: (id: string, role: Role) => Promise<void>
+  changeUserBranch: (id: string, branchId: string | null, branchName?: string) => Promise<void>
   updateUserEmail: (id: string, email: string) => void
   updateUserProfile: (id: string, updates: Partial<UserAccount>) => void
 }
 
-export const useUsersStore = create<UsersState>((set) => ({
-  users: [...userAccounts],
+export const useUsersStore = create<UsersState>((set, get) => ({
+  users: isMockMode() ? [...userAccounts] : [],
 
   fetchUsers: async () => {
+    const activeUser = useAuthStore.getState().currentUser
     if (isMockMode()) {
-      set({ users: [...userAccounts] })
+      const mockFiltered = userAccounts.filter((u) => {
+        const roleLower = (u.role as string)?.toLowerCase()
+        if (roleLower === 'student') return false
+        if (activeUser?.role === 'branch_admin') {
+          if (!BRANCH_ADMIN_OPERATIONAL_ROLES.has(roleLower)) return false
+          return Boolean(activeUser.branchId && u.branchId && u.branchId === activeUser.branchId)
+        }
+        return true
+      })
+      set({ users: mockFiltered })
       return
     }
 
     try {
       const rawUsers: any = await api.get('/users')
       const userList = (Array.isArray(rawUsers) ? rawUsers : rawUsers?.data || [])
-        .filter((u: any) => u.role?.toUpperCase() !== 'STUDENT')
+        .filter((u: any) => {
+          const roleUpper = u.role?.toUpperCase()
+          if (roleUpper === 'STUDENT') return false
+          if (activeUser?.role === 'branch_admin') {
+            const roleLower = u.role?.toLowerCase()
+            if (!BRANCH_ADMIN_OPERATIONAL_ROLES.has(roleLower)) return false
+            return Boolean(activeUser.branchId && u.branchId && u.branchId === activeUser.branchId)
+          }
+          return true
+        })
       const mapped: UserAccount[] = userList.map((u: any) => ({
         id: u.id,
         name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
@@ -46,7 +75,7 @@ export const useUsersStore = create<UsersState>((set) => ({
         role: (u.role?.toLowerCase() as Role) || 'staff',
         status: (u.status?.toLowerCase() as UserStatus) || 'active',
         branchId: u.branchId,
-        branchName: u.branch?.name || 'Headquarters',
+        branchName: u.branch?.name || (u.branchId ? 'Unknown Branch' : 'Unassigned'),
         avatarColor: '#0891B2',
         lastLoginAt: u.lastLoginAt || u.createdAt,
         createdAt: u.createdAt,
@@ -54,8 +83,8 @@ export const useUsersStore = create<UsersState>((set) => ({
       }))
       set({ users: mapped })
     } catch (err: any) {
-      // Fallback to mock data if API call fails
-      set({ users: [...userAccounts] })
+      toast.error(err?.message || 'Failed to fetch staff accounts. Please check your connection.')
+      set({ users: [] })
     }
   },
 
@@ -102,38 +131,107 @@ export const useUsersStore = create<UsersState>((set) => ({
     set((state) => ({ users: [...state.users, newUser] }))
   },
 
-  suspendUser: (id) =>
-    set((state) => {
-      const user = state.users.find((u) => u.id === id)
-      toast.success(`${user?.name ?? 'User'} has been suspended`)
-      return {
+  suspendUser: async (id: string) => {
+    const user = get().users.find((u) => u.id === id)
+    if (isMockMode()) {
+      set((state) => ({
         users: state.users.map((u) =>
           u.id === id ? { ...u, status: 'suspended' as UserStatus } : u
         ),
-      }
-    }),
+      }))
+      toast.success(`[Mock] ${user?.name ?? 'User'} has been suspended`)
+      return
+    }
 
-  reactivateUser: (id) =>
-    set((state) => {
-      const user = state.users.find((u) => u.id === id)
-      toast.success(`${user?.name ?? 'User'} has been reactivated`)
-      return {
+    try {
+      await userApi.updateUserStatus(id, 'SUSPENDED')
+      set((state) => ({
+        users: state.users.map((u) =>
+          u.id === id ? { ...u, status: 'suspended' as UserStatus } : u
+        ),
+      }))
+      toast.success(`${user?.name ?? 'User'} has been suspended`)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to suspend user')
+      throw err
+    }
+  },
+
+  reactivateUser: async (id: string) => {
+    const user = get().users.find((u) => u.id === id)
+    if (isMockMode()) {
+      set((state) => ({
         users: state.users.map((u) =>
           u.id === id ? { ...u, status: 'active' as UserStatus } : u
         ),
-      }
-    }),
+      }))
+      toast.success(`[Mock] ${user?.name ?? 'User'} has been reactivated`)
+      return
+    }
 
-  changeUserRole: (id, role) =>
-    set((state) => {
-      const user = state.users.find((u) => u.id === id)
-      toast.success(`Role changed to ${role} for ${user?.name ?? 'User'}`)
-      return {
+    try {
+      await userApi.updateUserStatus(id, 'ACTIVE')
+      set((state) => ({
         users: state.users.map((u) =>
-          u.id === id ? { ...u, role } : u
+          u.id === id ? { ...u, status: 'active' as UserStatus } : u
         ),
-      }
-    }),
+      }))
+      toast.success(`${user?.name ?? 'User'} has been reactivated`)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to reactivate user')
+      throw err
+    }
+  },
+
+  changeUserRole: async (id, role) => {
+    const user = get().users.find((u) => u.id === id)
+    if (isMockMode()) {
+      set((state) => ({
+        users: state.users.map((u) => (u.id === id ? { ...u, role } : u)),
+      }))
+      toast.success(`[Mock] Role changed to ${role} for ${user?.name ?? 'User'}`)
+      return
+    }
+
+    try {
+      await userApi.updateUserRole(id, role)
+      set((state) => ({
+        users: state.users.map((u) => (u.id === id ? { ...u, role } : u)),
+      }))
+      toast.success(`Role changed to ${role} for ${user?.name ?? 'User'}`)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to change user role')
+      throw err
+    }
+  },
+
+  changeUserBranch: async (id, branchId, branchName) => {
+    const user = get().users.find((u) => u.id === id)
+    if (isMockMode()) {
+      const resolvedName = branchName || (branchId ? 'Assigned Branch' : 'Unassigned')
+      set((state) => ({
+        users: state.users.map((u) =>
+          u.id === id ? { ...u, branchId: branchId || undefined, branchName: resolvedName } : u
+        ),
+      }))
+      toast.success(`[Mock] Branch updated for ${user?.name ?? 'User'}`)
+      return
+    }
+
+    try {
+      const res: any = await userApi.updateUserBranch(id, branchId)
+      const resolvedName = res?.data?.branch?.name || branchName || (branchId ? 'Assigned Branch' : 'Unassigned')
+      set((state) => ({
+        users: state.users.map((u) =>
+          u.id === id ? { ...u, branchId: branchId || undefined, branchName: resolvedName } : u
+        ),
+      }))
+      toast.success(`Branch updated for ${user?.name ?? 'User'}`)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update user branch')
+      throw err
+    }
+  },
 
   updateUserEmail: (id, email) =>
     set((state) => {

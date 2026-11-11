@@ -28,9 +28,8 @@ import { visibleAppointments, visibleFollowUps } from '@/lib/data-visibility'
 import { studentApi } from '@/api/student-api'
 import { followUpApi } from '@/api/followup-api'
 import { appointmentApi } from '@/api/appointment-api'
+import { paymentApi } from '@/api/payment-api'
 import { dashboardApi } from '@/api/dashboard-api'
-import { applicationApi } from '@/api/application-api'
-import { visaApi } from '@/api/visa-api'
 import { getFrontDeskStats, getCounselorDashboard } from '../role-selectors'
 import { getUpcomingFollowUps } from '../selectors'
 import type { AppointmentStatus, LeadStage, Priority } from '@/types'
@@ -48,12 +47,10 @@ const dashboardKeys = {
 
 // ─── Real-mode stage helpers (dream-sky Student.currentStage enum) ───────────
 
-const FEE_STAGES = 'OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED'
-
 // Map dream-sky stages onto the frontend lead-stage labels the pipeline card renders.
 const STAGE_TO_LEAD_STAGE: Record<string, LeadStage> = {
   LEAD: 'new',
-  PROSPECT: 'contacted',
+  PROSPECT: 'counseling',
   APPLIED: 'application',
   OFFER_RECEIVED: 'offer_letter',
   VISA_APPLIED: 'visa',
@@ -103,46 +100,15 @@ export function useSuperAdminStats() {
   const query = useQuery<SuperAdminStatItem[]>({
     queryKey: dashboardKeys.superAdmin(),
     queryFn: async () => {
-      // Fetch summary + raw applications + visa cases in parallel so we can apply
-      // the exact same filter the Applications page uses:
-      // an application is only counted if it has NO linked visa case.
-      const [summary, appsResp, visaResp] = await Promise.all([
-        dashboardApi.getSummary(),
-        applicationApi.list({ limit: 1000 }),
-        visaApi.list({ limit: 1000 }),
-      ])
-
-      // Build a set of application IDs that have been moved to Visa Processing
-      const visaLinkedAppIds = new Set<string>()
-      for (const vc of visaResp.visaCases ?? []) {
-        if (vc.applicationId) visaLinkedAppIds.add(vc.applicationId)
-        if ((vc as any).application?.id) visaLinkedAppIds.add((vc as any).application.id)
-      }
-
-      // Mirror the Applications page filter: exclude apps that have a visaCase or
-      // whose ID appears in a visa case's applicationId
-      const pureApps = (appsResp.applications ?? []).filter(
-        (app) => !(app as any).visaCase && !visaLinkedAppIds.has(app.id)
-      )
-
-      // Offer letters: conditional or unconditional offers within pure apps
-      const offerCount = pureApps.filter((app) => {
-        if (!app.offers || app.offers.length === 0) return false
-        return app.offers.some(
-          (o) => o.type === 'CONDITIONAL' || o.type === 'UNCONDITIONAL'
-        )
-      }).length
-
-      const appCount = pureApps.length
-      const visaCount = visaResp.visaCases?.length ?? summary.visaCases
+      const summary = await dashboardApi.getSummary()
 
       return [
         { label: 'Total Students',      value: summary.totalStudents,   delta: `${summary.totalStudents} total`,     trend: 'up'   as const },
         { label: 'New Leads',           value: summary.newLeads,         delta: 'Last 30 days',                       trend: 'up'   as const },
         { label: "Today's Follow-ups",  value: summary.pendingFollowUps, delta: 'Upcoming',                           trend: 'flat' as const },
-        { label: 'Applications',        value: appCount,                 delta: `${appCount} active`,                 trend: 'up'   as const },
-        { label: 'Offer Letters',       value: offerCount,               delta: `${offerCount} received`,             trend: 'up'   as const },
-        { label: 'Visa Processing',     value: visaCount,                delta: `${visaCount} total cases`,           trend: 'flat' as const },
+        { label: 'Applications',        value: summary.applications,     delta: `${summary.applications} active`,     trend: 'up'   as const },
+        { label: 'Offer Letters',       value: summary.offerLetters,     delta: `${summary.offerLetters} received`,   trend: 'up'   as const },
+        { label: 'Visa Processing',     value: summary.visaCases,        delta: `${summary.visaCases} total cases`,   trend: 'flat' as const },
         { label: 'Enrolled Students',   value: summary.enrolledOnly,     delta: `${summary.enrolledOnly} enrolled`,   trend: 'up'   as const },
       ]
     },
@@ -166,11 +132,27 @@ export function useSuperAdminStats() {
 
 // ─── Front Desk ───────────────────────────────────────────────────────────────
 
+/**
+ * Helper to compute start and end of "today" in Nepal Standard Time (UTC+05:45).
+ */
+export function getNptDayBounds(date = new Date()) {
+  const nptString = date.toLocaleString('en-US', { timeZone: 'Asia/Kathmandu' })
+  const nptDate = new Date(nptString)
+  const year = nptDate.getFullYear()
+  const month = String(nptDate.getMonth() + 1).padStart(2, '0')
+  const day = String(nptDate.getDate()).padStart(2, '0')
+  const startOfTodayNPT = new Date(`${year}-${month}-${day}T00:00:00+05:45`).toISOString()
+  const endOfTodayNPT = new Date(`${year}-${month}-${day}T23:59:59.999+05:45`).toISOString()
+  return { startOfTodayNPT, endOfTodayNPT, nptDateStr: `${year}-${month}-${day}` }
+}
+
 export interface FrontDeskStats {
   newLeadsToday: number
   todaysAppointments: number
   feeCollectionQueue: number
   pendingFollowUps: number
+  uniqueStudentsWithDues?: number
+  totalOutstandingAmount?: number | null
 }
 
 const ZERO_FRONT_DESK: FrontDeskStats = {
@@ -178,6 +160,8 @@ const ZERO_FRONT_DESK: FrontDeskStats = {
   todaysAppointments: 0,
   feeCollectionQueue: 0,
   pendingFollowUps: 0,
+  uniqueStudentsWithDues: 0,
+  totalOutstandingAmount: 0,
 }
 
 export { ZERO_FRONT_DESK }
@@ -186,18 +170,31 @@ export function useFrontDeskStats() {
   return useQuery<FrontDeskStats>({
     queryKey: dashboardKeys.frontDesk(),
     queryFn: async () => {
-      const todayStart = dayjs().startOf('day').toISOString()
-      const todayEnd = dayjs().endOf('day').toISOString()
-      const [newLeads, pendingFollowUps, feeQueue] = await Promise.all([
-        studentApi.list({ createdFrom: todayStart, createdTo: todayEnd, limit: 1 }),
-        followUpApi.list({ status: 'upcoming', limit: 1 }),
-        studentApi.list({ stageIn: FEE_STAGES, limit: 1 }),
+      const { startOfTodayNPT, endOfTodayNPT } = getNptDayBounds()
+      const [newLeads, pendingFollowUps, todayAppts, feeSummary] = await Promise.all([
+        studentApi.list({
+          createdFrom: startOfTodayNPT,
+          createdTo: endOfTodayNPT,
+          stageIn: 'LEAD,PROSPECT',
+          limit: 1,
+        }),
+        followUpApi.list({ status: 'pending', limit: 1 }),
+        appointmentApi.list({
+          from: startOfTodayNPT,
+          to: endOfTodayNPT,
+          statusNotIn: 'CANCELLED,NO_SHOW',
+          limit: 1,
+        }),
+        paymentApi.getOutstandingSummary(),
       ])
+
       return {
         newLeadsToday: newLeads.pagination.total,
         pendingFollowUps: pendingFollowUps.pagination.total,
-        feeCollectionQueue: feeQueue.pagination.total,
-        todaysAppointments: 0, // sourced live from the Today's Appointments panel
+        todaysAppointments: todayAppts.pagination.total,
+        feeCollectionQueue: feeSummary.totalOutstandingRecords,
+        uniqueStudentsWithDues: feeSummary.uniqueStudentsWithDues,
+        totalOutstandingAmount: feeSummary.totalOutstandingAmount,
       }
     },
     staleTime: 0,
@@ -260,7 +257,7 @@ export function useCounselorDashboard(linkedId: string) {
         priority: 'medium' as Priority,
       }))
 
-      const totalLeads = (stageCounts.get('new') ?? 0) + (stageCounts.get('contacted') ?? 0)
+      const totalLeads = (stageCounts.get('new') ?? 0) + (stageCounts.get('follow_up') ?? 0) + (stageCounts.get('counseling') ?? 0) + (stageCounts.get('interested') ?? 0)
 
       return {
         counselor: {
@@ -309,14 +306,15 @@ export interface UpcomingFollowUpItem {
 export function useTodayAppointments(): { items: TodayAppointmentItem[]; isLoading: boolean } {
   const currentUser = useAuthStore((s) => s.currentUser)
   const mockAppts = useAppointmentsStore((s) => s.appointments)
+  const { startOfTodayNPT, endOfTodayNPT, nptDateStr } = getNptDayBounds()
 
   const query = useQuery({
-    queryKey: dashboardKeys.todayAppointments(dayjs().format('YYYY-MM-DD')),
+    queryKey: dashboardKeys.todayAppointments(nptDateStr),
     queryFn: async () => {
-      const today = dayjs()
       const resp = await appointmentApi.list({
-        from: today.startOf('day').toISOString(),
-        to: today.endOf('day').toISOString(),
+        from: startOfTodayNPT,
+        to: endOfTodayNPT,
+        statusNotIn: 'CANCELLED,NO_SHOW',
         limit: 100,
       })
       return resp.appointments
@@ -336,7 +334,7 @@ export function useTodayAppointments(): { items: TodayAppointmentItem[]; isLoadi
   })
 
   if (isMockMode()) {
-    const todayStr = dayjs().format('YYYY-MM-DD')
+    const todayStr = nptDateStr
     const items: TodayAppointmentItem[] = visibleAppointments(currentUser, mockAppts)
       .filter((a) => dayjs(a.start).format('YYYY-MM-DD') === todayStr)
       .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf())

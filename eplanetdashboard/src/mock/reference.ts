@@ -1,6 +1,5 @@
 import type { Counselor, Country, Course, University } from '@/types'
 import { pad, pick, randFloat, randInt } from './generators'
-import importedData from './imported-data.json'
 
 export const countries: Country[] = [
   {
@@ -109,11 +108,9 @@ export const courses: Course[] = universities.flatMap((uni, uIdx) => {
 // keep exactly 15 as requested for the "Course" module summary, but retain full catalog for lookups
 export const featuredCourses = courses.slice(0, 15)
 
-export const counselors: Counselor[] = (importedData as any).counselors && (importedData as any).counselors.length > 0
-  ? ((importedData as any).counselors as Counselor[])
-  : [
-      { id: 'cmsejoq9m0000z0tyq5vy1ytd', name: 'Dipshikha Dawadi', email: 'dipshikha.dawadi@dreamsky.com', avatarColor: '#2563EB', role: 'senior_counselor', studentsHandled: 235, conversionRate: 68, branchId: 'br-1' },
-      { id: 'cmsejoqao0002z0tyce0e72ll', name: 'Amit Dhodari', email: 'amit.dhodari@dreamsky.com', avatarColor: '#7C3AED', role: 'counselor', studentsHandled: 110, conversionRate: 62, branchId: 'br-1' },
-      { id: 'cmsejoqar0004z0tygo6vjk76', name: 'Vaibhav Joshi', email: 'vaibhav.joshi@dreamsky.com', avatarColor: '#0EA5E9', role: 'counselor', studentsHandled: 110, conversionRate: 59, branchId: 'br-1' }
-    ]
+export const counselors: Counselor[] = [
+  { id: 'cmsejoq9m0000z0tyq5vy1ytd', name: 'Dipshikha Dawadi', email: 'dipshikha.dawadi@dreamsky.com', avatarColor: '#2563EB', role: 'senior_counselor', studentsHandled: 235, conversionRate: 68, branchId: 'br-1' },
+  { id: 'cmsejoqao0002z0tyce0e72ll', name: 'Amit Dhodari', email: 'amit.dhodari@dreamsky.com', avatarColor: '#7C3AED', role: 'counselor', studentsHandled: 110, conversionRate: 62, branchId: 'br-1' },
+  { id: 'cmsejoqar0004z0tygo6vjk76', name: 'Vaibhav Joshi', email: 'vaibhav.joshi@dreamsky.com', avatarColor: '#0EA5E9', role: 'counselor', studentsHandled: 110, conversionRate: 59, branchId: 'br-1' }
+]
 

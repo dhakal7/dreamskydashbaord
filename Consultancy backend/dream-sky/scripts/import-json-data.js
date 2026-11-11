@@ -11,7 +11,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const { assertDisposableTarget } = require('../src/config');
+
+// Pre-import guard: Destructive execution blocked unless positively targeting disposable test DB
+assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
+
 const prisma = require('../src/prisma');
 
 // Helper to resolve JSON paths across directory structures
@@ -58,9 +63,11 @@ function mapStatusToStage(statusStr) {
 }
 
 async function main() {
+  assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
   console.log('🚀 Starting JSON Data Import into PostgreSQL...\n');
 
-  const defaultPassword = await bcrypt.hash('Password123!', 10);
+  const defaultPasswordSecret = process.env.IMPORT_DEFAULT_PASSWORD || crypto.randomBytes(20).toString("hex");
+  const defaultPassword = await bcrypt.hash(defaultPasswordSecret, 12);
 
   // 0. Ensure Main Branch exists
   const branch = await prisma.branch.upsert({

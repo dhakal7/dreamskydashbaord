@@ -1,6 +1,6 @@
 import { memo, useRef, useState } from 'react'
 import { useDraggable } from '@dnd-kit/core'
-import { Phone, Mail, GripVertical, GraduationCap, MoreVertical, Pencil, AlertCircle, Trash2 } from 'lucide-react'
+import { Phone, Mail, GripVertical, GraduationCap, MoreVertical, Pencil, AlertCircle, Trash2, UserCheck, Building2 } from 'lucide-react'
 import dayjs from 'dayjs'
 import { toast } from 'sonner'
 import type { Lead, LeadStage } from '@/types'
@@ -17,6 +17,9 @@ import { useAuthStore } from '@/store/auth-store'
 import { useLeadsStore } from '../store'
 import { LeadFormDialog } from './lead-form-dialog'
 import { ConvertLeadDialog } from './convert-lead-dialog'
+import { TrashLeadDialog } from './trash-lead-dialog'
+import { AssignCounselorDialog } from './assign-counselor-dialog'
+import { TransferBranchDialog } from './transfer-branch-dialog'
 import { hasPermission } from '@/lib/rbac'
 import { useDeleteLiveLead } from '@/hooks/use-leads-live'
 import { isMockMode } from '@/lib/api-client'
@@ -26,15 +29,34 @@ const sourceLabel: Record<string, string> = {
   education_fair: 'Education Fair', google_ads: 'Google Ads', instagram: 'Instagram',
 }
 
-const PIPELINE_STAGES: { stage: LeadStage; label: string }[] = [
-  { stage: 'new', label: 'New' },
-  { stage: 'contacted', label: 'Contacted' },
-  { stage: 'counseling', label: 'Counseling' },
-  { stage: 'interested', label: 'Interested' },
-]
+function getAvailableStagesForRole(role: string): { stage: LeadStage; label: string }[] {
+  if (role === 'front_desk') {
+    return [
+      { stage: 'new', label: 'New Leads' },
+      { stage: 'follow_up', label: 'Follow Up' },
+      { stage: 'assigned', label: 'Assigned' },
+      { stage: 'not_contracted', label: 'Not Contracted' },
+    ]
+  }
+  if (role === 'counselor') {
+    return [
+      { stage: 'assigned', label: 'Assigned' },
+      { stage: 'follow_up', label: 'Follow Up' },
+      { stage: 'interested', label: 'Interested' },
+    ]
+  }
+  return [
+    { stage: 'new', label: 'New' },
+    { stage: 'follow_up', label: 'Follow Up' },
+    { stage: 'assigned', label: 'Assigned' },
+    { stage: 'counseling', label: 'Counseling' },
+    { stage: 'interested', label: 'Interested' },
+    { stage: 'not_contracted', label: 'Not Contracted' },
+  ]
+}
 
 // Stages where a counselor / admin can register the lead as a permanent student
-const REGISTERABLE_STAGES: LeadStage[] = ['counseling', 'interested']
+const REGISTERABLE_STAGES: LeadStage[] = ['new', 'follow_up', 'counseling', 'interested']
 
 interface LeadCardProps {
   lead: Lead
@@ -42,9 +64,11 @@ interface LeadCardProps {
   canDrag?: boolean
   /** Called when the user moves the lead to a new stage via the detail dialog. Routed correctly to backend in live mode. */
   onMove?: (id: string, stage: LeadStage) => void
+  /** Called when the user initiates a transition to the follow_up stage to collect appointment details */
+  onScheduleFollowUp?: (lead: Lead) => void
 }
 
-export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, onMove }: LeadCardProps) {
+export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, onMove, onScheduleFollowUp }: LeadCardProps) {
   const currentUser = useAuthStore((s) => s.currentUser)
   const moveLead = useLeadsStore((s) => s.moveLead)
   const removeLead = useLeadsStore((s) => s.removeLead)
@@ -54,12 +78,19 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
   const [isConvertOpen, setIsConvertOpen] = useState(false)
   const [registeredStudent, setRegisteredStudent] = useState<{ studentId: string; email: string; portalPassword: string | null } | null>(null)
 
+  const [isTrashDialogOpen, setIsTrashDialogOpen] = useState(false)
+  const [isAssignOpen, setIsAssignOpen] = useState(false)
+  const [isTransferOpen, setIsTransferOpen] = useState(false)
+
   // Track the card DOM node separately — used only to apply isDragging opacity
   const cardRef = useRef<HTMLDivElement>(null)
 
   const canChangeStage = hasPermission(currentUser.role, 'leads.change-stage')
   const canManageLeads = hasPermission(currentUser.role, 'leads.manage')
+  const canAssign = ['super_admin', 'branch_admin', 'front_desk'].includes(currentUser.role)
+  const canTransfer = currentUser.role === 'super_admin'
   const isMissingEmail = !lead.email || lead.email.includes('@no-email') || lead.email.includes('eplanet') || !lead.email.includes('@')
+  const availableStages = getAvailableStagesForRole(currentUser.role)
 
   // Only the grip handle is the drag source — `setNodeRef` goes on the handle button
   const { attributes, listeners, setNodeRef: setHandleRef, isDragging } = useDraggable({
@@ -69,6 +100,11 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
 
   // Use the prop-based onMove if provided (live mode), otherwise fall back to mock store
   function handleStageChange(stage: LeadStage) {
+    if (stage === 'follow_up' && onScheduleFollowUp) {
+      setIsDetailOpen(false)
+      onScheduleFollowUp(lead)
+      return
+    }
     if (onMove) {
       onMove(lead.id, stage)
     } else {
@@ -78,19 +114,18 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
 
   function handleDeleteLead(e?: React.MouseEvent) {
     if (e) e.stopPropagation()
-    if (window.confirm(`Are you sure you want to permanently delete lead "${lead.name}"?`)) {
-      setIsDetailOpen(false)
-      if (isMockMode()) {
-        // Mock mode: remove from local store only
-        removeLead(lead.id)
-        toast.success(`Lead "${lead.name}" deleted.`)
-      } else {
-        // Live mode: call backend delete, clear stage override, then refresh list
-        useLeadsStore.getState().clearStageOverride(lead.id)
-        deleteLiveLead.mutate(lead.id, {
-          onSuccess: () => toast.success(`Lead "${lead.name}" deleted.`),
-        })
-      }
+    setIsDetailOpen(false)
+    setIsTrashDialogOpen(true)
+  }
+
+  async function handleConfirmTrash(reason: string) {
+    if (isMockMode()) {
+      removeLead(lead.id)
+      toast.success(`Lead "${lead.name}" moved to Trash.`)
+    } else {
+      useLeadsStore.getState().clearStageOverride(lead.id)
+      await deleteLiveLead.mutateAsync({ id: lead.id, reason })
+      toast.success(`Lead "${lead.name}" moved to Trash.`)
     }
   }
 
@@ -137,11 +172,33 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
                     <DropdownMenuSeparator />
                   </>
                 )}
+                {canAssign && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => setIsAssignOpen(true)}
+                      className="text-xs text-brand-600 focus:text-brand-700"
+                    >
+                      <UserCheck className="mr-1.5 size-3.5" /> Assign to Counselor
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
+                {canTransfer && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() => setIsTransferOpen(true)}
+                      className="text-xs text-purple-600 focus:text-purple-700"
+                    >
+                      <Building2 className="mr-1.5 size-3.5" /> Transfer Branch
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                  </>
+                )}
                 {canChangeStage && (
                   <>
                     <DropdownMenuLabel>Move Stage</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    {PIPELINE_STAGES.map((ps) => (
+                    {availableStages.map((ps) => (
                       <DropdownMenuItem
                         key={ps.stage}
                         disabled={lead.stage === ps.stage}
@@ -242,7 +299,7 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
             <div className="rounded-lg border border-border bg-secondary/30 p-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Current Pipeline Stage</p>
               <div className="flex flex-wrap gap-1.5">
-                {PIPELINE_STAGES.map((ps) => {
+                {availableStages.map((ps) => {
                   const isActive = lead.stage === ps.stage
                   return (
                     <Button
@@ -313,7 +370,7 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
         </div>
 
         <DialogFooter className="flex items-center justify-between sm:justify-between">
-          {canManageLeads ? (
+          {(currentUser?.role === 'super_admin' || currentUser?.role === 'branch_admin') ? (
             <Button
               variant="ghost"
               size="sm"
@@ -348,6 +405,26 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
         })
         setIsDetailOpen(false)
       }}
+    />
+
+    <TrashLeadDialog
+      open={isTrashDialogOpen}
+      onOpenChange={setIsTrashDialogOpen}
+      lead={lead}
+      onConfirm={handleConfirmTrash}
+      isSubmitting={deleteLiveLead.isPending}
+    />
+
+    <AssignCounselorDialog
+      open={isAssignOpen}
+      onOpenChange={setIsAssignOpen}
+      lead={lead}
+    />
+
+    <TransferBranchDialog
+      open={isTransferOpen}
+      onOpenChange={setIsTransferOpen}
+      lead={lead}
     />
     </>
   )

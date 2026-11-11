@@ -12,117 +12,329 @@ const ALLOWED_TRANSITIONS = {
     APPROVED: [],
 };
 
+function isValidBranchId(value) {
+    return typeof value === "string" && value.trim().length > 0;
+}
+
+function resolveStudentBranchId(student) {
+    if (!student || typeof student !== "object") return null;
+
+    const hasAssignedCounselor =
+        (student.assignedCounselorId !== undefined &&
+            student.assignedCounselorId !== null &&
+            String(student.assignedCounselorId).trim().length > 0) ||
+        (student.assignedCounselor !== undefined &&
+            student.assignedCounselor !== null &&
+            typeof student.assignedCounselor === "object");
+
+    if (hasAssignedCounselor) {
+        const counselorBranchId = student.assignedCounselor?.branchId;
+        return isValidBranchId(counselorBranchId) ? counselorBranchId.trim() : null;
+    }
+
+    const bg = student.academicBackground;
+    if (bg && typeof bg === "object" && isValidBranchId(bg.branchId)) {
+        return bg.branchId.trim();
+    }
+
+    return null;
+}
+
 const includeRelations = {
     application: {
         select: {
             id: true,
             status: true,
             intake: true,
-            student: { select: { id: true, firstName: true, lastName: true, email: true } },
+            student: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    assignedCounselorId: true,
+                    academicBackground: true,
+                    assignedCounselor: {
+                        select: { id: true, branchId: true },
+                    },
+                },
+            },
             university: { select: { id: true, name: true } },
             course: { select: { id: true, name: true, level: true } },
         },
     },
 };
 
+/**
+ * Asserts that the authenticated actor has authorization to access or mutate a visa case.
+ * @param {object} visaCase - Loaded visa case with application.student relation
+ * @param {object} currentUser - Authenticated user context
+ * @param {string} action - Action description ("delete", "view", "update", "modify")
+ */
+const assertVisaCaseAuthorization = (visaCase, currentUser, action = "modify") => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
+    const actorRole = currentUser.role;
+    const actorId = currentUser.userId || currentUser.id;
+
+    if (actorRole === "SUPER_ADMIN") {
+        return; // Full global access
+    }
+
+    if (actorRole === "COUNSELOR") {
+        const assignedCounselorId = visaCase.application?.student?.assignedCounselorId;
+        if (!assignedCounselorId || assignedCounselorId !== actorId) {
+            throw AppError.forbidden(`You are not authorized to ${action} this visa case.`, "FORBIDDEN");
+        }
+        return;
+    }
+
+    if (actorRole === "BRANCH_ADMIN") {
+        if (!isValidBranchId(currentUser.branchId)) {
+            throw AppError.forbidden("Branch Admin lacks assigned branch context.", "NO_BRANCH_CONTEXT");
+        }
+        const authorizedBranchId = currentUser.branchId.trim();
+        const studentBranchId = resolveStudentBranchId(visaCase.application?.student);
+        if (!studentBranchId || studentBranchId !== authorizedBranchId) {
+            throw AppError.forbidden(`You are not authorized to ${action} this visa case.`, "FORBIDDEN");
+        }
+        return;
+    }
+
+    throw AppError.forbidden(`You are not authorized to ${action} this visa case.`, "FORBIDDEN");
+};
+
 // ─── CREATE ───────────────────────────────────────────────────────────────────
-const createVisaCase = async (data) => {
-    let applicationId = data.applicationId;
+const createVisaCase = async (data, currentUser = null) => {
+    return prisma.$transaction(async (tx) => {
+        let applicationId = data.applicationId;
+        let targetStudent = null;
 
-    if (!applicationId && data.studentId) {
-        const student = await prisma.student.findUnique({
-            where: { id: data.studentId },
-            select: { id: true },
-        });
-        if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
-
-        // Find existing application for this student
-        let app = await prisma.application.findFirst({
-            where: { studentId: data.studentId },
-            orderBy: { createdAt: "desc" },
-        });
-
-        if (!app) {
-            let university = null;
-            if (data.country) {
-                const country = await prisma.country.findFirst({
-                    where: { name: { contains: data.country, mode: "insensitive" } },
-                    include: { universities: true },
-                });
-                if (country && country.universities.length > 0) {
-                    university = country.universities[0];
-                }
+        if (applicationId) {
+            const [lockedApp] = await tx.$queryRaw`
+                SELECT id FROM "Application" WHERE id = ${applicationId} FOR UPDATE
+            `;
+            if (!lockedApp) {
+                throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
             }
-            if (!university) {
-                university = await prisma.university.findFirst();
-            }
-            const course = university
-                ? await prisma.course.findFirst({ where: { universityId: university.id } })
-                : await prisma.course.findFirst();
 
-            app = await prisma.application.create({
-                data: {
-                    studentId: data.studentId,
-                    universityId: university?.id || null,
-                    courseId: course?.id || null,
-                    status: "ACCEPTED",
-                    intake: "Upcoming",
-                    notes: "Created for Visa processing",
+            const app = await tx.application.findUnique({
+                where: { id: applicationId },
+                select: {
+                    id: true,
+                    status: true,
+                    studentId: true,
+                    student: {
+                        select: {
+                            id: true,
+                            assignedCounselorId: true,
+                            academicBackground: true,
+                            isActive: true,
+                            assignedCounselor: {
+                                select: { id: true, branchId: true },
+                            },
+                        },
+                    },
                 },
             });
-        } else if (app.status !== "ACCEPTED") {
-            app = await prisma.application.update({
-                where: { id: app.id },
-                data: { status: "ACCEPTED" },
+            if (!app) throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
+
+            // Guard against client passing mismatched studentId and applicationId
+            if (data.studentId && app.studentId !== data.studentId) {
+                throw AppError.badRequest("Application does not belong to the specified student.", "APPLICATION_STUDENT_MISMATCH");
+            }
+
+            if (!currentUser) {
+                throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+            }
+            assertVisaCaseAuthorization({ application: app }, currentUser, "create");
+            targetStudent = app.student;
+            if (targetStudent && targetStudent.isActive === false) {
+                throw AppError.badRequest("Cannot create a visa case for a student in Trash. Please restore the student first.", "STUDENT_IN_TRASH");
+            }
+        } else if (data.studentId) {
+            targetStudent = await tx.student.findUnique({
+                where: { id: data.studentId },
+                select: {
+                    id: true,
+                    assignedCounselorId: true,
+                    academicBackground: true,
+                    isActive: true,
+                    assignedCounselor: {
+                        select: { id: true, branchId: true },
+                    },
+                },
             });
+            if (!targetStudent) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
+
+            if (!currentUser) {
+                throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+            }
+            assertVisaCaseAuthorization({ application: { student: targetStudent } }, currentUser, "create");
+
+            if (targetStudent.isActive === false) {
+                throw AppError.badRequest("Cannot create a visa case for a student in Trash. Please restore the student first.", "STUDENT_IN_TRASH");
+            }
+
+            // Find existing application for this student
+            let app = await tx.application.findFirst({
+                where: { studentId: data.studentId },
+                orderBy: { createdAt: "desc" },
+            });
+
+            if (app) {
+                const [lockedApp] = await tx.$queryRaw`
+                    SELECT id FROM "Application" WHERE id = ${app.id} FOR UPDATE
+                `;
+                if (!lockedApp) {
+                    app = await tx.application.findFirst({
+                        where: { studentId: data.studentId },
+                        orderBy: { createdAt: "desc" },
+                    });
+                    if (app) {
+                        const [reLocked] = await tx.$queryRaw`
+                            SELECT id FROM "Application" WHERE id = ${app.id} FOR UPDATE
+                        `;
+                        if (!reLocked) {
+                            app = null;
+                        }
+                    }
+                }
+            }
+
+            if (!app) {
+                let university = null;
+                if (data.country) {
+                    const country = await tx.country.findFirst({
+                        where: { name: { contains: data.country, mode: "insensitive" } },
+                        include: { universities: true },
+                    });
+                    if (country && country.universities.length > 0) {
+                        university = country.universities[0];
+                    }
+                }
+                if (!university) {
+                    university = await tx.university.findFirst();
+                }
+                const course = university
+                    ? await tx.course.findFirst({ where: { universityId: university.id } })
+                    : await tx.course.findFirst();
+
+                app = await tx.application.create({
+                    data: {
+                        studentId: data.studentId,
+                        universityId: university?.id || null,
+                        courseId: course?.id || null,
+                        status: "ACCEPTED",
+                        intake: "Upcoming",
+                        notes: "Created for Visa processing",
+                    },
+                });
+            } else if (app.status !== "ACCEPTED") {
+                app = await tx.application.update({
+                    where: { id: app.id },
+                    data: { status: "ACCEPTED" },
+                });
+            }
+
+            applicationId = app.id;
         }
 
-        applicationId = app.id;
-    }
+        if (!applicationId) {
+            throw AppError.badRequest("Unable to link or create an application for this visa case.", "APPLICATION_REQUIRED");
+        }
 
-    if (!applicationId) {
-        throw AppError.badRequest("Unable to link or create an application for this visa case.", "APPLICATION_REQUIRED");
-    }
+        // Check for existing visa case (unique constraint will also catch this)
+        const existing = await tx.visaCase.findUnique({ where: { applicationId } });
+        if (existing) throw AppError.conflict("A visa case already exists for this application.", "VISA_CASE_EXISTS");
 
-    const app = await prisma.application.findUnique({
-        where: { id: applicationId },
-        select: { id: true, status: true },
-    });
-    if (!app) throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
-
-    // Check for existing visa case (unique constraint will also catch this)
-    const existing = await prisma.visaCase.findUnique({ where: { applicationId } });
-    if (existing) throw AppError.conflict("A visa case already exists for this application.", "VISA_CASE_EXISTS");
-
-    return prisma.visaCase.create({
-        data: {
-            applicationId,
-            visaType: data.visaType?.trim() || null,
-            embassy: data.embassy?.trim() || data.country?.trim() || null,
-            notes: data.notes?.trim() || null,
-        },
-        include: includeRelations,
+        return tx.visaCase.create({
+            data: {
+                applicationId,
+                visaType: data.visaType?.trim() || null,
+                embassy: data.embassy?.trim() || data.country?.trim() || null,
+                notes: data.notes?.trim() || null,
+            },
+            include: includeRelations,
+        });
     });
 };
 
 // ─── GET ONE ──────────────────────────────────────────────────────────────────
-const getVisaCaseById = async (id) => {
+const getVisaCaseById = async (id, currentUser = null) => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
     const vc = await prisma.visaCase.findUnique({
         where: { id },
         include: includeRelations,
     });
     if (!vc) throw AppError.notFound("Visa case not found.", "VISA_CASE_NOT_FOUND");
+
+    try {
+        assertVisaCaseAuthorization(vc, currentUser, "view");
+    } catch {
+        throw AppError.notFound("Visa case not found.", "VISA_CASE_NOT_FOUND");
+    }
     return vc;
 };
 
 // ─── LIST / FILTER ────────────────────────────────────────────────────────────
-const listVisaCases = async (query) => {
+const listVisaCases = async (query = {}, currentUser = null) => {
     const { status, applicationId, studentId, page, limit } = query;
     const where = {};
 
     if (status) where.status = status;
     if (applicationId) where.applicationId = applicationId;
     if (studentId) where.application = { studentId };
+
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
+    const actorRole = currentUser.role;
+    const actorId = currentUser.userId || currentUser.id;
+
+    if (actorRole === "COUNSELOR") {
+        where.application = {
+            ...(where.application || {}),
+            student: {
+                ...(where.application?.student || {}),
+                assignedCounselorId: actorId,
+            },
+        };
+    } else if (actorRole === "BRANCH_ADMIN") {
+        if (!isValidBranchId(currentUser.branchId)) {
+            throw AppError.forbidden("Branch Admin lacks assigned branch context.", "NO_BRANCH_CONTEXT");
+        }
+        const authorizedBranchId = currentUser.branchId.trim();
+        where.application = {
+            ...(where.application || {}),
+            student: {
+                ...(where.application?.student || {}),
+                OR: [
+                    {
+                        assignedCounselor: {
+                            branchId: authorizedBranchId,
+                        },
+                    },
+                    {
+                        assignedCounselorId: null,
+                        academicBackground: {
+                            path: ["branchId"],
+                            equals: authorizedBranchId,
+                        },
+                    },
+                ],
+            },
+        };
+    } else if (actorRole === "SUPER_ADMIN") {
+        // Full global access
+    } else {
+        throw AppError.forbidden("You are not authorized to view visa cases.", "FORBIDDEN");
+    }
 
     const pageNum = Math.max(parseInt(page) || 1, 1);
     const pageSize = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
@@ -146,9 +358,17 @@ const listVisaCases = async (query) => {
 };
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
-const updateVisaCase = async (id, data) => {
-    const existing = await prisma.visaCase.findUnique({ where: { id } });
+const updateVisaCase = async (id, data, currentUser = null) => {
+    const existing = await prisma.visaCase.findUnique({
+        where: { id },
+        include: includeRelations,
+    });
     if (!existing) throw AppError.notFound("Visa case not found.", "VISA_CASE_NOT_FOUND");
+
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+    assertVisaCaseAuthorization(existing, currentUser, "update");
 
     const update = {};
     if (data.visaType !== undefined) update.visaType = data.visaType?.trim() || null;
@@ -160,9 +380,17 @@ const updateVisaCase = async (id, data) => {
 };
 
 // ─── CHANGE STATUS ────────────────────────────────────────────────────────────
-const changeStatus = async (id, { status, refusalReason }) => {
-    const existing = await prisma.visaCase.findUnique({ where: { id } });
+const changeStatus = async (id, { status, refusalReason }, currentUser = null) => {
+    const existing = await prisma.visaCase.findUnique({
+        where: { id },
+        include: includeRelations,
+    });
     if (!existing) throw AppError.notFound("Visa case not found.", "VISA_CASE_NOT_FOUND");
+
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+    assertVisaCaseAuthorization(existing, currentUser, "change status of");
 
     const allowed = ALLOWED_TRANSITIONS[existing.status] || [];
     if (!allowed.includes(status))
@@ -200,9 +428,18 @@ const changeStatus = async (id, { status, refusalReason }) => {
 };
 
 // ─── DELETE ───────────────────────────────────────────────────────────────────
-const deleteVisaCase = async (id) => {
-    const existing = await prisma.visaCase.findUnique({ where: { id } });
+const deleteVisaCase = async (id, currentUser = null) => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+    const existing = await prisma.visaCase.findUnique({
+        where: { id },
+        include: includeRelations,
+    });
     if (!existing) throw AppError.notFound("Visa case not found.", "VISA_CASE_NOT_FOUND");
+
+    assertVisaCaseAuthorization(existing, currentUser, "delete");
+
     await prisma.visaCase.delete({ where: { id } });
 };
 
@@ -230,4 +467,5 @@ module.exports = {
     changeStatus,
     deleteVisaCase,
     getDashboardStats,
+    assertVisaCaseAuthorization,
 };

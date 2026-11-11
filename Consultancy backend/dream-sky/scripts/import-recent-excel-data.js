@@ -9,7 +9,12 @@
 
 const fs = require('fs');
 const path = require('path');
-const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const { assertDisposableTarget } = require('../src/config');
+
+// Pre-import guard: Destructive execution blocked unless positively targeting disposable test DB
+assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
+
 const prisma = require('../src/prisma');
 
 const REAL_STAFF_EMAILS = [
@@ -59,10 +64,13 @@ async function safeDelete(modelName) {
 }
 
 async function main() {
+  assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
   console.log('🚀 Starting Clean Excel Data Import into PostgreSQL...\n');
 
-  const defaultPassword = await bcrypt.hash('Password123!', 10);
-  const portalPassword = await bcrypt.hash('DreamSky@2026', 10);
+  const defaultPasswordSecret = process.env.IMPORT_DEFAULT_PASSWORD || crypto.randomBytes(20).toString("hex");
+  const defaultPassword = await bcrypt.hash(defaultPasswordSecret, 12);
+  const portalPasswordSecret = process.env.PORTAL_DEFAULT_PASSWORD || crypto.randomBytes(20).toString("hex");
+  const portalPassword = await bcrypt.hash(portalPasswordSecret, 12);
 
   // 0. Ensure Main Branch exists
   let branch = await prisma.branch.findFirst({});

@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import dayjs from 'dayjs'
 import {
-  CalendarClock, MapPin, Monitor, Phone, X, Plus, AlertTriangle, Mail, Trash2,
+  CalendarClock, MapPin, Monitor, Phone, Lock, ShieldAlert,
 } from 'lucide-react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -19,14 +19,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 import { ChevronDown, Check } from 'lucide-react'
 import { appointmentStatusMeta } from '@/components/shared/status-badges'
-import { counselors as mockCounselors } from '@/mock'
-import { useAppointmentsStore } from '../store'
 import type { Appointment } from '@/types'
-import { useAuthStore } from '@/store/auth-store'
-import { hasPermission } from '@/lib/rbac'
 import { isMockMode } from '@/lib/api-client'
-import { useCreateAppointment, useUpdateAppointment, useChangeAppointmentStatus } from '@/hooks/use-appointments'
-import { appointmentApi } from '@/api/appointment-api'
+import { useCounselors } from '@/hooks/use-counselors'
 import { useStudents } from '@/hooks/use-students'
 import { useStudentsStore } from '@/features/students/store'
 import { useUsersStore } from '@/features/users/store'
@@ -50,14 +45,6 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>
 
 // ── Backend enum mappings ─────────────────────────────────────────────────────
-/** Map frontend local values to backend VALID_TYPES. */
-const TYPE_TO_BACKEND: Record<FormData['type'], string> = {
-  counseling: 'INITIAL_CONSULTATION',
-  document_review: 'DOCUMENT_REVIEW',
-  visa_prep: 'VISA_COUNSELING',
-  follow_up: 'FOLLOW_UP',
-  orientation: 'OTHER',
-}
 
 /** Map backend type values back to frontend local values. */
 const TYPE_FROM_BACKEND: Record<string, FormData['type']> = {
@@ -66,13 +53,6 @@ const TYPE_FROM_BACKEND: Record<string, FormData['type']> = {
   DOCUMENT_REVIEW: 'document_review',
   VISA_COUNSELING: 'visa_prep',
   OTHER: 'orientation',
-}
-
-/** Map frontend local location values to backend VALID_MODES. */
-const LOCATION_TO_BACKEND: Record<FormData['location'], string> = {
-  branch_office: 'OFFICE',
-  video_call: 'ONLINE',
-  phone_call: 'ONLINE',
 }
 
 /** Map backend mode back to frontend local location values. */
@@ -126,17 +106,6 @@ export function AppointmentDialog({
   open,
   onOpenChange,
 }: AppointmentDialogProps) {
-  const addAppointmentMock = useAppointmentsStore((s) => s.addAppointment)
-  const updateAppointmentMock = useAppointmentsStore((s) => s.updateAppointment)
-  const cancelAppointmentMock = useAppointmentsStore((s) => s.cancelAppointment)
-  const removeAppointmentMock = useAppointmentsStore((s) => s.removeAppointment)
-  const createAppointmentApi = useCreateAppointment()
-  const updateAppointmentApi = useUpdateAppointment()
-  const changeStatusApi = useChangeAppointmentStatus()
-
-  const currentUser = useAuthStore((s) => s.currentUser)
-  const canManage = hasPermission(currentUser.role, 'appointments.manage')
-
   const isEditing = appointment !== null
 
   // ── Live students (server-side searchable) ──────────────────────────────
@@ -148,37 +117,55 @@ export function AppointmentDialog({
 
   const mockStudents = useStudentsStore((s) => s.students)
   const availableStudents = useMemo(() => {
+    const list: Array<{ id: string; name: string; studentId: string; email?: string; phone?: string }> = []
     if (!isMockMode()) {
-      return (apiStudentData?.students ?? []).map((s) => ({
+      list.push(...(apiStudentData?.students ?? []).map((s) => ({
         id: s.id,
         name: `${s.firstName} ${s.lastName}`.trim(),
         studentId: s.id.length > 12 ? `STU-${s.id.slice(-6).toUpperCase()}` : s.id,
         email: s.email,
         phone: s.phone ?? undefined,
-      }))
+      })))
+    } else {
+      list.push(...mockStudents.map((s) => ({
+        id: s.id,
+        name: s.name,
+        studentId: s.studentId,
+        email: s.email,
+        phone: s.phone,
+      })))
     }
-    return mockStudents.map((s) => ({
-      id: s.id,
-      name: s.name,
-      studentId: s.studentId,
-      email: s.email,
-      phone: s.phone,
-    }))
-  }, [apiStudentData, mockStudents])
 
-  // ── Counselors (live from users API or mock) ────────────────────────────
+    // If viewing an appointment whose student is not yet loaded in search results, preserve display
+    if (appointment?.studentId && !list.some((s) => s.id === appointment.studentId)) {
+      list.unshift({
+        id: appointment.studentId,
+        name: appointment.studentName || 'Student',
+        studentId: appointment.studentId.length > 12 ? `STU-${appointment.studentId.slice(-6).toUpperCase()}` : appointment.studentId,
+      })
+    }
+
+    return list
+  }, [apiStudentData, mockStudents, appointment])
+
+  // ── Authorized Counselors (live from user API) ──────────────────────────
+  const { data: realCounselors = [], isLoading: isLoadingCounselors } = useCounselors()
   const users = useUsersStore((s) => s.users)
   const fetchUsers = useUsersStore((s) => s.fetchUsers)
+
   const usedCounselors = useMemo(() => {
+    if (realCounselors && realCounselors.length > 0) {
+      return realCounselors.map((c) => ({ id: c.id, name: c.name, email: c.email }))
+    }
     if (!isMockMode()) {
       return users
         .filter((u) => u.role === 'counselor' || u.role === 'super_admin' || u.role === 'front_desk')
         .map((u) => ({ id: u.id, name: u.name, email: u.email }))
     }
-    return mockCounselors.map((c) => ({ id: c.id, name: c.name, email: c.email }))
-  }, [users])
+    return []
+  }, [realCounselors, users])
 
-  // Fetch staff users when dialog opens (live mode)
+  // Fetch staff users when dialog opens (live mode fallback)
   useEffect(() => {
     if (open && !isMockMode()) {
       fetchUsers()
@@ -190,8 +177,7 @@ export function AppointmentDialog({
     handleSubmit,
     control,
     reset,
-    watch,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema) as any,
     defaultValues: {
@@ -232,117 +218,20 @@ export function AppointmentDialog({
     }
   }, [open, appointment, defaultDate, reset])
 
-  function onSubmit(data: FormData) {
-    const student = availableStudents.find((s) => s.id === data.studentId)
-    const selectedCounselors = usedCounselors.filter((c) => data.counselorIds.includes(c.id))
-    const primaryCounselor = selectedCounselors[0]
-    const start = `${data.date}T${data.startTime}:00`
-    const end = `${data.date}T${data.endTime}:00`
-    const type = data.type
-    const durationMin = Math.max(
-      1,
-      Math.round((new Date(end).getTime() - new Date(start).getTime()) / 60000)
-    )
-
-    if (!isMockMode()) {
-      const backendType = TYPE_TO_BACKEND[data.type]
-      const backendMode = LOCATION_TO_BACKEND[data.location]
-      if (isEditing) {
-        updateAppointmentApi.mutate(
-          {
-            id: appointment.id,
-            body: {
-              studentId: data.studentId,
-              counselorId: primaryCounselor?.id,
-              type: backendType,
-              datetime: start,
-              durationMin,
-              meetingMode: backendMode,
-            },
-          },
-          { onSuccess: () => onOpenChange(false) }
-        )
-      } else {
-        createAppointmentApi.mutate(
-          {
-            studentId: data.studentId,
-            counselorId: primaryCounselor?.id,
-            type: backendType,
-            datetime: start,
-            durationMin,
-            meetingMode: backendMode,
-          },
-          { onSuccess: () => onOpenChange(false) }
-        )
-      }
-      return
-    }
-
-    // Mock mode: update local Zustand store
-    const studentName = student?.name ?? 'Student'
-    if (isEditing) {
-      updateAppointmentMock(appointment.id, {
-        studentId: data.studentId,
-        studentName,
-        counselorId: primaryCounselor?.id ?? '',
-        counselorName: primaryCounselor?.name ?? '',
-        counselorIds: selectedCounselors.map((c) => c.id),
-        counselorNames: selectedCounselors.map((c) => c.name),
-        type,
-        start,
-        end,
-        location: data.location,
-        title: `${type.replace('_', ' ')} — ${studentName}`,
-      })
-    } else {
-      addAppointmentMock({
-        studentId: data.studentId,
-        studentName,
-        counselorId: primaryCounselor?.id ?? '',
-        counselorName: primaryCounselor?.name ?? '',
-        counselorIds: selectedCounselors.map((c) => c.id),
-        counselorNames: selectedCounselors.map((c) => c.name),
-        type,
-        start,
-        end,
-        location: data.location,
-        status: 'scheduled',
-        title: `${type.replace('_', ' ')} — ${studentName}`,
-      })
-    }
-    onOpenChange(false)
+  // ── Strictly Guarded Handlers (Phase 4A Read-Only) ──────────────────────
+  function onSubmit(_data: FormData) {
+    toast.warning('Phase 4A Read-Only Mode: Appointment scheduling and editing are locked to protect live business data.')
+    return
   }
 
   function handleCancel() {
-    if (appointment) {
-      if (!isMockMode()) {
-        changeStatusApi.mutate(
-          { id: appointment.id, status: 'CANCELLED' },
-          { onSuccess: () => onOpenChange(false) }
-        )
-      } else {
-        cancelAppointmentMock(appointment.id)
-        onOpenChange(false)
-      }
-    }
+    toast.warning('Phase 4A Read-Only Mode: Appointment cancellations and status modifications are locked.')
+    return
   }
 
   function handleDelete() {
-    if (appointment) {
-      if (window.confirm(`Are you sure you want to permanently delete this appointment for "${appointment.studentName}"?`)) {
-        if (!isMockMode()) {
-          appointmentApi.remove(appointment.id)
-            .then(() => {
-              onOpenChange(false)
-              toast.success('Appointment deleted')
-            })
-            .catch((err: Error) => toast.error(err.message || 'Failed to delete appointment'))
-        } else {
-          removeAppointmentMock(appointment.id)
-          onOpenChange(false)
-        }
-      }
-    }
+    toast.warning('Phase 4A Read-Only Mode: Deleting live appointments is locked.')
+    return
   }
 
   const isCancellable = isEditing && appointment?.status !== 'cancelled' && appointment?.status !== 'completed'
@@ -354,7 +243,7 @@ export function AppointmentDialog({
         <DialogHeader className="border-b border-border/60 px-6 py-4">
           <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <CalendarClock className="size-3.5" />
-            {isEditing ? 'Edit Appointment' : 'New Appointment'}
+            {isEditing ? 'Appointment Details' : 'New Appointment (Read-Only)'}
           </div>
           <DialogTitle className="mt-1 text-lg font-bold">
             {isEditing ? appointment.title : 'Schedule a Session'}
@@ -379,9 +268,20 @@ export function AppointmentDialog({
           )}
         </DialogHeader>
 
+        {/* Phase 4A Read-Only Banner */}
+        <div className="mx-6 mt-4 flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50/90 p-3 text-xs text-amber-800 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-300">
+          <ShieldAlert className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+          <div className="space-y-0.5">
+            <span className="font-semibold">Phase 4A Read-Only Mode:</span>
+            <p className="text-[11px] leading-relaxed text-amber-700 dark:text-amber-300">
+              Appointment scheduling, editing, status changes, and notifications are locked to protect live client data and prevent automated emails.
+            </p>
+          </div>
+        </div>
+
         {/* Body */}
-        <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[60vh]">
-          <div className="space-y-4 px-6 py-5">
+        <form onSubmit={handleSubmit(onSubmit)} className="overflow-y-auto max-h-[55vh]">
+          <div className="space-y-4 px-6 py-4">
             {/* Student Picker */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-foreground">Student</label>
@@ -397,32 +297,16 @@ export function AppointmentDialog({
                     onSearchChange={setStudentSearch}
                     searching={isMockMode() ? false : isLoadingStudents}
                     placeholder={isLoadingStudents ? "Loading students..." : "Search student by name or ID"}
-                    emptyMessage={isErrorStudents ? "Failed to load students. Check your connection." : (isLoadingStudents ? "Loading students..." : "No students found")}
-                    disabled={!canManage}
+                    emptyMessage={isErrorStudents ? "Failed to load students." : (isLoadingStudents ? "Loading students..." : "No students found")}
+                    disabled={true}
                   />
                 )}
               />
               {errors.studentId && (
                 <p className="text-[11px] text-danger-600 flex items-center gap-1">
-                  <AlertTriangle className="size-3" />{errors.studentId.message}
+                  {errors.studentId.message}
                 </p>
               )}
-              {(() => {
-                const selId = watch('studentId')
-                const selStu = availableStudents.find((s) => s.id === selId)
-                if (!selStu) return null
-                return selStu.email ? (
-                  <div className="mt-1 flex items-center gap-2 rounded-md bg-emerald-500/10 p-2.5 text-[11px] text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                    <Mail className="size-3.5 shrink-0 text-emerald-500" />
-                    <span>Automated appointment email will be sent to <strong>{selStu.email}</strong>.</span>
-                  </div>
-                ) : (
-                  <div className="mt-1 flex items-center gap-2 rounded-md bg-amber-500/10 p-2.5 text-[11px] text-amber-700 dark:text-amber-300 border border-amber-500/20">
-                    <Phone className="size-3.5 shrink-0 text-amber-500" />
-                    <span><strong>No email registered:</strong> Frontdesk officer must manually call {selStu.phone ? <strong>{selStu.phone}</strong> : 'the student'} to confirm this appointment.</span>
-                  </div>
-                )
-              })()}
             </div>
 
             {/* Counselors Picker */}
@@ -439,13 +323,15 @@ export function AppointmentDialog({
                         <PopoverTrigger asChild>
                           <button
                             type="button"
-                            disabled={!canManage}
-                            className="flex h-10 w-full items-center justify-between rounded-md border border-border/70 bg-background px-3 text-left text-sm shadow-soft disabled:opacity-75 disabled:cursor-not-allowed"
+                            disabled={true}
+                            className="flex h-10 w-full items-center justify-between rounded-md border border-border/70 bg-background px-3 text-left text-sm shadow-soft opacity-75 cursor-not-allowed"
                           >
                             <span className="truncate text-foreground">
-                              {selectedCounselors.length > 0
+                              {isLoadingCounselors
+                                ? 'Loading counselors...'
+                                : selectedCounselors.length > 0
                                 ? selectedCounselors.map((c) => c.name).join(', ')
-                                : 'Select counselors…'}
+                                : 'No counselor selected'}
                             </span>
                             <ChevronDown className="size-4 text-muted-foreground" />
                           </button>
@@ -455,20 +341,13 @@ export function AppointmentDialog({
                             {usedCounselors.map((c) => {
                               const checked = field.value.includes(c.id)
                               return (
-                                <button
+                                <div
                                   key={c.id}
-                                  type="button"
-                                  className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm hover:bg-muted"
-                                  onClick={() => {
-                                    const next = checked
-                                      ? field.value.filter((id) => id !== c.id)
-                                      : [...field.value, c.id]
-                                    field.onChange(next)
-                                  }}
+                                  className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left text-sm text-muted-foreground"
                                 >
                                   <span>{c.name}</span>
                                   {checked && <Check className="size-4 text-primary" />}
-                                </button>
+                                </div>
                               )
                             })}
                           </div>
@@ -478,11 +357,6 @@ export function AppointmentDialog({
                   )
                 }}
               />
-              {errors.counselorIds && (
-                <p className="text-[11px] text-danger-600 flex items-center gap-1">
-                  <AlertTriangle className="size-3" />{errors.counselorIds.message}
-                </p>
-              )}
             </div>
 
             {/* Type + Location Row */}
@@ -493,8 +367,8 @@ export function AppointmentDialog({
                   name="type"
                   control={control}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange} disabled={!canManage}>
-                      <SelectTrigger>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={true}>
+                      <SelectTrigger className="opacity-75 cursor-not-allowed">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -512,8 +386,8 @@ export function AppointmentDialog({
                   name="location"
                   control={control}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange} disabled={!canManage}>
-                      <SelectTrigger>
+                    <Select value={field.value} onValueChange={field.onChange} disabled={true}>
+                      <SelectTrigger className="opacity-75 cursor-not-allowed">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -540,15 +414,10 @@ export function AppointmentDialog({
               <label className="text-xs font-semibold text-foreground">Date</label>
               <Input
                 type="date"
-                className={`h-9 text-sm ${errors.date ? 'border-danger-500' : ''}`}
+                className="h-9 text-sm opacity-75 cursor-not-allowed"
                 {...register('date')}
-                disabled={!canManage}
+                disabled={true}
               />
-              {errors.date && (
-                <p className="text-[11px] text-danger-600 flex items-center gap-1">
-                  <AlertTriangle className="size-3" />{errors.date.message}
-                </p>
-              )}
             </div>
 
             {/* Start / End Time Row */}
@@ -557,79 +426,72 @@ export function AppointmentDialog({
                 <label className="text-xs font-semibold text-foreground">Start Time</label>
                 <Input
                   type="time"
-                  className={`h-9 text-sm ${errors.startTime ? 'border-danger-500' : ''}`}
+                  className="h-9 text-sm opacity-75 cursor-not-allowed"
                   {...register('startTime')}
-                  disabled={!canManage}
+                  disabled={true}
                 />
-                {errors.startTime && (
-                  <p className="text-[11px] text-danger-600 flex items-center gap-1">
-                    <AlertTriangle className="size-3" />{errors.startTime.message}
-                  </p>
-                )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">End Time</label>
                 <Input
                   type="time"
-                  className={`h-9 text-sm ${errors.endTime ? 'border-danger-500' : ''}`}
+                  className="h-9 text-sm opacity-75 cursor-not-allowed"
                   {...register('endTime')}
-                  disabled={!canManage}
+                  disabled={true}
                 />
-                {errors.endTime && (
-                  <p className="text-[11px] text-danger-600 flex items-center gap-1">
-                    <AlertTriangle className="size-3" />{errors.endTime.message}
-                  </p>
-                )}
               </div>
             </div>
           </div>
 
           {/* Footer */}
           <DialogFooter className="border-t border-border/60 bg-muted/30 px-6 py-4">
-            {!canManage ? (
-              <Button type="button" size="sm" onClick={() => onOpenChange(false)}>
-                Close
-              </Button>
-            ) : (
-              <>
-                <div className="mr-auto flex items-center gap-2">
-                  {isEditing && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-danger-600 hover:bg-danger-50 hover:text-danger-700 h-8 px-2 text-xs"
-                      onClick={handleDelete}
-                    >
-                      <Trash2 className="size-3.5 mr-1" />
-                      Delete
-                    </Button>
-                  )}
-                  {isCancellable && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="text-danger-600 border-danger-200 hover:bg-danger-50 hover:border-danger-400 h-8 text-xs"
-                      onClick={handleCancel}
-                    >
-                      <X className="size-3.5 mr-1" />
-                      Cancel
-                    </Button>
-                  )}
-                </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-                  Discard
+            <div className="mr-auto flex items-center gap-2">
+              {isEditing && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={true}
+                  className="text-muted-foreground h-8 px-2 text-xs opacity-50 cursor-not-allowed"
+                  title="Deleting appointments is locked in Phase 4A Read-Only Mode"
+                  onClick={handleDelete}
+                >
+                  <Lock className="size-3.5 mr-1" />
+                  Delete
                 </Button>
-                <Button type="submit" size="sm" disabled={isSubmitting}>
-                  <Plus className="size-3.5 mr-1" />
-                  {isEditing ? 'Save Changes' : 'Schedule Appointment'}
+              )}
+              {isCancellable && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={true}
+                  className="text-muted-foreground h-8 text-xs opacity-50 cursor-not-allowed"
+                  title="Canceling appointments is locked in Phase 4A Read-Only Mode"
+                  onClick={handleCancel}
+                >
+                  <Lock className="size-3.5 mr-1" />
+                  Cancel
                 </Button>
-              </>
-            )}
+              )}
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={true}
+              className="opacity-60 cursor-not-allowed"
+              title="Mutation actions locked in Phase 4A Read-Only Mode"
+            >
+              <Lock className="size-3.5 mr-1" />
+              {isEditing ? 'Save Changes (Locked)' : 'Schedule (Locked)'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   )
 }
+

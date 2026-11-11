@@ -27,6 +27,12 @@ router.get(
     appointmentController.list
 );
 
+router.get(
+    "/upcoming-followups",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    appointmentController.upcomingFollowUps
+);
+
 router.get("/:id", appointmentController.getOne);
 
 router.put(

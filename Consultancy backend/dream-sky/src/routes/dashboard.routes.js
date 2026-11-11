@@ -1,6 +1,7 @@
 const { Router } = require("express");
 const { requireAuth } = require("../middlewares/auth.middleware");
-const { getSummary, getCounselorSummary } = require("../controllers/dashboard.controller");
+const { requireRole } = require("../middlewares/rbac.middleware");
+const { getSummary, getCounselorSummary, getAdminMonitoring } = require("../controllers/dashboard.controller");
 
 const router = Router();
 
@@ -20,5 +21,12 @@ router.get("/summary", getSummary);
  * Accessible by: SUPER_ADMIN, COUNSELOR (own stats)
  */
 router.get("/counselor-summary", getCounselorSummary);
+
+/**
+ * GET /dashboard/admin-monitoring
+ * Returns comprehensive CRM stage breakdown & overdue task monitoring.
+ * Accessible by: SUPER_ADMIN, BRANCH_ADMIN
+ */
+router.get("/admin-monitoring", requireRole("SUPER_ADMIN", "BRANCH_ADMIN"), getAdminMonitoring);
 
 module.exports = router;

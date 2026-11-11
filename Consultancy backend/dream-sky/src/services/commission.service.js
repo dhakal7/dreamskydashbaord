@@ -97,6 +97,26 @@ async function generateCommission(
     return null;
   }
 
+  // Phase 8C Part D: Prevent duplicate commission generation for the same student, rule, and recipient.
+  // Note: Without a DB-level unique constraint on (studentId, ruleId, recipientId), concurrent requests
+  // could theoretically race past this findFirst check; this application-level check prevents duplicates
+  // in normal sequential execution (retries, duplicate stage events, or idempotent webhook re-deliveries).
+  const existingCommission = await prisma.commission.findFirst({
+    where: {
+      studentId,
+      ruleId: matchedRule.id,
+      recipientId: recipientUserId,
+      status: { not: "CANCELLED" },
+    },
+  });
+
+  if (existingCommission) {
+    console.log(
+      `[Commission Service] Commission already exists for student ${studentId}, rule ${matchedRule.id}, recipient ${recipientUserId} (ID: ${existingCommission.id}). Reusing existing commission.`
+    );
+    return existingCommission;
+  }
+
   let computedAmount = 0;
 
   if (matchedRule.type === "FIXED") {
@@ -327,9 +347,19 @@ async function listCommissions(query = {}) {
       select: { id: true },
     });
     const branchUserIds = usersInBranch.map((u) => u.id);
+
+    const unassignedUsers = await prisma.user.findMany({
+      where: { branchId: null },
+      select: { id: true },
+    });
+    const unassignedUserIds = unassignedUsers.map((u) => u.id);
+
     where.OR = [
-      { rule: { scopeBranchId: branchId } },
       { recipientId: { in: branchUserIds } },
+      {
+        recipientId: { in: unassignedUserIds },
+        rule: { scopeBranchId: branchId },
+      },
     ];
   }
 
@@ -343,7 +373,7 @@ async function listCommissions(query = {}) {
         },
       },
       recipient: {
-        select: { id: true, firstName: true, lastName: true, email: true, role: true },
+        select: { id: true, firstName: true, lastName: true, email: true, role: true, branchId: true },
       },
       student: {
         select: { id: true, firstName: true, lastName: true, email: true },
@@ -367,7 +397,7 @@ async function getCommissionById(id) {
         },
       },
       recipient: {
-        select: { id: true, firstName: true, lastName: true, email: true, role: true },
+        select: { id: true, firstName: true, lastName: true, email: true, role: true, branchId: true },
       },
       student: {
         select: { id: true, firstName: true, lastName: true, email: true },

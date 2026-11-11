@@ -178,7 +178,16 @@ axiosInstance.interceptors.response.use(
   (response: AxiosResponse<DreamSkyEnvelope<unknown>>) => {
     // Pass through non-envelope responses (e.g. file downloads) unchanged
     if (response.data && typeof response.data === 'object' && 'success' in response.data) {
-      return response.data.data as unknown as AxiosResponse
+      const data: any = response.data.data
+      if (Array.isArray(data)) {
+        if (typeof (response.data as any).total === 'number') {
+          ;(data as Record<string, any>).total = (response.data as any).total
+        }
+        if ((response.data as any).pagination) {
+          ;(data as Record<string, any>).pagination = (response.data as any).pagination
+        }
+      }
+      return data as unknown as AxiosResponse
     }
     return response.data as unknown as AxiosResponse
   },
@@ -193,6 +202,19 @@ axiosInstance.interceptors.response.use(
 
     // Only attempt refresh once per original request and skip for login/refresh calls
     if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
+      const isAccountInactive =
+        error.response?.data?.code === 'ACCOUNT_INACTIVE' ||
+        String(error.response?.data?.message || '').includes('inactive or suspended')
+
+      if (isAccountInactive) {
+        tokenStore.clearAll()
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('dreamsky-authenticated')
+          localStorage.removeItem('dreamsky-user')
+        }
+        return Promise.reject(new Error(error.response?.data?.message || 'Account inactive or suspended.'))
+      }
+
       const refreshToken = tokenStore.getRefresh()
 
       if (!refreshToken) {
@@ -239,15 +261,20 @@ axiosInstance.interceptors.response.use(
         } else {
           throw new Error('No access token in refresh response')
         }
-      } catch {
+      } catch (refreshErr: any) {
         isRefreshing = false
         refreshSubscribers = []
-        tokenStore.clearAll()
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('dreamsky-authenticated')
-          localStorage.removeItem('dreamsky-user')
+        const refreshStatus = refreshErr?.response?.status
+        const isAuthError = refreshStatus === 401 || refreshStatus === 403 || refreshErr?.message === 'No access token in refresh response'
+        if (isAuthError) {
+          tokenStore.clearAll()
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('dreamsky-authenticated')
+            localStorage.removeItem('dreamsky-user')
+          }
+          return Promise.reject(new Error('Refresh token invalid'))
         }
-        return Promise.reject(new Error('Refresh token invalid'))
+        return Promise.reject(refreshErr)
       }
     }
 

@@ -71,7 +71,7 @@ export const useFollowUpsStore = create<FollowUpsState>((set) => ({
     set((state) => {
       const followup = state.followUps.find((f) => f.id === id)
       if (followup) {
-        toast.success(`Follow-up for ${followup.studentName} removed.`)
+        toast.success(`[Mock] Follow-up reminder for ${followup.studentName} cancelled.`)
       }
       return { followUps: state.followUps.filter((f) => f.id !== id) }
     }),

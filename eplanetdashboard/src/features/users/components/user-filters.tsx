@@ -4,7 +4,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import type { Role } from '@/types'
-import { roleLabels } from '@/mock'
+import { roleLabels } from '@/constants/roles'
+import { useAuthStore } from '@/store/auth-store'
 
 interface UserFiltersProps {
   roleFilter: string
@@ -13,12 +14,15 @@ interface UserFiltersProps {
   setStatusFilter: (v: string) => void
 }
 
-const allRoles: Role[] = ['super_admin', 'front_desk', 'counselor', 'teacher', 'referral_agent']
+const allRoles: Role[] = ['super_admin', 'branch_admin', 'front_desk', 'counselor', 'teacher', 'referral_agent']
+const branchAdminOperationalRoles: Role[] = ['front_desk', 'counselor', 'teacher', 'referral_agent']
 
 export function UserFiltersBar({
   roleFilter, setRoleFilter,
   statusFilter, setStatusFilter,
 }: UserFiltersProps) {
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const visibleRoles = currentUser?.role === 'branch_admin' ? branchAdminOperationalRoles : allRoles
   const hasFilters = roleFilter !== 'all' || statusFilter !== 'all'
 
   return (
@@ -29,7 +33,7 @@ export function UserFiltersBar({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Roles</SelectItem>
-          {allRoles.map((r) => (
+          {visibleRoles.map((r) => (
             <SelectItem key={r} value={r}>{roleLabels[r]}</SelectItem>
           ))}
         </SelectContent>

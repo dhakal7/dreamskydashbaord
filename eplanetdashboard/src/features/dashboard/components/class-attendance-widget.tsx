@@ -11,7 +11,7 @@ import { classes, enrollments as mockEnrollments } from '@/mock'
 import type { ClassSession, Enrollment } from '@/types'
 
 export function ClassAttendanceWidget() {
-  const { data: liveClassesData } = useClasses()
+  const { data: liveClassesData, isLoading: isClassesLoading, isError: isClassesError } = useClasses()
   const [selectedClassId, setSelectedClassId] = useState<string>('')
 
   const activeClasses = useMemo(() => {
@@ -21,31 +21,53 @@ export function ClassAttendanceWidget() {
         : (liveClassesData as any)?.classes || []
 
       return rawList.map((c: any) => {
-        const storeEnrollments = mockEnrollments.filter((e) => e.classId === c.id || e.classId === c.name)
-        const classEnrollments = (Array.isArray(c.enrollments) && c.enrollments.length > 0)
-          ? c.enrollments.map((e: any) => ({
-              id: e.id,
-              classId: c.id,
-              studentId: e.studentId,
-              studentName: e.student ? `${e.student.firstName || ''} ${e.student.lastName || ''}`.trim() : 'Student',
-              enrolledAt: e.enrolledAt || 'Recently',
-              attendancePct: 85,
-            }))
-          : storeEnrollments
-        const totalEnrolled = classEnrollments.length || c.capacity || 15
-        const avgAttendance = 88
+        const rawEnrollments = Array.isArray(c.enrollments) ? c.enrollments : []
+        const rawAttendance = Array.isArray(c.attendanceRecords) ? c.attendanceRecords : []
+
+        const classEnrollments = rawEnrollments.map((e: any) => {
+          const studentRecords = rawAttendance.filter((r: any) => r.studentId === e.studentId)
+          const presentCount = studentRecords.filter((r: any) => r.status === 'PRESENT' || r.status === 'LATE').length
+          const attendancePct = studentRecords.length > 0
+            ? Math.round((presentCount / studentRecords.length) * 100)
+            : (typeof e.attendancePct === 'number' ? e.attendancePct : null)
+
+          return {
+            id: e.id,
+            classId: c.id,
+            studentId: e.studentId,
+            studentName: e.student ? `${e.student.firstName || ''} ${e.student.lastName || ''}`.trim() || 'Student' : 'Student',
+            enrolledAt: e.enrolledAt ? String(e.enrolledAt).slice(0, 10) : 'Enrolled',
+            attendancePct,
+          }
+        })
+
+        const totalEnrolled = classEnrollments.length
+        const validPcts = classEnrollments
+          .map((e: any) => e.attendancePct)
+          .filter((pct: any): pct is number => typeof pct === 'number')
+        const avgAttendance = validPcts.length > 0
+          ? Math.round(validPcts.reduce((acc: number, v: number) => acc + v, 0) / validPcts.length)
+          : null
+
+        const presentToday = typeof c.presentToday === 'number'
+          ? c.presentToday
+          : (avgAttendance !== null ? Math.round(totalEnrolled * (avgAttendance / 100)) : null)
+        const absentToday = typeof c.absentToday === 'number'
+          ? c.absentToday
+          : (presentToday !== null ? Math.max(0, totalEnrolled - presentToday) : null)
+
         return {
           id: c.id,
           name: c.name,
-          subject: c.subject || 'IELTS',
-          teacherName: c.teacher ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim() : 'Assigned Instructor',
-          schedule: typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Mon-Fri (Morning)',
-          capacity: c.capacity || 25,
+          subject: c.subject || 'General',
+          teacherName: c.teacher ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim() || 'Assigned Instructor' : 'Unassigned',
+          schedule: typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Schedule TBD',
+          capacity: typeof c.capacity === 'number' ? c.capacity : null,
           classEnrollments,
           totalEnrolled,
           avgAttendance,
-          presentToday: Math.round(totalEnrolled * (avgAttendance / 100)),
-          absentToday: totalEnrolled - Math.round(totalEnrolled * (avgAttendance / 100)),
+          presentToday,
+          absentToday,
         }
       })
     }
@@ -95,10 +117,18 @@ export function ClassAttendanceWidget() {
       </CardHeader>
 
       <CardContent className="space-y-4 pt-4">
+        {isClassesLoading && !isMockMode() ? (
+          <p className="py-6 text-center text-xs text-muted-foreground">Loading class attendance...</p>
+        ) : isClassesError && !isMockMode() ? (
+          <p className="py-6 text-center text-xs text-danger-600">Unable to load class attendance from the server.</p>
+        ) : activeClasses.length === 0 ? (
+          <p className="py-6 text-center text-xs text-muted-foreground">No active classes available.</p>
+        ) : null}
+
         {/* Class Selector Badges */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {activeClasses.map((cls: any) => {
-            const isSelected = cls.id === selectedClassId
+            const isSelected = cls.id === (selectedClass?.id || selectedClassId)
             return (
               <button
                 key={cls.id}
@@ -113,7 +143,7 @@ export function ClassAttendanceWidget() {
                 <BookOpen className="size-3.5" />
                 <span>{cls.name}</span>
                 <Badge variant={isSelected ? 'default' : 'secondary'} className="text-[10px] py-0 px-1.5 font-tabular">
-                  {cls.avgAttendance}%
+                  {cls.avgAttendance !== null && cls.avgAttendance !== undefined ? `${cls.avgAttendance}%` : `${cls.totalEnrolled} Enrolled`}
                 </Badge>
               </button>
             )
@@ -139,11 +169,11 @@ export function ClassAttendanceWidget() {
               <div className="flex items-center gap-3 text-xs">
                 <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 px-2.5 py-1 rounded-md">
                   <CheckCircle className="size-3.5 text-emerald-600" />
-                  <span className="font-semibold">{selectedClass.presentToday}</span> Present
+                  <span className="font-semibold">{selectedClass.presentToday ?? 'N/A'}</span> Present
                 </div>
                 <div className="flex items-center gap-1.5 bg-rose-50 border border-rose-200 text-rose-700 px-2.5 py-1 rounded-md">
                   <XCircle className="size-3.5 text-rose-600" />
-                  <span className="font-semibold">{selectedClass.absentToday}</span> Absent
+                  <span className="font-semibold">{selectedClass.absentToday ?? 'N/A'}</span> Absent
                 </div>
                 <div className="flex items-center gap-1.5 bg-sky-50 border border-sky-200 text-sky-700 px-2.5 py-1 rounded-md">
                   <Users className="size-3.5 text-sky-600" />
@@ -165,10 +195,11 @@ export function ClassAttendanceWidget() {
                 </p>
               ) : (
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {selectedClass.classEnrollments.map((enr: Enrollment) => {
-                    const pct = enr.attendancePct || 80
-                    const isGood = pct >= 80
-                    const isModerate = pct >= 65 && pct < 80
+                  {selectedClass.classEnrollments.map((enr: any) => {
+                    const hasPct = typeof enr.attendancePct === 'number'
+                    const pct = hasPct ? enr.attendancePct : null
+                    const isGood = pct !== null && pct >= 80
+                    const isModerate = pct !== null && pct >= 65 && pct < 80
 
                     return (
                       <div
@@ -186,14 +217,16 @@ export function ClassAttendanceWidget() {
                         <div className="text-right shrink-0">
                           <Badge
                             className={`text-[10px] py-0 font-tabular font-semibold ${
-                              isGood
+                              pct === null
+                                ? 'bg-muted text-muted-foreground border-border'
+                                : isGood
                                 ? 'bg-emerald-500/15 text-emerald-700 border-emerald-300'
                                 : isModerate
                                 ? 'bg-amber-500/15 text-amber-700 border-amber-300'
                                 : 'bg-rose-500/15 text-rose-700 border-rose-300'
                             }`}
                           >
-                            {pct}% Att.
+                            {pct !== null ? `${pct}% Att.` : 'No log'}
                           </Badge>
                         </div>
                       </div>

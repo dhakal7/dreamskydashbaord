@@ -1,13 +1,16 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { ChevronDown, ChevronRight, Send } from 'lucide-react'
+import { ChevronDown, ChevronRight, Send, Loader2 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { useAuthStore } from '@/store/auth-store'
 import { hasPermission } from '@/lib/rbac'
+import { api, isMockMode } from '@/lib/api-client'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { useProfileNotesStore } from '../profile-notes-store'
 import type { ProfileNote, ProfileNoteCategory } from '../profile-notes-store'
 
@@ -21,23 +24,91 @@ const categoryMeta: Record<ProfileNoteCategory, { label: string; variant: 'warni
 
 export function ProfileNotes({ studentId }: { studentId: string }) {
   const currentUser = useAuthStore((s) => s.currentUser)
-  const { notes, addNote } = useProfileNotesStore()
+  const queryClient = useQueryClient()
+  const { notes: mockNotes, addNote: addMockNote } = useProfileNotesStore()
 
   const [expanded, setExpanded] = useState(false)
   const [message, setMessage] = useState('')
   const [category, setCategory] = useState<ProfileNoteCategory>('general')
 
-  const studentNotes = notes
-    .filter((n) => n.studentId === studentId)
-    .sort((a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf())
+  // Live queries from backend CommunicationLog timeline
+  const { data: timelineData } = useQuery({
+    queryKey: ['student-timeline', studentId],
+    queryFn: async () => {
+      const res: any = await api.get(`/follow-ups/student/${studentId}`)
+      return Array.isArray(res) ? res : res?.data || []
+    },
+    enabled: !isMockMode() && Boolean(studentId),
+  })
 
-  const canPost = hasPermission(currentUser.role, 'documents.manage')
+  const postMutation = useMutation({
+    mutationFn: async (payload: { content: string; channel: string; direction: string; studentId: string }) => {
+      return api.post('/follow-ups', payload)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['student-timeline', studentId] })
+      toast.success('Note posted successfully')
+      setMessage('')
+    },
+    onError: (err: any) => {
+      toast.error(err?.message || 'Failed to post note')
+    },
+  })
 
-  const handlePost = () => {
+  const studentNotes: ProfileNote[] = useMemo(() => {
+    if (isMockMode()) {
+      return mockNotes
+        .filter((n) => n.studentId === studentId)
+        .sort((a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf())
+    }
+
+    const list = Array.isArray(timelineData) ? timelineData : []
+    return list.map((item: any) => {
+      let cat: ProfileNoteCategory = 'general'
+      if (item.content?.toLowerCase().includes('document')) cat = 'document'
+      else if (item.nextFollowUpAt || item.channel === 'PHONE') cat = 'follow_up'
+
+      const authorName = item.author
+        ? `${item.author.firstName || ''} ${item.author.lastName || ''}`.trim() || 'Staff'
+        : 'System'
+      const authorRole = (item.author?.role?.toLowerCase() as any) || 'counselor'
+
+      return {
+        id: item.id,
+        studentId: item.studentId,
+        authorName,
+        authorRole,
+        message: item.content,
+        category: cat,
+        createdAt: item.createdAt,
+      }
+    })
+  }, [isMockMode(), mockNotes, timelineData, studentId])
+
+  const canPost = hasPermission(currentUser.role, 'documents.manage') || hasPermission(currentUser.role, 'leads.manage')
+
+  const handlePost = async () => {
     const msg = message.trim()
     if (!msg) return
-    addNote(studentId, currentUser.name, currentUser.role, msg, category)
-    setMessage('')
+
+    if (isMockMode()) {
+      addMockNote(studentId, currentUser.name, currentUser.role, msg, category)
+      setMessage('')
+      return
+    }
+
+    const channelMap: Record<ProfileNoteCategory, string> = {
+      general: 'IN_PERSON',
+      document: 'IN_PERSON',
+      follow_up: 'PHONE',
+    }
+
+    postMutation.mutate({
+      studentId,
+      channel: channelMap[category] || 'IN_PERSON',
+      direction: 'INBOUND',
+      content: msg,
+    })
   }
 
   return (
@@ -111,9 +182,9 @@ export function ProfileNotes({ studentId }: { studentId: string }) {
                   size="sm"
                   className="h-8 gap-1.5"
                   onClick={handlePost}
-                  disabled={!message.trim()}
+                  disabled={!message.trim() || postMutation.isPending}
                 >
-                  <Send className="size-3.5" />
+                  {postMutation.isPending ? <Loader2 className="size-3.5 animate-spin" /> : <Send className="size-3.5" />}
                   Post
                 </Button>
               </div>

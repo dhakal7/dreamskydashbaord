@@ -17,7 +17,7 @@ import { formatCurrency } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth-store'
 import { useAppointmentsStore } from '@/features/appointments/store'
 import { useDocumentsStore } from '@/features/documents/store'
-import { useReviewDocument, useDownloadDocument } from '@/hooks/use-documents'
+import { useReviewDocument, useDownloadDocument, useDocuments } from '@/hooks/use-documents'
 import type { StudentDocument } from '@/types'
 import { isMockMode } from '@/lib/api-client'
 import { useApplications } from '@/hooks/use-applications'
@@ -30,6 +30,7 @@ export function StudentDashboard() {
   // Live API data (only active in real mode)
   const { data: apiApps } = useApplications(linkedId ? { studentId: linkedId } : {})
   const { data: apiVisa } = useVisaCases()
+  const { data: apiDocsData } = useDocuments(linkedId ? { studentId: linkedId } : {})
 
   const appointments = useAppointmentsStore((s) => s.appointments)
   const { documents, updateDocumentStatus } = useDocumentsStore()
@@ -41,7 +42,8 @@ export function StudentDashboard() {
 
   // Resolve applications: live API in real mode, mock store in mock mode
   const liveApplications = useMemo(() => {
-    if (isMockMode() || !apiApps) return mockData.applications
+    if (isMockMode()) return mockData.applications
+    if (!apiApps) return []
     return (apiApps.applications ?? []).map((app) => ({
       id: app.id,
       applicationRef: app.id,
@@ -64,7 +66,8 @@ export function StudentDashboard() {
 
   // Resolve visa case: live API in real mode, mock store in mock mode
   const liveVisaCase = useMemo(() => {
-    if (isMockMode() || !apiVisa) return mockData.visaCase
+    if (isMockMode()) return mockData.visaCase
+    if (!apiVisa) return null
     const myCase = (apiVisa.visaCases ?? []).find(
       (v) => v.studentId === linkedId || (v as any).student?.id === linkedId
     )
@@ -76,17 +79,47 @@ export function StudentDashboard() {
     }
   }, [apiVisa, mockData.visaCase, linkedId])
 
-  const data = {
-    ...mockData,
-    applications: liveApplications,
-    visaCase: liveVisaCase,
-  }
+  const isMock = isMockMode()
+  const data = isMock
+    ? {
+        ...mockData,
+        applications: liveApplications,
+        visaCase: liveVisaCase,
+      }
+    : {
+        student: { name: useAuthStore.getState().currentUser.name },
+        applications: liveApplications,
+        visaCase: liveVisaCase,
+        appointments: [],
+        feeStatus: null,
+      }
 
   const totalTuition = data.applications.reduce((s, a) => s + a.tuitionUsd, 0)
-  const myDocuments = documents.filter((d) => d.studentId === linkedId || !linkedId)
-  const myAppointments = appointments
-    .filter((a) => a.studentId === linkedId)
-    .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+  const myDocuments = useMemo(() => {
+    if (isMock || !apiDocsData) {
+      return isMock ? documents.filter((d) => d.studentId === linkedId || !linkedId) : []
+    }
+    const rawList = Array.isArray(apiDocsData) ? apiDocsData : (apiDocsData as any)?.documents || []
+    return rawList.map((d: any) => ({
+      id: d.id,
+      studentId: d.studentId,
+      name: d.originalName || d.type?.replace(/_/g, ' ') || 'Document',
+      category: d.type || 'Other',
+      type: d.type || 'Other',
+      status: (d.status?.toLowerCase() as any) || 'uploaded',
+      fileUrl: d.fileUrl || '',
+      uploadedAt: d.createdAt,
+      size: d.fileSize ? `${Math.round(d.fileSize / 1024)} KB` : 'Unknown',
+      version: 1,
+      customName: d.originalName,
+      fileName: d.originalName,
+    }))
+  }, [isMock, apiDocsData, documents, linkedId])
+  const myAppointments = isMock
+    ? appointments
+        .filter((a) => a.studentId === linkedId)
+        .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime())
+    : []
   const nextAppointment = myAppointments[0]
 
   const stats = [
@@ -96,7 +129,7 @@ export function StudentDashboard() {
       sub: (data.visaCase as any)?.overallStatus?.replace('_', ' '),
     },
     {
-      label: 'Documents', value: `${myDocuments.filter((d) => d.status === 'verified').length}/${myDocuments.length}`, icon: FolderKanban, color: '#16A34A',
+      label: 'Documents', value: `${myDocuments.filter((d: any) => d.status === 'verified').length}/${myDocuments.length}`, icon: FolderKanban, color: '#16A34A',
       sub: 'verified',
     },
     { label: 'Est. Tuition', value: formatCurrency(totalTuition), icon: Wallet, color: '#D97706' },
@@ -201,7 +234,7 @@ export function StudentDashboard() {
             {myDocuments.length === 0 && (
               <EmptyState icon={FolderKanban} title="No documents uploaded" description="Your counselor will upload your documents here for review." className="py-8" />
             )}
-            {myDocuments.slice(0, 5).map((doc) => {
+            {myDocuments.slice(0, 5).map((doc: any) => {
               const title = doc.customName || doc.fileName || doc.type.replace(/_/g, ' ')
               const isVerified = doc.status === 'verified'
               const isChangesRequested = doc.status === 'changes_requested'

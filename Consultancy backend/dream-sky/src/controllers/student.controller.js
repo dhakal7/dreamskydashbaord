@@ -5,11 +5,14 @@ const {
     validateCreateStudent,
     validateUpdateStudent,
     validatePipelineChange,
+    validateTrashReason,
+    validateBranchTransfer,
+    validateCounselorAssignmentBody,
 } = require("../validators/student.validator");
 
 const create = async (req, res) => {
     validateCreateStudent(req.body);
-    const student = await studentService.createStudent(req.body);
+    const student = await studentService.createStudent(req.body, req.user);
     let message = "Student created successfully.";
     if (student?._portalProvision) {
         const mailSkippedOrFailed = student._portalProvision.mailResult?.error || student._portalProvision.mailResult?.skipped;
@@ -23,24 +26,24 @@ const create = async (req, res) => {
 };
 
 const getOne = async (req, res) => {
-    const student = await studentService.getStudentById(req.params.id);
+    const student = await studentService.getStudentById(req.params.id, req.user);
     sendSuccess(res, { data: student });
 };
 
 const list = async (req, res) => {
-    const result = await studentService.listStudents(req.query);
+    const result = await studentService.listStudents(req.query, req.user);
     sendSuccess(res, { data: result });
 };
 
 const update = async (req, res) => {
     validateUpdateStudent(req.body);
-    const student = await studentService.updateStudent(req.params.id, req.body);
+    const student = await studentService.updateStudent(req.params.id, req.body, req.user);
     sendSuccess(res, { message: "Student updated successfully.", data: student });
 };
 
 const changePipeline = async (req, res) => {
     validatePipelineChange(req.body);
-    const student = await studentService.changePipelineStage(req.params.id, req.body, req.user.userId);
+    const student = await studentService.changePipelineStage(req.params.id, req.body, req.user);
     const provision = student?._portalProvision;
     let message = "Pipeline stage updated.";
     if (provision) {
@@ -64,21 +67,65 @@ const changePipeline = async (req, res) => {
 
 const remove = async (req, res, next) => {
     try {
-        await studentService.deleteStudent(req.params.id);
-        sendSuccess(res, { message: "Student deleted successfully." });
+        const reason = req.body?.reason;
+        validateTrashReason(reason);
+        const result = await studentService.softDeleteStudent(req.params.id, req.user, reason);
+        sendSuccess(res, { message: "Student moved to Trash successfully.", data: result });
+    } catch (err) {
+        next(err);
+    }
+};
+
+const trash = async (req, res, next) => {
+    try {
+        const result = await studentService.listTrash(req.query, req.user);
+        sendSuccess(res, { data: result });
+    } catch (err) {
+        next(err);
+    }
+};
+
+const restore = async (req, res, next) => {
+    try {
+        const result = await studentService.restoreStudent(req.params.id, req.user);
+        sendSuccess(res, { message: "Student restored successfully.", data: result });
     } catch (err) {
         next(err);
     }
 };
 
 const timeline = async (req, res) => {
-    const history = await studentService.getTimeline(req.params.id);
+    const history = await studentService.getTimeline(req.params.id, req.user);
     sendSuccess(res, { data: history });
+};
+
+const assign = async (req, res, next) => {
+    try {
+        const validatedCounselorId = validateCounselorAssignmentBody(req.body);
+        const counselorId = validatedCounselorId || req.body.assignedCounselorId || req.body.counselorId;
+        const result = await studentService.assignLeadToCounselor(req.params.id, counselorId, req.user);
+        sendSuccess(res, { message: "Lead assigned to counselor successfully.", data: result });
+    } catch (err) {
+        next(err);
+    }
+};
+
+const transferBranch = async (req, res, next) => {
+    try {
+        validateBranchTransfer(req.body);
+        const result = await studentService.transferBranch(req.params.id, req.body, req.user);
+        sendSuccess(res, { message: "Student transferred to destination branch successfully.", data: result });
+    } catch (err) {
+        next(err);
+    }
 };
 
 const resendCredentials = async (req, res, next) => {
     try {
-        const student = await studentService.getStudentById(req.params.id);
+        const student = await studentService.getStudentById(req.params.id, req.user);
+        if (student.isActive === false) {
+            return res.status(400).json({ success: false, message: "Cannot send portal credentials to a student in Trash.", data: { message: "Cannot send portal credentials to a student in Trash." } });
+        }
         if (!student.email || !isValidEmail(student.email)) {
             return res.status(400).json({ success: false, message: "This student does not have a valid email address." });
         }
@@ -108,4 +155,4 @@ const resendCredentials = async (req, res, next) => {
     }
 };
 
-module.exports = { create, getOne, list, update, changePipeline, remove, timeline, resendCredentials };
+module.exports = { create, getOne, list, trash, update, changePipeline, remove, restore, timeline, resendCredentials, assign, transferBranch };

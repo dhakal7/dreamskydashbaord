@@ -1,19 +1,30 @@
 const nodemailer = require("nodemailer");
 
-const SMTP_HOST = process.env.SMTP_HOST;
-const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
-const SMTP_USER = process.env.SMTP_USER;
-const SMTP_PASS = process.env.SMTP_PASS;
-const EMAIL_FROM = process.env.EMAIL_FROM || (SMTP_USER ? `"DreamSky Education Consultancy" <${SMTP_USER}>` : "");
+const getEmailFrom = () =>
+    process.env.EMAIL_FROM || (process.env.SMTP_USER ? `"DreamSky Education Consultancy" <${process.env.SMTP_USER}>` : "");
 
-const transporter = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: SMTP_PORT === 465,
-    auth: SMTP_USER && SMTP_PASS ? { user: SMTP_USER, pass: SMTP_PASS } : undefined,
-});
+let transporterInstance = null;
 
-const isConfigured = () => Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS);
+const getTransporter = () => {
+    if (!transporterInstance) {
+        const host = process.env.SMTP_HOST;
+        const port = Number(process.env.SMTP_PORT || 587);
+        const user = process.env.SMTP_USER;
+        const pass = process.env.SMTP_PASS;
+        transporterInstance = nodemailer.createTransport({
+            host,
+            port,
+            secure: port === 465,
+            auth: user && pass ? { user, pass } : undefined,
+            connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 5000),
+            greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 5000),
+            socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || 10000),
+        });
+    }
+    return transporterInstance;
+};
+
+const isConfigured = () => Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
@@ -33,22 +44,50 @@ const isValidEmail = (email) => {
 };
 
 const sendMail = async ({ to, subject, text, html }) => {
+    // 1. Fail closed if email sending is explicitly disabled via ENABLE_EMAIL="false"
+    if (String(process.env.ENABLE_EMAIL || "").trim().toLowerCase() === "false") {
+        console.warn(`[email] Email sending disabled (ENABLE_EMAIL === "false") — suppressing email to "${to}".`);
+        return { skipped: true, reason: "EMAIL_DISABLED" };
+    }
+
+    // 2. Fail closed in test environment (NODE_ENV="test")
+    if (String(process.env.NODE_ENV || "").trim().toLowerCase() === "test") {
+        console.warn(`[email] Test environment active (NODE_ENV === "test") — suppressing email to "${to}".`);
+        return { skipped: true, reason: "TEST_ENVIRONMENT" };
+    }
+
+    // 3. Recipient format validation & domain suppression (@example.com, @test.com)
     const recipient = typeof to === "string" ? to.trim() : "";
     if (!isValidEmail(recipient)) {
         console.warn(`[email] Invalid or placeholder recipient email "${to}" — skipping email.`);
         return { skipped: true, reason: "INVALID_EMAIL_FORMAT" };
     }
+
+    // 4. Verify SMTP configuration
     if (!isConfigured()) {
         console.warn(`[email] SMTP not configured — skipping email to ${recipient}`);
         return { skipped: true, reason: "SMTP_NOT_CONFIGURED" };
     }
+
+    // 5. Lazy-initialize transport and dispatch email
     try {
-        const info = await transporter.sendMail({ from: EMAIL_FROM, to: recipient, subject, text, html });
+        const transporter = getTransporter();
+        const info = await transporter.sendMail({ from: getEmailFrom(), to: recipient, subject, text, html });
         console.log(`[email] sent "${subject}" to ${recipient} (messageId: ${info.messageId})`);
         return info;
     } catch (err) {
         console.error(`[email] Failed to send "${subject}" to ${recipient}:`, err.message);
-        return { error: err.message };
+        const isTimeout = Boolean(
+            err.code === "ETIMEDOUT" ||
+            err.code === "ESOCKETTIMEDOUT" ||
+            err.code === "ECONNRESET" ||
+            err.message?.toLowerCase().includes("timeout")
+        );
+        return {
+            error: err.message,
+            isTimeout,
+            code: err.code || (isTimeout ? "ETIMEDOUT" : "ESENDMAIL"),
+        };
     }
 };
 
@@ -197,6 +236,12 @@ const sendNotificationEmail = ({ to, subject, body }) =>
         html: `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;padding:20px;border:1px solid #e5e7eb;border-radius:12px"><p style="color:#374151;font-size:15px;line-height:1.6">${body.replace(/\n/g, "<br/>")}</p></div>`,
     });
 
+const getEmailTransportConfig = () => ({
+    connectionTimeout: Number(process.env.SMTP_CONNECTION_TIMEOUT || 5000),
+    greetingTimeout: Number(process.env.SMTP_GREETING_TIMEOUT || 5000),
+    socketTimeout: Number(process.env.SMTP_SOCKET_TIMEOUT || 10000),
+});
+
 module.exports = {
     sendMail,
     sendWelcomeStudentEmail,
@@ -205,7 +250,11 @@ module.exports = {
     sendNotificationEmail,
     sendFeeDueEmail,
     isValidEmail,
-    isConfigured
+    isConfigured,
+    getTransporter,
+    getEmailTransportConfig,
+    _setTransporter: (t) => { transporterInstance = t; },
+    _resetTransporter: () => { transporterInstance = null; },
 };
 
 

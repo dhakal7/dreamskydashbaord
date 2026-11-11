@@ -17,6 +17,7 @@ import { isMockMode } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
 import { hasPermission } from '@/lib/rbac'
 import { ConvertLeadDialog } from './convert-lead-dialog'
+import { TrashLeadDialog } from './trash-lead-dialog'
 
 export const leadColumns: ColumnDef<Lead, any>[] = [
   {
@@ -108,6 +109,7 @@ function ActionsCell({ lead, onEdit }: { lead: Lead; onEdit?: (lead: Lead) => vo
   const removeLead = useLeadsStore((s) => s.removeLead)
   const deleteLiveLead = useDeleteLiveLead()
   const [convertOpen, setConvertOpen] = useState(false)
+  const [trashOpen, setTrashOpen] = useState(false)
 
   const canManageLeads = hasPermission(currentUser.role, 'leads.manage')
   const canChangeStage = hasPermission(currentUser.role, 'leads.change-stage')
@@ -115,15 +117,17 @@ function ActionsCell({ lead, onEdit }: { lead: Lead; onEdit?: (lead: Lead) => vo
 
   function handleDelete(e: React.MouseEvent) {
     e.stopPropagation()
-    if (window.confirm(`Are you sure you want to delete lead "${lead.name}"?`)) {
-      if (isMockMode()) {
-        removeLead(lead.id)
-        toast.success(`Lead "${lead.name}" deleted.`)
-      } else {
-        deleteLiveLead.mutate(lead.id, {
-          onSuccess: () => toast.success(`Lead "${lead.name}" deleted.`),
-        })
-      }
+    setTrashOpen(true)
+  }
+
+  async function handleConfirmTrash(reason: string) {
+    if (isMockMode()) {
+      removeLead(lead.id)
+      toast.success(`Lead "${lead.name}" deleted.`)
+    } else {
+      useLeadsStore.getState().clearStageOverride(lead.id)
+      await deleteLiveLead.mutateAsync({ id: lead.id, reason })
+      toast.success(`Lead "${lead.name}" moved to Trash.`)
     }
   }
 
@@ -171,6 +175,14 @@ function ActionsCell({ lead, onEdit }: { lead: Lead; onEdit?: (lead: Lead) => vo
         open={convertOpen}
         onOpenChange={setConvertOpen}
         lead={lead}
+      />
+
+      <TrashLeadDialog
+        open={trashOpen}
+        onOpenChange={setTrashOpen}
+        lead={lead}
+        onConfirm={handleConfirmTrash}
+        isSubmitting={deleteLiveLead.isPending}
       />
     </>
   )

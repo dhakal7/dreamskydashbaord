@@ -64,7 +64,7 @@ export const referrals: Referral[] = referralAgents.flatMap((agent) => {
     agentId: agent.id,
     studentId: s.id,
     studentName: s.name,
-    stage: pick(['new', 'contacted', 'counseling', 'interested', 'application', 'offer_letter', 'visa', 'completed'] as const),
+    stage: pick(['new', 'follow_up', 'counseling', 'interested', 'application', 'offer_letter', 'visa', 'completed'] as const),
     referredAt: daysAgo(randInt(5, 300)),
     potentialCommissionUsd: randInt(80, 250),
   }))

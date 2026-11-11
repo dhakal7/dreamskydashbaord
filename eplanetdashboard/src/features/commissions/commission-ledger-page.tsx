@@ -23,6 +23,7 @@ function formatDate(value?: string) {
 
 import { useCommissions, useMarkCommissionPaid } from '@/hooks/use-commissions'
 import { isMockMode } from '@/lib/api-client'
+import { visibleCommissions as filterVisibleCommissions } from '@/lib/data-visibility'
 
 export default function CommissionLedgerPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
@@ -34,31 +35,43 @@ export default function CommissionLedgerPage() {
   const apiCommissionsList = Array.isArray(apiCommissions) ? apiCommissions : []
 
   const commissions: Commission[] = !isMockMode()
-    ? apiCommissionsList.map((c) => ({
-        id: c.id,
-        ruleId: c.ruleId ?? 'rule-1',
-        earnerId: c.recipientId,
-        earnerName: c.recipient ? `${c.recipient.firstName} ${c.recipient.lastName}` : 'Recipient',
+    ? apiCommissionsList.map((c) => {
+        const rawRule = (c as any).rule
+        const resolvedBranchId =
+          typeof (c.recipient as any)?.branchId === 'string' && (c.recipient as any).branchId.trim().length > 0
+            ? (c.recipient as any).branchId
+            : typeof rawRule?.scopeBranchId === 'string' && rawRule.scopeBranchId.trim().length > 0
+              ? rawRule.scopeBranchId
+              : typeof rawRule?.scopeBranch?.id === 'string' && rawRule.scopeBranch.id.trim().length > 0
+                ? rawRule.scopeBranch.id
+                : undefined
+        return {
+          id: c.id,
+          ruleId: c.ruleId ?? 'rule-1',
+          earnerId: c.recipientId,
+          earnerName: c.recipient ? `${c.recipient.firstName} ${c.recipient.lastName}` : 'Recipient',
 
-        earnerType: 'counselor' as const,
-        studentId: c.studentId,
-        studentName: c.student ? `${c.student.firstName} ${c.student.lastName}` : 'Student',
-        ruleSnapshot: {
-          id: c.ruleSnapshot?.id ?? c.ruleId ?? 'rule-1',
-          name: c.ruleSnapshot?.name ?? 'Standard Rule',
-          type: (c.ruleSnapshot?.type ?? 'counselor_flat') as any,
-          amountType: (c.ruleSnapshot?.amountType ?? 'flat') as any,
-          amountValue: c.ruleSnapshot?.amount ?? c.amount ?? 0,
-          value: c.ruleSnapshot?.amount ?? c.amount ?? 0,
-          triggerStage: (c.ruleSnapshot?.triggerStage ?? 'submitted') as any,
-        },
+          earnerType: ((c.recipient as any)?.role === 'REFERRAL_AGENT' ? 'referral_agent' : 'counselor') as any,
+          studentId: c.studentId,
+          studentName: c.student ? `${c.student.firstName} ${c.student.lastName}` : 'Student',
+          ruleSnapshot: {
+            id: c.ruleSnapshot?.id ?? c.ruleId ?? 'rule-1',
+            name: c.ruleSnapshot?.name ?? 'Standard Rule',
+            type: (c.ruleSnapshot?.type ?? 'counselor_flat') as any,
+            amountType: (c.ruleSnapshot?.amountType ?? 'flat') as any,
+            amountValue: c.ruleSnapshot?.amount ?? c.amount ?? 0,
+            value: c.ruleSnapshot?.amount ?? c.amount ?? 0,
+            triggerStage: (c.ruleSnapshot?.triggerStage ?? 'submitted') as any,
+          },
 
-        amountUsd: c.amount,
-        status: c.status.toLowerCase() as CommissionStatus,
-        generatedAt: c.generatedAt,
-        paidAt: c.paidAt ?? undefined,
-        milestoneStatus: 'pending' as const,
-      }))
+          amountUsd: c.amount,
+          status: c.status.toLowerCase() as CommissionStatus,
+          generatedAt: c.generatedAt,
+          paidAt: c.paidAt ?? undefined,
+          milestoneStatus: 'pending' as const,
+          ...(resolvedBranchId ? { branchId: resolvedBranchId } : {}),
+        } as Commission
+      })
     : mockCommissions
 
 
@@ -66,15 +79,13 @@ export default function CommissionLedgerPage() {
   const [earnerTypeFilterValue, setEarnerTypeFilterValue] = useState<'all' | Commission['earnerType']>('all')
 
   const visibleCommissions = useMemo(() => {
-    return commissions.filter((commission) => {
-      if (currentUser.role !== 'super_admin') {
-        if (commission.earnerId !== currentUser.linkedId) return false
-      }
+    const scoped = filterVisibleCommissions(currentUser, commissions, { verifiedBranchScopedApi: !isMockMode() })
+    return scoped.filter((commission) => {
       if (statusFilterValue !== 'all' && commission.status !== statusFilterValue) return false
       if (earnerTypeFilterValue !== 'all' && commission.earnerType !== earnerTypeFilterValue) return false
       return true
     })
-  }, [commissions, currentUser.linkedId, currentUser.role, earnerTypeFilterValue, statusFilterValue])
+  }, [commissions, currentUser, earnerTypeFilterValue, statusFilterValue])
 
   const totalAmount = visibleCommissions.reduce((sum, commission) => sum + commission.amountUsd, 0)
   const pendingCount = visibleCommissions.filter((commission) => commission.status === 'pending').length

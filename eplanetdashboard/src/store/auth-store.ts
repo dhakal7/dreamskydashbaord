@@ -44,7 +44,8 @@ if (typeof window !== 'undefined') {
       const parsedUser = JSON.parse(userStr || '{}')
       const rawRole = (parsedUser.role || '').toUpperCase()
       let feRole = 'student'
-      if (rawRole.includes('ADMIN')) feRole = 'super_admin'
+      if (rawRole === 'BRANCH_ADMIN') feRole = 'branch_admin'
+      else if (rawRole.includes('ADMIN')) feRole = 'super_admin'
       else if (rawRole.includes('COUNSELOR')) feRole = 'counselor'
       else if (rawRole.includes('TEACHER')) feRole = 'teacher'
       else if (rawRole.includes('FRONT_DESK')) feRole = 'front_desk'
@@ -99,10 +100,10 @@ function toCurrentUser(backendUser: BackendUser): CurrentUser {
    *   - referral_agent → ReferralAgentProfile.id (Student.referredByAgentId references it)
    */
   const linkedId =
-    frontendRole === 'referral_agent' && backendUser.referralAgentProfileId
-      ? backendUser.referralAgentProfileId
-      : frontendRole === 'student' && backendUser.studentId
-      ? backendUser.studentId
+    frontendRole === 'referral_agent'
+      ? (backendUser.referralAgentProfileId ?? '')
+      : frontendRole === 'student'
+      ? (backendUser.studentId ?? '')
       : backendUser.id
 
   return {
@@ -204,15 +205,20 @@ function getInitialUser(): CurrentUser {
             referralAgentProfileId: parsed.referralAgentProfileId || null,
           })
         } else if (parsed.role && parsed.email) {
+          const parsedRole = toFrontendRole(parsed.role)
+          const resolvedLinkedId =
+            parsedRole === 'student'
+              ? (parsed.studentId || (parsed.linkedId && parsed.linkedId !== parsed.id ? parsed.linkedId : ''))
+              : (parsed.linkedId || parsed.id || 'user-1')
           return {
             id: parsed.id || 'user-1',
             name: parsed.name || parsed.email.split('@')[0],
             email: parsed.email,
-            role: toFrontendRole(parsed.role),
+            role: parsedRole,
             avatarColor: parsed.avatarColor || '#0F172A',
             branchId: parsed.branchId || '',
             branchName: parsed.branchName || '',
-            linkedId: parsed.linkedId || parsed.id || 'user-1',
+            linkedId: resolvedLinkedId,
             mustChangePassword: parsed.mustChangePassword ?? false,
           }
         }
@@ -410,12 +416,35 @@ export const useAuthStore = create<AuthState>((set) => ({
         localStorage.setItem('dreamsky-authenticated', 'true')
         set({ currentUser, isAuthenticated: true, isLoading: false })
         return
-      } catch (err) {
-        console.warn('Real session rehydration failed, clearing expired credentials:', err)
-        tokenStore.clearAll()
-        localStorage.removeItem('dreamsky-authenticated')
-        localStorage.removeItem('dreamsky-user')
-        set({ isAuthenticated: false, isLoading: false })
+      } catch (err: any) {
+        // Distinguish genuine auth rejection (401 / invalid token) from permission (403) or transient network/server errors
+        const status = err?.response?.status
+        const errMsg = String(err?.message || '')
+        const isAuthRejection =
+          status === 401 ||
+          errMsg.includes('Refresh token invalid') ||
+          errMsg.includes('Unauthorized') ||
+          errMsg.includes('INVALID_TOKEN') ||
+          errMsg.includes('ACCOUNT_INACTIVE') ||
+          errMsg.includes('inactive or suspended')
+
+        if (isAuthRejection) {
+          console.warn('Real session rehydration failed (invalid or expired credentials), clearing credentials:', err)
+          tokenStore.clearAll()
+          localStorage.removeItem('dreamsky-authenticated')
+          localStorage.removeItem('dreamsky-user')
+          set({ isAuthenticated: false, isLoading: false })
+          return
+        }
+
+        // 403 Forbidden or transient network error (e.g. 502, 503, timeout, offline).
+        // Preserve credentials and fall back to cached session so valid logins are not lost on network hiccups or permission limits.
+        console.warn('Real session rehydration encountered non-fatal error, preserving credentials:', errMsg || status)
+        set({
+          currentUser: storedUser,
+          isAuthenticated: true,
+          isLoading: false,
+        })
         return
       }
     }

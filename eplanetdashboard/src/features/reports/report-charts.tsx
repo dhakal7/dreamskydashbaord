@@ -4,6 +4,7 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import type { CurrentUser } from '@/types'
+import { isMockMode } from '@/lib/api-client'
 import type { ReportFilters } from './report-selectors'
 import {
   getApplicationsByMonth, getLeadsByMonth, getConversionTrend,
@@ -32,10 +33,11 @@ function ChartTooltip({ active, payload, label }: any) {
 interface ReportChartsProps {
   user: CurrentUser
   filters: ReportFilters
+  liveData?: any
 }
 
-export function ApplicationsByMonthChart({ user, filters }: ReportChartsProps) {
-  const data = getApplicationsByMonth(user, filters)
+export function ApplicationsByMonthChart({ user, filters, liveData }: ReportChartsProps) {
+  const data = liveData ?? (isMockMode() ? getApplicationsByMonth(user, filters) : [])
   return (
     <Card>
       <CardHeader>
@@ -43,22 +45,26 @@ export function ApplicationsByMonthChart({ user, filters }: ReportChartsProps) {
         <CardDescription>Applications submitted over the last 6 months</CardDescription>
       </CardHeader>
       <CardContent className="h-64 pl-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ left: -12, right: 8, top: 4 }}>
-            <CartesianGrid vertical={false} stroke="currentColor" className="text-border" strokeDasharray="3 3" />
-            <XAxis dataKey="month" tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" />
-            <YAxis tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" width={28} />
-            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'currentColor', className: 'text-secondary' } as any} />
-            <Bar dataKey="applications" name="Applications" fill={BRAND} radius={[6, 6, 0, 0]} barSize={22} />
-          </BarChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No applications data</div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ left: -12, right: 8, top: 4 }}>
+              <CartesianGrid vertical={false} stroke="currentColor" className="text-border" strokeDasharray="3 3" />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" />
+              <YAxis tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" width={28} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'currentColor', className: 'text-secondary' } as any} />
+              <Bar dataKey="applications" name="Applications" fill={BRAND} radius={[6, 6, 0, 0]} barSize={22} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   )
 }
 
-export function LeadsByMonthChart({ user, filters }: ReportChartsProps) {
-  const data = getLeadsByMonth(user, filters)
+export function LeadsByMonthChart({ user, filters, liveData }: ReportChartsProps) {
+  const data = liveData ?? (isMockMode() ? getLeadsByMonth(user, filters) : [])
   return (
     <Card>
       <CardHeader>
@@ -66,23 +72,27 @@ export function LeadsByMonthChart({ user, filters }: ReportChartsProps) {
         <CardDescription>New leads captured vs. converted over 6 months</CardDescription>
       </CardHeader>
       <CardContent className="h-64 pl-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ left: -12, right: 8, top: 4 }}>
-            <CartesianGrid vertical={false} stroke="currentColor" className="text-border" strokeDasharray="3 3" />
-            <XAxis dataKey="month" tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" />
-            <YAxis tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" width={28} />
-            <Tooltip content={<ChartTooltip />} cursor={{ fill: 'currentColor', className: 'text-secondary' } as any} />
-            <Bar dataKey="leads" name="Leads" fill="#7C3AED" radius={[6, 6, 0, 0]} barSize={14} />
-            <Bar dataKey="converted" name="Converted" fill="#16A34A" radius={[6, 6, 0, 0]} barSize={14} />
-          </BarChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No leads data</div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ left: -12, right: 8, top: 4 }}>
+              <CartesianGrid vertical={false} stroke="currentColor" className="text-border" strokeDasharray="3 3" />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" />
+              <YAxis tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" width={28} />
+              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'currentColor', className: 'text-secondary' } as any} />
+              <Bar dataKey="leads" name="Leads" fill="#7C3AED" radius={[6, 6, 0, 0]} barSize={14} />
+              <Bar dataKey="converted" name="Converted" fill="#16A34A" radius={[6, 6, 0, 0]} barSize={14} />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   )
 }
 
-export function ConversionTrendChart({ user, filters }: ReportChartsProps) {
-  const data = getConversionTrend(user, filters)
+export function ConversionTrendChart({ user, filters, liveData }: ReportChartsProps) {
+  const data = liveData ?? (isMockMode() ? getConversionTrend(user, filters) : [])
   return (
     <Card>
       <CardHeader>
@@ -90,22 +100,27 @@ export function ConversionTrendChart({ user, filters }: ReportChartsProps) {
         <CardDescription>Lead-to-application conversion rate over time</CardDescription>
       </CardHeader>
       <CardContent className="h-64 pl-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ left: -12, right: 8, top: 4 }}>
-            <CartesianGrid vertical={false} stroke="currentColor" className="text-border" strokeDasharray="3 3" />
-            <XAxis dataKey="month" tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" />
-            <YAxis tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" width={28} unit="%" />
-            <Tooltip content={<ChartTooltip />} />
-            <Line type="monotone" dataKey="rate" name="Conversion %" stroke={BRAND} strokeWidth={2} dot={{ r: 4, fill: BRAND }} />
-          </LineChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No conversion trend data</div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ left: -12, right: 8, top: 4 }}>
+              <CartesianGrid vertical={false} stroke="currentColor" className="text-border" strokeDasharray="3 3" />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" />
+              <YAxis tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" width={28} unit="%" />
+              <Tooltip content={<ChartTooltip />} />
+              <Line type="monotone" dataKey="rate" name="Conversion %" stroke={BRAND} strokeWidth={2} dot={{ r: 4, fill: BRAND }} />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   )
 }
 
-export function CountryDistributionChart({ user, filters }: ReportChartsProps) {
-  const data = getCountryDistribution(user, filters)
+export function CountryDistributionChart({ user, filters, liveData }: ReportChartsProps) {
+  const rawData = liveData ?? (isMockMode() ? getCountryDistribution(user, filters) : [])
+  const data = Array.isArray(rawData) ? rawData.map((d: any) => ({ name: d.name, value: d.students ?? d.value ?? 0 })) : []
   return (
     <Card>
       <CardHeader>
@@ -142,8 +157,9 @@ export function CountryDistributionChart({ user, filters }: ReportChartsProps) {
   )
 }
 
-export function SourceDistributionChart({ user, filters }: ReportChartsProps) {
-  const data = getSourceDistribution(user, filters)
+export function SourceDistributionChart({ user, filters, liveData }: ReportChartsProps) {
+  const rawData = liveData ?? (isMockMode() ? getSourceDistribution(user, filters) : [])
+  const data = Array.isArray(rawData) ? rawData.map((d: any) => ({ name: d.source ?? d.name, value: d.count ?? d.value ?? 0 })) : []
   return (
     <Card>
       <CardHeader>
@@ -180,8 +196,9 @@ export function SourceDistributionChart({ user, filters }: ReportChartsProps) {
   )
 }
 
-export function CumulativeStudentsChart({ user, filters }: ReportChartsProps) {
-  const data = getCumulativeStudents(user, filters)
+export function CumulativeStudentsChart({ user, filters, liveData }: ReportChartsProps) {
+  const rawData = liveData ?? (isMockMode() ? getCumulativeStudents(user, filters) : [])
+  const data = Array.isArray(rawData) ? rawData.map((d: any) => ({ month: d.month, students: d.total ?? d.students ?? 0 })) : []
   return (
     <Card>
       <CardHeader>
@@ -189,21 +206,25 @@ export function CumulativeStudentsChart({ user, filters }: ReportChartsProps) {
         <CardDescription>Total students over time (last 6 months)</CardDescription>
       </CardHeader>
       <CardContent className="h-64 pl-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ left: -12, right: 8, top: 4 }}>
-            <defs>
-              <linearGradient id="studentsGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={BRAND} stopOpacity={0.28} />
-                <stop offset="100%" stopColor={BRAND} stopOpacity={0.02} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid vertical={false} stroke="currentColor" className="text-border" strokeDasharray="3 3" />
-            <XAxis dataKey="month" tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" />
-            <YAxis tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" width={28} />
-            <Tooltip content={<ChartTooltip />} />
-            <Area type="monotone" dataKey="students" name="Students" stroke={BRAND} fill="url(#studentsGradient)" strokeWidth={2} />
-          </AreaChart>
-        </ResponsiveContainer>
+        {data.length === 0 ? (
+          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No cumulative student data</div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ left: -12, right: 8, top: 4 }}>
+              <defs>
+                <linearGradient id="studentsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={BRAND} stopOpacity={0.28} />
+                  <stop offset="100%" stopColor={BRAND} stopOpacity={0.02} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} stroke="currentColor" className="text-border" strokeDasharray="3 3" />
+              <XAxis dataKey="month" tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" />
+              <YAxis tickLine={false} axisLine={false} className="text-[11px] fill-muted-foreground" width={28} />
+              <Tooltip content={<ChartTooltip />} />
+              <Area type="monotone" dataKey="students" name="Students" stroke={BRAND} fill="url(#studentsGradient)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   )

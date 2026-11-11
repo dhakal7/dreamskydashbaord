@@ -1,3 +1,6 @@
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "public";
+
 -- CreateEnum
 CREATE TYPE "Role" AS ENUM ('SUPER_ADMIN', 'BRANCH_ADMIN', 'COUNSELOR', 'FRONT_DESK', 'TEACHER', 'REFERRAL_AGENT', 'STUDENT');
 
@@ -41,22 +44,59 @@ CREATE TYPE "OfferType" AS ENUM ('CONDITIONAL', 'UNCONDITIONAL');
 CREATE TYPE "VisaStatus" AS ENUM ('NOT_APPLIED', 'PREPARING', 'SUBMITTED', 'APPROVED', 'REFUSED', 'RESUBMITTING');
 
 -- CreateEnum
-CREATE TYPE "CommissionType" AS ENUM ('FIXED', 'PERCENTAGE', 'TIERED');
+CREATE TYPE "CommissionRuleRole" AS ENUM ('COUNSELOR', 'REFERRAL_AGENT');
+
+-- CreateEnum
+CREATE TYPE "CommissionRuleType" AS ENUM ('FIXED', 'PERCENTAGE', 'TIERED');
 
 -- CreateEnum
 CREATE TYPE "CommissionStatus" AS ENUM ('PENDING', 'PAID', 'DISPUTED', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "ClassContentType" AS ENUM ('NOTE', 'MATERIAL', 'ASSIGNMENT');
-
--- CreateEnum
-CREATE TYPE "EventType" AS ENUM ('SEMINAR', 'WORKSHOP', 'FAIR', 'ORIENTATION', 'OTHER');
-
--- CreateEnum
 CREATE TYPE "AttendanceStatus" AS ENUM ('PRESENT', 'ABSENT', 'LATE', 'EXCUSED');
 
 -- CreateEnum
-CREATE TYPE "NotificationChannel" AS ENUM ('EMAIL', 'SMS', 'WHATSAPP', 'IN_APP', 'PUSH');
+CREATE TYPE "ClassContentType" AS ENUM ('NOTE', 'MATERIAL', 'ASSIGNMENT');
+
+-- CreateEnum
+CREATE TYPE "EventType" AS ENUM ('SEMINAR', 'UNI_VISIT', 'FAIR', 'WEBINAR', 'MEETING', 'WORKSHOP', 'ORIENTATION', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "EventApprovalStatus" AS ENUM ('REQUESTED', 'APPROVED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "ReminderOffset" AS ENUM ('ONE_MONTH', 'ONE_WEEK', 'ONE_DAY', 'SAME_DAY');
+
+-- CreateEnum
+CREATE TYPE "ReminderStatus" AS ENUM ('PENDING', 'SENT');
+
+-- CreateEnum
+CREATE TYPE "NotificationChannel" AS ENUM ('IN_APP', 'EMAIL', 'SMS', 'WHATSAPP', 'PUSH');
+
+-- CreateEnum
+CREATE TYPE "NotificationTemplateApprovalStatus" AS ENUM ('DRAFT', 'PENDING_APPROVAL', 'APPROVED', 'REJECTED');
+
+-- CreateEnum
+CREATE TYPE "NotificationStatus" AS ENUM ('QUEUED', 'SENT', 'FAILED');
+
+-- CreateEnum
+CREATE TYPE "Level" AS ENUM ('DIPLOMA', 'BACHELOR', 'MASTER', 'PHD');
+
+-- CreateEnum
+CREATE TYPE "FieldOfStudy" AS ENUM ('ENGINEERING', 'BUSINESS', 'IT_COMPUTING', 'HEALTH_SCIENCES', 'ARTS_HUMANITIES', 'LAW', 'NATURAL_SCIENCES', 'SOCIAL_SCIENCES', 'EDUCATION', 'HOSPITALITY_TOURISM', 'OTHER');
+
+-- CreateEnum
+CREATE TYPE "ProcessingType" AS ENUM ('SELF', 'PARTNER_CONSULTANCY');
+
+-- CreateTable
+CREATE TABLE "PartnerConsultancy" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PartnerConsultancy_pkey" PRIMARY KEY ("id")
+);
 
 -- CreateTable
 CREATE TABLE "Branch" (
@@ -64,6 +104,7 @@ CREATE TABLE "Branch" (
     "name" TEXT NOT NULL,
     "address" TEXT,
     "phone" TEXT,
+    "email" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -82,6 +123,8 @@ CREATE TABLE "User" (
     "role" "Role" NOT NULL,
     "status" "UserStatus" NOT NULL DEFAULT 'ACTIVE',
     "branchId" TEXT,
+    "mustChangePassword" BOOLEAN NOT NULL DEFAULT false,
+    "studentId" TEXT,
     "twoFactorSecret" TEXT,
     "twoFactorEnabled" BOOLEAN NOT NULL DEFAULT false,
     "lastLoginAt" TIMESTAMP(3),
@@ -147,6 +190,8 @@ CREATE TABLE "Student" (
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
+    "processingType" "ProcessingType" NOT NULL DEFAULT 'SELF',
+    "partnerConsultancyId" TEXT,
 
     CONSTRAINT "Student_pkey" PRIMARY KEY ("id")
 );
@@ -183,6 +228,9 @@ CREATE TABLE "Document" (
     "type" "DocumentType" NOT NULL,
     "status" "DocumentStatus" NOT NULL DEFAULT 'PENDING',
     "fileUrl" TEXT NOT NULL,
+    "originalName" TEXT,
+    "mimeType" TEXT,
+    "fileSize" INTEGER,
     "uploadedById" TEXT,
     "verifiedById" TEXT,
     "expiryDate" TIMESTAMP(3),
@@ -215,9 +263,13 @@ CREATE TABLE "Appointment" (
     "studentId" TEXT NOT NULL,
     "counselorId" TEXT,
     "datetime" TIMESTAMP(3) NOT NULL,
+    "durationMin" INTEGER NOT NULL DEFAULT 30,
     "status" "AppointmentStatus" NOT NULL DEFAULT 'SCHEDULED',
     "type" "AppointmentType" NOT NULL,
+    "meetingMode" TEXT NOT NULL DEFAULT 'OFFICE',
+    "meetingLink" TEXT,
     "notes" TEXT,
+    "outcome" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -259,6 +311,9 @@ CREATE TABLE "Application" (
     "universityId" TEXT NOT NULL,
     "courseId" TEXT NOT NULL,
     "status" "ApplicationStatus" NOT NULL DEFAULT 'DRAFT',
+    "intake" TEXT,
+    "priority" TEXT,
+    "notes" TEXT,
     "submittedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -282,6 +337,9 @@ CREATE TABLE "VisaCase" (
     "id" TEXT NOT NULL,
     "applicationId" TEXT NOT NULL,
     "status" "VisaStatus" NOT NULL DEFAULT 'NOT_APPLIED',
+    "visaType" TEXT,
+    "embassy" TEXT,
+    "notes" TEXT,
     "refusalReason" TEXT,
     "resubmissionLink" TEXT,
     "submittedAt" TIMESTAMP(3),
@@ -298,6 +356,7 @@ CREATE TABLE "Country" (
     "name" TEXT NOT NULL,
     "code" TEXT NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Country_pkey" PRIMARY KEY ("id")
 );
@@ -307,9 +366,12 @@ CREATE TABLE "University" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "countryId" TEXT NOT NULL,
+    "city" TEXT,
     "website" TEXT,
     "description" TEXT,
     "logoUrl" TEXT,
+    "visaSuccessRate" DECIMAL(5,2),
+    "ranking" INTEGER,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -322,15 +384,19 @@ CREATE TABLE "Course" (
     "id" TEXT NOT NULL,
     "universityId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "level" TEXT,
+    "level" "Level",
+    "fieldOfStudy" "FieldOfStudy" DEFAULT 'OTHER',
     "durationMonths" INTEGER,
     "tuitionFee" DOUBLE PRECISION,
     "currency" TEXT NOT NULL DEFAULT 'USD',
     "minGPA" DOUBLE PRECISION,
-    "englishRequirement" TEXT,
+    "englishRequirement" JSONB,
     "scholarships" JSONB,
     "deadlines" JSONB,
     "entryRequirements" JSONB,
+    "intakeDates" TIMESTAMP(3)[],
+    "seatCapacity" INTEGER,
+    "seatsRemaining" INTEGER,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -339,16 +405,31 @@ CREATE TABLE "Course" (
 );
 
 -- CreateTable
+CREATE TABLE "RecommendationResult" (
+    "id" TEXT NOT NULL,
+    "recordId" TEXT NOT NULL,
+    "inputSnapshot" JSONB NOT NULL,
+    "results" JSONB NOT NULL,
+    "generatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "counselorOverrideCourseId" TEXT,
+
+    CONSTRAINT "RecommendationResult_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "CommissionRule" (
     "id" TEXT NOT NULL,
-    "role" "Role" NOT NULL,
-    "type" "CommissionType" NOT NULL,
+    "role" "CommissionRuleRole" NOT NULL,
+    "type" "CommissionRuleType" NOT NULL,
     "triggerStage" "PipelineStage" NOT NULL,
-    "value" DOUBLE PRECISION NOT NULL,
+    "tierConfig" JSONB,
+    "fixedAmount" DOUBLE PRECISION,
+    "percentage" DOUBLE PRECISION,
+    "value" DOUBLE PRECISION,
     "effectiveFrom" TIMESTAMP(3) NOT NULL,
     "effectiveTo" TIMESTAMP(3),
-    "branchId" TEXT,
-    "universityId" TEXT,
+    "scopeBranchId" TEXT,
+    "scopeUniversityId" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -364,8 +445,11 @@ CREATE TABLE "Commission" (
     "recipientId" TEXT NOT NULL,
     "studentId" TEXT NOT NULL,
     "amount" DOUBLE PRECISION NOT NULL,
+    "currency" TEXT NOT NULL DEFAULT 'NPR',
     "status" "CommissionStatus" NOT NULL DEFAULT 'PENDING',
+    "disputeReason" TEXT,
     "paidAt" TIMESTAMP(3),
+    "paidBy" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -377,7 +461,9 @@ CREATE TABLE "Class" (
     "id" TEXT NOT NULL,
     "teacherId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
+    "subject" TEXT,
     "schedule" JSONB,
+    "branchId" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -402,6 +488,9 @@ CREATE TABLE "AttendanceRecord" (
     "studentId" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL,
     "status" "AttendanceStatus" NOT NULL,
+    "markedById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "AttendanceRecord_pkey" PRIMARY KEY ("id")
 );
@@ -415,6 +504,7 @@ CREATE TABLE "ClassContent" (
     "body" TEXT,
     "fileUrl" TEXT,
     "dueDate" TIMESTAMP(3),
+    "createdById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -425,11 +515,16 @@ CREATE TABLE "ClassContent" (
 CREATE TABLE "Event" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
+    "description" TEXT,
     "type" "EventType" NOT NULL,
     "datetime" TIMESTAMP(3) NOT NULL,
     "location" TEXT,
     "branchId" TEXT,
     "createdById" TEXT,
+    "audienceRoles" TEXT[],
+    "approvalStatus" "EventApprovalStatus" NOT NULL DEFAULT 'REQUESTED',
+    "approvedById" TEXT,
+    "approvedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -440,11 +535,29 @@ CREATE TABLE "Event" (
 CREATE TABLE "EventReminder" (
     "id" TEXT NOT NULL,
     "eventId" TEXT NOT NULL,
-    "offsetMin" INTEGER NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'PENDING',
+    "offsetMin" INTEGER,
+    "offset" "ReminderOffset",
+    "status" "ReminderStatus" NOT NULL DEFAULT 'PENDING',
+    "scheduledFor" TIMESTAMP(3),
+    "sentAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "EventReminder_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "NotificationTemplate" (
+    "id" TEXT NOT NULL,
+    "channel" "NotificationChannel" NOT NULL,
+    "name" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "approvalStatus" "NotificationTemplateApprovalStatus" NOT NULL DEFAULT 'DRAFT',
+    "createdById" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "NotificationTemplate_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -452,26 +565,34 @@ CREATE TABLE "Notification" (
     "id" TEXT NOT NULL,
     "channel" "NotificationChannel" NOT NULL,
     "templateId" TEXT,
-    "recipientId" TEXT NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'PENDING',
-    "sentAt" TIMESTAMP(3),
+    "recipientUserId" TEXT NOT NULL,
+    "subject" TEXT,
+    "body" TEXT,
+    "status" "NotificationStatus" NOT NULL DEFAULT 'QUEUED',
     "payload" JSONB,
+    "sentAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "NotificationTemplate" (
+CREATE TABLE "PublicInquiry" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
-    "channel" "NotificationChannel" NOT NULL,
-    "content" TEXT NOT NULL,
-    "approvalStatus" TEXT NOT NULL DEFAULT 'PENDING',
+    "phone" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "countryInterest" TEXT,
+    "source" TEXT NOT NULL DEFAULT 'website',
+    "converted" BOOLEAN NOT NULL DEFAULT false,
+    "convertedAt" TIMESTAMP(3),
+    "convertedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "NotificationTemplate_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "PublicInquiry_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -488,8 +609,28 @@ CREATE TABLE "AuditLog" (
     CONSTRAINT "AuditLog_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "RefreshToken" (
+    "id" TEXT NOT NULL,
+    "tokenHash" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "RefreshToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PartnerConsultancy_name_key" ON "PartnerConsultancy"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Branch_name_key" ON "Branch"("name");
+
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_studentId_key" ON "User"("studentId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CounselorProfile_userId_key" ON "CounselorProfile"("userId");
@@ -519,10 +660,52 @@ CREATE UNIQUE INDEX "Country_name_key" ON "Country"("name");
 CREATE UNIQUE INDEX "Country_code_key" ON "Country"("code");
 
 -- CreateIndex
+CREATE INDEX "RecommendationResult_recordId_generatedAt_idx" ON "RecommendationResult"("recordId", "generatedAt" DESC);
+
+-- CreateIndex
+CREATE INDEX "CommissionRule_role_triggerStage_isActive_idx" ON "CommissionRule"("role", "triggerStage", "isActive");
+
+-- CreateIndex
+CREATE INDEX "Commission_recipientId_status_idx" ON "Commission"("recipientId", "status");
+
+-- CreateIndex
+CREATE INDEX "Commission_studentId_idx" ON "Commission"("studentId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "Enrollment_classId_studentId_key" ON "Enrollment"("classId", "studentId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "AttendanceRecord_classId_studentId_date_key" ON "AttendanceRecord"("classId", "studentId", "date");
+
+-- CreateIndex
+CREATE INDEX "Event_datetime_idx" ON "Event"("datetime");
+
+-- CreateIndex
+CREATE INDEX "Event_approvalStatus_idx" ON "Event"("approvalStatus");
+
+-- CreateIndex
+CREATE INDEX "EventReminder_status_scheduledFor_idx" ON "EventReminder"("status", "scheduledFor");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "NotificationTemplate_name_key" ON "NotificationTemplate"("name");
+
+-- CreateIndex
+CREATE INDEX "Notification_recipientUserId_status_idx" ON "Notification"("recipientUserId", "status");
+
+-- CreateIndex
+CREATE INDEX "Notification_createdAt_idx" ON "Notification"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "PublicInquiry_converted_idx" ON "PublicInquiry"("converted");
+
+-- CreateIndex
+CREATE INDEX "PublicInquiry_createdAt_idx" ON "PublicInquiry"("createdAt");
+
+-- CreateIndex
+CREATE INDEX "AuditLog_entity_entityId_idx" ON "AuditLog"("entity", "entityId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "RefreshToken_tokenHash_key" ON "RefreshToken"("tokenHash");
 
 -- AddForeignKey
 ALTER TABLE "User" ADD CONSTRAINT "User_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -535,6 +718,9 @@ ALTER TABLE "TeacherProfile" ADD CONSTRAINT "TeacherProfile_userId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "ReferralAgentProfile" ADD CONSTRAINT "ReferralAgentProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Student" ADD CONSTRAINT "Student_partnerConsultancyId_fkey" FOREIGN KEY ("partnerConsultancyId") REFERENCES "PartnerConsultancy"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Student" ADD CONSTRAINT "Student_assignedCounselorId_fkey" FOREIGN KEY ("assignedCounselorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -597,7 +783,13 @@ ALTER TABLE "VisaCase" ADD CONSTRAINT "VisaCase_applicationId_fkey" FOREIGN KEY 
 ALTER TABLE "University" ADD CONSTRAINT "University_countryId_fkey" FOREIGN KEY ("countryId") REFERENCES "Country"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Course" ADD CONSTRAINT "Course_universityId_fkey" FOREIGN KEY ("universityId") REFERENCES "University"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Course" ADD CONSTRAINT "Course_universityId_fkey" FOREIGN KEY ("universityId") REFERENCES "University"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CommissionRule" ADD CONSTRAINT "CommissionRule_scopeBranchId_fkey" FOREIGN KEY ("scopeBranchId") REFERENCES "Branch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CommissionRule" ADD CONSTRAINT "CommissionRule_scopeUniversityId_fkey" FOREIGN KEY ("scopeUniversityId") REFERENCES "University"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Commission" ADD CONSTRAINT "Commission_ruleId_fkey" FOREIGN KEY ("ruleId") REFERENCES "CommissionRule"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -612,6 +804,9 @@ ALTER TABLE "Commission" ADD CONSTRAINT "Commission_studentId_fkey" FOREIGN KEY 
 ALTER TABLE "Class" ADD CONSTRAINT "Class_teacherId_fkey" FOREIGN KEY ("teacherId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Class" ADD CONSTRAINT "Class_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "Enrollment" ADD CONSTRAINT "Enrollment_classId_fkey" FOREIGN KEY ("classId") REFERENCES "Class"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -624,7 +819,13 @@ ALTER TABLE "AttendanceRecord" ADD CONSTRAINT "AttendanceRecord_classId_fkey" FO
 ALTER TABLE "AttendanceRecord" ADD CONSTRAINT "AttendanceRecord_studentId_fkey" FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "AttendanceRecord" ADD CONSTRAINT "AttendanceRecord_markedById_fkey" FOREIGN KEY ("markedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "ClassContent" ADD CONSTRAINT "ClassContent_classId_fkey" FOREIGN KEY ("classId") REFERENCES "Class"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ClassContent" ADD CONSTRAINT "ClassContent_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Event" ADD CONSTRAINT "Event_branchId_fkey" FOREIGN KEY ("branchId") REFERENCES "Branch"("id") ON DELETE SET NULL ON UPDATE CASCADE;
@@ -633,10 +834,26 @@ ALTER TABLE "Event" ADD CONSTRAINT "Event_branchId_fkey" FOREIGN KEY ("branchId"
 ALTER TABLE "Event" ADD CONSTRAINT "Event_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Event" ADD CONSTRAINT "Event_approvedById_fkey" FOREIGN KEY ("approvedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "EventReminder" ADD CONSTRAINT "EventReminder_eventId_fkey" FOREIGN KEY ("eventId") REFERENCES "Event"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "NotificationTemplate" ADD CONSTRAINT "NotificationTemplate_createdById_fkey" FOREIGN KEY ("createdById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Notification" ADD CONSTRAINT "Notification_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "NotificationTemplate"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Notification" ADD CONSTRAINT "Notification_recipientUserId_fkey" FOREIGN KEY ("recipientUserId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PublicInquiry" ADD CONSTRAINT "PublicInquiry_convertedById_fkey" FOREIGN KEY ("convertedById") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "AuditLog" ADD CONSTRAINT "AuditLog_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "RefreshToken" ADD CONSTRAINT "RefreshToken_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

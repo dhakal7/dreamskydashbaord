@@ -1,8 +1,11 @@
+import { useMemo } from 'react'
 import dayjs from 'dayjs'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card } from '@/components/ui/card'
 import { DataTable } from '@/components/shared/data-table'
 import { commissionRules } from '@/mock'
+import { useCommissionRules } from '@/hooks/use-commissions'
+import { isMockMode } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
 import type { CommissionRule } from '@/types'
 import type { ColumnDef } from '@tanstack/react-table'
@@ -13,6 +16,26 @@ function formatDate(value?: string) {
 
 export default function CommissionRulesPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
+  const { data: apiRulesData } = useCommissionRules()
+
+  const rules: CommissionRule[] = useMemo(() => {
+    if (isMockMode()) {
+      return commissionRules
+    }
+    const list = Array.isArray(apiRulesData) ? apiRulesData : apiRulesData?.rules || []
+    return list.map((r: any) => ({
+      id: r.id,
+      name: r.name || 'Unnamed Rule',
+      type: (r.type?.toLowerCase() || 'fixed') as any,
+      value: r.amount || 0,
+      triggerStage: (r.triggerStage?.toLowerCase() || 'enrolled') as any,
+      effectiveFrom: r.effectiveFrom || r.createdAt,
+      effectiveTo: r.effectiveTo || undefined,
+      active: r.isActive ?? true,
+      appliesToRole: (r.role?.toLowerCase() || 'counselor') as any,
+      scopeUniversityId: r.scopeUniversityId || undefined,
+    }))
+  }, [apiRulesData])
 
   if (currentUser.role !== 'super_admin') {
     return (
@@ -79,19 +102,19 @@ export default function CommissionRulesPage() {
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
         <Card className="p-3.5">
           <p className="text-xs text-muted-foreground">Total Rules</p>
-          <p className="mt-1 text-xl font-semibold font-tabular">{commissionRules.length}</p>
+          <p className="mt-1 text-xl font-semibold font-tabular">{rules.length}</p>
         </Card>
         <Card className="p-3.5">
           <p className="text-xs text-muted-foreground">Active</p>
-          <p className="mt-1 text-xl font-semibold font-tabular">{commissionRules.filter((rule) => rule.active).length}</p>
+          <p className="mt-1 text-xl font-semibold font-tabular">{rules.filter((rule) => rule.active).length}</p>
         </Card>
         <Card className="p-3.5">
           <p className="text-xs text-muted-foreground">Legacy / Inactive</p>
-          <p className="mt-1 text-xl font-semibold font-tabular">{commissionRules.filter((rule) => !rule.active).length}</p>
+          <p className="mt-1 text-xl font-semibold font-tabular">{rules.filter((rule) => !rule.active).length}</p>
         </Card>
       </div>
 
-      <DataTable columns={columns} data={commissionRules} pageSize={10} />
+      <DataTable columns={columns} data={rules} pageSize={10} />
     </div>
   )
 }

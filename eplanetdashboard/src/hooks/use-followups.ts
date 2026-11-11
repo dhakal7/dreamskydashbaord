@@ -57,10 +57,28 @@ export function useUpdateFollowUp() {
       return followUpApi.update(id, body)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: followUpKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: followUpKeys.all })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       toast.success('Follow-up updated')
     },
     onError: (err: Error) => toast.error(err.message),
   })
 }
+
+export function useCancelFollowUp() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return followUpApi.cancel(id)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: followUpKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success('Follow-up reminder cancelled')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to cancel follow-up reminder'),
+  })
+}
+
+export const useDeleteFollowUp = useCancelFollowUp

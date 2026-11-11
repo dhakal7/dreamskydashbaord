@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, UserPlus, CalendarClock, CalendarDays, FileStack,
   PlaneTakeoff, FolderKanban, Landmark, Globe2, GraduationCap, BarChart3, Settings,
-  Wallet, Link2, BookOpen, Bookmark, UserCog, CalendarCheck, DollarSign,
+  Wallet, Link2, BookOpen, Bookmark, UserCog, CalendarCheck, DollarSign, ShieldAlert,
 } from 'lucide-react'
 import type { Role } from '@/types'
 import { hasPermission, type Permission } from '@/lib/rbac'
@@ -39,19 +39,24 @@ const all: Record<string, NavItem> = {
   events: { label: 'Events', to: '/events', icon: CalendarDays, permission: 'events.view' },
   users: { label: 'Users', to: '/users', icon: UserCog, permission: 'users.view' },
   fees: { label: 'Fees & Payments', to: '/fees', icon: DollarSign, permission: 'appointments.view' },
+  auditLogs: { label: 'Activity Log', to: '/audit-logs', icon: ShieldAlert, permission: 'dashboard.view' },
 }
 
 const byRole: Record<Role, (keyof typeof all)[]> = {
   super_admin: [
     'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa',
-    'documents', 'universities', 'countries', 'courses', 'classes', 'fees', 'reports', 'commissionRules', 'events', 'users', 'settings',
+    'documents', 'universities', 'countries', 'courses', 'classes', 'fees', 'reports', 'commissionRules', 'events', 'users', 'auditLogs', 'settings',
+  ],
+  branch_admin: [
+    'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa',
+    'documents', 'universities', 'countries', 'courses', 'classes', 'fees', 'reports', 'commissionRules', 'events', 'users', 'auditLogs', 'settings',
   ],
   front_desk: ['dashboard', 'reception', 'fees', 'leads', 'students', 'followUps', 'appointments', 'classes', 'documents', 'settings'],
   counselor: [
     'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa',
-    'documents', 'fees', 'commissions', 'events', 'reports', 'settings',
+    'documents', 'commissions', 'events', 'reports', 'settings',
   ],
-  teacher: ['dashboard', 'leads', 'classes', 'reports', 'settings'],
+  teacher: ['dashboard', 'classes', 'reports', 'settings'],
   student: ['dashboard', 'appointments', 'applications', 'visa', 'documents', 'classes', 'materials', 'settings'],
   referral_agent: ['dashboard', 'leads', 'referrals', 'commissions', 'settings'],
 }

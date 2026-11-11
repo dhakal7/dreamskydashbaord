@@ -1,6 +1,12 @@
 node_modules
 # Keep environment variables out of version control
 .env
+.env.test.disposable
+.env.*.local
+.disposable-cluster-ref.json
+.disposable-fixture-manifest.json
+.disposable-fixture-manifest.json.tmp
+disposable-manifest-*.json
 
 /src/generated/prisma
 

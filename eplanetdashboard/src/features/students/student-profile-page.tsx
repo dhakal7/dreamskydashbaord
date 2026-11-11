@@ -8,6 +8,8 @@ import { PersonAvatar } from '@/components/ui/avatar'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { EmptyState } from '@/components/shared/empty-state'
 import { StudentStatusBadge } from '@/components/shared/status-badges'
+import { Badge } from '@/components/ui/badge'
+import { hasPermission } from '@/lib/rbac'
 import { useStudentsStore } from './store'
 import { useStudent, useDeleteStudent, useResendCredentials } from '@/hooks/use-students'
 import { adaptApiStudentToStudent } from '@/lib/student-adapter'
@@ -28,6 +30,7 @@ import { LifecycleTab } from './components/profile-tabs/lifecycle-tab'
 import { ProfileNotes } from './components/profile-notes'
 import { FollowUpCreateDialog } from '@/features/followups/components/followup-create-dialog'
 import { StudentFormDialog } from './components/student-form-dialog'
+import { TrashLeadDialog } from '@/features/leads/components/trash-lead-dialog'
 
 const tabs = [
   { id: 'personal', label: 'Personal' },
@@ -47,7 +50,7 @@ export default function StudentProfilePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const currentUser = useAuthStore((s) => s.currentUser)
-  const isAdmin = currentUser.role === 'super_admin'
+  const isAdmin = currentUser.role === 'super_admin' || currentUser.role === 'branch_admin'
   const mockStudents = useStudentsStore((s) => s.students)
   const deleteMutation = useDeleteStudent()
   const resendMutation = useResendCredentials()
@@ -56,6 +59,7 @@ export default function StudentProfilePage() {
   const [activeTab, setActiveTab] = useState('personal')
   const [followUpOpen, setFollowUpOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
+  const [trashDialogOpen, setTrashDialogOpen] = useState(false)
 
   const student = !isMockMode() && apiStudent
     ? adaptApiStudentToStudent(apiStudent)
@@ -67,14 +71,14 @@ export default function StudentProfilePage() {
 
   const handleDeleteProfile = () => {
     if (!student) return
-    if (confirm(`Are you sure you want to delete ${student.name}? This will permanently remove their profile and records.`)) {
-      deleteMutation.mutate(student.id, {
-        onSuccess: () => {
-          toast.success(`Student ${student.name} deleted successfully`)
-          navigate('/students')
-        },
-      })
-    }
+    setTrashDialogOpen(true)
+  }
+
+  const handleConfirmTrash = async (reason: string) => {
+    if (!student) return
+    await deleteMutation.mutateAsync({ id: student.id, reason })
+    toast.success(`Student ${student.name} moved to Trash`)
+    navigate('/students')
   }
 
   if (!isMockMode() && isLoadingStudent) {
@@ -124,6 +128,11 @@ export default function StudentProfilePage() {
                 <span className="text-sm font-tabular text-muted-foreground">{student.studentId}</span>
                 <span className="text-muted-foreground/40">•</span>
                 <StudentStatusBadge status={student.status} />
+                {student.isClassOnly && (
+                  <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-semibold text-xs py-0">
+                    Class Only
+                  </Badge>
+                )}
                 <span className="text-muted-foreground/40">•</span>
                 <span className="text-sm text-muted-foreground">Counselor: {student.counselorName}</span>
               </div>
@@ -152,7 +161,7 @@ export default function StudentProfilePage() {
             <Button variant="outline" size="sm" className="h-8 shadow-none" onClick={() => window.open(`mailto:${student.email}`)}>
               <Mail /> Email
             </Button>
-            {student.email && (
+            {(currentUser?.role === 'super_admin' || currentUser?.role === 'branch_admin' || currentUser?.role === 'counselor') && student.email && (
               <Button
                 variant="outline"
                 size="sm"
@@ -165,14 +174,16 @@ export default function StudentProfilePage() {
                 {resendMutation.isPending ? 'Sending...' : 'Send Portal Credentials'}
               </Button>
             )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 shadow-none gap-1.5"
-              onClick={() => setEditOpen(true)}
-            >
-              <Edit3 className="size-3.5" /> Edit
-            </Button>
+            {hasPermission(currentUser?.role ?? 'student', 'students.manage') && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 shadow-none gap-1.5"
+                onClick={() => setEditOpen(true)}
+              >
+                <Edit3 className="size-3.5" /> Edit
+              </Button>
+            )}
             {isAdmin && (
               <Button
                 variant="outline"
@@ -182,12 +193,20 @@ export default function StudentProfilePage() {
                 disabled={deleteMutation.isPending}
               >
                 <Trash2 className="size-3.5 mr-1" />
-                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                {deleteMutation.isPending ? 'Moving to Trash...' : 'Move to Trash'}
               </Button>
             )}
           </div>
         </div>
       </Card>
+
+      <TrashLeadDialog
+        open={trashDialogOpen}
+        onOpenChange={setTrashDialogOpen}
+        lead={student ? { id: student.id, name: student.name } : null}
+        onConfirm={handleConfirmTrash}
+        isSubmitting={deleteMutation.isPending}
+      />
 
       <FollowUpCreateDialog
         open={followUpOpen}

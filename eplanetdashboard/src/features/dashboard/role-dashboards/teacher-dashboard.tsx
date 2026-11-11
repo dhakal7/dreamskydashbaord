@@ -7,37 +7,69 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { PersonAvatar } from '@/components/ui/avatar'
 import { EmptyState } from '@/components/shared/empty-state'
-import { BookOpen, Clock, ChevronRight } from 'lucide-react'
+import { BookOpen, Clock, ChevronRight, Loader2 } from 'lucide-react'
 import { RoleStatCards } from './shared'
 import { getTeacherDashboard } from '../role-selectors'
 import { useAuthStore } from '@/store/auth-store'
 import { isMockMode } from '@/lib/api-client'
 import { useMyClasses } from '@/hooks/use-classes'
-import { enrollments as mockEnroll } from '@/mock/classes'
+
+const DEFAULT_SCHEDULE_TEXT = 'Sun-Fri · 07:00 AM - 08:00 AM'
+
+export function formatClassSchedule(schedule: unknown, fallback = DEFAULT_SCHEDULE_TEXT): string {
+  if (typeof schedule === 'string') {
+    const trimmed = schedule.trim()
+    return trimmed.length > 0 ? trimmed : fallback
+  }
+
+  if (schedule && typeof schedule === 'object' && !Array.isArray(schedule)) {
+    const record = schedule as Record<string, unknown>
+
+    if (typeof record.timing === 'string' && record.timing.trim().length > 0) {
+      return record.timing.trim()
+    }
+
+    const days = typeof record.days === 'string' ? record.days.trim() : ''
+    const time = typeof record.time === 'string' ? record.time.trim() : ''
+    if (days && time) {
+      return `${days} · ${time}`
+    }
+    if (days || time) {
+      return days || time
+    }
+  }
+
+  return fallback
+}
 
 export function TeacherDashboard() {
   const navigate = useNavigate()
   const linkedId = useAuthStore((s) => s.currentUser.linkedId)
+  const isMock = isMockMode()
   const mockData = getTeacherDashboard(linkedId)
-  const { data: liveClasses } = useMyClasses()
+  const { data: liveClasses, isLoading, isError, error } = useMyClasses()
 
   const dashboardData = useMemo(() => {
-    if (isMockMode() || !liveClasses) {
-      return mockData
+    if (isMock) {
+      return {
+        ...mockData,
+        avgAttendancePct: `${mockData.avgAttendancePct}%`,
+        avgProgress: `${mockData.avgProgress}%`,
+      }
     }
 
-    const classesMapped = (liveClasses || []).map((c) => {
-      const storeCount = mockEnroll.filter((e) => e.classId === c.id || e.classId === c.name).length
-      const enrolledCount = (Array.isArray(c.enrollments) && c.enrollments.length > 0)
+    const classesList = Array.isArray(liveClasses) ? liveClasses : []
+    const classesMapped = classesList.map((c: any) => {
+      const enrolledCount = Array.isArray(c.enrollments)
         ? c.enrollments.length
-        : storeCount
+        : (c._count?.enrollments ?? 0)
 
       return {
         id: c.id,
         name: c.name,
         subject: c.subject || (c.name.includes('PTE') ? 'PTE' : 'IELTS'),
         status: (c.status?.toLowerCase() ?? 'ongoing'),
-        schedule: c.schedule ?? 'Sun-Fri · 07:00 AM - 08:00 AM',
+        schedule: formatClassSchedule(c.schedule),
         room: 'Room 101',
         enrolledCount,
         capacity: c.capacity || 20,
@@ -46,9 +78,9 @@ export function TeacherDashboard() {
       }
     })
 
-    const ongoingCount = classesMapped.filter((c) => c.status === 'ongoing' || c.status === 'active').length
-    const upcomingCount = classesMapped.filter((c) => c.status === 'upcoming').length
-    const totalStudents = classesMapped.reduce((sum, c) => sum + c.enrolledCount, 0)
+    const ongoingCount = classesMapped.filter((c: any) => c.status === 'ongoing' || c.status === 'active').length
+    const upcomingCount = classesMapped.filter((c: any) => c.status === 'upcoming').length
+    const totalStudents = classesMapped.reduce((sum: number, c: any) => sum + c.enrolledCount, 0)
 
     return {
       teacher: { name: useAuthStore.getState().currentUser.name },
@@ -56,16 +88,34 @@ export function TeacherDashboard() {
       ongoingCount,
       upcomingCount,
       totalStudents,
-      avgAttendancePct: 92,
-      avgProgress: 78,
+      avgAttendancePct: '--',
+      avgProgress: '--',
     }
-  }, [liveClasses, mockData])
+  }, [isMock, liveClasses, mockData])
+
+  if (!isMock && isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <Loader2 className="size-8 animate-spin text-primary mb-3" />
+        <p className="text-sm text-muted-foreground">Loading your assigned classes...</p>
+      </div>
+    )
+  }
+
+  if (!isMock && isError) {
+    return (
+      <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-6 text-center">
+        <p className="text-sm font-medium text-destructive">Failed to load classes</p>
+        <p className="text-xs text-muted-foreground mt-1">{error?.message || 'Please check your connection and try again.'}</p>
+      </div>
+    )
+  }
 
   const stats = [
     { label: 'Ongoing Classes', value: dashboardData.ongoingCount, icon: BookOpen, color: '#2563EB', sub: `${dashboardData.upcomingCount} upcoming` },
     { label: 'Total Students', value: dashboardData.totalStudents, icon: BookOpen, color: '#7C3AED' },
-    { label: 'Avg. Attendance', value: `${dashboardData.avgAttendancePct}%`, icon: BookOpen, color: '#16A34A' },
-    { label: 'Avg. Progress', value: `${dashboardData.avgProgress}%`, icon: BookOpen, color: '#D97706' },
+    { label: 'Avg. Attendance', value: dashboardData.avgAttendancePct, icon: BookOpen, color: '#16A34A' },
+    { label: 'Avg. Progress', value: dashboardData.avgProgress, icon: BookOpen, color: '#D97706' },
   ]
 
   return (
@@ -127,7 +177,7 @@ export function TeacherDashboard() {
                         </h3>
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                           <Clock className="size-3.5 text-muted-foreground" />
-                          <span>{classItem.schedule}</span>
+                          <span>{formatClassSchedule(classItem.schedule)}</span>
                           <span>·</span>
                           <span>{classItem.room || 'Room 101'}</span>
                         </div>

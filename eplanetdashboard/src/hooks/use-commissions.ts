@@ -56,9 +56,10 @@ export function useMarkCommissionPaid() {
 export function useDisputeCommission() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, notes }: { id: string; notes: string }) => {
+    mutationFn: ({ id, reason, notes }: { id: string; reason?: string; notes?: string }) => {
       if (isMockMode()) return Promise.resolve(null as never)
-      return commissionApi.dispute(id, notes)
+      const disputeReason = (reason || notes || '').trim()
+      return commissionApi.dispute(id, disputeReason)
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: commissionKeys.lists() })

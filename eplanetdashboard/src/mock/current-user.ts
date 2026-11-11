@@ -13,6 +13,10 @@ export const demoUsers: Record<CurrentUser['role'], CurrentUser> = {
     id: 'user-sa-1',     name: 'Ashish Shrestha', email: 'dreamskyadmission@gmail.com',
     role: 'super_admin', avatarColor: '#0F172A', branchId: hq.id, branchName: 'All Branches', linkedId: 'user-sa-1',
   },
+  branch_admin: {
+    id: 'user-ba-1', name: 'Branch Admin', email: 'branch.admin@dreamsky.com',
+    role: 'branch_admin', avatarColor: '#1E293B', branchId: branches[1]?.id || hq.id, branchName: branches[1]?.name || 'Branch Office', linkedId: 'user-ba-1',
+  },
   front_desk: {
     id: 'user-fd-1', name: 'Puja Shrestha', email: 'puja.shrestha@dreamsky.com',
     role: 'front_desk', avatarColor: '#DB2777', branchId: hq.id, branchName: hq.name, linkedId: 'user-fd-1',
@@ -35,11 +39,4 @@ export const demoUsers: Record<CurrentUser['role'], CurrentUser> = {
   },
 }
 
-export const roleLabels: Record<CurrentUser['role'], string> = {
-  super_admin: 'Super Admin',
-  front_desk: 'Front Desk',
-  counselor: 'Counselor',
-  teacher: 'Teacher',
-  student: 'Student',
-  referral_agent: 'Referral Agent',
-}
+export { roleLabels } from '@/constants/roles'

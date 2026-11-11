@@ -1,10 +1,10 @@
-require("dotenv").config();
-const { PrismaClient } = require("@prisma/client");
-const { PrismaPg } = require("@prisma/adapter-pg");
 const fs = require("fs");
+const { assertDisposableTarget } = require("../src/config");
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+// Pre-import guard: Execution blocked unless positively targeting disposable test DB
+assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
+
+const prisma = require("../src/prisma");
 
 function cleanPhone(phone) {
     if (phone === null || phone === undefined) return null;
@@ -28,6 +28,7 @@ function splitName(fullName) {
 }
 
 async function run() {
+    assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
     const jsonPath = "/Users/suyogdhakal/Desktop/eplanetcrm3/student_data.json";
     console.log("🔧 Starting Counselor Assignment Fix...\n");
 

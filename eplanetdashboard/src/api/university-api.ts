@@ -101,21 +101,25 @@ export interface CourseListResponse {
 // ─── API functions ────────────────────────────────────────────────────────────
 
 export const universityApi = {
-  // Countries (mounted at /universities/countries/*)
-  listCountries(params?: CountryListParams): Promise<CountryListResponse> {
-    return api.get('/universities/countries', { params })
+  // Countries (mounted at /countries and /universities/countries/*)
+  async listCountries(params?: CountryListParams): Promise<CountryListResponse> {
+    const res = await api.get<any>('/countries', { params })
+    if (Array.isArray(res)) {
+      return { countries: res, total: res.length }
+    }
+    return res ?? { countries: [], total: 0 }
   },
   getCountry(id: string): Promise<ApiCountry> {
-    return api.get(`/universities/countries/${id}`)
+    return api.get(`/countries/${id}`)
   },
-  createCountry(body: Omit<ApiCountry, 'id' | 'createdAt'>): Promise<ApiCountry> {
-    return api.post('/universities/countries', body)
+  createCountry(body: any): Promise<ApiCountry> {
+    return api.post('/countries', body)
   },
-  updateCountry(id: string, body: Partial<ApiCountry>): Promise<ApiCountry> {
-    return api.put(`/universities/countries/${id}`, body)
+  updateCountry(id: string, body: any): Promise<ApiCountry> {
+    return api.put(`/countries/${id}`, body)
   },
   deleteCountry(id: string): Promise<void> {
-    return api.delete(`/universities/countries/${id}`)
+    return api.delete(`/countries/${id}`)
   },
 
   // Universities
@@ -140,8 +144,12 @@ export const universityApi = {
 }
 
 export const courseApi = {
-  list(params?: CourseListParams): Promise<CourseListResponse> {
-    return api.get('/courses', { params })
+  async list(params?: CourseListParams): Promise<CourseListResponse> {
+    const res = await api.get<any>('/courses', { params })
+    if (Array.isArray(res)) {
+      return { courses: res, total: res.length }
+    }
+    return res ?? { courses: [], total: 0 }
   },
   getOne(id: string): Promise<ApiCourse> {
     return api.get(`/courses/${id}`)

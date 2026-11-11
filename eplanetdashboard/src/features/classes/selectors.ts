@@ -6,8 +6,8 @@ import { visibleClasses } from '@/lib/data-visibility'
 import { useAttendanceStore } from './attendance-store'
 import { useClassMaterialsStore } from './materials-store'
 
-export function getClassesForRole(role: string, linkedId: string): ClassSession[] {
-  return [...visibleClasses({ role, linkedId } as CurrentUser, classes)]
+export function getClassesForRole(role: string, linkedId: string, branchId?: string | null): ClassSession[] {
+  return [...visibleClasses({ role, linkedId, branchId } as CurrentUser, classes)]
 }
 
 export function getTeacherClassIds(teacherId: string): Set<string> {

@@ -1,4 +1,9 @@
 require('dotenv').config()
+const { assertDisposableTarget } = require('../src/config')
+
+// Pre-import guard: Execution blocked unless positively targeting disposable test DB
+assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS)
+
 const prisma = require('../src/prisma')
 const { createFollowUp } = require('../src/services/followup.service')
 const { createAppointment, changeStatus: changeApptStatus } = require('../src/services/appointment.service')
@@ -9,6 +14,7 @@ const { generateCommission, markCommissionPaid } = require('../src/services/comm
 const TEST_EMAIL = 'dreamskyadmission@gmail.com'
 
 async function main() {
+  assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS)
   const admin = await prisma.user.findUnique({ where: { email: TEST_EMAIL } })
   if (!admin) throw new Error('admin not found')
 

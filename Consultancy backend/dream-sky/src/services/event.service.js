@@ -1,5 +1,6 @@
 const prisma = require("../prisma");
 const { sendEventNotificationEmail } = require("./email.service");
+const { withEventReminderLock } = require("./notification.poller");
 
 const EVERYONE_TOKEN = "EVERYONE";
 
@@ -232,15 +233,17 @@ async function updateEvent(id, data, currentUser) {
     updateData.datetime = newDatetime;
   }
 
-  const updated = await prisma.$transaction(async (tx) => {
-    const ev = await tx.event.update({ where: { id }, data: updateData });
+  const updated = await withEventReminderLock(prisma, async () => {
+    return await prisma.$transaction(async (tx) => {
+      const ev = await tx.event.update({ where: { id }, data: updateData });
 
-    if (newDatetime && ev.approvalStatus === "APPROVED") {
-      await tx.eventReminder.deleteMany({ where: { eventId: id, status: "PENDING" } });
-      await generateEventReminders(tx, id, newDatetime);
-    }
+      if (newDatetime && ev.approvalStatus === "APPROVED") {
+        await tx.eventReminder.deleteMany({ where: { eventId: id, status: "PENDING" } });
+        await generateEventReminders(tx, id, newDatetime);
+      }
 
-    return ev;
+      return ev;
+    });
   });
 
   const result = await prisma.event.findUnique({
@@ -264,7 +267,12 @@ async function deleteEvent(id, currentUser) {
     }
   }
 
-  await prisma.event.delete({ where: { id } });
+  await withEventReminderLock(prisma, async () => {
+    await prisma.$transaction(async (tx) => {
+      await tx.eventReminder.deleteMany({ where: { eventId: id, status: "PENDING" } });
+      await tx.event.delete({ where: { id } });
+    });
+  });
   return { deleted: true, id };
 }
 
@@ -279,18 +287,20 @@ async function approveEvent(id, currentUser) {
     return { error: "WRONG_STATUS", currentStatus: existing.approvalStatus };
   }
 
-  const result = await prisma.$transaction(async (tx) => {
-    const ev = await tx.event.update({
-      where: { id },
-      data: {
-        approvalStatus: "APPROVED",
-        approvedById: currentUser.id,
-        approvedAt: new Date(),
-      },
-    });
+  const result = await withEventReminderLock(prisma, async () => {
+    return await prisma.$transaction(async (tx) => {
+      const ev = await tx.event.update({
+        where: { id },
+        data: {
+          approvalStatus: "APPROVED",
+          approvedById: currentUser.id,
+          approvedAt: new Date(),
+        },
+      });
 
-    await generateEventReminders(tx, id, ev.datetime);
-    return ev;
+      await generateEventReminders(tx, id, ev.datetime);
+      return ev;
+    });
   });
 
   const event = await prisma.event.findUnique({
@@ -316,14 +326,21 @@ async function rejectEvent(id, currentUser) {
     return { error: "WRONG_STATUS", currentStatus: existing.approvalStatus };
   }
 
-  const updated = await prisma.event.update({
-    where: { id },
-    data: {
-      approvalStatus: "REJECTED",
-      approvedById: currentUser.id,
-      approvedAt: new Date(),
-    },
-    include: { branch: true },
+  const updated = await withEventReminderLock(prisma, async () => {
+    return await prisma.$transaction(async (tx) => {
+      const ev = await tx.event.update({
+        where: { id },
+        data: {
+          approvalStatus: "REJECTED",
+          approvedById: currentUser.id,
+          approvedAt: new Date(),
+        },
+        include: { branch: true },
+      });
+
+      await tx.eventReminder.deleteMany({ where: { eventId: id, status: "PENDING" } });
+      return ev;
+    });
   });
 
   return { event: updated };

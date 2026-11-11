@@ -6,8 +6,7 @@
  *
  * Canonical mapping (see prisma schema Role enum and frontend types/index.ts):
  *   SUPER_ADMIN   → super_admin
- *   BRANCH_ADMIN  → super_admin  (stopgap — branch admins see full admin UI
- *                                  until a dedicated branch-admin dashboard exists)
+ *   BRANCH_ADMIN  → branch_admin
  *   COUNSELOR     → counselor
  *   FRONT_DESK    → front_desk
  *   TEACHER       → teacher
@@ -29,7 +28,7 @@ export type BackendRole =
 
 const backendToFrontend: Record<BackendRole, Role> = {
   SUPER_ADMIN: 'super_admin',
-  BRANCH_ADMIN: 'super_admin', // Open Decision #1 — map to dedicated role once dashboard exists
+  BRANCH_ADMIN: 'branch_admin',
   ADMIN: 'super_admin',
   COUNSELOR: 'counselor',
   FRONT_DESK: 'front_desk',
@@ -40,6 +39,7 @@ const backendToFrontend: Record<BackendRole, Role> = {
 
 const frontendToBackend: Record<Role, BackendRole> = {
   super_admin: 'SUPER_ADMIN',
+  branch_admin: 'BRANCH_ADMIN',
   counselor: 'COUNSELOR',
   front_desk: 'FRONT_DESK',
   teacher: 'TEACHER',

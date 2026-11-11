@@ -93,7 +93,67 @@ export function useCreateCourse() {
       if (isMockMode()) return Promise.resolve(null as never)
       return courseApi.create(body)
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: courseKeys.lists() }); toast.success('Course created') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: courseKeys.all }); toast.success('Course created') },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useUpdateCourse() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof courseApi.update>[1] }) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return courseApi.update(id, body)
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: courseKeys.all }); toast.success('Course updated') },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useDeleteCourse() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return courseApi.remove(id)
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: courseKeys.all }); toast.success('Course deleted') },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useCreateCountry() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Parameters<typeof universityApi.createCountry>[0]) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return universityApi.createCountry(body)
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: universityKeys.countries() }); toast.success('Country created') },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useUpdateCountry() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Parameters<typeof universityApi.updateCountry>[1] }) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return universityApi.updateCountry(id, body)
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: universityKeys.countries() }); toast.success('Country updated') },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+export function useDeleteCountry() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return universityApi.deleteCountry(id)
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: universityKeys.countries() }); toast.success('Country deleted') },
     onError: (err: Error) => toast.error(err.message),
   })
 }

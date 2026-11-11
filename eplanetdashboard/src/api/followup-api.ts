@@ -26,8 +26,8 @@ export interface FollowUpListParams {
   studentId?: string
   authorId?: string
   channel?: string
-  /** 'upcoming' → nextFollowUpAt in the future; 'overdue' → nextFollowUpAt in the past. */
-  status?: 'upcoming' | 'overdue'
+  /** 'upcoming' → nextFollowUpAt in the future; 'overdue' → nextFollowUpAt in the past; 'pending' → any scheduled follow-up reminder. */
+  status?: 'upcoming' | 'overdue' | 'pending' | 'all_pending' | string
   from?: string
   to?: string
 }
@@ -78,8 +78,13 @@ export const followUpApi = {
     return api.put(`/follow-ups/${id}`, body)
   },
 
-  /** DELETE /follow-ups/:id */
-  remove(id: string): Promise<void> {
+  /** DELETE /follow-ups/:id — cancels the scheduled reminder (sets nextFollowUpAt: null, preserves history) */
+  remove(id: string): Promise<{ id: string; cancelled: boolean; message: string }> {
+    return api.delete(`/follow-ups/${id}`)
+  },
+
+  /** Alias for remove with explicit cancellation semantics */
+  cancel(id: string): Promise<{ id: string; cancelled: boolean; message: string }> {
     return api.delete(`/follow-ups/${id}`)
   },
 }

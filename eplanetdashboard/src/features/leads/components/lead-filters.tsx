@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { counselors } from '@/mock'
+import { useCounselors } from '@/hooks/use-counselors'
 import { leadStageMeta, leadStageOrder } from '@/components/shared/status-badges'
 
 export interface LeadFilters {
@@ -28,6 +28,8 @@ export function LeadFiltersBar({
   filters: LeadFilters
   onChange: (f: LeadFilters) => void
 }) {
+  const { data: counselorData } = useCounselors()
+  const counselorsList = counselorData || []
   const isFiltered = JSON.stringify(filters) !== JSON.stringify(defaultLeadFilters)
 
   return (
@@ -77,7 +79,7 @@ export function LeadFiltersBar({
         <SelectTrigger className="w-[160px]"><SelectValue placeholder="Counselor" /></SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All counselors</SelectItem>
-          {counselors.map((c) => (
+          {counselorsList.map((c: any) => (
             <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
           ))}
         </SelectContent>

@@ -1,13 +1,18 @@
 const prisma = require("../prisma");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
-const realStaffUsers = [
+/**
+ * Standard staff user identities for initial system bootstrapping.
+ * Plaintext passwords have been completely removed.
+ * Initial credentials must be set via secure environment provisioning or CLI.
+ */
+const staffIdentities = [
     {
         id: "user-sa-1",
         email: "dreamskyadmission@gmail.com",
         firstName: "Ashish",
         lastName: "Shrestha",
-        password: "dreamskyconsultancy@2025",
         role: "SUPER_ADMIN",
         status: "ACTIVE",
         branchId: "br-1"
@@ -17,7 +22,6 @@ const realStaffUsers = [
         email: "dipshikha.dawadi@dreamsky.com",
         firstName: "Dipshikha",
         lastName: "Dawadi",
-        password: "DreamSky@Counselor2025!",
         role: "COUNSELOR",
         status: "ACTIVE",
         branchId: "br-1"
@@ -27,7 +31,6 @@ const realStaffUsers = [
         email: "amit.dhodari@dreamsky.com",
         firstName: "Amit",
         lastName: "Dhodari",
-        password: "DreamSky@Counselor2025!",
         role: "COUNSELOR",
         status: "ACTIVE",
         branchId: "br-1"
@@ -37,7 +40,6 @@ const realStaffUsers = [
         email: "vaibhav.joshi@dreamsky.com",
         firstName: "Vaibhav",
         lastName: "Joshi",
-        password: "DreamSky@Counselor2025!",
         role: "COUNSELOR",
         status: "ACTIVE",
         branchId: "br-1"
@@ -47,7 +49,6 @@ const realStaffUsers = [
         email: "santona.khatri@dreamsky.com",
         firstName: "Santona",
         lastName: "Khatri",
-        password: "dreamskyfrontdesk@2025",
         role: "FRONT_DESK",
         status: "ACTIVE",
         branchId: "br-1"
@@ -57,7 +58,6 @@ const realStaffUsers = [
         email: "amisha.thapa@dreamsky.com",
         firstName: "Amisha",
         lastName: "Thapa",
-        password: "dreamskyfrontdesk@2025",
         role: "FRONT_DESK",
         status: "ACTIVE",
         branchId: "br-1"
@@ -67,7 +67,6 @@ const realStaffUsers = [
         email: "teacher@dreamsky.internal",
         firstName: "EPT",
         lastName: "Instructor",
-        password: "dreamskyteacher@2025",
         role: "TEACHER",
         status: "ACTIVE",
         branchId: "br-1"
@@ -75,6 +74,13 @@ const realStaffUsers = [
 ];
 
 const autoSeedUsers = async () => {
+    // Strict confirmation guard: Only explicit environment confirmation is accepted
+    // Function arguments (such as options.force) CANNOT bypass this check
+    if (process.env.CONFIRM_STAFF_SEED !== "true") {
+        console.warn("⚠️ autoSeedUsers: Execution skipped. Requires explicit CONFIRM_STAFF_SEED='true' environment variable.");
+        return { skipped: true, reason: "CONFIRM_STAFF_SEED required" };
+    }
+
     try {
         // Ensure default branch exists
         await prisma.branch.upsert({
@@ -99,27 +105,16 @@ const autoSeedUsers = async () => {
             }
         }).catch(() => {});
 
-        for (const u of realStaffUsers) {
+        for (const u of staffIdentities) {
             const existing = await prisma.user.findUnique({ where: { email: u.email } });
-            let needUpdate = !existing;
-            if (existing) {
-                const matches = await bcrypt.compare(u.password, existing.passwordHash).catch(() => false);
-                if (!matches) needUpdate = true;
-            }
-            if (needUpdate) {
-                const hash = await bcrypt.hash(u.password, 10);
-                await prisma.user.upsert({
-                    where: { email: u.email },
-                    update: {
-                        passwordHash: hash,
-                        firstName: u.firstName,
-                        lastName: u.lastName,
-                        role: u.role,
-                        status: u.status,
-                        branchId: u.branchId,
-                        mustChangePassword: false
-                    },
-                    create: {
+            if (!existing) {
+                // Generate high-entropy secret if none supplied via environment
+                const initialSecret = process.env.STAFF_SEED_INITIAL_PASSWORD ||
+                    crypto.randomBytes(24).toString("base64");
+                const hash = await bcrypt.hash(initialSecret, 12);
+
+                await prisma.user.create({
+                    data: {
                         id: u.id,
                         email: u.email,
                         passwordHash: hash,
@@ -128,22 +123,29 @@ const autoSeedUsers = async () => {
                         role: u.role,
                         status: u.status,
                         branchId: u.branchId,
-                        mustChangePassword: false
+                        mustChangePassword: true
                     }
-                }).catch((err) => console.error(`Staff user sync error [${u.email}]:`, err.message));
-
-                if (u.email === 'teacher@dreamsky.internal') {
-                    await prisma.user.updateMany({
-                        where: { email: u.email },
-                        data: { passwordHash: hash, status: 'ACTIVE', role: 'TEACHER' }
-                    }).catch(() => {});
-                }
+                }).catch((err) => console.error(`Staff user creation error [${u.email}]:`, err.message));
+                console.log(`✅ Seeded new staff account: ${u.email} (mustChangePassword: true)`);
+            } else {
+                console.log(`ℹ️ Preserved existing staff account: ${u.email} (password untouched)`);
             }
         }
-        console.log("✅ Auto-seeder completed real staff user sync.");
+        console.log("✅ Auto-seeder completed staff user check.");
+        return { success: true };
     } catch (err) {
         console.error("Auto-seeder error:", err.message);
+        throw err;
     }
 };
 
-module.exports = { autoSeedUsers };
+if (require.main === module) {
+    autoSeedUsers()
+        .then(() => process.exit(0))
+        .catch((err) => {
+            console.error(err);
+            process.exit(1);
+        });
+}
+
+module.exports = { autoSeedUsers, staffIdentities };

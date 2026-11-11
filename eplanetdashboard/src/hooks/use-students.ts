@@ -17,6 +17,8 @@ export const studentKeys = {
   all: ['students'] as const,
   lists: () => [...studentKeys.all, 'list'] as const,
   list: (params: StudentsListParams) => [...studentKeys.lists(), params] as const,
+  trashLists: () => [...studentKeys.all, 'trash'] as const,
+  trashList: (params: StudentsListParams) => [...studentKeys.trashLists(), params] as const,
   details: () => [...studentKeys.all, 'detail'] as const,
   detail: (id: string) => [...studentKeys.details(), id] as const,
   timeline: (id: string) => [...studentKeys.all, 'timeline', id] as const,
@@ -24,14 +26,19 @@ export const studentKeys = {
 
 // ─── List hook ────────────────────────────────────────────────────────────────
 
-export function useStudents(params: StudentsListParams = {}) {
+export interface UseStudentsOptions {
+  enabled?: boolean
+}
+
+export function useStudents(params: StudentsListParams = {}, options?: UseStudentsOptions) {
   const mockStudents = useStudentsStore((s) => s.students)
+  const isEnabled = !isMockMode() && (options?.enabled ?? true)
 
   return useQuery({
     queryKey: studentKeys.list(params),
     queryFn: () => studentApi.list(params),
     // In mock mode: return the Zustand store data shaped like a backend response
-    enabled: !isMockMode(),
+    enabled: isEnabled,
     placeholderData: isMockMode()
       ? {
           students: mockStudents.map((s) => ({
@@ -108,6 +115,16 @@ export function useStudent(id: string) {
           }
         })()
       : undefined,
+  })
+}
+
+// ─── Timeline hook (read-only) ────────────────────────────────────────────────
+
+export function useStudentTimeline(id: string) {
+  return useQuery({
+    queryKey: studentKeys.timeline(id),
+    queryFn: () => studentApi.getTimeline(id),
+    enabled: !isMockMode() && !!id,
   })
 }
 
@@ -195,23 +212,63 @@ export function useChangePipelineStage() {
   })
 }
 
-// ─── Delete mutation ──────────────────────────────────────────────────────────
+// ─── Delete (Move to Trash) mutation ──────────────────────────────────────────
+
+export interface DeleteStudentPayload {
+  id: string
+  reason: string
+}
 
 export function useDeleteStudent() {
   const queryClient = useQueryClient()
   const mockDelete = useStudentsStore((s) => s.deleteStudents)
 
   return useMutation({
-    mutationFn: (id: string) => {
+    mutationFn: ({ id, reason }: DeleteStudentPayload) => {
+      const trimmedReason = typeof reason === 'string' ? reason.trim() : ''
+      if (!trimmedReason) {
+        return Promise.reject(new Error('A non-empty reason is required to move a student to Trash.'))
+      }
       if (isMockMode()) {
         mockDelete([id])
         return Promise.resolve()
       }
-      return studentApi.remove(id)
+      return studentApi.remove(id, trimmedReason)
     },
-    onSuccess: (_data, id) => {
-      mockDelete([id])
+    onSuccess: (_data, { id }) => {
+      if (isMockMode()) {
+        mockDelete([id])
+      }
       queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: studentKeys.trashLists() })
+      queryClient.invalidateQueries({ queryKey: studentKeys.detail(id) })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}
+
+// ─── Trash list hook ──────────────────────────────────────────────────────────
+
+export function useTrashStudents(params: StudentsListParams = {}, enabled = true) {
+  return useQuery({
+    queryKey: studentKeys.trashList(params),
+    queryFn: () => studentApi.listTrash(params),
+    enabled: !isMockMode() && enabled,
+  })
+}
+
+// ─── Restore mutation ─────────────────────────────────────────────────────────
+
+export function useRestoreStudent() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: string) => studentApi.restore(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: studentKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: studentKeys.trashLists() })
       queryClient.invalidateQueries({ queryKey: studentKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       queryClient.invalidateQueries({ queryKey: ['documents'] })

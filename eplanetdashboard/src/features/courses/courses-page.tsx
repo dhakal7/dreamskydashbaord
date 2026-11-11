@@ -16,8 +16,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { useUniversitiesStore } from '@/features/universities/store'
-import { useUniversities } from '@/hooks/use-universities'
-import { universities as seedUniversities } from '@/mock'
+import { useUniversities, useCourses, useDeleteCourse } from '@/hooks/use-universities'
+import { isMockMode } from '@/lib/api-client'
 
 const levelMeta: Record<StudyLevel, { label: string; variant: 'default' | 'info' | 'secondary' | 'success' | 'warning' }> = {
   bachelor: { label: 'Bachelor', variant: 'default' },
@@ -39,16 +39,38 @@ function normalizeStudyLevel(raw: string | undefined): StudyLevel {
 export default function CoursesPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const canManage = hasPermission(currentUser.role, 'courses.manage')
-  const { courses, removeCourse } = useCoursesStore()
+  const { courses: storeCourses, removeCourse } = useCoursesStore()
   const storeUniversities = useUniversitiesStore((s) => s.universities)
   const { data: apiUniData } = useUniversities()
+  const { data: apiCourseData } = useCourses()
+  const deleteCourseMutation = useDeleteCourse()
+
+  const rawCourses = Array.isArray(apiCourseData)
+    ? apiCourseData
+    : (apiCourseData?.courses ?? [])
+
+  const isMock = isMockMode()
+  const courses: Course[] = !isMock
+    ? rawCourses.map((c: any) => ({
+        id: c.id,
+        name: c.name,
+        universityId: c.universityId,
+        universityName: c.university?.name || 'University',
+        countryName: c.university?.country?.name || 'Country',
+        level: normalizeStudyLevel(c.level),
+        duration: c.durationMonths ? `${c.durationMonths} months` : '12 months',
+        intake: Array.isArray(c.intakeDates) && c.intakeDates.length > 0 ? c.intakeDates : ['Fall', 'Spring'],
+        tuitionUsd: c.tuitionFee || 15000,
+        field: c.fieldOfStudy ? c.fieldOfStudy.replace(/_/g, ' ') : 'General',
+      }))
+    : storeCourses
 
   const rawUnis = Array.isArray(apiUniData)
     ? apiUniData
     : (apiUniData?.universities ?? [])
 
-  const universities = rawUnis.length > 0
-    ? rawUnis.map((u) => ({
+  const universities = !isMock
+    ? rawUnis.map((u: any) => ({
         id: u.id,
         name: u.name,
         countryId: u.countryId,
@@ -63,7 +85,7 @@ export default function CoursesPage() {
         tuitionFromUsd: 15000,
         isActive: u.isActive,
       }))
-    : (storeUniversities.length > 0 ? storeUniversities : seedUniversities)
+    : storeUniversities
 
   const [search, setSearch] = useState('')
   const [levelFilter, setLevelFilter] = useState('all')
@@ -101,7 +123,15 @@ export default function CoursesPage() {
 
   function handleDelete(course: Course) {
     if (window.confirm(`Remove ${course.name}? This cannot be undone.`)) {
-      removeCourse(course.id)
+      if (!isMockMode()) {
+        deleteCourseMutation.mutate(course.id, {
+          onSuccess: () => {
+            removeCourse(course.id)
+          },
+        })
+      } else {
+        removeCourse(course.id)
+      }
     }
   }
 

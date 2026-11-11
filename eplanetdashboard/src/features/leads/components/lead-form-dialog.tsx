@@ -11,11 +11,13 @@ import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { counselors, createReferralAgent, referralAgents, countries as seedCountries } from '@/mock'
+import { countries as seedCountries } from '@/mock'
 import { useCountriesStore } from '@/features/countries/store'
 import { useLeadsStore } from '../store'
 import { isMockMode } from '@/lib/api-client'
 import { useCreateLiveLead, useUpdateLiveLead } from '@/hooks/use-leads-live'
+import { useReferralAgents } from '@/hooks/use-referral-agents'
+import { useCounselors } from '@/hooks/use-counselors'
 import type { Lead, LeadSource, StudyLevel, Priority } from '@/types'
 
 // ── Zod Schema ───────────────────────────────────────────────────────────────
@@ -29,7 +31,7 @@ const formSchema = z.object({
   interestedLevel: z.enum(['foundation', 'diploma', 'bachelor', 'master', 'phd']),
   address: z.string().optional().or(z.literal('')),
   priority: z.enum(['low', 'medium', 'high', 'urgent']),
-  counselorIds: z.array(z.string()).min(1, 'At least one counselor is required'),
+  counselorIds: z.array(z.string()).optional().default([]),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -82,6 +84,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
   const createLiveLead = useCreateLiveLead()
   const updateLiveLead = useUpdateLiveLead()
   const [agentQuery, setAgentQuery] = useState('')
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null)
   const [otherCountryText, setOtherCountryText] = useState('')
 
   const {
@@ -136,6 +139,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
         counselorIds: leadToEdit.counselorId ? [leadToEdit.counselorId] : [],
       })
       if (leadToEdit.referralAgentName) setAgentQuery(leadToEdit.referralAgentName)
+      if (leadToEdit.referralAgentId) setSelectedAgentId(leadToEdit.referralAgentId)
     } else if (open) {
       reset({
         name: '',
@@ -149,6 +153,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
         counselorIds: [],
       })
       setAgentQuery('')
+      setSelectedAgentId(null)
       setOtherCountryText('')
     }
   }, [open, leadToEdit, reset])
@@ -164,11 +169,23 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
   }, [rawWatchedCountries])
   const showAgentField = selectedSource === 'referral_agent'
 
+  const {
+    data: availableCounselors = [],
+    isLoading: isLoadingCounselors,
+    isError: isCounselorError,
+    refetch: refetchCounselors,
+  } = useCounselors(open)
+
+  const {
+    data: availableAgents = [],
+    isLoading: isLoadingAgents,
+    isError: isAgentError,
+    refetch: refetchAgents,
+  } = useReferralAgents(agentQuery, showAgentField && open)
+
   const suggestedAgents = useMemo(() => {
-    const query = agentQuery.trim().toLowerCase()
-    if (!query) return referralAgents.slice(0, 6)
-    return referralAgents.filter((agent) => agent.name.toLowerCase().includes(query) || agent.email.toLowerCase().includes(query)).slice(0, 6)
-  }, [agentQuery])
+    return availableAgents.slice(0, 8)
+  }, [availableAgents])
 
   function onSubmit(data: FormData) {
     let targetCountries = Array.isArray(data.interestedCountries)
@@ -181,9 +198,9 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
       targetCountries = targetCountries.map((c) => c === 'Other' ? `Other (${otherCountryText.trim()})` : c)
     }
 
-    const selectedCounselors = counselors.filter((c) => (data.counselorIds || []).includes(c.id))
+    const selectedCounselors = availableCounselors.filter((c) => (data.counselorIds || []).includes(c.id))
     const primaryCounselor = selectedCounselors[0]
-    const resolvedAgent = showAgentField ? createReferralAgent(agentQuery) : null
+    const finalReferredByAgentId = showAgentField ? (selectedAgentId || undefined) : null
 
     const primaryCountry = targetCountries.join(', ')
 
@@ -207,13 +224,15 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
               email: data.email || '',
               phone: data.phone || '',
               source: data.source,
-              assignedCounselorId: primaryCounselor?.id,
+              assignedCounselorId: primaryCounselor?.id ?? null,
+              referredByAgentId: finalReferredByAgentId,
               notes: `Interested Countries: ${data.interestedCountries.join(', ')} | Level: ${data.interestedLevel} | Address: ${data.address || 'N/A'}`,
             },
           },
           {
             onSuccess: () => {
               setAgentQuery('')
+              setSelectedAgentId(null)
               onOpenChange(false)
               reset()
             },
@@ -232,10 +251,11 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
           priority: data.priority,
           counselorId: primaryCounselor?.id ?? leadToEdit.counselorId,
           counselorName: primaryCounselor?.name ?? leadToEdit.counselorName,
-          referralAgentId: resolvedAgent?.id ?? leadToEdit.referralAgentId,
-          referralAgentName: resolvedAgent?.name ?? agentQuery.trim() ?? leadToEdit.referralAgentName,
+          referralAgentId: selectedAgentId ?? leadToEdit.referralAgentId,
+          referralAgentName: agentQuery.trim() || leadToEdit.referralAgentName,
         })
         setAgentQuery('')
+        setSelectedAgentId(null)
         onOpenChange(false)
         reset()
       }
@@ -252,11 +272,13 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
           phone: data.phone || '',
           source: data.source,
           assignedCounselorId: primaryCounselor?.id,
+          referredByAgentId: showAgentField ? (selectedAgentId || undefined) : undefined,
           notes: `Interested Countries: ${data.interestedCountries.join(', ')} | Level: ${data.interestedLevel} | Address: ${data.address || 'N/A'}`,
         },
         {
           onSuccess: () => {
             setAgentQuery('')
+            setSelectedAgentId(null)
             onOpenChange(false)
             reset()
           },
@@ -282,11 +304,12 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
         interestedLevel: data.interestedLevel,
         address: data.address,
         priority: data.priority,
-        referralAgentId: resolvedAgent?.id,
-        referralAgentName: resolvedAgent?.name ?? (agentQuery.trim() || undefined),
+        referralAgentId: selectedAgentId || undefined,
+        referralAgentName: agentQuery.trim() || undefined,
         notes: '',
       })
       setAgentQuery('')
+      setSelectedAgentId(null)
       onOpenChange(false)
       reset()
     }
@@ -294,6 +317,7 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
 
   function handleClose() {
     setAgentQuery('')
+    setSelectedAgentId(null)
     reset()
     onOpenChange(false)
   }
@@ -388,30 +412,81 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
 
             {showAgentField && (
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Referral Agent</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground">Referral Agent</label>
+                  {selectedAgentId && (
+                    <span className="text-[11px] text-emerald-600 flex items-center gap-1 font-medium">
+                      <Check className="size-3" /> Agent linked
+                    </span>
+                  )}
+                </div>
                 <Input
-                  placeholder="Start typing an agent name"
+                  placeholder="Search referral agent by name, email, or code..."
                   value={agentQuery}
-                  onChange={(event) => setAgentQuery(event.target.value)}
+                  onChange={(event) => {
+                    setAgentQuery(event.target.value)
+                    setSelectedAgentId(null)
+                  }}
                   className="h-9 text-sm"
                 />
-                {agentQuery.trim().length > 0 && suggestedAgents.length > 0 && (
-                  <div className="rounded-md border border-border/70 bg-muted/40 p-2 text-sm">
+                {agentQuery.trim().length > 0 && suggestedAgents.length > 0 && !selectedAgentId && (
+                  <div className="rounded-md border border-border/70 bg-muted/40 p-1.5 text-sm max-h-48 overflow-y-auto space-y-1 shadow-sm">
                     {suggestedAgents.map((agent) => (
                       <button
                         key={agent.id}
                         type="button"
-                        className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm hover:bg-background"
-                        onClick={() => setAgentQuery(agent.name)}
+                        className="flex w-full items-center justify-between rounded px-2.5 py-1.5 text-left text-sm hover:bg-background transition-colors"
+                        onClick={() => {
+                          setAgentQuery(agent.name)
+                          setSelectedAgentId(agent.id)
+                        }}
                       >
-                        <span className="font-medium">{agent.name}</span>
-                        <span className="text-xs text-muted-foreground">{agent.referralCode}</span>
+                        <div>
+                          <span className="font-medium text-foreground">{agent.name}</span>
+                          {agent.email && (
+                            <span className="text-xs text-muted-foreground ml-2">({agent.email})</span>
+                          )}
+                        </div>
+                        {agent.referralCode && (
+                          <span className="text-xs font-mono font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                            {agent.referralCode}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
                 )}
+                {isLoadingAgents && (
+                  <p className="text-[11px] text-muted-foreground animate-pulse py-1">
+                    Loading referral agents...
+                  </p>
+                )}
+                {isAgentError && (
+                  <div className="flex items-center justify-between rounded-md border border-danger-500/20 bg-danger-500/5 p-2 text-xs text-danger-600">
+                    <span className="flex items-center gap-1.5">
+                      <AlertTriangle className="size-3.5" /> Failed to load referral agents.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => refetchAgents()}
+                      className="font-semibold underline hover:text-danger-700"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+                {!isLoadingAgents && !isAgentError && availableAgents.length === 0 && (
+                  <div className="rounded-md border border-dashed border-border/80 bg-muted/20 p-2 text-center text-xs text-muted-foreground">
+                    No referral agents available.
+                  </div>
+                )}
+                {!isLoadingAgents && !isAgentError && availableAgents.length > 0 && agentQuery.trim().length > 0 && suggestedAgents.length === 0 && !selectedAgentId && (
+                  <p className="text-[11px] text-muted-foreground py-1">
+                    No matching referral agents found.
+                  </p>
+                )}
                 <p className="text-[11px] text-muted-foreground">
-                  Select an existing agent or type a new name to create one automatically.
+                  Select a registered referral agent from the list.
                 </p>
               </div>
             )}
@@ -564,33 +639,72 @@ export function LeadFormDialog({ open, onOpenChange, leadToEdit }: LeadFormDialo
                       <p className="mb-2 text-[11px] text-muted-foreground">
                         Select one or more counselors for {selectedCountries.length > 0 ? selectedCountries.join(', ') : 'the selected countries'}.
                       </p>
-                      <div className="space-y-2">
-                        {counselors.map((c) => {
-                          const checked = currentCounselors.includes(c.id)
-                          const toggleCounselor = (e: React.MouseEvent) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            const next = checked
-                              ? currentCounselors.filter((id: string) => id !== c.id)
-                              : [...currentCounselors, c.id]
-                            field.onChange(next)
-                          }
-                          return (
-                            <div
-                              key={c.id}
-                              onClick={toggleCounselor}
-                              className="flex w-full items-center justify-between gap-3 rounded-md border border-transparent px-2 py-1.5 hover:border-border/70 hover:bg-background/80 text-left cursor-pointer select-none"
-                            >
-                              <span className="text-sm font-medium">{c.name}</span>
-                              <div className={`flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors ${
-                                checked ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background'
-                              }`}>
-                                {checked && <Check className="size-3" />}
+
+                      {/* Loading State */}
+                      {isLoadingCounselors && (
+                        <div className="py-3 text-center text-xs text-muted-foreground animate-pulse">
+                          Loading counselors...
+                        </div>
+                      )}
+
+                      {/* Error State with Retry */}
+                      {isCounselorError && (
+                        <div className="flex items-center justify-between rounded-md border border-danger-500/20 bg-danger-500/5 p-2.5 text-xs text-danger-600">
+                          <span className="flex items-center gap-1.5">
+                            <AlertTriangle className="size-3.5" /> Failed to load counselors.
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => refetchCounselors()}
+                            className="font-semibold underline hover:text-danger-700"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Empty State */}
+                      {!isLoadingCounselors && !isCounselorError && availableCounselors.length === 0 && (
+                        <div className="rounded-md border border-dashed border-border/80 bg-muted/20 py-3 text-center text-xs text-muted-foreground">
+                          No counselors available.
+                        </div>
+                      )}
+
+                      {/* Counselors List */}
+                      {!isLoadingCounselors && !isCounselorError && availableCounselors.length > 0 && (
+                        <div className="space-y-2">
+                          {availableCounselors.map((c) => {
+                            const checked = currentCounselors.includes(c.id)
+                            const toggleCounselor = (e: React.MouseEvent) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              const next = checked
+                                ? currentCounselors.filter((id: string) => id !== c.id)
+                                : [...currentCounselors, c.id]
+                              field.onChange(next)
+                            }
+                            return (
+                              <div
+                                key={c.id}
+                                onClick={toggleCounselor}
+                                className="flex w-full items-center justify-between gap-3 rounded-md border border-transparent px-2 py-1.5 hover:border-border/70 hover:bg-background/80 text-left cursor-pointer select-none"
+                              >
+                                <div>
+                                  <span className="text-sm font-medium">{c.name}</span>
+                                  {c.email && (
+                                    <span className="text-xs text-muted-foreground ml-2">({c.email})</span>
+                                  )}
+                                </div>
+                                <div className={`flex size-4 shrink-0 items-center justify-center rounded-[4px] border transition-colors ${
+                                  checked ? 'border-primary bg-primary text-primary-foreground' : 'border-input bg-background'
+                                }`}>
+                                  {checked && <Check className="size-3" />}
+                                </div>
                               </div>
-                            </div>
-                          )
-                        })}
-                      </div>
+                            )
+                          })}
+                        </div>
+                      )}
                     </div>
                   )
                 }}

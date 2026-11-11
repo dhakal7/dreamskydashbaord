@@ -39,6 +39,37 @@ function parseAddressFromNotes(notes: string | null): string {
   return ''
 }
 
+export function resolveStudentOwnershipBranchId(apiStudent: {
+  assignedCounselorId?: string | null
+  assignedCounselor?: { id?: string; branchId?: string | null } | null
+  academicBackground?: Record<string, unknown> | null
+  branchId?: string | null
+} | null | undefined): string | undefined {
+  if (!apiStudent) return undefined
+
+  const hasAssignedCounselor =
+    (typeof apiStudent.assignedCounselorId === 'string' && apiStudent.assignedCounselorId.trim().length > 0) ||
+    Boolean(apiStudent.assignedCounselor && typeof apiStudent.assignedCounselor === 'object')
+
+  if (hasAssignedCounselor) {
+    const counselorBranchId = apiStudent.assignedCounselor?.branchId
+    return typeof counselorBranchId === 'string' && counselorBranchId.trim().length > 0
+      ? counselorBranchId.trim()
+      : undefined
+  }
+
+  const acad = (apiStudent.academicBackground as Record<string, unknown> | null) || {}
+  if (typeof acad.branchId === 'string' && acad.branchId.trim().length > 0) {
+    return acad.branchId.trim()
+  }
+
+  if (typeof apiStudent.branchId === 'string' && apiStudent.branchId.trim().length > 0) {
+    return apiStudent.branchId.trim()
+  }
+
+  return undefined
+}
+
 export function adaptApiStudentToStudent(apiStudent: ApiStudent): Student {
   const counselorName = apiStudent.assignedCounselor
     ? `${apiStudent.assignedCounselor.firstName} ${apiStudent.assignedCounselor.lastName}`.trim()
@@ -57,6 +88,15 @@ export function adaptApiStudentToStudent(apiStudent: ApiStudent): Student {
   const dobStr = apiStudent.dateOfBirth
     ? (typeof apiStudent.dateOfBirth === 'string' ? apiStudent.dateOfBirth.split('T')[0] : '')
     : (acad.dob || '')
+
+  const isClassOnly = Boolean(
+    apiStudent.isClassOnly ||
+    acad.isClassOnly ||
+    acad.serviceType === 'CLASS_ONLY' ||
+    acad.enrollmentType === 'CLASS_ONLY'
+  )
+
+  const resolvedBranchId = resolveStudentOwnershipBranchId(apiStudent as any)
 
   return {
     id: apiStudent.id,
@@ -86,5 +126,7 @@ export function adaptApiStudentToStudent(apiStudent: ApiStudent): Student {
     documentsRequired: 7,
     createdAt: apiStudent.createdAt,
     tags: [apiStudent.currentStage],
-  }
+    isClassOnly,
+    ...(resolvedBranchId ? { branchId: resolvedBranchId } : {}),
+  } as Student
 }

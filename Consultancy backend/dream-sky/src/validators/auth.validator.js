@@ -1,7 +1,7 @@
 const AppError = require("../utils/apiError");
 
 /**
- * Simple manual validators — no external library needed for these small bodies.
+ * Simple manual validators â€” no external library needed for these small bodies.
  * Each validator returns nothing if valid, throws AppError if invalid.
  * Controllers call these before passing data to the service.
  */

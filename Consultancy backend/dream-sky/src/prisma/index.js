@@ -1,16 +1,14 @@
-require("dotenv").config({ override: true });
+require("dotenv").config({ override: false });
 const { PrismaClient } = require("@prisma/client");
 const { PrismaPg } = require("@prisma/adapter-pg");
 const { Pool } = require("pg");
+const { validateDatabaseUrl } = require("../config");
 
 const globalForPrisma = global;
 
 const getClient = () => {
-    const productionUrl = "postgresql://dreamsky_database:DreamskyPass2026@127.0.0.1:5432/dreamsky_DreamSky?schema=public";
-    const localUrl = "postgresql://postgres:postgres@127.0.0.1:5432/dreamsky_db?schema=public";
-
-    const isLocalDev = __dirname.startsWith("/Users/") || __dirname.includes("suyogdhakal");
-    const dbUrl = isLocalDev ? localUrl : productionUrl;
+    // Validate database configuration before constructing any pool or client
+    const dbUrl = validateDatabaseUrl(process.env.DATABASE_URL, process.env.NODE_ENV);
 
     const isRemoteDb = Boolean(
         dbUrl.includes("supabase") ||
@@ -26,10 +24,13 @@ const getClient = () => {
     });
     
     const adapter = new PrismaPg(pool);
-    return new PrismaClient({
+    const client = new PrismaClient({
         adapter,
         log: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
     });
+
+    client.$pool = pool;
+    return client;
 };
 
 const prisma = globalForPrisma.prisma ?? getClient();

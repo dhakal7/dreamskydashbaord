@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { countries } from '@/mock'
-import { getCounselorsForFilter, getUniversitiesForFilter, type ReportFilters } from './report-selectors'
+import { useCounselors } from '@/hooks/use-counselors'
+import { useCountries, useUniversities } from '@/hooks/use-universities'
+import type { ReportFilters } from './report-selectors'
 
 export const defaultReportFilters: ReportFilters = {
   country: 'all',
@@ -22,8 +23,14 @@ interface ReportFiltersBarProps {
 }
 
 export function ReportFiltersBar({ filters, onChange, showCounselorFilter }: ReportFiltersBarProps) {
-  const counselorsList = getCounselorsForFilter()
-  const universitiesList = getUniversitiesForFilter()
+  const { data: counselorData } = useCounselors(showCounselorFilter)
+  const { data: countryData } = useCountries()
+  const { data: uniData } = useUniversities()
+
+  const counselorsList = counselorData || []
+  const countriesList = Array.isArray(countryData) ? countryData : (countryData?.countries ?? [])
+  const universitiesList = Array.isArray(uniData) ? uniData : (uniData?.universities ?? [])
+
   const isFiltered = JSON.stringify(filters) !== JSON.stringify(defaultReportFilters)
 
   return (
@@ -34,9 +41,9 @@ export function ReportFiltersBar({ filters, onChange, showCounselorFilter }: Rep
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Countries</SelectItem>
-          {countries.map((c) => (
+          {countriesList.map((c: any) => (
             <SelectItem key={c.id} value={c.name}>
-              {c.flag} {c.name}
+              {c.flagUrl || c.flag || '🌐'} {c.name}
             </SelectItem>
           ))}
         </SelectContent>
@@ -49,7 +56,7 @@ export function ReportFiltersBar({ filters, onChange, showCounselorFilter }: Rep
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Counselors</SelectItem>
-            {counselorsList.map((c) => (
+            {counselorsList.map((c: any) => (
               <SelectItem key={c.id} value={c.id}>
                 {c.name}
               </SelectItem>
@@ -64,7 +71,7 @@ export function ReportFiltersBar({ filters, onChange, showCounselorFilter }: Rep
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Universities</SelectItem>
-          {universitiesList.map((u) => (
+          {universitiesList.map((u: any) => (
             <SelectItem key={u.id} value={u.name}>
               {u.name}
             </SelectItem>

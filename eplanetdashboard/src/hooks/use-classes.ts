@@ -14,6 +14,7 @@ export const classKeys = {
   detail: (id: string) => [...classKeys.all, 'detail', id] as const,
   myClasses: () => [...classKeys.all, 'my-classes'] as const,
   content: (classId: string) => [...classKeys.all, 'content', classId] as const,
+  studentEnrollments: (studentId: string) => [...classKeys.all, 'student-enrollments', studentId] as const,
 }
 
 export function useClasses(params: ClassListParams = {}) {
@@ -103,6 +104,7 @@ export function useMarkAttendance() {
     },
     onSuccess: (_d, { classId }) => {
       qc.invalidateQueries({ queryKey: classKeys.detail(classId) })
+      qc.invalidateQueries({ queryKey: classKeys.all })
       toast.success('Attendance marked')
     },
     onError: (err: Error) => toast.error(err.message),
@@ -118,6 +120,7 @@ export function useEnrollStudent() {
     },
     onSuccess: (_d, { classId }) => {
       qc.invalidateQueries({ queryKey: classKeys.detail(classId) })
+      qc.invalidateQueries({ queryKey: classKeys.all })
       toast.success('Student enrolled')
     },
     onError: (err: Error) => toast.error(err.message),
@@ -133,6 +136,7 @@ export function useUnenrollStudent() {
     },
     onSuccess: (_d, { classId }) => {
       qc.invalidateQueries({ queryKey: classKeys.detail(classId) })
+      qc.invalidateQueries({ queryKey: classKeys.all })
       toast.success('Student unenrolled')
     },
     onError: (err: Error) => toast.error(err.message),

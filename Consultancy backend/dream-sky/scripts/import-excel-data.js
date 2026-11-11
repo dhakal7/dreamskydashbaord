@@ -1,12 +1,12 @@
-require("dotenv").config();
-const { PrismaClient } = require("@prisma/client");
-const { PrismaPg } = require("@prisma/adapter-pg");
 const bcrypt = require("bcryptjs");
 const fs = require("fs");
 const path = require("path");
+const { assertDisposableTarget } = require("../src/config");
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-const prisma = new PrismaClient({ adapter });
+// Pre-import guard: Execution blocked unless positively targeting disposable test DB
+assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
+
+const prisma = require("../src/prisma");
 
 // ==========================================
 // HELPERS & CONFIG
@@ -106,6 +106,7 @@ async function findExistingStudent(nameInfo, email, phone) {
 // MAIN IMPORT TASK
 // ==========================================
 async function run() {
+    assertDisposableTarget(process.env.DATABASE_URL, process.env.ALLOW_DESTRUCTIVE_OPERATIONS);
     const jsonPath = "/Users/suyogdhakal/Desktop/eplanetcrm3/student_data.json";
     console.log(`🚀 Starting Import from JSON: ${jsonPath}`);
 

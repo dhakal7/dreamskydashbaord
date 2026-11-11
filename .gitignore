@@ -20,3 +20,37 @@ legacy_html/
 .claude/
 .windsurf/
 .agents/
+
+# ==============================================================================
+# Sensitive Local Exports, Data Dumps & Environment Files (Phase D.2C.1)
+# ==============================================================================
+
+# Historical student, lead, class, and attendance data dumps
+Consultancy backend/dream-sky/Lead_Data.json
+Consultancy backend/dream-sky/Copy_of_Lead_Data.json
+Consultancy backend/dream-sky/Recent_Lead_Data.json
+Consultancy backend/dream-sky/IELTS_PTE_Class.json
+Consultancy backend/dream-sky/Recent_Class_Students.json
+Consultancy backend/dream-sky/Attendance_of_EPT_Class.json
+Consultancy backend/dream-sky/Sheet10.json
+*Lead_Data*.json
+*_Class_Students*.json
+*Attendance_*.json
+
+# Database schema dumps and backups (preserving Prisma migrations)
+*.sql
+*.dump
+!**/prisma/migrations/**
+
+# Spreadsheet exports
+*.csv
+
+# Local environment configuration (preserving example templates)
+.env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+!*.env.example
+!**/.env.example
+

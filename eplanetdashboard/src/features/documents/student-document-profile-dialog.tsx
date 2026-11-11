@@ -350,11 +350,26 @@ export function StudentDocumentProfileDialog({
                                   variant="ghost"
                                   size="icon"
                                   className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  title="Delete Document"
+                                  title={
+                                    doc.status === 'verified' || (doc.version || (doc as any).currentVersion || 1) > 1
+                                      ? 'Verified or versioned documents cannot be permanently deleted; upload a new version instead'
+                                      : 'Delete Document'
+                                  }
+                                  disabled={deleteMutation.isPending}
                                   onClick={() => {
+                                    const ver = doc.version || (doc as any).currentVersion || 1
+                                    if (doc.status === 'verified' || ver > 1) {
+                                      toast.warning(
+                                        'Verified documents and documents with version history are protected from deletion. Use "Replace with new version" instead.'
+                                      )
+                                      return
+                                    }
                                     if (confirm(`Are you sure you want to delete "${doc.customName || doc.fileName || doc.type}"?`)) {
-                                      if (onDeleteDocument) onDeleteDocument(doc.id)
-                                      deleteMutation.mutate(doc.id)
+                                      if (onDeleteDocument) {
+                                        onDeleteDocument(doc.id)
+                                      } else {
+                                        deleteMutation.mutate(doc.id)
+                                      }
                                     }
                                   }}
                                 >

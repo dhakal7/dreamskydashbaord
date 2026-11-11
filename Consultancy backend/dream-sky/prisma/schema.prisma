@@ -60,6 +60,7 @@ enum DocumentType {
   BACHELORS_CERTIFICATE
   TRANSCRIPT
   CHARACTER_CERTIFICATE
+  ENGLISH_TEST
   IELTS
   PTE
   TOEFL
@@ -72,6 +73,7 @@ enum DocumentType {
   AFFIDAVIT
   LOAN_LETTER
   PROPERTY_VALUATION
+  VISA
   VISA_APPLICATION
   VISA_DOCUMENTS
   OFFER_LETTER
@@ -86,6 +88,7 @@ enum DocumentType {
 
 enum DocumentStatus {
   UPLOADED
+  IN_REVIEW
   PENDING_STUDENT_REVIEW
   CHANGES_REQUESTED
   RE_UPLOADED
@@ -221,6 +224,7 @@ enum ReminderOffset {
 enum ReminderStatus {
   PENDING
   SENT
+  FAILED
 }
 
 enum NotificationChannel {
@@ -324,6 +328,7 @@ model User {
   teacherProfile       TeacherProfile?
   referralAgentProfile ReferralAgentProfile?
   assignedStudents     Student[]            @relation("AssignedCounselor")
+  trashedStudents      Student[]            @relation("StudentTrashedBy")
   changedStages        PipelineStageHistory[]
   communicationLogs    CommunicationLog[]   @relation("LogAuthor")
   appointments         Appointment[]        @relation("CounselorAppointments")
@@ -393,6 +398,10 @@ model Student {
   dateOfBirth         DateTime?
   nationality         String?
   currentStage        PipelineStage @default(LEAD)
+  leadStage           String?
+  trashReason         String?
+  trashedAt           DateTime?
+  trashedById         String?
   source              String?
   assignedCounselorId String?
   referredByAgentId   String?
@@ -409,6 +418,7 @@ model Student {
   partnerConsultancy   PartnerConsultancy? @relation(fields: [partnerConsultancyId], references: [id], onDelete: SetNull)
 
   assignedCounselor User?                  @relation("AssignedCounselor", fields: [assignedCounselorId], references: [id])
+  trashedBy         User?                  @relation("StudentTrashedBy", fields: [trashedById], references: [id], onDelete: SetNull)
   referredByAgent   ReferralAgentProfile?  @relation("ReferredByAgent", fields: [referredByAgentId], references: [id])
   stageHistory      PipelineStageHistory[]
   testScores        TestScore[]
@@ -420,6 +430,8 @@ model Student {
   enrollments       Enrollment[]
   attendanceRecords AttendanceRecord[]
   commissions       Commission[]
+
+  @@index([isActive, currentStage])
 }
 
 model PipelineStageHistory {
@@ -452,7 +464,7 @@ model Document {
   category       DocumentCategory @default(OTHER)
   type           DocumentType
   customName     String?
-  status         DocumentStatus   @default(UPLOADED)
+  status         DocumentStatus   @default(PENDING)
   fileUrl        String
   originalName   String?
   mimeType       String?
@@ -486,12 +498,15 @@ model DocumentVersion {
   mimeType     String?
   fileSize     Int?
   uploadedById String?
-  status       DocumentStatus @default(UPLOADED)
+  status       DocumentStatus @default(PENDING)
   notes        String?
   createdAt    DateTime       @default(now())
 
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   uploadedBy User?    @relation("VersionUploader", fields: [uploadedById], references: [id])
+
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
 }
 
 model CommunicationLog {
@@ -523,8 +538,25 @@ model Appointment {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
 
-  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  counselor User?   @relation("CounselorAppointments", fields: [counselorId], references: [id])
+  student   Student               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  counselor User?                 @relation("CounselorAppointments", fields: [counselorId], references: [id])
+  reminders AppointmentReminder[]
+}
+
+model AppointmentReminder {
+  id            String      @id @default(cuid())
+  appointmentId String
+  offset        String
+  scheduledFor  DateTime
+  status        String      @default("PENDING")
+  sentAt        DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @default(now()) @updatedAt
+
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledFor])
+  @@index([appointmentId])
 }
 
 model Payment {
@@ -724,6 +756,9 @@ model Class {
   name      String
   subject   String?
   schedule  Json?
+  // Note: Capacity is currently persisted inside the `schedule` JSON field (or defaults to 20)
+  // to prevent runtime schema mismatches before database migrations are authorized.
+  // Proposed dedicated column for future migration: capacity Int? @default(20)
   branchId  String?
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())

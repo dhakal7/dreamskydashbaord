@@ -22,20 +22,94 @@ const validateUpdateStudent = (body) => {
         throw AppError.badRequest("Email format is invalid.", "VALIDATION_ERROR");
 };
 
-const validatePipelineChange = ({ stage, reasonCode, email }) => {
-    if (!stage) throw AppError.badRequest("Stage is required.", "VALIDATION_ERROR");
-    if (!VALID_STAGES.includes(stage))
-        throw AppError.badRequest(`Invalid stage. Must be one of: ${VALID_STAGES.join(", ")}`, "VALIDATION_ERROR");
-    if (stage === "LOST" && !reasonCode?.trim())
+const VALID_LEAD_STAGES = ["NEW", "FOLLOW_UP", "ASSIGNED", "COUNSELLING", "INTERESTED", "NOT_CONTRACTED"];
+
+const validatePipelineChange = (body) => {
+    const { stage, leadStage, reasonCode, email, followUpDate, followUpTime, datetime } = body || {};
+    const effectiveStage = stage || leadStage;
+    if (!effectiveStage) throw AppError.badRequest("Stage is required.", "VALIDATION_ERROR");
+
+    const upperStage = String(effectiveStage).toUpperCase().replace(/-/g, "_");
+    const upperLeadStage = leadStage ? String(leadStage).toUpperCase().replace(/-/g, "_") : null;
+
+    const isLeadStage = VALID_LEAD_STAGES.includes(upperStage) || (upperLeadStage && VALID_LEAD_STAGES.includes(upperLeadStage));
+    const isMacroStage = VALID_STAGES.includes(upperStage);
+
+    if (!isLeadStage && !isMacroStage) {
+        throw AppError.badRequest(
+            `Invalid stage. Must be one of: ${VALID_STAGES.join(", ")}, ${VALID_LEAD_STAGES.join(", ")}`,
+            "VALIDATION_ERROR"
+        );
+    }
+
+    if (upperStage === "FOLLOW_UP" || upperLeadStage === "FOLLOW_UP") {
+        const hasDate = Boolean(followUpDate || (datetime && String(datetime).includes("T")));
+        const hasTime = Boolean(followUpTime || (datetime && String(datetime).includes("T")));
+        if (!hasDate || !hasTime) {
+            throw AppError.badRequest(
+                "Follow-up date and time are required when moving to Follow Up.",
+                "MISSING_FOLLOWUP_DATETIME"
+            );
+        }
+
+        const dateStr = datetime || `${followUpDate}T${followUpTime && followUpTime.length === 5 ? followUpTime + ":00" : followUpTime}`;
+        const parsedDate = new Date(dateStr);
+        if (isNaN(parsedDate.getTime())) {
+            throw AppError.badRequest(
+                "Invalid follow-up date or time format.",
+                "INVALID_FOLLOWUP_DATETIME"
+            );
+        }
+    }
+
+    if (upperStage === "LOST" && !reasonCode?.trim())
         throw AppError.badRequest("Reason code is required when moving to LOST.", "VALIDATION_ERROR");
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()))
         throw AppError.badRequest("Email format is invalid.", "VALIDATION_ERROR");
+};
+
+const validateTrashReason = (reason) => {
+    if (typeof reason !== "string" || !reason.trim()) {
+        throw AppError.badRequest(
+            "A non-empty reason is required to move a record to Trash.",
+            "MISSING_TRASH_REASON"
+        );
+    }
+    return reason.trim();
+};
+
+const validateBranchTransfer = (body) => {
+    const { destinationBranchId, newAssignedCounselorId } = body || {};
+    if (!destinationBranchId || typeof destinationBranchId !== "string" || !destinationBranchId.trim()) {
+        throw AppError.badRequest("Destination branch ID is required.", "MISSING_DESTINATION_BRANCH");
+    }
+    if (newAssignedCounselorId !== undefined && newAssignedCounselorId !== null) {
+        if (typeof newAssignedCounselorId !== "string" || !newAssignedCounselorId.trim()) {
+            throw AppError.badRequest("Invalid replacement counselor ID.", "INVALID_REPLACEMENT_COUNSELOR");
+        }
+    }
+    return {
+        destinationBranchId: destinationBranchId.trim(),
+        newAssignedCounselorId: newAssignedCounselorId ? newAssignedCounselorId.trim() : newAssignedCounselorId,
+    };
+};
+
+const validateCounselorAssignmentBody = (body) => {
+    const rawId = body?.assignedCounselorId ?? body?.counselorId;
+    if (!rawId || typeof rawId !== "string" || !rawId.trim()) {
+        throw AppError.badRequest("Counselor ID is required for assignment.", "MISSING_COUNSELOR_ID");
+    }
+    return rawId.trim();
 };
 
 module.exports = {
     validateCreateStudent,
     validateUpdateStudent,
     validatePipelineChange,
+    validateTrashReason,
+    validateBranchTransfer,
+    validateCounselorAssignmentBody,
     VALID_STAGES,
+    VALID_LEAD_STAGES,
     VALID_SOURCES,
 };

@@ -16,15 +16,15 @@ import { useUniversitiesStore } from './store'
 import { UniversityDialog } from './components/university-dialog'
 import type { University } from '@/types'
 
+import { isMockMode } from '@/lib/api-client'
 import { useUniversities } from '@/hooks/use-universities'
-import { universities as seedUniversities } from '@/mock'
 
 export default function UniversitiesPage() {
   const [searchParams] = useSearchParams()
   const initialCountry = searchParams.get('country') || 'all'
   const currentUser = useAuthStore((s) => s.currentUser)
   const canManage = hasPermission(currentUser.role, 'universities.manage')
-  const { removeUniversity } = useUniversitiesStore()
+  const { universities: storeUniversities, removeUniversity } = useUniversitiesStore()
   const { data: apiUniData } = useUniversities()
   const courses = useCoursesStore((s) => s.courses)
 
@@ -32,8 +32,9 @@ export default function UniversitiesPage() {
     ? apiUniData
     : (apiUniData?.universities ?? [])
 
-  const universities = rawUnis.length > 0
-    ? rawUnis.map((u) => ({
+  const isMock = isMockMode()
+  const universities = !isMock
+    ? rawUnis.map((u: any) => ({
         id: u.id,
         name: u.name,
         countryId: u.countryId,
@@ -48,7 +49,7 @@ export default function UniversitiesPage() {
         tuitionFromUsd: 15000,
         isActive: u.isActive,
       }))
-    : seedUniversities
+    : storeUniversities
 
 
   const [filters, setFilters] = useState<UniversityFilters>({

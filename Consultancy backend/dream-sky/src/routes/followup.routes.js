@@ -40,7 +40,7 @@ router.put(
 
 router.delete(
     "/:id",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
     followUpController.remove
 );
 

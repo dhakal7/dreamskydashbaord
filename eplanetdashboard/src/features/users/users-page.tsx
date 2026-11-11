@@ -12,6 +12,13 @@ import { getUserColumns } from './components/user-columns'
 import { UserFiltersBar } from './components/user-filters'
 import { InviteUserDialog } from './components/invite-user-dialog'
 
+const BRANCH_ADMIN_OPERATIONAL_ROLES = new Set([
+  'counselor',
+  'front_desk',
+  'teacher',
+  'referral_agent',
+])
+
 export default function UsersPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const rawUsers = useUsersStore((s) => s.users)
@@ -19,7 +26,7 @@ export default function UsersPage() {
 
   useEffect(() => {
     fetchUsers()
-  }, [fetchUsers])
+  }, [fetchUsers, currentUser.role, currentUser.branchId])
 
   const canManage = hasPermission(currentUser.role, 'users.manage')
 
@@ -27,10 +34,19 @@ export default function UsersPage() {
   const [statusFilter, setStatusFilter] = useState('all')
   const [inviteOpen, setInviteOpen] = useState(false)
 
-  // Strictly exclude any student accounts from the staff user management view
+  // Strictly exclude any student accounts from the staff user management view,
+  // and restrict Branch Admin to operational staff roles within their authenticated branch only.
   const staffUsers = useMemo(() => {
-    return rawUsers.filter((u) => (u.role as string)?.toLowerCase() !== 'student')
-  }, [rawUsers])
+    return rawUsers.filter((u) => {
+      const roleLower = (u.role as string)?.toLowerCase()
+      if (roleLower === 'student') return false
+      if (currentUser.role === 'branch_admin') {
+        if (!BRANCH_ADMIN_OPERATIONAL_ROLES.has(roleLower)) return false
+        if (!currentUser.branchId || !u.branchId || u.branchId !== currentUser.branchId) return false
+      }
+      return true
+    })
+  }, [rawUsers, currentUser.role, currentUser.branchId])
 
   const filtered = useMemo(() => {
     return staffUsers.filter((u) => {

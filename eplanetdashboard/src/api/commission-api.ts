@@ -91,7 +91,7 @@ export const commissionApi = {
   markPaid(id: string): Promise<ApiCommission> {
     return api.patch(`/commissions/${id}/mark-paid`, {})
   },
-  dispute(id: string, notes: string): Promise<ApiCommission> {
-    return api.patch(`/commissions/${id}/dispute`, { notes })
+  dispute(id: string, reason: string): Promise<ApiCommission> {
+    return api.patch(`/commissions/${id}/dispute`, { reason })
   },
 }

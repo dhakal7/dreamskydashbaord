@@ -42,6 +42,7 @@ export function useCreateAppointment() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
       toast.success('Appointment scheduled')
     },
     onError: (err: Error) => toast.error(err.message),
@@ -59,6 +60,7 @@ export function useUpdateAppointment() {
       queryClient.invalidateQueries({ queryKey: appointmentKeys.detail(id) })
       queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
       toast.success('Appointment updated')
     },
     onError: (err: Error) => toast.error(err.message),
@@ -75,6 +77,7 @@ export function useChangeAppointmentStatus() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
       toast.success('Status updated')
     },
     onError: (err: Error) => toast.error(err.message),

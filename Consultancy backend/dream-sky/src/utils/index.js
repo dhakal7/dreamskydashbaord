@@ -1,1 +1,1 @@
-// Utility helpers — add shared functions here as the project grows
+// Utility helpers â€” add shared functions here as the project grows

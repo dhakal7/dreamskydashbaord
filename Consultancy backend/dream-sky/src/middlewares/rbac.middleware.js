@@ -1,7 +1,7 @@
 const AppError = require("../utils/apiError");
 
 /**
- * requireRole — RBAC Middleware (Contract #3 from backend split doc)
+ * requireRole â€” RBAC Middleware (Contract #3 from backend split doc)
  *
  * Factory function: returns a middleware that checks req.user.role.
  * Must always be used AFTER requireAuth (which sets req.user).
@@ -33,7 +33,7 @@ const requireRole = (...allowedRoles) => {
 };
 
 /**
- * requireOwnStudentPortal — ensures a STUDENT user can only access their own data.
+ * requireOwnStudentPortal â€” ensures a STUDENT user can only access their own data.
  * Compares req.user.studentId with req.params.studentId (or req.body.studentId).
  *
  * Usage:
@@ -43,7 +43,7 @@ const requireRole = (...allowedRoles) => {
  *     controller.getProfile
  *   );
  *
- * Staff roles bypass this check — they can see any student.
+ * Staff roles bypass this check â€” they can see any student.
  * STUDENT role can only see their own studentId.
  */
 const requireOwnStudentPortal = (req, res, next) => {

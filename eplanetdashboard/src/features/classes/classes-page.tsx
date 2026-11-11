@@ -24,7 +24,10 @@ import { EmptyState } from '@/components/shared/empty-state'
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 
 import { api, isMockMode } from '@/lib/api-client'
-import { useClasses, useEnrollStudent, useUpdateClass } from '@/hooks/use-classes'
+import { hasPermission } from '@/lib/rbac'
+import { canBranchAdminViewRecord, isBranchAdmin } from '@/lib/data-visibility'
+import { useClasses, useEnrollStudent, useMarkAttendance, useUpdateClass } from '@/hooks/use-classes'
+import { useCreateLiveLead } from '@/hooks/use-leads-live'
 import { useStudents } from '@/hooks/use-students'
 import { getClassesForRole } from './selectors'
 import { useStudentsStore } from '@/features/students/store'
@@ -69,8 +72,9 @@ interface ClassCaptureEntry {
 
 export default function ClassesPage() {
   const navigate = useNavigate()
-  const role = useAuthStore((s) => s.currentUser?.role ?? 'front_desk')
-  const linkedId = useAuthStore((s) => s.currentUser?.linkedId)
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const role = currentUser?.role ?? 'front_desk'
+  const linkedId = currentUser?.linkedId
 
   // Page-level section: 'batches' = admitted class batches | 'capture' = inquiry-only list
   const [sectionTab, setSectionTab] = useState<'batches' | 'capture'>('batches')
@@ -84,11 +88,36 @@ export default function ClassesPage() {
   const [captureCourse, setCaptureCourse] = useState('IELTS')
   const [captureNote, setCaptureNote] = useState('')
 
+  const enrollMutation = useEnrollStudent()
+  const updateClassMutation = useUpdateClass()
+  const markAttendanceMutation = useMarkAttendance()
+  const createLeadMutation = useCreateLiveLead()
+
   function handleAddCapture() {
     if (!captureName.trim() || !capturePhone.trim()) {
       toast.error('Name and phone number are required')
       return
     }
+
+    if (!isMockMode()) {
+      const nameParts = captureName.trim().split(' ')
+      const firstName = nameParts[0]
+      const lastName = nameParts.slice(1).join(' ') || firstName
+      createLeadMutation.mutate({
+        firstName,
+        lastName,
+        email: captureEmail.trim() || `${firstName.toLowerCase()}.${Date.now()}@walkin.dreamsky`,
+        phone: capturePhone.trim(),
+        source: 'walk_in',
+        notes: `Class Enquiry: ${captureCourse}. ${captureNote.trim()}`.trim(),
+        academicBackground: {
+          isClassOnly: true,
+          serviceType: 'CLASS_ONLY',
+          course: captureCourse,
+        },
+      })
+    }
+
     setCaptureList((prev) => [
       ...prev,
       {
@@ -111,19 +140,17 @@ export default function ClassesPage() {
   }
 
   function handleDeleteCapture(id: string) {
-    setCaptureList((prev) => prev.filter((e) => e.id !== id))
-    toast.success('Entry removed from capture list')
+    setCaptureList((prev) => prev.filter((c) => c.id !== id))
+    toast.success('Inquiry removed from Capture List')
   }
 
   // Data queries
-  const { data: liveClassesData } = useClasses()
-  const { data: liveStudentsData } = useStudents({ limit: 100 })
-  const mockClasses = getClassesForRole(role, linkedId)
+  const canFetchStudents = !['teacher', 'student'].includes(role)
+  const { data: liveClassesData, isLoading: isLoadingClasses, isError: isClassesError, error: classesError, refetch: refetchClasses } = useClasses()
+  const { data: liveStudentsData } = useStudents({ limit: 100, type: 'all' }, { enabled: canFetchStudents })
+  const mockClasses = getClassesForRole(role, linkedId, currentUser?.branchId)
   const mockStudents = useStudentsStore((s) => s.students)
   const mockEnroll = useAttendanceStore((s) => s.enrollments)
-
-  const enrollMutation = useEnrollStudent()
-  const updateClassMutation = useUpdateClass()
 
   // Live Teachers state
   const [liveTeachers, setLiveTeachers] = useState<Array<{ id: string; name: string; email: string }>>([])
@@ -133,17 +160,20 @@ export default function ClassesPage() {
       api.get<any[]>('/users')
         .then((users) => {
           if (Array.isArray(users)) {
-            const staffList = users.map((u) => ({
+            const scopedUsers = isBranchAdmin(currentUser)
+              ? users.filter((u) => canBranchAdminViewRecord(currentUser, u))
+              : users
+            const staffList = scopedUsers.map((u) => ({
               id: u.id,
               name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
               email: u.email,
             }))
-            if (staffList.length > 0) setLiveTeachers(staffList)
+            setLiveTeachers(staffList)
           }
         })
         .catch(() => {})
     }
-  }, [])
+  }, [currentUser])
 
   // Component state
   const [searchQuery, setSearchQuery] = useState('')
@@ -175,32 +205,33 @@ export default function ClassesPage() {
         ? liveClassesData
         : (liveClassesData as any)?.classes || []
 
-      if (rawList.length > 0) {
-        return rawList.map((c: any) => {
-          const subject = c.subject || (c.name.toUpperCase().includes('PTE') ? 'PTE' : (c.name.toUpperCase().includes('EPT') ? 'EPT' : 'IELTS'))
-          const schedule = typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Morning Batch'
-          const storeCount = mockEnroll.filter((e) => e.classId === c.id || e.classId === c.name).length
-          const enrolledCount = (Array.isArray(c.enrollments) && c.enrollments.length > 0)
-            ? c.enrollments.length
-            : storeCount
+      const scopedRawList = isBranchAdmin(currentUser)
+        ? rawList.filter((c: any) => canBranchAdminViewRecord(currentUser, c, { verifiedBranchScopedApi: true }))
+        : rawList
 
-          return {
-            id: c.id,
-            name: c.name,
-            subject,
-            teacherId: c.teacherId,
-            teacherName: c.teacher
-              ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
-              : 'EPT Instructor',
-            schedule,
-            room: 'Room 101',
-            capacity: c.capacity || 20,
-            enrolledCount,
-            status: c.status || 'Ongoing',
-            startDate: c.startDate || c.createdAt,
-          }
-        })
-      }
+      return scopedRawList.map((c: any) => {
+        const subject = c.subject || (c.name?.toUpperCase().includes('PTE') ? 'PTE' : (c.name?.toUpperCase().includes('EPT') ? 'EPT' : 'IELTS'))
+        const schedule = typeof c.schedule === 'string' ? c.schedule : c.schedule?.timing || 'Unscheduled'
+        const enrolledCount = Array.isArray(c.enrollments)
+          ? c.enrollments.length
+          : (c._count?.enrollments ?? 0)
+
+        return {
+          id: c.id,
+          name: c.name,
+          subject,
+          teacherId: c.teacherId,
+          teacherName: c.teacher
+            ? `${c.teacher.firstName || ''} ${c.teacher.lastName || ''}`.trim()
+            : 'Unassigned',
+          schedule,
+          room: c.room || 'Assigned Room',
+          capacity: c.capacity || 20,
+          enrolledCount,
+          status: c.status || 'Ongoing',
+          startDate: c.startDate || c.createdAt,
+        }
+      })
     }
 
     return (mockClasses as any[]).map((c) => {
@@ -219,7 +250,7 @@ export default function ClassesPage() {
         startDate: c.startDate || new Date().toISOString(),
       }
     })
-  }, [liveClassesData, mockClasses, mockEnroll])
+  }, [liveClassesData, mockClasses, mockEnroll, currentUser])
 
   // Filtered classes grid
   const filteredClasses = useMemo(() => {
@@ -239,15 +270,13 @@ export default function ClassesPage() {
   const availableStudents = useMemo(() => {
     if (!isMockMode()) {
       const rawStudents = liveStudentsData?.students || (Array.isArray(liveStudentsData) ? liveStudentsData : [])
-      if (rawStudents.length > 0) {
-        return rawStudents.map((s: any) => ({
-          id: s.id,
-          studentId: s.studentId || s.id,
-          name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email || 'Student',
-          email: s.email || '',
-          phone: s.phone || '',
-        }))
-      }
+      return rawStudents.map((s: any) => ({
+        id: s.id,
+        studentId: s.studentId || s.id,
+        name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.email || 'Student',
+        email: s.email || '',
+        phone: s.phone || '',
+      }))
     }
     return mockStudents.map((s) => ({ id: s.id, studentId: s.studentId || s.id, name: s.name, email: s.email, phone: s.phone || '' }))
   }, [liveStudentsData, mockStudents])
@@ -273,7 +302,8 @@ export default function ClassesPage() {
     if (!editingClass) return
     setIsUpdatingClass(true)
 
-    const selectedTeacher = mockTeachers.find((t) => t.id === editTeacherId)
+    const teacherPool = isMockMode() ? mockTeachers : liveTeachers
+    const selectedTeacher = teacherPool.find((t) => t.id === editTeacherId)
 
     if (!isMockMode()) {
       updateClassMutation.mutate(
@@ -289,11 +319,9 @@ export default function ClassesPage() {
           onSuccess: () => {
             setIsUpdatingClass(false)
             setEditDialogOpen(false)
-            toast.success(`Updated ${editName} & assigned teacher successfully!`)
           },
-          onError: (err: any) => {
+          onError: () => {
             setIsUpdatingClass(false)
-            toast.error(err.message || 'Failed to update class details')
           },
         }
       )
@@ -322,12 +350,9 @@ export default function ClassesPage() {
           onSuccess: () => {
             setIsEnrolling(false)
             setEnrollDialogOpen(false)
-            toast.success(`Enrolled ${st?.name || 'Student'} into ${cls?.name || 'Class'}!`)
           },
           onError: () => {
             setIsEnrolling(false)
-            setEnrollDialogOpen(false)
-            toast.success(`Enrolled ${st?.name || 'Student'} into ${cls?.name || 'Class'}!`)
           },
         }
       )
@@ -342,30 +367,28 @@ export default function ClassesPage() {
   const classRoster = useMemo<RosterStudent[]>(() => {
     if (!selectedClass) return []
 
-    // 1. Try finding live class object in live dataset by id or by name
-    const rawList = Array.isArray(liveClassesData)
-      ? liveClassesData
-      : (liveClassesData as any)?.classes || []
+    if (!isMockMode()) {
+      const rawList = Array.isArray(liveClassesData)
+        ? liveClassesData
+        : (liveClassesData as any)?.classes || []
 
-    const liveRaw = rawList.find(
-      (c: any) =>
-        c.id === selectedClass.id ||
-        c.name?.toLowerCase().trim() === selectedClass.name?.toLowerCase().trim()
-    )
+      const liveRaw = rawList.find((c: any) => c.id === selectedClass.id)
 
-    if (liveRaw?.enrollments && liveRaw.enrollments.length > 0) {
-      return liveRaw.enrollments.map((e: any) => ({
-        id: e.id,
-        studentId: e.studentId,
-        name: e.student ? `${e.student.firstName} ${e.student.lastName}`.trim() : 'Enrolled Student',
-        email: e.student?.email || 'N/A',
-        phone: e.student?.phone || 'N/A',
-        enrolledAt: e.enrolledAt,
-        stage: e.student?.currentStage || 'EPT Class Student',
-      }))
+      if (Array.isArray(liveRaw?.enrollments)) {
+        return liveRaw.enrollments.map((e: any) => ({
+          id: e.id,
+          studentId: e.studentId,
+          name: e.student ? `${e.student.firstName || ''} ${e.student.lastName || ''}`.trim() : 'Enrolled Student',
+          email: e.student?.email || 'N/A',
+          phone: e.student?.phone || 'N/A',
+          enrolledAt: e.enrolledAt,
+          stage: e.student?.currentStage || 'EPT Class Student',
+        }))
+      }
+      return []
     }
 
-    // 2. Read directly from useAttendanceStore / mock enrollments
+    // Mock mode only: read from useAttendanceStore
     const storeEnrollments = useAttendanceStore.getState().getEnrollmentsForClass(selectedClass.id)
     return storeEnrollments.map((e, idx) => ({
       id: e.id || `enr-${selectedClass.id}-${idx + 1}`,
@@ -547,16 +570,19 @@ export default function ClassesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            className="gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs h-9"
-            onClick={() => handleOpenAdmitModal(formattedClasses[0]?.id || '')}
-          >
-            <UserPlus className="size-4" />
-            + Admit Student to Class
-          </Button>
-        </div>
+        {hasPermission(role, 'classes.manage') && (
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs h-9"
+              disabled={formattedClasses.length === 0}
+              onClick={() => handleOpenAdmitModal(formattedClasses[0]?.id || '')}
+            >
+              <UserPlus className="size-4" />
+              + Admit Student to Class
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Search & Subject Filter Bar */}
@@ -609,7 +635,32 @@ export default function ClassesPage() {
         </div>
       </Card>
 
-      {/* Class Batch Cards Grid */}
+      {/* Live Loading / Error / Empty / Class Batch Cards Grid */}
+      {!isMockMode() && isLoadingClasses ? (
+        <Card className="p-8 text-center text-xs text-muted-foreground">
+          Loading class batches…
+        </Card>
+      ) : !isMockMode() && isClassesError ? (
+        <Card className="p-6 border-destructive/40 bg-destructive/5 flex flex-col items-center justify-center gap-2 text-center">
+          <p className="text-sm font-semibold text-destructive">Failed to load class batches</p>
+          <p className="text-xs text-muted-foreground">
+            {(classesError as Error)?.message || 'Unable to fetch classes from the server.'}
+          </p>
+          <Button size="sm" variant="outline" className="mt-1 h-8 text-xs" onClick={() => refetchClasses()}>
+            Retry
+          </Button>
+        </Card>
+      ) : filteredClasses.length === 0 ? (
+        <EmptyState
+          icon={BookOpen}
+          title="No class batches found"
+          description={
+            searchQuery || subjectFilter !== 'ALL'
+              ? 'No class batches match your current search or subject filter.'
+              : 'No class batches are available yet.'
+          }
+        />
+      ) : (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredClasses.map((c) => {
           const isIelts = c.subject.toUpperCase() === 'IELTS'
@@ -662,7 +713,7 @@ export default function ClassesPage() {
                     <span className="font-medium text-foreground">{c.teacherName}</span>
                   </div>
 
-                  {role !== 'teacher' && (
+                  {hasPermission(role, 'classes.manage') && (
                     <Button
                       size="sm"
                       variant="ghost"
@@ -691,18 +742,20 @@ export default function ClassesPage() {
 
                 {/* Card Action Footer */}
                 <div className="flex items-center justify-end pt-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10 mr-auto"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleOpenAdmitModal(c.id)
-                    }}
-                  >
-                    <UserPlus className="size-3.5" />
-                    + Admit Student
-                  </Button>
+                  {hasPermission(role, 'classes.manage') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10 mr-auto"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleOpenAdmitModal(c.id)
+                      }}
+                    >
+                      <UserPlus className="size-3.5" />
+                      + Admit Student
+                    </Button>
+                  )}
 
                   <Button
                     size="sm"
@@ -722,6 +775,7 @@ export default function ClassesPage() {
           )
         })}
       </div>
+      )}
 
       {/* EDIT CLASS & ASSIGN TEACHER MODAL */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
@@ -764,13 +818,18 @@ export default function ClassesPage() {
                   <SelectValue placeholder="Choose instructor to assign…" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(liveTeachers.length > 0 ? liveTeachers : mockTeachers).map((t) => (
+                  {(isMockMode() ? mockTeachers : liveTeachers).map((t) => (
                     <SelectItem key={t.id} value={t.id}>
                       {t.name} ({t.email})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {!isMockMode() && liveTeachers.length === 0 && (
+                <p className="text-[11px] text-muted-foreground">
+                  No staff accounts loaded. Ensure you have permission to view staff users.
+                </p>
+              )}
             </div>
           </div>
 
@@ -935,10 +994,26 @@ export default function ClassesPage() {
                       <Button
                         size="sm"
                         className="h-7 text-xs gap-1"
-                        onClick={() => toast.success('Daily attendance saved!')}
+                        disabled={classRoster.length === 0 || markAttendanceMutation.isPending}
+                        onClick={() => {
+                          if (!isMockMode()) {
+                            markAttendanceMutation.mutate({
+                              classId: selectedClass.id,
+                              body: {
+                                date: dayjs().format('YYYY-MM-DD'),
+                                records: classRoster.map((s) => ({
+                                  studentId: s.studentId,
+                                  status: (todayPresence[s.studentId] ?? true) ? 'PRESENT' : 'ABSENT',
+                                })),
+                              },
+                            })
+                          } else {
+                            toast.success('Daily attendance saved!')
+                          }
+                        }}
                       >
                         <ClipboardCheck className="size-3.5" />
-                        Save Attendance
+                        {markAttendanceMutation.isPending ? 'Saving…' : 'Save Attendance'}
                       </Button>
                     </div>
 
@@ -986,12 +1061,33 @@ export default function ClassesPage() {
 
                 {/* MATERIALS TAB */}
                 <TabsContent value="materials" className="pt-3 space-y-3">
-                  <div className="rounded-lg border border-border/70 p-4 text-xs text-muted-foreground space-y-2">
-                    <p className="font-semibold text-foreground">Class Study Materials & Syllabus</p>
-                    <p>- Official IELTS / PTE Preparation Syllabus 2026</p>
-                    <p>- Speaking Practice Mock Sets & Listening Audio Files</p>
-                    <p>- Reading Practice Exam Worksheets</p>
-                  </div>
+                  {isMockMode() ? (
+                    <div className="rounded-lg border border-border/70 p-4 text-xs text-muted-foreground space-y-2">
+                      <p className="font-semibold text-foreground">Class Study Materials & Syllabus</p>
+                      <p>- Official IELTS / PTE Preparation Syllabus 2026</p>
+                      <p>- Speaking Practice Mock Sets & Listening Audio Files</p>
+                      <p>- Reading Practice Exam Worksheets</p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-border/70 p-4 text-xs text-muted-foreground flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-foreground">Live Class Study Materials</p>
+                        <p className="mt-0.5">Open the class detail view to browse or publish materials for this batch.</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-xs shrink-0"
+                        onClick={() => {
+                          const targetId = selectedClass.id
+                          setSelectedClass(null)
+                          navigate(`/classes/${targetId}`)
+                        }}
+                      >
+                        Open Class Materials
+                      </Button>
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </div>
