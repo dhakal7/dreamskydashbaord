@@ -83,3 +83,20 @@ export function useChangeAppointmentStatus() {
     onError: (err: Error) => toast.error(err.message),
   })
 }
+
+export function useDeleteAppointment() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => {
+      if (isMockMode()) return Promise.resolve()
+      return appointmentApi.remove(id)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: appointmentKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      queryClient.invalidateQueries({ queryKey: ['notifications'] })
+      toast.success('Appointment deleted')
+    },
+    onError: (err: Error) => toast.error(err.message),
+  })
+}

@@ -9,7 +9,7 @@ const create = async (req, res) => {
 };
 
 const getOne = async (req, res) => {
-    const followUp = await followUpService.getFollowUpById(req.params.id);
+    const followUp = await followUpService.getFollowUpById(req.params.id, req.user);
     sendSuccess(res, { data: followUp });
 };
 
@@ -19,7 +19,7 @@ const list = async (req, res) => {
 };
 
 const studentTimeline = async (req, res) => {
-    const logs = await followUpService.getStudentTimeline(req.params.studentId);
+    const logs = await followUpService.getStudentTimeline(req.params.studentId, req.user);
     sendSuccess(res, { data: logs });
 };
 

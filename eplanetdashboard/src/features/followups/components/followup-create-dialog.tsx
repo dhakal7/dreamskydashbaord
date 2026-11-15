@@ -133,10 +133,13 @@ export function FollowUpCreateDialog({ open, onOpenChange, initialStudentId }: F
     }
   }, [currentUser, counselorId])
 
+  const toLocalDateStr = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
   useEffect(() => {
     if (open) {
       const now = new Date()
-      const defaultDate = now.toISOString().slice(0, 10)
+      const defaultDate = toLocalDateStr(now)
       const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(Math.ceil(now.getMinutes() / 15) * 15).padStart(2, '0')}`
       setDate(defaultDate)
       setTime(defaultTime === '24:00' ? '23:45' : defaultTime)
@@ -154,7 +157,7 @@ export function FollowUpCreateDialog({ open, onOpenChange, initialStudentId }: F
     setReminder('')
     setPriority('medium')
     setChannel('call')
-    setDate(new Date().toISOString().slice(0, 10))
+    setDate(toLocalDateStr(new Date()))
     setTime('09:30')
     setNotes('')
     if (currentUser.role !== 'counselor' && counselors.length > 0) {
@@ -184,7 +187,7 @@ export function FollowUpCreateDialog({ open, onOpenChange, initialStudentId }: F
           channel: channel.toUpperCase(),
           direction: 'OUTBOUND',
           content: reminder.trim(),
-          nextFollowUpAt,
+          nextFollowUpAt: parsedDate.toISOString(),
         },
         {
           onSuccess: () => {

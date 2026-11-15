@@ -32,31 +32,28 @@ const sourceLabel: Record<string, string> = {
 function getAvailableStagesForRole(role: string): { stage: LeadStage; label: string }[] {
   if (role === 'front_desk') {
     return [
-      { stage: 'new', label: 'New Leads' },
+      { stage: 'new', label: 'New Lead' },
       { stage: 'follow_up', label: 'Follow Up' },
       { stage: 'assigned', label: 'Assigned' },
-      { stage: 'not_contracted', label: 'Not Contracted' },
+      { stage: 'interested', label: 'Interested' },
     ]
   }
   if (role === 'counselor') {
     return [
-      { stage: 'assigned', label: 'Assigned' },
       { stage: 'follow_up', label: 'Follow Up' },
       { stage: 'interested', label: 'Interested' },
     ]
   }
   return [
-    { stage: 'new', label: 'New' },
+    { stage: 'new', label: 'New Lead' },
     { stage: 'follow_up', label: 'Follow Up' },
     { stage: 'assigned', label: 'Assigned' },
-    { stage: 'counseling', label: 'Counseling' },
     { stage: 'interested', label: 'Interested' },
-    { stage: 'not_contracted', label: 'Not Contracted' },
   ]
 }
 
 // Stages where a counselor / admin can register the lead as a permanent student
-const REGISTERABLE_STAGES: LeadStage[] = ['new', 'follow_up', 'counseling', 'interested']
+const REGISTERABLE_STAGES: LeadStage[] = ['new', 'follow_up', 'assigned', 'counseling', 'interested']
 
 interface LeadCardProps {
   lead: Lead
@@ -66,9 +63,11 @@ interface LeadCardProps {
   onMove?: (id: string, stage: LeadStage) => void
   /** Called when the user initiates a transition to the follow_up stage to collect appointment details */
   onScheduleFollowUp?: (lead: Lead) => void
+  /** Called when the user initiates a transition to the assigned stage to select counselor & appointment */
+  onAssignLead?: (lead: Lead) => void
 }
 
-export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, onMove, onScheduleFollowUp }: LeadCardProps) {
+export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, onMove, onScheduleFollowUp, onAssignLead }: LeadCardProps) {
   const currentUser = useAuthStore((s) => s.currentUser)
   const moveLead = useLeadsStore((s) => s.moveLead)
   const removeLead = useLeadsStore((s) => s.removeLead)
@@ -103,6 +102,19 @@ export const LeadCard = memo(function LeadCard({ lead, overlay, canDrag = true, 
     if (stage === 'follow_up' && onScheduleFollowUp) {
       setIsDetailOpen(false)
       onScheduleFollowUp(lead)
+      return
+    }
+    if (stage === 'assigned') {
+      if (!canAssign) {
+        toast.error('Only Front Desk officers and Admins can move leads into Assigned.')
+        return
+      }
+      setIsDetailOpen(false)
+      if (onAssignLead) {
+        onAssignLead(lead)
+      } else {
+        setIsAssignOpen(true)
+      }
       return
     }
     if (onMove) {

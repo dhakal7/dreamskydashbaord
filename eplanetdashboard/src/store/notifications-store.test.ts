@@ -1,4 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
+
+vi.mock('@/lib/api-client', () => ({
+  isMockMode: () => true,
+}))
+
 import { useNotificationsStore } from './notifications-store'
 
 describe('notifications store email delivery', () => {

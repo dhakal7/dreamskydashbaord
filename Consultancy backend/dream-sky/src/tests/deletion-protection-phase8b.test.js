@@ -61,7 +61,18 @@ const mockPrisma = {
         },
     },
     payment: {
-        findUnique: async ({ where }) => store.payments.get(where.id) || null,
+        findUnique: async ({ where, include }) => {
+            const p = store.payments.get(where.id);
+            if (!p) return null;
+            if (include?.transactions) {
+                const txs = [];
+                for (const t of store.transactions.values()) {
+                    if (t.paymentId === p.id) txs.push({ ...t });
+                }
+                return { ...p, transactions: txs };
+            }
+            return { ...p };
+        },
         count: async ({ where }) => {
             let count = 0;
             for (const p of store.payments.values()) {
@@ -438,9 +449,10 @@ test("Payment Deletion: Payment with associated transactions CANNOT be deleted",
     store.payments.set("pay-tx-1", { id: "pay-tx-1", studentId: "stu-1", totalAmount: 10000, paidAmount: 5000 });
     store.transactions.set("tx-1", { id: "tx-1", paymentId: "pay-tx-1", amount: 5000 });
 
+    const superAdmin = { userId: "admin-1", role: "SUPER_ADMIN" };
     await assert.rejects(
         async () => {
-            await paymentService.deletePayment("pay-tx-1");
+            await paymentService.deletePayment("pay-tx-1", superAdmin);
         },
         (err) => {
             assert.strictEqual(err.statusCode, 400);
@@ -459,11 +471,12 @@ test("Payment Deletion: Payment with associated transactions CANNOT be deleted",
 
 test("Payment Deletion: Payment with paidAmount > 0 CANNOT be deleted even if transaction count is 0", async () => {
     resetStore();
-    store.payments.set("pay-paid-1", { id: "pay-paid-1", studentId: "stu-1", totalAmount: 10000, paidAmount: 2000 });
+    store.payments.set("pay-paid-1", { id: "pay-paid-1", studentId: "stu-1", totalAmount: 10000, paidAmount: 2000, status: "PARTIAL" });
 
+    const superAdmin = { userId: "admin-1", role: "SUPER_ADMIN" };
     await assert.rejects(
         async () => {
-            await paymentService.deletePayment("pay-paid-1");
+            await paymentService.deletePayment("pay-paid-1", superAdmin);
         },
         (err) => {
             assert.strictEqual(err.statusCode, 400);
@@ -480,7 +493,8 @@ test("Payment Deletion: Uncollected payment with zero transactions can be cleanl
     resetStore();
     store.payments.set("pay-draft-1", { id: "pay-draft-1", studentId: "stu-1", totalAmount: 10000, paidAmount: 0 });
 
-    const result = await paymentService.deletePayment("pay-draft-1");
+    const superAdmin = { userId: "admin-1", role: "SUPER_ADMIN" };
+    const result = await paymentService.deletePayment("pay-draft-1", superAdmin);
     assert.deepStrictEqual(result, { deleted: true, id: "pay-draft-1" });
     assert.strictEqual(store.payments.has("pay-draft-1"), false);
     // Assert zero deleteMany calls were made

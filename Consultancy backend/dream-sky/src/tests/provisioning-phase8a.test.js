@@ -337,9 +337,10 @@ test("6. A legitimate student account follows the intended safe workflow", async
     const result = await studentService.provisionPortalAndSendWelcome(studentObj);
 
     assert.strictEqual(result.success, true);
-    assert.ok(result.tempPassword);
+    assert.strictEqual(result.tempPassword, undefined);
     assert.strictEqual(sentEmails.length, 1);
     assert.strictEqual(sentEmails[0].to, "student.legit@mockdomain.internal");
+    assert.ok(sentEmails[0].tempPassword);
 
     const updatedUser = store.users.get("user-stu-legit");
     assert.strictEqual(updatedUser.role, "STUDENT");
@@ -360,9 +361,10 @@ test("7. A new student account can be provisioned under established rules", asyn
     const result = await studentService.provisionPortalAndSendWelcome(studentObj);
 
     assert.strictEqual(result.success, true);
-    assert.ok(result.tempPassword);
+    assert.strictEqual(result.tempPassword, undefined);
     assert.strictEqual(sentEmails.length, 1);
     assert.strictEqual(sentEmails[0].to, "fresh.applicant@mockdomain.internal");
+    assert.ok(sentEmails[0].tempPassword);
 
     let createdUser = null;
     for (const u of store.users.values()) {

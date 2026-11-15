@@ -207,7 +207,8 @@ const getSummary = async (req, res, next) => {
  * Returns stats for a specific counselor's dashboard.
  */
 const getCounselorSummary = async (req, res) => {
-    const counselorId = req.query.counselorId || req.user.userId;
+    const actorId = req.user.userId || req.user.id;
+    const counselorId = req.user.role === "COUNSELOR" ? actorId : (req.query.counselorId || actorId);
     const now = new Date();
     const STUDENT_STAGES = [
         "LEAD", "PROSPECT", "ENROLLED", "APPLIED",

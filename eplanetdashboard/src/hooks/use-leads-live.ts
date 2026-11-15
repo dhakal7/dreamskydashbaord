@@ -25,13 +25,12 @@ function resolveFrontendLeadStage(student: any): LeadStage {
     const lower = String(raw).toLowerCase().replace(/-/g, '_')
     if (lower === 'new') return 'new'
     if (lower === 'follow_up' || lower === 'followup' || lower === 'contacted') return 'follow_up'
-    if (lower === 'assigned') return 'assigned'
+    if (lower === 'assigned' || lower === 'counseling' || lower === 'counselling') return 'assigned'
     if (lower === 'not_contracted') return 'not_contracted'
-    if (lower === 'counseling' || lower === 'counselling') return 'counseling'
     if (lower === 'interested') return 'interested'
   }
   if (student.assignedCounselorId) return 'assigned'
-  if (student.currentStage === 'PROSPECT') return 'counseling'
+  if (student.currentStage === 'PROSPECT') return 'assigned'
   return 'new'
 }
 
@@ -358,8 +357,7 @@ export function useTrashLeads(params: { search?: string; page?: number; limit?: 
   const canAccessTrash =
     currentUser.role === 'super_admin' ||
     currentUser.role === 'branch_admin' ||
-    currentUser.role === 'front_desk' ||
-    currentUser.role === 'counselor'
+    currentUser.role === 'front_desk'
 
   const { data, isLoading, isError, error, refetch } = useTrashStudents(
     {
@@ -408,18 +406,45 @@ export function useRestoreLiveLead() {
 
 // ── Mutation: assign lead to counselor ────────────────────────────────────────
 
+export interface AssignLiveLeadPayload {
+  id: string
+  counselorId: string
+  appointmentDate: string
+  appointmentTime: string
+  durationMin?: number
+  meetingMode?: string
+  notes?: string
+}
+
 export function useAssignLiveLead() {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, counselorId }: { id: string; counselorId: string }) => {
+    mutationFn: async ({
+      id,
+      counselorId,
+      appointmentDate,
+      appointmentTime,
+      durationMin,
+      meetingMode,
+      notes,
+    }: AssignLiveLeadPayload) => {
       if (isMockMode()) return null
-      return studentApi.assignCounselor(id, counselorId)
+      return studentApi.assignCounselor(id, {
+        counselorId,
+        appointmentDate,
+        appointmentTime,
+        durationMin,
+        meetingMode,
+        notes,
+      })
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: studentKeys.all })
+      qc.invalidateQueries({ queryKey: ['appointments'] })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
       qc.invalidateQueries({ queryKey: ['dashboard'] })
-      toast.success('Lead assigned to counselor successfully')
+      toast.success('Lead assigned and appointment scheduled successfully')
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to assign lead'),
   })

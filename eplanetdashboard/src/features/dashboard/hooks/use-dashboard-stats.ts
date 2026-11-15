@@ -50,7 +50,7 @@ const dashboardKeys = {
 // Map dream-sky stages onto the frontend lead-stage labels the pipeline card renders.
 const STAGE_TO_LEAD_STAGE: Record<string, LeadStage> = {
   LEAD: 'new',
-  PROSPECT: 'counseling',
+  PROSPECT: 'assigned',
   APPLIED: 'application',
   OFFER_RECEIVED: 'offer_letter',
   VISA_APPLIED: 'visa',
@@ -257,7 +257,7 @@ export function useCounselorDashboard(linkedId: string) {
         priority: 'medium' as Priority,
       }))
 
-      const totalLeads = (stageCounts.get('new') ?? 0) + (stageCounts.get('follow_up') ?? 0) + (stageCounts.get('counseling') ?? 0) + (stageCounts.get('interested') ?? 0)
+      const totalLeads = (stageCounts.get('new') ?? 0) + (stageCounts.get('follow_up') ?? 0) + (stageCounts.get('assigned') ?? 0) + (stageCounts.get('counseling') ?? 0) + (stageCounts.get('interested') ?? 0)
 
       return {
         counselor: {

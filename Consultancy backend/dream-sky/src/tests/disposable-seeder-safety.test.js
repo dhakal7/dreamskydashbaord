@@ -14,12 +14,19 @@ const os = require("node:os");
 
 const {
     EXPECTED_CLUSTER_IDENTITY,
+    EXPECTED_MIGRATIONS,
+    MAX_PREFLIGHT_EVIDENCE_AGE_MS,
     validateSeederDatabaseUrl,
     createSeederPrismaClient,
     fetchClusterIdentity,
     verifyClusterIdentity,
+    verifyMigrationReadiness,
     performOutOfBandPreflight,
     validatePreflightEvidence,
+    consumePreflightEvidence,
+    validateAndResolveManifestPath,
+    openExclusiveIntentManifest,
+    updateManifestThroughRetainedFd,
     resolvePgControlDataBin,
     buildSyntheticFixtures,
     buildPlannedRecords,
@@ -317,10 +324,10 @@ test("Coverage 5 - A successful transaction followed by a manifest-update failur
     await withTempDirAsync(async (tempDir) => {
         const manifestPath = path.join(tempDir, ".disposable-fixture-manifest.json");
 
-        // We simulate a filesystem error during updateManifestAtomic by corrupting renameSync
-        const originalRenameSync = fs.renameSync;
-        fs.renameSync = () => {
-            throw new Error("Simulated EACCES / atomic rename failure");
+        // We simulate a filesystem error during updateManifestThroughRetainedFd by corrupting ftruncateSync
+        const originalFtruncateSync = fs.ftruncateSync;
+        fs.ftruncateSync = () => {
+            throw new Error("Simulated EACCES / retained fd truncate failure");
         };
 
         try {
@@ -355,7 +362,7 @@ test("Coverage 5 - A successful transaction followed by a manifest-update failur
             assert.strictEqual(preserved.status, "PREPARING", "Manifest must remain in PREPARING status when post-commit update fails");
             assert.ok(preserved.fixtures.length >= 7, "All planned fixture definitions must be preserved for manual recovery");
         } finally {
-            fs.renameSync = originalRenameSync;
+            fs.ftruncateSync = originalFtruncateSync;
         }
     });
 });
@@ -522,6 +529,30 @@ function createMockIdentityClient(overrides = {}) {
                     sys_id: overrides.systemIdentifier !== undefined ? overrides.systemIdentifier : "7697854862051656675",
                 }];
             }
+            if (sql.includes("SHOW listen_addresses")) {
+                if (overrides.listenAddressesError) {
+                    throw new Error(overrides.listenAddressesError);
+                }
+                return [{
+                    listen_addresses: overrides.listenAddresses !== undefined ? overrides.listenAddresses : "",
+                }];
+            }
+            if (sql.includes("SHOW unix_socket_directories")) {
+                if (overrides.unixSocketDirectoriesError) {
+                    throw new Error(overrides.unixSocketDirectoriesError);
+                }
+                return [{
+                    unix_socket_directories: overrides.unixSocketDirectories !== undefined ? overrides.unixSocketDirectories : PERSISTENT_TEST_SOCKET_DIR,
+                }];
+            }
+            if (sql.includes("SHOW port")) {
+                if (overrides.showPortError) {
+                    throw new Error(overrides.showPortError);
+                }
+                return [{
+                    port: overrides.showPort !== undefined ? overrides.showPort : "5433",
+                }];
+            }
             if (sql.includes("data_directory")) {
                 if (overrides.dataDirectoryError) {
                     throw new Error(overrides.dataDirectoryError);
@@ -529,6 +560,20 @@ function createMockIdentityClient(overrides = {}) {
                 return [{
                     data_directory: overrides.dataDirectory !== undefined ? overrides.dataDirectory : PERSISTENT_TEST_CLUSTER_DIR,
                 }];
+            }
+            if (sql.includes("_prisma_migrations")) {
+                if (overrides.migrationsError) {
+                    throw new Error(overrides.migrationsError);
+                }
+                if (overrides.migrations !== undefined) {
+                    return overrides.migrations;
+                }
+                return EXPECTED_MIGRATIONS.map((migration_name) => ({
+                    migration_name,
+                    finished_at: new Date("2026-11-13T00:00:00Z"),
+                    rolled_back_at: null,
+                    applied_steps_count: 1,
+                }));
             }
             return [];
         },
@@ -561,7 +606,7 @@ test("Cluster identity - fails closed on mismatched data directory", async () =>
 
     await assert.rejects(
         () => verifyClusterIdentity(mockClient, MOCK_EXPECTED_CLUSTER_IDENTITY),
-        new RegExp(`CLUSTER IDENTITY MISMATCH.*data directory '\\/opt\\/homebrew\\/var\\/postgresql@16' does not match expected '${escapeRegex(PERSISTENT_TEST_CLUSTER_DIR)}'`)
+        new RegExp(`CLUSTER IDENTITY MISMATCH.*data_directory.*'\\/opt\\/homebrew\\/var\\/postgresql@16'.*does not match expected '${escapeRegex(PERSISTENT_TEST_CLUSTER_DIR)}'`)
     );
 });
 
@@ -598,7 +643,7 @@ test("Cluster identity - fails closed on wrong port, database, or role", async (
 });
 
 test("Cluster identity - fails closed when identity evidence is unavailable to non-superuser", async () => {
-    // system_identifier restricted
+    // system_identifier restricted (without preflight evidence, pg_control_system is required)
     const mockRestrictedSysId = createMockIdentityClient({
         systemIdentifierError: "permission denied for function pg_control_system",
     });
@@ -611,9 +656,14 @@ test("Cluster identity - fails closed when identity evidence is unavailable to n
     const mockRestrictedDataDir = createMockIdentityClient({
         dataDirectoryError: 'permission denied to examine "data_directory"',
     });
+    const ev2 = performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        ...createValidMockPreflightInputs(),
+        pgControlDataBin: "pg_controldata",
+    });
     await assert.rejects(
-        () => verifyClusterIdentity(mockRestrictedDataDir, MOCK_EXPECTED_CLUSTER_IDENTITY),
-        /CLUSTER IDENTITY ERROR.*data_directory is unavailable.*permission denied to examine "data_directory".*Refusing to seed based on port and name alone/
+        () => verifyClusterIdentity(mockRestrictedDataDir, MOCK_EXPECTED_CLUSTER_IDENTITY, { preflightEvidence: ev2, allowTestMock: true }),
+        /CLUSTER IDENTITY ERROR.*Cannot verify effective 'data_directory'.*permission denied to examine "data_directory"/
     );
 });
 
@@ -655,12 +705,8 @@ test("Cluster identity - guarantee that no fixture inserts occur before identity
         assert.strictEqual(transactionCalled, false, "Transaction must not start if cluster identity fails");
         assert.strictEqual(createCalled, false, "No create operations must occur if cluster identity fails");
 
-        // Verify manifest was recorded with FAILED_CLUSTER_IDENTITY_REJECTED
-        assert.ok(fs.existsSync(manifestPath), "Manifest must exist");
-        const failureReport = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-        assert.strictEqual(failureReport.status, "FAILED_CLUSTER_IDENTITY_REJECTED");
-        assert.strictEqual(failureReport.transactionBehavior, "NO_TRANSACTION_STARTED");
-        assert.strictEqual(failureReport.finalDatabaseRecordCount, "0");
+        // G2.2/G3: Manifest must NOT be opened on disk before preflight & identity checks pass
+        assert.strictEqual(fs.existsSync(manifestPath), false, "Manifest must not be opened before identity verification passes");
     });
 });
 
@@ -690,12 +736,18 @@ function createValidMockPreflightInputs(overrides = {}) {
             throw new Error(overrides.execError[cmd]);
         }
         if (cmd === "lsof") {
+            const isTcpQuery = Array.isArray(args) && args.some((a) => String(a).includes("-iTCP"));
+            if (isTcpQuery) {
+                if (overrides.tcpLsofOutput !== undefined) return overrides.tcpLsofOutput;
+                return "";
+            }
+            if (overrides.unixLsofOutput !== undefined) return overrides.unixLsofOutput;
             if (overrides.lsofOutput !== undefined) return overrides.lsofOutput;
-            return "COMMAND PID USER FD TYPE DEVICE SIZE/OFF NODE NAME\npostgres 29744 testuser 6u IPv4 0x123 0t0 TCP 127.0.0.1:5433 (LISTEN)\n";
+            return `p29744\nn${PERSISTENT_TEST_SOCKET_DIR}/.s.PGSQL.5433\n`;
         }
         if (cmd === "ps") {
             if (overrides.psOutput !== undefined) return overrides.psOutput;
-            return `29744 /opt/homebrew/Cellar/postgresql@16/16.14_1/bin/postgres -D ${PERSISTENT_TEST_CLUSTER_DIR} -p 5433 -h 127.0.0.1 -k ${PERSISTENT_TEST_SOCKET_DIR}\n`;
+            return `29744 /opt/homebrew/Cellar/postgresql@16/16.14_1/bin/postgres -D ${PERSISTENT_TEST_CLUSTER_DIR} -p 5433 -k ${PERSISTENT_TEST_SOCKET_DIR}\n`;
         }
         if (cmd.includes("pg_controldata")) {
             if (overrides.controldataOutput !== undefined) return overrides.controldataOutput;
@@ -704,15 +756,34 @@ function createValidMockPreflightInputs(overrides = {}) {
         return "";
     };
 
-    return { readPostmaster, execCommand };
+    const lstatSync = overrides.lstatSync || ((p) => {
+        if (overrides.socketLstatError) {
+            throw new Error(overrides.socketLstatError);
+        }
+        return {
+            isSocket: () => overrides.isSocket !== undefined ? overrides.isSocket : true,
+        };
+    });
+
+    const readConfig = overrides.readConfig || (() => {
+        if (overrides.configReadError) {
+            throw new Error(overrides.configReadError);
+        }
+        if (overrides.configContent !== undefined) return overrides.configContent;
+        return `listen_addresses = ''\nport = 5433\nunix_socket_directories = '${PERSISTENT_TEST_SOCKET_DIR}'\n`;
+    });
+
+    return { readPostmaster, execCommand, lstatSync, readConfig };
 }
 
 test("Preflight - matching system identifier, process arguments, port, data directory, and socket path", () => {
-    const { readPostmaster, execCommand } = createValidMockPreflightInputs();
+    const { readPostmaster, execCommand, lstatSync, readConfig } = createValidMockPreflightInputs();
     const evidence = performOutOfBandPreflight({
         expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
         readPostmaster,
         execCommand,
+        lstatSync,
+        readConfig,
         pgControlDataBin: "pg_controldata",
     });
 
@@ -727,12 +798,14 @@ test("Preflight - matching system identifier, process arguments, port, data dire
 });
 
 test("Preflight - fails closed when cluster system identifier is PENDING_INITIALIZATION", () => {
-    const { readPostmaster, execCommand } = createValidMockPreflightInputs();
+    const { readPostmaster, execCommand, lstatSync, readConfig } = createValidMockPreflightInputs();
     assert.throws(
         () => performOutOfBandPreflight({
             expected: PENDING_EXPECTED_CLUSTER_IDENTITY,
             readPostmaster,
             execCommand,
+            lstatSync,
+            readConfig,
             pgControlDataBin: "pg_controldata",
         }),
         /PREFLIGHT ERROR.*Cluster system identifier is pending initialization and has not yet been established/
@@ -740,7 +813,7 @@ test("Preflight - fails closed when cluster system identifier is PENDING_INITIAL
 });
 
 test("Preflight - fails closed on wrong system identifier", () => {
-    const { readPostmaster, execCommand } = createValidMockPreflightInputs({
+    const { readPostmaster, execCommand, lstatSync, readConfig } = createValidMockPreflightInputs({
         controldataOutput: "Database system identifier: 9999999999999999999\nDatabase cluster state: in production\n",
     });
 
@@ -749,53 +822,61 @@ test("Preflight - fails closed on wrong system identifier", () => {
             expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
             readPostmaster,
             execCommand,
+            lstatSync,
+            readConfig,
             pgControlDataBin: "pg_controldata",
         }),
         /PREFLIGHT ERROR.*Physical cluster system identifier mismatch: observed '9999999999999999999', expected '7697854862051656675'/
     );
 });
 
-test("Preflight - fails closed on wrong or ambiguous listening process", () => {
-    // A: No listener on port 5433
-    const noListener = createValidMockPreflightInputs({
-        lsofOutput: "COMMAND PID USER FD TYPE DEVICE SIZE/OFF NODE NAME\n",
+test("Preflight - fails closed on TCP listeners or missing/unowned Unix socket", () => {
+    // A: Unexpected TCP listener on port 5433
+    const tcpListener = createValidMockPreflightInputs({
+        tcpLsofOutput: "COMMAND PID USER FD TYPE DEVICE SIZE/OFF NODE NAME\npostgres 29744 testuser 6u IPv4 0x1 0t0 TCP 127.0.0.1:5433 (LISTEN)\n",
     });
     assert.throws(
         () => performOutOfBandPreflight({
             expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
-            readPostmaster: noListener.readPostmaster,
-            execCommand: noListener.execCommand,
+            readPostmaster: tcpListener.readPostmaster,
+            execCommand: tcpListener.execCommand,
+            lstatSync: tcpListener.lstatSync,
+            readConfig: tcpListener.readConfig,
             pgControlDataBin: "pg_controldata",
         }),
-        /PREFLIGHT ERROR.*No listening process found on TCP port 5433/
+        /PREFLIGHT ERROR.*Unexpected TCP listener detected on port 5433/
     );
 
-    // B: Ambiguous listeners (multiple distinct PIDs)
-    const ambiguousListeners = createValidMockPreflightInputs({
-        lsofOutput: "COMMAND PID USER FD TYPE DEVICE SIZE/OFF NODE NAME\npostgres 29744 testuser 6u IPv4 0x1 0t0 TCP 127.0.0.1:5433 (LISTEN)\nother 29745 testuser 7u IPv4 0x2 0t0 TCP 127.0.0.1:5433 (LISTEN)\n",
+    // B: Missing Unix socket file
+    const missingSocket = createValidMockPreflightInputs({
+        socketLstatError: "ENOENT: no such file or directory",
     });
     assert.throws(
         () => performOutOfBandPreflight({
             expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
-            readPostmaster: ambiguousListeners.readPostmaster,
-            execCommand: ambiguousListeners.execCommand,
+            readPostmaster: missingSocket.readPostmaster,
+            execCommand: missingSocket.execCommand,
+            lstatSync: missingSocket.lstatSync,
+            readConfig: missingSocket.readConfig,
             pgControlDataBin: "pg_controldata",
         }),
-        /PREFLIGHT ERROR.*Ambiguous listeners on port 5433/
+        /PREFLIGHT ERROR.*Expected Unix socket .* not found/
     );
 
-    // C: Listening PID mismatch with postmaster.pid
-    const pidMismatch = createValidMockPreflightInputs({
-        lsofOutput: "COMMAND PID USER FD TYPE DEVICE SIZE/OFF NODE NAME\npostgres 88888 testuser 6u IPv4 0x1 0t0 TCP 127.0.0.1:5433 (LISTEN)\n",
+    // C: PID does not own expected Unix socket
+    const unownedSocket = createValidMockPreflightInputs({
+        unixLsofOutput: "",
     });
     assert.throws(
         () => performOutOfBandPreflight({
             expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
-            readPostmaster: pidMismatch.readPostmaster,
-            execCommand: pidMismatch.execCommand,
+            readPostmaster: unownedSocket.readPostmaster,
+            execCommand: unownedSocket.execCommand,
+            lstatSync: unownedSocket.lstatSync,
+            readConfig: unownedSocket.readConfig,
             pgControlDataBin: "pg_controldata",
         }),
-        /PREFLIGHT ERROR.*Process listening on port 5433 \(PID 88888\) does not match postmaster\.pid \(PID 29744\)/
+        /PREFLIGHT ERROR.*PID 29744 does not own expected Unix socket/
     );
 
     // D: Non-postgres process running on PID
@@ -807,6 +888,8 @@ test("Preflight - fails closed on wrong or ambiguous listening process", () => {
             expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
             readPostmaster: nonPostgres.readPostmaster,
             execCommand: nonPostgres.execCommand,
+            lstatSync: nonPostgres.lstatSync,
+            readConfig: nonPostgres.readConfig,
             pgControlDataBin: "pg_controldata",
         }),
         /PREFLIGHT ERROR.*PID 29744 is not a postgres process/
@@ -823,6 +906,8 @@ test("Preflight - fails closed on missing or contradictory process/control-file 
             expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
             readPostmaster: missingPostmaster.readPostmaster,
             execCommand: missingPostmaster.execCommand,
+            lstatSync: missingPostmaster.lstatSync,
+            readConfig: missingPostmaster.readConfig,
             pgControlDataBin: "pg_controldata",
         }),
         /PREFLIGHT ERROR.*Cannot read postmaster\.pid/
@@ -837,23 +922,27 @@ test("Preflight - fails closed on missing or contradictory process/control-file 
             expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
             readPostmaster: wrongDataDir.readPostmaster,
             execCommand: wrongDataDir.execCommand,
+            lstatSync: wrongDataDir.lstatSync,
+            readConfig: wrongDataDir.readConfig,
             pgControlDataBin: "pg_controldata",
         }),
         new RegExp(`PREFLIGHT ERROR.*postmaster\\.pid data directory '\\/opt\\/homebrew\\/var\\/postgresql@16' does not match expected '${escapeRegex(PERSISTENT_TEST_CLUSTER_DIR)}'`)
     );
 
-    // C: ps command line missing socket directory argument
-    const missingSocketInPs = createValidMockPreflightInputs({
-        psOutput: `29744 postgres -D ${PERSISTENT_TEST_CLUSTER_DIR} -p 5433\n`,
+    // C: postgresql.conf unix_socket_directories mismatch
+    const wrongSocketInConf = createValidMockPreflightInputs({
+        configContent: `listen_addresses = ''\nport = 5433\nunix_socket_directories = '/tmp'\n`,
     });
     assert.throws(
         () => performOutOfBandPreflight({
             expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
-            readPostmaster: missingSocketInPs.readPostmaster,
-            execCommand: missingSocketInPs.execCommand,
+            readPostmaster: wrongSocketInConf.readPostmaster,
+            execCommand: wrongSocketInConf.execCommand,
+            lstatSync: wrongSocketInConf.lstatSync,
+            readConfig: wrongSocketInConf.readConfig,
             pgControlDataBin: "pg_controldata",
         }),
-        new RegExp(`PREFLIGHT ERROR.*Process arguments for PID 29744 do not contain expected socket directory '${escapeRegex(PERSISTENT_TEST_SOCKET_DIR)}'`)
+        /PREFLIGHT ERROR.*postgresql\.conf unix_socket_directories.*does not match/
     );
 
     // D: pg_controldata shows non-production state
@@ -865,6 +954,8 @@ test("Preflight - fails closed on missing or contradictory process/control-file 
             expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
             readPostmaster: badClusterState.readPostmaster,
             execCommand: badClusterState.execCommand,
+            lstatSync: badClusterState.lstatSync,
+            readConfig: badClusterState.readConfig,
             pgControlDataBin: "pg_controldata",
         }),
         /PREFLIGHT ERROR.*Invalid database cluster state 'starting up'/
@@ -874,19 +965,17 @@ test("Preflight - fails closed on missing or contradictory process/control-file 
 test("Preflight - evidence validation rejects contradictory in-session port", async () => {
     // In-session port is 5432, but preflight evidence specifies 5433
     const mockWrongSessionPort = createMockIdentityClient({ port: 5432 });
-    const validEvidence = {
-        verified: true,
-        source: "OUT_OF_BAND_PREFLIGHT",
-        systemIdentifier: "7697854862051656675",
-        dataDirectory: PERSISTENT_TEST_CLUSTER_DIR,
-        socketDirectory: PERSISTENT_TEST_SOCKET_DIR,
-        port: 5433,
-        pid: 29744,
-        clusterState: "in production",
-    };
+    const validEvidence = performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        ...createValidMockPreflightInputs(),
+        pgControlDataBin: "pg_controldata",
+    });
 
     await assert.rejects(
-        () => verifyClusterIdentity(mockWrongSessionPort, MOCK_EXPECTED_CLUSTER_IDENTITY, { preflightEvidence: validEvidence }),
+        () => verifyClusterIdentity(mockWrongSessionPort, MOCK_EXPECTED_CLUSTER_IDENTITY, {
+            preflightEvidence: validEvidence,
+            allowTestMock: true,
+        }),
         /CLUSTER IDENTITY MISMATCH.*Connected server port '5432' does not match expected disposable port '5433'/
     );
 });
@@ -925,6 +1014,8 @@ test("Preflight failure blocks Prisma initialization and fixture inserts", async
                 clusterIdentityReference: MOCK_EXPECTED_CLUSTER_IDENTITY,
                 execCommand: failingPreflight.execCommand,
                 readPostmaster: failingPreflight.readPostmaster,
+                lstatSync: failingPreflight.lstatSync,
+                readConfig: failingPreflight.readConfig,
                 pgControlDataBin: "pg_controldata",
             }),
             /PREFLIGHT ERROR.*Physical cluster system identifier mismatch/
@@ -935,13 +1026,8 @@ test("Preflight failure blocks Prisma initialization and fixture inserts", async
         assert.strictEqual(transactionCalled, false, "Transaction must never start if preflight fails");
         assert.strictEqual(createCalled, false, "No create operations must occur if preflight fails");
 
-        // Verify manifest recorded with FAILED_CLUSTER_IDENTITY_REJECTED
-        assert.ok(fs.existsSync(manifestPath), "Manifest must exist");
-        const failureReport = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-        assert.strictEqual(failureReport.status, "FAILED_CLUSTER_IDENTITY_REJECTED");
-        assert.strictEqual(failureReport.transactionBehavior, "NO_TRANSACTION_STARTED");
-        assert.strictEqual(failureReport.finalDatabaseRecordCount, "0");
-        assert.strictEqual(failureReport.attemptedRecordsCount, 0);
+        // G2.2/G3: Failed preflight does not create an ambiguous manifest on disk
+        assert.strictEqual(fs.existsSync(manifestPath), false, "Manifest must not be opened on failed preflight");
     });
 });
 
@@ -981,28 +1067,22 @@ test("Pre-existing FAILED_CLUSTER_IDENTITY_REJECTED manifest prevents reseeding"
     });
 });
 
-test("No extra database permissions required when valid out-of-band preflight evidence is supplied", async () => {
-    // Application role dreamsky_test_user has NO superuser or pg_read_all_settings
-    // In-database queries for SHOW data_directory and pg_control_system() fail with 42501
-    const mockUnprivilegedClient = createMockIdentityClient({
+test("No superuser permissions required when valid out-of-band preflight evidence is supplied", async () => {
+    // Application role dreamsky_test_user has pg_read_all_settings (for SHOW checks) but NO superuser (pg_control_system fails with 42501)
+    const mockNonSuperuserClient = createMockIdentityClient({
         systemIdentifierError: 'permission denied for function pg_control_system (SQLSTATE 42501)',
-        dataDirectoryError: 'permission denied to examine "data_directory" (SQLSTATE 42501)',
     });
 
-    const validEvidence = {
-        verified: true,
-        source: "OUT_OF_BAND_PREFLIGHT",
-        systemIdentifier: "7697854862051656675",
-        dataDirectory: PERSISTENT_TEST_CLUSTER_DIR,
-        socketDirectory: PERSISTENT_TEST_SOCKET_DIR,
-        port: 5433,
-        pid: 29744,
-        clusterState: "in production",
-    };
+    const validEvidence = performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        ...createValidMockPreflightInputs(),
+        pgControlDataBin: "pg_controldata",
+    });
 
     // With valid preflight evidence, verifyClusterIdentity succeeds completely
-    const result = await verifyClusterIdentity(mockUnprivilegedClient, MOCK_EXPECTED_CLUSTER_IDENTITY, {
+    const result = await verifyClusterIdentity(mockNonSuperuserClient, MOCK_EXPECTED_CLUSTER_IDENTITY, {
         preflightEvidence: validEvidence,
+        allowTestMock: true,
     });
 
     assert.strictEqual(result.verified, true);
@@ -1092,21 +1172,17 @@ test("Seeder socket guard - validateSeederDatabaseUrl rejects wrong port and par
 test("Seeder socket guard - verifyClusterIdentity with requireUnixSocket rejects TCP connection", async () => {
     // Mock client connected over TCP (server_port is 5433)
     const mockTcpClient = createMockIdentityClient({ port: 5433 });
-    const validEvidence = {
-        verified: true,
-        source: "OUT_OF_BAND_PREFLIGHT",
-        systemIdentifier: "7697854862051656675",
-        dataDirectory: PERSISTENT_TEST_CLUSTER_DIR,
-        socketDirectory: PERSISTENT_TEST_SOCKET_DIR,
-        port: 5433,
-        pid: 29744,
-        clusterState: "in production",
-    };
+    const validEvidence = performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        ...createValidMockPreflightInputs(),
+        pgControlDataBin: "pg_controldata",
+    });
 
     await assert.rejects(
         () => verifyClusterIdentity(mockTcpClient, MOCK_EXPECTED_CLUSTER_IDENTITY, {
             preflightEvidence: validEvidence,
             requireUnixSocket: true,
+            allowTestMock: true,
         }),
         /\[CLUSTER IDENTITY REJECTED\] Connection was established over TCP \(port 5433\)\. The disposable seeder strictly requires a Unix domain socket connection/
     );
@@ -1115,20 +1191,16 @@ test("Seeder socket guard - verifyClusterIdentity with requireUnixSocket rejects
 test("Seeder socket guard - verifyClusterIdentity with requireUnixSocket accepts verified Unix socket connection", async () => {
     // Over Unix socket: inet_server_port() is null, inet_server_addr() is null
     const mockSocketClient = createMockIdentityClient({ port: null });
-    const validEvidence = {
-        verified: true,
-        source: "OUT_OF_BAND_PREFLIGHT",
-        systemIdentifier: "7697854862051656675",
-        dataDirectory: PERSISTENT_TEST_CLUSTER_DIR,
-        socketDirectory: PERSISTENT_TEST_SOCKET_DIR,
-        port: 5433,
-        pid: 29744,
-        clusterState: "in production",
-    };
+    const validEvidence = performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        ...createValidMockPreflightInputs(),
+        pgControlDataBin: "pg_controldata",
+    });
 
     const result = await verifyClusterIdentity(mockSocketClient, MOCK_EXPECTED_CLUSTER_IDENTITY, {
         preflightEvidence: validEvidence,
         requireUnixSocket: true,
+        allowTestMock: true,
     });
 
     assert.strictEqual(result.verified, true);
@@ -1243,7 +1315,7 @@ test("Schema push guard - pushDisposableSchema fails closed when socket file is 
                     execCommand,
                     execPrisma,
                 }),
-                /\[PRISMA GUARD\] Required Unix domain socket file not found/
+                /\[PREFLIGHT ERROR\] Expected Unix socket .* not found|\[PRISMA GUARD\] Required Unix domain socket file not found/
             );
             assert.strictEqual(prismaInvoked, false, "Prisma must NOT be invoked when socket file is absent");
         }
@@ -1415,8 +1487,35 @@ test("Schema push guard - pushDisposableSchema fails closed on wrong port, socke
     });
 });
 
+function withMockedSocketFs(fn) {
+    const originalLstatSync = fs.lstatSync;
+    const originalReadFileSync = fs.readFileSync;
+    const expectedSocket = path.join(PERSISTENT_TEST_SOCKET_DIR, ".s.PGSQL.5433");
+    const expectedConf = path.join(PERSISTENT_TEST_CLUSTER_DIR, "postgresql.conf");
+
+    fs.lstatSync = (targetPath, ...rest) => {
+        if (String(targetPath) === expectedSocket) {
+            return { isSocket: () => true };
+        }
+        return originalLstatSync.call(fs, targetPath, ...rest);
+    };
+    fs.readFileSync = (targetPath, ...rest) => {
+        if (String(targetPath) === expectedConf) {
+            return `listen_addresses = ''\nport = 5433\nunix_socket_directories = '${PERSISTENT_TEST_SOCKET_DIR}'\n`;
+        }
+        return originalReadFileSync.call(fs, targetPath, ...rest);
+    };
+
+    try {
+        return fn();
+    } finally {
+        fs.lstatSync = originalLstatSync;
+        fs.readFileSync = originalReadFileSync;
+    }
+}
+
 test("Schema push guard - pushDisposableSchema fails closed on missing out-of-band preflight evidence", () => {
-    withTempDir((tempDir) => {
+    withTempDir((tempDir) => withMockedSocketFs(() => {
         const validConfigPath = path.join(tempDir, "valid-disposable.env");
         fs.writeFileSync(
             validConfigPath,
@@ -1451,8 +1550,8 @@ test("Schema push guard - pushDisposableSchema fails closed on missing out-of-ba
             /\[PREFLIGHT ERROR\] Cannot read postmaster.pid/
         );
 
-        // 2. Missing listening process on port 5433
-        const noListener = createValidMockPreflightInputs({ lsofOutput: "" });
+        // 2. Missing socket ownership for PID 29744
+        const noListener = createValidMockPreflightInputs({ unixLsofOutput: "" });
         assert.throws(
             () => pushDisposableSchema({
                 configPath: validConfigPath,
@@ -1461,7 +1560,7 @@ test("Schema push guard - pushDisposableSchema fails closed on missing out-of-ba
                 execCommand: noListener.execCommand,
                 execPrisma,
             }),
-            /\[PREFLIGHT ERROR\] No listening process found on TCP port 5433/
+            /\[PREFLIGHT ERROR\] PID 29744 does not own expected Unix socket/
         );
 
         // 3. Missing PID in process table
@@ -1478,11 +1577,11 @@ test("Schema push guard - pushDisposableSchema fails closed on missing out-of-ba
         );
 
         assert.strictEqual(prismaInvoked, false, "Prisma must NOT be invoked when preflight evidence is missing");
-    });
+    }));
 });
 
 test("Schema push guard - pushDisposableSchema fails closed on identity mismatch and prevents Prisma execution", () => {
-    withTempDir((tempDir) => {
+    withTempDir((tempDir) => withMockedSocketFs(() => {
         const validConfigPath = path.join(tempDir, "valid-disposable.env");
         fs.writeFileSync(
             validConfigPath,
@@ -1520,11 +1619,11 @@ test("Schema push guard - pushDisposableSchema fails closed on identity mismatch
         );
 
         assert.strictEqual(prismaInvoked, false, "Prisma must NOT be invoked on cluster identity mismatch");
-    });
+    }));
 });
 
 test("Schema push guard - pushDisposableSchema fails closed on process argument mismatch", () => {
-    withTempDir((tempDir) => {
+    withTempDir((tempDir) => withMockedSocketFs(() => {
         const validConfigPath = path.join(tempDir, "valid-disposable.env");
         fs.writeFileSync(
             validConfigPath,
@@ -1561,7 +1660,7 @@ test("Schema push guard - pushDisposableSchema fails closed on process argument 
         );
 
         assert.strictEqual(prismaInvoked, false, "Prisma must NOT be invoked when process arguments are invalid");
-    });
+    }));
 });
 
 test("Schema push guard - pushDisposableSchema rejects dev database or non-test targets", () => {
@@ -1622,4 +1721,412 @@ test("Storage isolation - storage.util enforces persistent upload directory in t
         else delete process.env.UPLOAD_DIR;
     }
 });
+
+// ── Phase D.3.2G2.1 / G2.2 / G3 Socket-Only & Evidence Security Tests ────────
+
+test("G2.1 Scenario 1 - Approved socket-only cluster preflight succeeds and returns frozen evidence", () => {
+    const { readPostmaster, execCommand, lstatSync, readConfig } = createValidMockPreflightInputs();
+    const evidence = performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        readPostmaster,
+        execCommand,
+        lstatSync,
+        readConfig,
+        pgControlDataBin: "pg_controldata",
+    });
+
+    assert.strictEqual(Object.isFrozen(evidence), true);
+    assert.strictEqual(evidence.verified, true);
+    assert.strictEqual(evidence.socketDirectory, PERSISTENT_TEST_SOCKET_DIR);
+    assert.strictEqual(evidence.dataDirectory, PERSISTENT_TEST_CLUSTER_DIR);
+    assert.strictEqual(evidence.port, 5433);
+    assert.strictEqual(evidence.pid, 29744);
+    assert.strictEqual(evidence.systemIdentifier, "7697854862051656675");
+});
+
+test("G2.1 Scenario 2 - Wrong socket directory in postmaster.pid or postgresql.conf fails closed", () => {
+    const wrongPostmasterSocket = createValidMockPreflightInputs({
+        postmasterContent: `29744\n${PERSISTENT_TEST_CLUSTER_DIR}\n1792296542\n5433\n/tmp/wrong_sock\n`,
+    });
+    assert.throws(
+        () => performOutOfBandPreflight({
+            expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+            ...wrongPostmasterSocket,
+            pgControlDataBin: "pg_controldata",
+        }),
+        /PREFLIGHT ERROR.*postmaster\.pid socket directory '\/tmp\/wrong_sock' does not match expected/
+    );
+
+    const wrongConfSocket = createValidMockPreflightInputs({
+        configContent: "listen_addresses = ''\nport = 5433\nunix_socket_directories = '/tmp/wrong_sock'\n",
+    });
+    assert.throws(
+        () => performOutOfBandPreflight({
+            expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+            ...wrongConfSocket,
+            pgControlDataBin: "pg_controldata",
+        }),
+        /PREFLIGHT ERROR.*postgresql\.conf unix_socket_directories '\/tmp\/wrong_sock' does not match/
+    );
+});
+
+test("G2.1 Scenario 3 - Wrong cluster data directory in ps arguments fails closed", () => {
+    const wrongPsDataDir = createValidMockPreflightInputs({
+        psOutput: `29744 /opt/homebrew/Cellar/postgresql@16/16.14_1/bin/postgres -D /opt/homebrew/var/postgresql@16 -p 5433\n`,
+    });
+    assert.throws(
+        () => performOutOfBandPreflight({
+            expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+            ...wrongPsDataDir,
+            pgControlDataBin: "pg_controldata",
+        }),
+        /PREFLIGHT ERROR.*Process arguments for PID 29744 do not contain expected data directory/
+    );
+});
+
+test("G2.1 Scenario 4 - Wrong system identifier in pg_controldata fails closed", () => {
+    const wrongSysId = createValidMockPreflightInputs({
+        controldataOutput: "Database system identifier: 1234567890123456789\nDatabase cluster state: in production\n",
+    });
+    assert.throws(
+        () => performOutOfBandPreflight({
+            expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+            ...wrongSysId,
+            pgControlDataBin: "pg_controldata",
+        }),
+        /PREFLIGHT ERROR.*Physical cluster system identifier mismatch/
+    );
+});
+
+test("G2.1 Scenario 5 - Non-empty listen_addresses in postgresql.conf or active TCP listener fails closed", () => {
+    const tcpInConf = createValidMockPreflightInputs({
+        configContent: `listen_addresses = '127.0.0.1'\nport = 5433\nunix_socket_directories = '${PERSISTENT_TEST_SOCKET_DIR}'\n`,
+    });
+    assert.throws(
+        () => performOutOfBandPreflight({
+            expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+            ...tcpInConf,
+            pgControlDataBin: "pg_controldata",
+        }),
+        /PREFLIGHT ERROR.*postgresql\.conf listen_addresses '127\.0\.0\.1' must be empty \(''\)/
+    );
+
+    const tcpListener = createValidMockPreflightInputs({
+        tcpLsofOutput: "postgres 29744 user 6u IPv4 0x1 0t0 TCP 127.0.0.1:5433 (LISTEN)\n",
+    });
+    assert.throws(
+        () => performOutOfBandPreflight({
+            expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+            ...tcpListener,
+            pgControlDataBin: "pg_controldata",
+        }),
+        /PREFLIGHT ERROR.*Unexpected TCP listener detected on port 5433/
+    );
+});
+
+test("G2.1 Scenario 6 - Unexpected PID or non-postgres process fails closed", () => {
+    const missingPid = createValidMockPreflightInputs({ psOutput: "" });
+    assert.throws(
+        () => performOutOfBandPreflight({
+            expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+            ...missingPid,
+            pgControlDataBin: "pg_controldata",
+        }),
+        /PREFLIGHT ERROR.*PID 29744 not found in process table/
+    );
+
+    const wrongProc = createValidMockPreflightInputs({
+        psOutput: `29744 /usr/bin/python3 -D ${PERSISTENT_TEST_CLUSTER_DIR}\n`,
+    });
+    assert.throws(
+        () => performOutOfBandPreflight({
+            expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+            ...wrongProc,
+            pgControlDataBin: "pg_controldata",
+        }),
+        /PREFLIGHT ERROR.*PID 29744 is not a postgres process/
+    );
+});
+
+test("G2.1 Scenario 7 - Non-socket file at .s.PGSQL.5433 fails closed", () => {
+    const notASocket = createValidMockPreflightInputs({ isSocket: false });
+    assert.throws(
+        () => performOutOfBandPreflight({
+            expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+            ...notASocket,
+            pgControlDataBin: "pg_controldata",
+        }),
+        /PREFLIGHT ERROR.*is not a Unix domain socket/
+    );
+});
+
+test("G2.1 Scenario 8 - Wrong database or wrong role in verifyClusterIdentity fails closed", async () => {
+    const wrongDb = createMockIdentityClient({ database: "dreamsky_db", port: null });
+    const ev1 = performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        ...createValidMockPreflightInputs(),
+        pgControlDataBin: "pg_controldata",
+    });
+    await assert.rejects(
+        () => verifyClusterIdentity(wrongDb, MOCK_EXPECTED_CLUSTER_IDENTITY, {
+            preflightEvidence: ev1,
+            requireUnixSocket: true,
+            allowTestMock: true,
+        }),
+        /CLUSTER IDENTITY MISMATCH.*Connected database 'dreamsky_db' does not match expected disposable database 'dreamsky_test_disposable'/
+    );
+
+    const wrongRole = createMockIdentityClient({ role: "postgres", port: null });
+    const ev2 = performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        ...createValidMockPreflightInputs(),
+        pgControlDataBin: "pg_controldata",
+    });
+    await assert.rejects(
+        () => verifyClusterIdentity(wrongRole, MOCK_EXPECTED_CLUSTER_IDENTITY, {
+            preflightEvidence: ev2,
+            requireUnixSocket: true,
+            allowTestMock: true,
+        }),
+        /CLUSTER IDENTITY MISMATCH.*Connected role 'postgres' does not match expected role 'dreamsky_test_user'/
+    );
+});
+
+test("G2.1 Scenario 9 - Forged or unregistered preflightEvidence object literal is rejected", async () => {
+    const forgedEvidence = {
+        verified: true,
+        source: "OUT_OF_BAND_PREFLIGHT",
+        systemIdentifier: "7697854862051656675",
+        dataDirectory: PERSISTENT_TEST_CLUSTER_DIR,
+        socketDirectory: PERSISTENT_TEST_SOCKET_DIR,
+        port: 5433,
+        pid: 29744,
+        clusterState: "in production",
+    };
+
+    const client = createMockIdentityClient({ port: null });
+    await assert.rejects(
+        () => verifyClusterIdentity(client, MOCK_EXPECTED_CLUSTER_IDENTITY, {
+            preflightEvidence: forgedEvidence,
+            requireUnixSocket: true,
+            allowTestMock: true,
+        }),
+        /\[PREFLIGHT EVIDENCE INVALID\] Preflight evidence was not generated by performOutOfBandPreflight\(\) in this process/
+    );
+
+    // Also verify mocked evidence is rejected when allowTestMock is false
+    const mockedEvidence = performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        ...createValidMockPreflightInputs(),
+        pgControlDataBin: "pg_controldata",
+    });
+    await assert.rejects(
+        () => verifyClusterIdentity(client, MOCK_EXPECTED_CLUSTER_IDENTITY, {
+            preflightEvidence: mockedEvidence,
+            requireUnixSocket: true,
+            allowTestMock: false,
+        }),
+        /\[PREFLIGHT EVIDENCE INVALID\] Test-mocked preflight evidence is forbidden in CLI execution/
+    );
+});
+
+test("G2.1 Scenario 10 - Expired (>60s) preflightEvidence is rejected", () => {
+    const originalDateNow = Date.now;
+    let fakeNow = 1794715000000;
+    Date.now = () => fakeNow;
+    try {
+        const evidence = performOutOfBandPreflight({
+            expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+            ...createValidMockPreflightInputs(),
+            pgControlDataBin: "pg_controldata",
+        });
+
+        // Advance clock past MAX_PREFLIGHT_EVIDENCE_AGE_MS (60s)
+        fakeNow += MAX_PREFLIGHT_EVIDENCE_AGE_MS + 1;
+
+        assert.throws(
+            () => consumePreflightEvidence(evidence, MOCK_EXPECTED_CLUSTER_IDENTITY, { allowTestMock: true }),
+            /\[PREFLIGHT EVIDENCE EXPIRED\] Preflight evidence has expired \(>60s\)/
+        );
+    } finally {
+        Date.now = originalDateNow;
+    }
+});
+
+test("G2.1 Scenario 11 - Consumed single-use preflightEvidence replay is rejected", async () => {
+    const evidence = performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        ...createValidMockPreflightInputs(),
+        pgControlDataBin: "pg_controldata",
+    });
+
+    const client = createMockIdentityClient({ port: null });
+    await verifyClusterIdentity(client, MOCK_EXPECTED_CLUSTER_IDENTITY, {
+        preflightEvidence: evidence,
+        requireUnixSocket: true,
+        allowTestMock: true,
+    });
+
+    // Second use of same evidence must be rejected
+    await assert.rejects(
+        () => verifyClusterIdentity(client, MOCK_EXPECTED_CLUSTER_IDENTITY, {
+            preflightEvidence: evidence,
+            requireUnixSocket: true,
+            allowTestMock: true,
+        }),
+        /\[PREFLIGHT EVIDENCE INVALID\] Preflight evidence has already been consumed \(single-use only\)/
+    );
+});
+
+test("G2.1 Scenario 12 - SHOW settings mismatch and 42501 permission denied fail closed", async () => {
+    const makeEvidence = () => performOutOfBandPreflight({
+        expected: MOCK_EXPECTED_CLUSTER_IDENTITY,
+        ...createValidMockPreflightInputs(),
+        pgControlDataBin: "pg_controldata",
+    });
+
+    // Non-empty SHOW listen_addresses
+    await assert.rejects(
+        () => verifyClusterIdentity(
+            createMockIdentityClient({ listenAddresses: "localhost", port: null }),
+            MOCK_EXPECTED_CLUSTER_IDENTITY,
+            { preflightEvidence: makeEvidence(), requireUnixSocket: true, allowTestMock: true }
+        ),
+        /CLUSTER IDENTITY REJECTED.*Server 'listen_addresses' is 'localhost'; expected ''/
+    );
+
+    // Wrong SHOW unix_socket_directories
+    await assert.rejects(
+        () => verifyClusterIdentity(
+            createMockIdentityClient({ unixSocketDirectories: "/tmp/other_sock", port: null }),
+            MOCK_EXPECTED_CLUSTER_IDENTITY,
+            { preflightEvidence: makeEvidence(), requireUnixSocket: true, allowTestMock: true }
+        ),
+        /CLUSTER IDENTITY MISMATCH.*Server 'unix_socket_directories' \('\/tmp\/other_sock'\) does not match expected/
+    );
+
+    // Wrong SHOW port
+    await assert.rejects(
+        () => verifyClusterIdentity(
+            createMockIdentityClient({ showPort: "5432", port: null }),
+            MOCK_EXPECTED_CLUSTER_IDENTITY,
+            { preflightEvidence: makeEvidence(), requireUnixSocket: true, allowTestMock: true }
+        ),
+        /CLUSTER IDENTITY MISMATCH.*Server 'port' setting '5432' does not match expected '5433'/
+    );
+
+    // 42501 permission denied on SHOW listen_addresses
+    await assert.rejects(
+        () => verifyClusterIdentity(
+            createMockIdentityClient({ listenAddressesError: 'permission denied to examine "listen_addresses" (SQLSTATE 42501)', port: null }),
+            MOCK_EXPECTED_CLUSTER_IDENTITY,
+            { preflightEvidence: makeEvidence(), requireUnixSocket: true, allowTestMock: true }
+        ),
+        /CLUSTER IDENTITY ERROR.*Cannot verify effective 'listen_addresses': permission denied to examine "listen_addresses" \(SQLSTATE 42501\)/
+    );
+});
+
+test("G2.1 Scenario 13 - _prisma_migrations readiness check rejects missing, unfinished, or rolled-back migrations", async () => {
+    // Valid 7 migrations pass
+    const ok = await verifyMigrationReadiness(createMockIdentityClient());
+    assert.strictEqual(ok.verified, true);
+    assert.strictEqual(ok.count, EXPECTED_MIGRATIONS.length);
+
+    // Missing latest migration
+    const missingOne = EXPECTED_MIGRATIONS.slice(0, 6).map((migration_name) => ({
+        migration_name,
+        finished_at: new Date("2026-11-13T00:00:00Z"),
+        rolled_back_at: null,
+        applied_steps_count: 1,
+    }));
+    await assert.rejects(
+        () => verifyMigrationReadiness(createMockIdentityClient({ migrations: missingOne })),
+        /MIGRATION READINESS ERROR.*Expected migration '20261113_add_lead_stage' is missing from _prisma_migrations/
+    );
+
+    // Rolled-back migration
+    const rolledBack = EXPECTED_MIGRATIONS.map((migration_name, idx) => ({
+        migration_name,
+        finished_at: new Date("2026-11-13T00:00:00Z"),
+        rolled_back_at: idx === 6 ? new Date("2026-11-13T01:00:00Z") : null,
+        applied_steps_count: 1,
+    }));
+    await assert.rejects(
+        () => verifyMigrationReadiness(createMockIdentityClient({ migrations: rolledBack })),
+        /MIGRATION READINESS ERROR.*Migration '20261113_add_lead_stage' has a non-null rolled_back_at/
+    );
+});
+
+test("G2.1 Scenario 14 - Manifest path validation rejects symlinks/unapproved dirs and retained fd detects replacement", async () => {
+    await withTempDirAsync(async (tempDir) => {
+        // Unapproved directory outside os.tmpdir() and backend root
+        assert.throws(
+            () => validateAndResolveManifestPath("/var/tmp/evil-manifest.json"),
+            /MANIFEST PATH ERROR.*is outside approved roots/
+        );
+
+        // Symlinked parent directory inside tempDir
+        const realSub = path.join(tempDir, "real-sub");
+        const symSub = path.join(tempDir, "sym-sub");
+        fs.mkdirSync(realSub);
+        fs.symlinkSync(realSub, symSub);
+        assert.throws(
+            () => validateAndResolveManifestPath(path.join(symSub, "manifest.json")),
+            /MANIFEST PATH ERROR.*Symlinked path component rejected/
+        );
+
+        // Exclusive creation + retained fd update + inode replacement detection
+        const manifestFile = path.join(realSub, ".disposable-fixture-manifest.json");
+        const resolved = validateAndResolveManifestPath(manifestFile);
+        const handle = openExclusiveIntentManifest(resolved, "run-1", []);
+        try {
+            // Second exclusive open on same path must fail
+            assert.throws(
+                () => openExclusiveIntentManifest(resolved, "run-2", []),
+                /\[SEEDER BLOCKED - EXISTING MANIFEST\]|EEXIST/
+            );
+
+            // Replace file on disk to simulate concurrent replacement attack
+            fs.unlinkSync(resolved);
+            fs.writeFileSync(resolved, JSON.stringify({ decoy: true }));
+
+            assert.throws(
+                () => updateManifestThroughRetainedFd(handle, { status: "COMPLETED", testRunId: "run-1" }),
+                /\[MANIFEST INTEGRITY ABORT\].*dev\/ino mismatch/
+            );
+        } finally {
+            try { fs.closeSync(handle.fd); } catch {}
+        }
+    });
+});
+
+test("G2.1 Scenario 15 - CLI invocation (_cliInvocation: true) rejects all test-only dependency injection options", async () => {
+    await withTempDirAsync(async (tempDir) => {
+        const manifestPath = path.join(tempDir, ".disposable-fixture-manifest.json");
+        const forbiddenCases = [
+            { skipOutOfBandPreflight: true },
+            { skipClusterIdentityCheck: true },
+            { skipTargetAssert: true },
+            { preflightEvidence: { verified: true } },
+            { prismaClient: createMockIdentityClient() },
+            { execCommand: () => "" },
+            { readPostmaster: () => "" },
+            { lstatSync: () => ({ isSocket: () => true }) },
+            { readConfig: () => "" },
+            { clusterIdentityReference: MOCK_EXPECTED_CLUSTER_IDENTITY },
+        ];
+
+        for (const extra of forbiddenCases) {
+            await assert.rejects(
+                () => runSeeder({
+                    manifestPath,
+                    _cliInvocation: true,
+                    ...extra,
+                }),
+                /\[CLI SECURITY ERROR\] Test-only option '.*' is strictly forbidden in CLI execution/
+            );
+        }
+    });
+});
+
 

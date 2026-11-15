@@ -408,9 +408,17 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
         resetStore();
 
         // Deterministic clock freeze: 2026-10-26 12:00:00 UTC (17:45:00 NPT)
-        const originalDateNow = Date.now;
-        const fixedNowMs = new Date("2026-10-26T12:00:00.000Z").getTime();
-        Date.now = () => fixedNowMs;
+        const OriginalDate = global.Date;
+        const fixedNowMs = new OriginalDate("2026-10-26T12:00:00.000Z").getTime();
+        class FrozenDate extends OriginalDate {
+            constructor(...args) {
+                super(...(args.length === 0 ? [fixedNowMs] : args));
+            }
+            static now() {
+                return fixedNowMs;
+            }
+        }
+        global.Date = FrozenDate;
 
         try {
             const NPT_OFFSET_MS = 5.75 * 60 * 60 * 1000;
@@ -452,7 +460,7 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
                 "Expected exactly 2 follow-ups (start boundary and before-end boundary) to be counted for today's NPT day"
             );
         } finally {
-            Date.now = originalDateNow;
+            global.Date = OriginalDate;
         }
     });
 

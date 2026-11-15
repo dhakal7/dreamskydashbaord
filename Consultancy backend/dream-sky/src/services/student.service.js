@@ -1016,6 +1016,12 @@ const updateStudent = async (id, data, currentUser = null) => {
             ...incomingBg,
         };
         if (isPreEnrollment) {
+            const requestedLeadStage = incomingBg.leadStage
+                ? String(incomingBg.leadStage).toUpperCase().replace(/-/g, "_")
+                : null;
+            if (currentUser?.role === "COUNSELOR" && requestedLeadStage === "ASSIGNED" && existingLeadStage !== "ASSIGNED") {
+                throw AppError.forbidden("Counselors cannot move leads into the Assigned stage.", "FORBIDDEN");
+            }
             update.academicBackground.leadStage = incomingBg.leadStage || existingLeadStage;
             if (!update.academicBackground.leadStage) delete update.academicBackground.leadStage;
         } else {
@@ -1124,6 +1130,34 @@ const changePipelineStage = async (id, payload, changedByOrUser) => {
             targetLeadStage = "INTERESTED";
             targetMacroStage = "PROSPECT";
         }
+    }
+
+    if (targetLeadStage === "ASSIGNED") {
+        if (actor && !["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"].includes(actor.role)) {
+            throw AppError.forbidden("Only Front Desk officers and Admins can move leads into the Assigned stage.", "FORBIDDEN");
+        }
+        const targetCounselorId = payload?.assignedCounselorId || payload?.counselorId;
+        if (!targetCounselorId || typeof targetCounselorId !== "string" || !targetCounselorId.trim()) {
+            throw AppError.badRequest("Counselor selection is required when moving to Assigned.", "MISSING_COUNSELOR_ID");
+        }
+        const dateVal = payload?.appointmentDate || followUpDate;
+        const timeVal = payload?.appointmentTime || followUpTime;
+        const apptDatetimeStr = rawDatetime || (dateVal && timeVal
+            ? `${dateVal}T${String(timeVal).length === 5 ? timeVal + ":00" : timeVal}`
+            : null);
+        if (!apptDatetimeStr) {
+            throw AppError.badRequest("Appointment date and time are required when moving to Assigned.", "MISSING_APPOINTMENT_DATETIME");
+        }
+        const parsedApptDate = new Date(apptDatetimeStr);
+        if (isNaN(parsedApptDate.getTime())) {
+            throw AppError.badRequest("Invalid appointment date or time.", "INVALID_APPOINTMENT_DATETIME");
+        }
+        return assignLeadToCounselor(id, targetCounselorId.trim(), actor, {
+            appointmentDatetime: parsedApptDate,
+            durationMin,
+            meetingMode,
+            notes: followUpNotes,
+        });
     }
 
     // Map target lead stage to macro stage if macro stage not explicitly set to something else
@@ -1498,7 +1532,7 @@ const softDeleteStudent = async (id, currentUser = null, reason = null) => {
     if (!currentUser) {
         throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
     }
-    if (!["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"].includes(currentUser.role)) {
+    if (!["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"].includes(currentUser.role)) {
         throw AppError.forbidden("You are not authorized to move students to Trash.", "FORBIDDEN");
     }
 
@@ -1695,7 +1729,7 @@ const restoreStudent = async (id, currentUser = null) => {
     if (!currentUser) {
         throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
     }
-    if (!["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"].includes(currentUser.role)) {
+    if (!["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"].includes(currentUser.role)) {
         throw AppError.forbidden("You are not authorized to restore students from Trash.", "FORBIDDEN");
     }
 
@@ -1797,7 +1831,7 @@ const restoreStudent = async (id, currentUser = null) => {
 };
 
 // ─── ASSIGN LEAD TO COUNSELOR ─────────────────────────────────────────────────
-const assignLeadToCounselor = async (id, counselorId, currentUser) => {
+const assignLeadToCounselor = async (id, counselorId, currentUser, options = {}) => {
     if (!currentUser) throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
     if (!["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"].includes(currentUser.role)) {
         throw AppError.forbidden("You are not authorized to assign leads to counselors.", "FORBIDDEN");
@@ -1806,6 +1840,21 @@ const assignLeadToCounselor = async (id, counselorId, currentUser) => {
         throw AppError.badRequest("counselorId is required.", "MISSING_COUNSELOR_ID");
     }
     const targetCounselorId = counselorId.trim();
+
+    let apptDatetime = null;
+    if (options?.appointmentDatetime instanceof Date && !isNaN(options.appointmentDatetime.getTime())) {
+        apptDatetime = options.appointmentDatetime;
+    } else if (options?.datetime || (options?.appointmentDate && options?.appointmentTime)) {
+        const dtStr = options.datetime || `${options.appointmentDate}T${String(options.appointmentTime).length === 5 ? options.appointmentTime + ":00" : options.appointmentTime}`;
+        const parsed = new Date(dtStr);
+        if (isNaN(parsed.getTime())) {
+            throw AppError.badRequest("Invalid appointment date or time.", "INVALID_APPOINTMENT_DATETIME");
+        }
+        apptDatetime = parsed;
+    }
+    const parsedDuration = options?.durationMin ? parseInt(options.durationMin, 10) : 30;
+    const effectiveMeetingMode = options?.meetingMode || "OFFICE";
+    const effectiveNotes = typeof options?.notes === "string" && options.notes.trim() ? options.notes.trim() : null;
 
     const student = await prisma.student.findUnique({
         where: { id },
@@ -1852,6 +1901,78 @@ const assignLeadToCounselor = async (id, counselorId, currentUser) => {
     const targetMacroStage = student.currentStage === "LEAD" ? "PROSPECT" : student.currentStage;
 
     const txResult = await prisma.$transaction(async (tx) => {
+        let appointmentRecord = null;
+
+        if (apptDatetime && tx.appointment) {
+            const existingAppt = await tx.appointment.findFirst({
+                where: { studentId: id, type: "INITIAL_CONSULTATION", status: "SCHEDULED" },
+                orderBy: { createdAt: "desc" },
+            });
+
+            const existingLeadStage = existingBg?.leadStage
+                ? String(existingBg.leadStage).toUpperCase().replace(/-/g, "_")
+                : null;
+
+            if (
+                existingAppt &&
+                previousCounselorId === targetCounselorId &&
+                existingLeadStage === "ASSIGNED" &&
+                new Date(existingAppt.datetime).getTime() === apptDatetime.getTime()
+            ) {
+                throw AppError.conflict(
+                    "This lead is already assigned to the selected counselor at this appointment time.",
+                    "DUPLICATE_ASSIGNMENT"
+                );
+            }
+
+            // Check counselor scheduling conflict against other SCHEDULED appointments
+            const apptEnd = new Date(apptDatetime.getTime() + parsedDuration * 60 * 1000);
+            const counselorAppts = await tx.appointment.findMany({
+                where: {
+                    counselorId: targetCounselorId,
+                    status: "SCHEDULED",
+                    datetime: { lt: apptEnd },
+                    ...(existingAppt ? { id: { not: existingAppt.id } } : {}),
+                },
+                select: { id: true, datetime: true, durationMin: true },
+            });
+            for (const other of counselorAppts) {
+                const otherEnd = new Date(new Date(other.datetime).getTime() + (other.durationMin || 30) * 60 * 1000);
+                if (otherEnd > apptDatetime) {
+                    throw AppError.conflict(
+                        `Counselor already has a conflicting appointment at ${new Date(other.datetime).toISOString()}.`,
+                        "COUNSELOR_CONFLICT"
+                    );
+                }
+            }
+
+            if (existingAppt) {
+                appointmentRecord = await tx.appointment.update({
+                    where: { id: existingAppt.id },
+                    data: {
+                        counselorId: targetCounselorId,
+                        datetime: apptDatetime,
+                        durationMin: parsedDuration,
+                        meetingMode: effectiveMeetingMode,
+                        notes: effectiveNotes !== null ? effectiveNotes : existingAppt.notes,
+                    },
+                });
+            } else {
+                appointmentRecord = await tx.appointment.create({
+                    data: {
+                        studentId: id,
+                        counselorId: targetCounselorId,
+                        datetime: apptDatetime,
+                        durationMin: parsedDuration,
+                        status: "SCHEDULED",
+                        type: "INITIAL_CONSULTATION",
+                        meetingMode: effectiveMeetingMode,
+                        notes: effectiveNotes || "Initial consultation scheduled during counselor assignment",
+                    },
+                });
+            }
+        }
+
         const updatedStudent = await tx.student.update({
             where: { id },
             data: {
@@ -1882,8 +2003,13 @@ const assignLeadToCounselor = async (id, counselorId, currentUser) => {
             },
         });
 
-        return { updatedStudent, counselorChanged: previousCounselorId !== targetCounselorId };
+        return { updatedStudent, appointmentRecord, counselorChanged: previousCounselorId !== targetCounselorId };
     });
+
+    // Refresh appointment reminders best-effort OUTSIDE the transaction
+    if (txResult.appointmentRecord) {
+        refreshFollowUpReminders(txResult.appointmentRecord).catch(() => {});
+    }
 
     // In-app notification to the assigned counselor (best effort)
     if (txResult.counselorChanged && prisma.notification && typeof prisma.notification.create === "function") {
@@ -1902,6 +2028,7 @@ const assignLeadToCounselor = async (id, counselorId, currentUser) => {
     return {
         ...formatStudentRecord(txResult.updatedStudent),
         leadStage: "ASSIGNED",
+        appointment: txResult.appointmentRecord || null,
     };
 };
 
@@ -2034,8 +2161,17 @@ const listTrash = async (query = {}, currentUser = null) => {
     if (!currentUser) {
         throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
     }
-    if (!["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"].includes(currentUser.role)) {
+    if (!["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"].includes(currentUser.role)) {
         throw AppError.forbidden("You are not authorized to view Trash.", "FORBIDDEN");
+    }
+    if (currentUser.role === "FRONT_DESK") {
+        const requestedStages = typeof query.stageIn === "string"
+            ? query.stageIn.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
+            : [];
+        const allowedLeadStages = new Set(["LEAD", "PROSPECT"]);
+        if (requestedStages.length === 0 || requestedStages.some((s) => !allowedLeadStages.has(s))) {
+            throw AppError.forbidden("Front Desk is not authorized for unrestricted Trash management.", "FORBIDDEN");
+        }
     }
     return listStudents({ type: "all", ...query, isActive: false }, currentUser);
 };

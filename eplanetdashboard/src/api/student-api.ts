@@ -190,11 +190,34 @@ export const studentApi = {
   },
 
   /** PATCH /students/:id/assign — assign lead to counselor */
-  assignCounselor(id: string, counselorId: string): Promise<ApiStudent> {
-    return api.patch(`/students/${id}/assign`, {
-      assignedCounselorId: counselorId,
-      counselorId,
-    })
+  assignCounselor(
+    id: string,
+    payload:
+      | string
+      | {
+          counselorId: string
+          appointmentDate?: string
+          appointmentTime?: string
+          datetime?: string
+          durationMin?: number
+          meetingMode?: string
+          notes?: string
+        }
+  ): Promise<ApiStudent> {
+    const body =
+      typeof payload === 'string'
+        ? { assignedCounselorId: payload, counselorId: payload }
+        : {
+            assignedCounselorId: payload.counselorId,
+            counselorId: payload.counselorId,
+            appointmentDate: payload.appointmentDate,
+            appointmentTime: payload.appointmentTime,
+            datetime: payload.datetime,
+            durationMin: payload.durationMin,
+            meetingMode: payload.meetingMode,
+            notes: payload.notes,
+          }
+    return api.patch(`/students/${id}/assign`, body)
   },
 
   /** PATCH /students/:id/transfer-branch — transfer student to destination branch (Super Admin only) */

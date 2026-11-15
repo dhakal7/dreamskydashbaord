@@ -3,8 +3,72 @@ require("dotenv").config({ override: false });
 const path = require("path");
 const os = require("os");
 
-const PERSISTENT_TEST_SOCKET_DIR = path.resolve(os.homedir(), ".dreamsky_sock_5433");
-const PERSISTENT_TEST_CLUSTER_DIR = path.resolve(os.homedir(), ".dreamsky_disposable_cluster_5433");
+const DEFAULT_PERSISTENT_TEST_SOCKET_DIR = path.resolve(os.homedir(), ".dreamsky_sock_5433");
+const DEFAULT_PERSISTENT_TEST_CLUSTER_DIR = path.resolve(os.homedir(), ".dreamsky_disposable_cluster_5433");
+const CLEAN_PERSISTENT_TEST_SOCKET_DIR = "/Users/suyogdhakal/.dreamsky_sock_5433_clean";
+const CLEAN_PERSISTENT_TEST_CLUSTER_DIR = "/Users/suyogdhakal/.dreamsky_disposable_cluster_5433_clean";
+
+const APPROVED_TEST_SOCKET_DIRS = Object.freeze([
+    DEFAULT_PERSISTENT_TEST_SOCKET_DIR,
+    CLEAN_PERSISTENT_TEST_SOCKET_DIR,
+]);
+
+const APPROVED_TEST_CLUSTER_DIRS = Object.freeze([
+    DEFAULT_PERSISTENT_TEST_CLUSTER_DIR,
+    CLEAN_PERSISTENT_TEST_CLUSTER_DIR,
+]);
+
+/**
+ * Resolves and validates test-only disposable cluster and socket directories.
+ * Preserves original hardcoded defaults when no override is provided.
+ * Rejects any override outside NODE_ENV=test and rejects any path not in the approved allowlist.
+ *
+ * @param {string} [env]
+ * @returns {{ socketDir: string, clusterDir: string }}
+ */
+function resolveApprovedTestDirs(env = process.env.NODE_ENV || "development") {
+    const socketOverride = process.env.PERSISTENT_TEST_SOCKET_DIR;
+    const clusterOverride = process.env.PERSISTENT_TEST_CLUSTER_DIR;
+    const hasSocketOverride = typeof socketOverride === "string" && socketOverride.trim().length > 0;
+    const hasClusterOverride = typeof clusterOverride === "string" && clusterOverride.trim().length > 0;
+
+    if ((hasSocketOverride || hasClusterOverride) && env !== "test") {
+        throw new Error(
+            `[DATABASE CONFIG ERROR] Disposable test directory overrides (PERSISTENT_TEST_SOCKET_DIR / PERSISTENT_TEST_CLUSTER_DIR) are strictly forbidden in '${env}' mode.`
+        );
+    }
+
+    let socketDir = DEFAULT_PERSISTENT_TEST_SOCKET_DIR;
+    if (hasSocketOverride) {
+        const resolvedSocket = path.resolve(socketOverride.trim());
+        if (!APPROVED_TEST_SOCKET_DIRS.includes(resolvedSocket)) {
+            throw new Error(
+                `[DATABASE CONFIG ERROR] Unauthorized test socket directory '${resolvedSocket}'. Only approved disposable socket directories are allowed.`
+            );
+        }
+        socketDir = resolvedSocket;
+    }
+
+    let clusterDir = DEFAULT_PERSISTENT_TEST_CLUSTER_DIR;
+    if (hasClusterOverride) {
+        const resolvedCluster = path.resolve(clusterOverride.trim());
+        if (!APPROVED_TEST_CLUSTER_DIRS.includes(resolvedCluster)) {
+            throw new Error(
+                `[DATABASE CONFIG ERROR] Unauthorized test cluster directory '${resolvedCluster}'. Only approved disposable cluster directories are allowed.`
+            );
+        }
+        clusterDir = resolvedCluster;
+    }
+
+    return { socketDir, clusterDir };
+}
+
+const initialTestDirs = (process.env.NODE_ENV || "development") === "test"
+    ? resolveApprovedTestDirs("test")
+    : { socketDir: DEFAULT_PERSISTENT_TEST_SOCKET_DIR, clusterDir: DEFAULT_PERSISTENT_TEST_CLUSTER_DIR };
+
+const PERSISTENT_TEST_SOCKET_DIR = initialTestDirs.socketDir;
+const PERSISTENT_TEST_CLUSTER_DIR = initialTestDirs.clusterDir;
 const PERSISTENT_TEST_UPLOAD_DIR = path.resolve(os.homedir(), ".dreamsky_test_uploads_5433");
 
 const nodeEnv = process.env.NODE_ENV || "development";
@@ -135,6 +199,9 @@ function validateDatabaseUrl(rawUrl, env, options = {}) {
         }
     }
 
+    // Reject disposable test directory overrides outside test mode
+    const { socketDir: activeTestSocketDir } = resolveApprovedTestDirs(activeEnv);
+
     // Fail-closed test mode isolation rules
     if (activeEnv === "test") {
         if (process.env.ALLOW_INTEGRATION_TEST_DB !== "true") {
@@ -148,11 +215,11 @@ function validateDatabaseUrl(rawUrl, env, options = {}) {
         // Test mode must strictly target localhost, 127.0.0.1, or the verified persistent Unix socket path
         const decodedHost = decodeURIComponent(parsed.hostname);
         const isLoopback = hostname === "127.0.0.1" || hostname === "localhost";
-        const isSocket = decodedHost === PERSISTENT_TEST_SOCKET_DIR;
+        const isSocket = decodedHost === activeTestSocketDir;
         if (!isLoopback && !isSocket) {
             throw new Error(
                 `[DATABASE CONFIG ERROR] Integration test database host '${hostname}' is rejected. ` +
-                `Tests may only connect to '127.0.0.1', 'localhost', or persistent Unix domain socket '${PERSISTENT_TEST_SOCKET_DIR}'.`
+                `Tests may only connect to '127.0.0.1', 'localhost', or persistent Unix domain socket '${activeTestSocketDir}'.`
             );
         }
 
@@ -298,6 +365,11 @@ const config = {
     databaseUrl: process.env.DATABASE_URL,
     validateDatabaseUrl,
     assertDisposableTarget,
+    resolveApprovedTestDirs,
+    DEFAULT_PERSISTENT_TEST_SOCKET_DIR,
+    DEFAULT_PERSISTENT_TEST_CLUSTER_DIR,
+    APPROVED_TEST_SOCKET_DIRS,
+    APPROVED_TEST_CLUSTER_DIRS,
     PERSISTENT_TEST_SOCKET_DIR,
     PERSISTENT_TEST_CLUSTER_DIR,
     PERSISTENT_TEST_UPLOAD_DIR,

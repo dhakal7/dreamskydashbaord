@@ -4,7 +4,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 const {
   validateDatabaseUrl,
+  resolveApprovedTestDirs,
+  DEFAULT_PERSISTENT_TEST_SOCKET_DIR,
+  DEFAULT_PERSISTENT_TEST_CLUSTER_DIR,
   PERSISTENT_TEST_SOCKET_DIR,
+  PERSISTENT_TEST_CLUSTER_DIR,
   PERSISTENT_TEST_UPLOAD_DIR,
 } = require("../config");
 
@@ -738,6 +742,130 @@ test("API mutation gate - mutating methods in test mode succeed once authorized 
   } finally {
     revokeDisposableSession();
     process.env.NODE_ENV = prevEnv;
+  }
+});
+
+// ── Clean Disposable Cluster & Socket Override Safety Tests (Phase D.3.2B.2) ──
+test("Approved clean test directories - preserves original defaults when overrides are unset", () => {
+  const prevSock = process.env.PERSISTENT_TEST_SOCKET_DIR;
+  const prevCluster = process.env.PERSISTENT_TEST_CLUSTER_DIR;
+  delete process.env.PERSISTENT_TEST_SOCKET_DIR;
+  delete process.env.PERSISTENT_TEST_CLUSTER_DIR;
+
+  try {
+    const resolved = resolveApprovedTestDirs("test");
+    assert.equal(resolved.socketDir, DEFAULT_PERSISTENT_TEST_SOCKET_DIR);
+    assert.equal(resolved.clusterDir, DEFAULT_PERSISTENT_TEST_CLUSTER_DIR);
+    assert.equal(PERSISTENT_TEST_SOCKET_DIR, DEFAULT_PERSISTENT_TEST_SOCKET_DIR);
+    assert.equal(PERSISTENT_TEST_CLUSTER_DIR, DEFAULT_PERSISTENT_TEST_CLUSTER_DIR);
+  } finally {
+    if (prevSock !== undefined) process.env.PERSISTENT_TEST_SOCKET_DIR = prevSock;
+    if (prevCluster !== undefined) process.env.PERSISTENT_TEST_CLUSTER_DIR = prevCluster;
+  }
+});
+
+test("Approved clean test directories - clean paths work in test mode only", () => {
+  const prevSock = process.env.PERSISTENT_TEST_SOCKET_DIR;
+  const prevCluster = process.env.PERSISTENT_TEST_CLUSTER_DIR;
+  const prevOptIn = process.env.ALLOW_INTEGRATION_TEST_DB;
+
+  try {
+    process.env.PERSISTENT_TEST_SOCKET_DIR = "/Users/suyogdhakal/.dreamsky_sock_5433_clean";
+    process.env.PERSISTENT_TEST_CLUSTER_DIR = "/Users/suyogdhakal/.dreamsky_disposable_cluster_5433_clean";
+    process.env.ALLOW_INTEGRATION_TEST_DB = "true";
+
+    const resolved = resolveApprovedTestDirs("test");
+    assert.equal(resolved.socketDir, "/Users/suyogdhakal/.dreamsky_sock_5433_clean");
+    assert.equal(resolved.clusterDir, "/Users/suyogdhakal/.dreamsky_disposable_cluster_5433_clean");
+
+    const cleanSocketUrl = `postgresql://dreamsky_test_user:pass@${encodeURIComponent("/Users/suyogdhakal/.dreamsky_sock_5433_clean")}:5433/dreamsky_test_disposable?schema=public`;
+    assert.equal(validateDatabaseUrl(cleanSocketUrl, "test"), cleanSocketUrl);
+  } finally {
+    if (prevSock !== undefined) process.env.PERSISTENT_TEST_SOCKET_DIR = prevSock;
+    else delete process.env.PERSISTENT_TEST_SOCKET_DIR;
+    if (prevCluster !== undefined) process.env.PERSISTENT_TEST_CLUSTER_DIR = prevCluster;
+    else delete process.env.PERSISTENT_TEST_CLUSTER_DIR;
+    if (prevOptIn !== undefined) process.env.ALLOW_INTEGRATION_TEST_DB = prevOptIn;
+    else delete process.env.ALLOW_INTEGRATION_TEST_DB;
+  }
+});
+
+test("Approved clean test directories - rejects arbitrary cluster and socket paths", () => {
+  const prevSock = process.env.PERSISTENT_TEST_SOCKET_DIR;
+  const prevCluster = process.env.PERSISTENT_TEST_CLUSTER_DIR;
+  const prevOptIn = process.env.ALLOW_INTEGRATION_TEST_DB;
+
+  try {
+    process.env.ALLOW_INTEGRATION_TEST_DB = "true";
+    process.env.PERSISTENT_TEST_SOCKET_DIR = "/tmp/arbitrary_sock";
+    delete process.env.PERSISTENT_TEST_CLUSTER_DIR;
+    assert.throws(() => resolveApprovedTestDirs("test"), /Unauthorized test socket directory/);
+
+    delete process.env.PERSISTENT_TEST_SOCKET_DIR;
+    process.env.PERSISTENT_TEST_CLUSTER_DIR = "/tmp/arbitrary_cluster";
+    assert.throws(() => resolveApprovedTestDirs("test"), /Unauthorized test cluster directory/);
+  } finally {
+    if (prevSock !== undefined) process.env.PERSISTENT_TEST_SOCKET_DIR = prevSock;
+    else delete process.env.PERSISTENT_TEST_SOCKET_DIR;
+    if (prevCluster !== undefined) process.env.PERSISTENT_TEST_CLUSTER_DIR = prevCluster;
+    else delete process.env.PERSISTENT_TEST_CLUSTER_DIR;
+    if (prevOptIn !== undefined) process.env.ALLOW_INTEGRATION_TEST_DB = prevOptIn;
+    else delete process.env.ALLOW_INTEGRATION_TEST_DB;
+  }
+});
+
+test("Approved clean test directories - production and non-test modes reject disposable overrides", () => {
+  const prevSock = process.env.PERSISTENT_TEST_SOCKET_DIR;
+  const prevCluster = process.env.PERSISTENT_TEST_CLUSTER_DIR;
+
+  try {
+    process.env.PERSISTENT_TEST_SOCKET_DIR = "/Users/suyogdhakal/.dreamsky_sock_5433_clean";
+    process.env.PERSISTENT_TEST_CLUSTER_DIR = "/Users/suyogdhakal/.dreamsky_disposable_cluster_5433_clean";
+
+    assert.throws(() => resolveApprovedTestDirs("production"), /strictly forbidden in 'production' mode/);
+    assert.throws(() => resolveApprovedTestDirs("development"), /strictly forbidden in 'development' mode/);
+    assert.throws(
+      () => validateDatabaseUrl("postgresql://user:pass@db.example.com:5432/prod_db", "production"),
+      /strictly forbidden in 'production' mode/
+    );
+  } finally {
+    if (prevSock !== undefined) process.env.PERSISTENT_TEST_SOCKET_DIR = prevSock;
+    else delete process.env.PERSISTENT_TEST_SOCKET_DIR;
+    if (prevCluster !== undefined) process.env.PERSISTENT_TEST_CLUSTER_DIR = prevCluster;
+    else delete process.env.PERSISTENT_TEST_CLUSTER_DIR;
+  }
+});
+
+test("Approved clean test directories - port 5432, remote hosts, and unauthorized DBs remain rejected even with clean overrides", () => {
+  const prevSock = process.env.PERSISTENT_TEST_SOCKET_DIR;
+  const prevCluster = process.env.PERSISTENT_TEST_CLUSTER_DIR;
+  const prevOptIn = process.env.ALLOW_INTEGRATION_TEST_DB;
+
+  try {
+    process.env.PERSISTENT_TEST_SOCKET_DIR = "/Users/suyogdhakal/.dreamsky_sock_5433_clean";
+    process.env.PERSISTENT_TEST_CLUSTER_DIR = "/Users/suyogdhakal/.dreamsky_disposable_cluster_5433_clean";
+    process.env.ALLOW_INTEGRATION_TEST_DB = "true";
+
+    const encodedClean = encodeURIComponent("/Users/suyogdhakal/.dreamsky_sock_5433_clean");
+    assert.throws(
+      () => validateDatabaseUrl(`postgresql://dreamsky_test_user:pass@${encodedClean}:5432/dreamsky_test_disposable`, "test"),
+      /must strictly target port 5433/
+    );
+    assert.throws(
+      () => validateDatabaseUrl(`postgresql://dreamsky_test_user:pass@db.remote.com:5433/dreamsky_test_disposable`, "test"),
+      /is rejected/
+    );
+    assert.throws(
+      () => validateDatabaseUrl(`postgresql://dreamsky_test_user:pass@${encodedClean}:5433/dreamsky_db`, "test"),
+      /must be exactly 'dreamsky_test_disposable'/
+    );
+  } finally {
+    if (prevSock !== undefined) process.env.PERSISTENT_TEST_SOCKET_DIR = prevSock;
+    else delete process.env.PERSISTENT_TEST_SOCKET_DIR;
+    if (prevCluster !== undefined) process.env.PERSISTENT_TEST_CLUSTER_DIR = prevCluster;
+    else delete process.env.PERSISTENT_TEST_CLUSTER_DIR;
+    if (prevOptIn !== undefined) process.env.ALLOW_INTEGRATION_TEST_DB = prevOptIn;
+    else delete process.env.ALLOW_INTEGRATION_TEST_DB;
   }
 });
 

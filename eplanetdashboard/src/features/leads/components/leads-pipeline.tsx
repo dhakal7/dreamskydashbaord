@@ -4,6 +4,7 @@ import {
   type DragEndEvent, type DragStartEvent, type CollisionDetection,
 } from '@dnd-kit/core'
 import { RotateCcw, Phone } from 'lucide-react'
+import { toast } from 'sonner'
 import type { Lead, LeadStage } from '@/types'
 import { leadStageMeta } from '@/components/shared/status-badges'
 import { LeadCard, LeadCardOverlay } from './lead-card'
@@ -51,12 +52,12 @@ export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelinePr
   // Dynamically configure pipeline columns based on role
   const pipelineStages: LeadStage[] = useMemo(() => {
     if (currentUser.role === 'front_desk') {
-      return ['new', 'follow_up', 'assigned', 'not_contracted', 'trash']
+      return ['new', 'follow_up', 'assigned', 'interested', 'trash']
     }
     if (currentUser.role === 'counselor') {
       return ['assigned', 'follow_up', 'interested', 'trash']
     }
-    return ['new', 'follow_up', 'assigned', 'interested', 'not_contracted', 'trash']
+    return ['new', 'follow_up', 'assigned', 'interested', 'trash']
   }, [currentUser.role])
 
   // Adapt trashed students to Lead shape for the Trash column
@@ -97,9 +98,9 @@ export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelinePr
 
     effectiveLeads.forEach((l) => {
       let stageKey = l.stage
-      // Counselor pipeline: counseling aliases to assigned; omit new and not_contracted
+      if (stageKey === 'counseling') stageKey = 'assigned'
+      // Counselor pipeline: omit new and not_contracted
       if (currentUser.role === 'counselor') {
-        if (stageKey === 'counseling') stageKey = 'assigned'
         if (stageKey === 'new' || stageKey === 'not_contracted') return
       }
       if (map.has(stageKey)) {
@@ -150,7 +151,11 @@ export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelinePr
         setFollowUpLead(activeLeadObj)
         return
       }
-      if (overStage === 'assigned' && !activeLeadObj.counselorId && currentUser.role === 'front_desk') {
+      if (overStage === 'assigned') {
+        if (!['front_desk', 'branch_admin', 'super_admin'].includes(currentUser.role)) {
+          toast.error('Only Front Desk officers and Admins can move leads into Assigned.')
+          return
+        }
         setAssignLead(activeLeadObj)
         return
       }
@@ -194,6 +199,7 @@ export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelinePr
                 leads={columns.get(stage) ?? []}
                 onMove={onMove}
                 onScheduleFollowUp={setFollowUpLead}
+                onAssignLead={setAssignLead}
                 onRestore={handleRestore}
               />
             ) : (
@@ -203,6 +209,7 @@ export function LeadsPipeline({ leads, onMove, canChangeStage }: LeadsPipelinePr
                 leads={columns.get(stage) ?? []}
                 onMove={onMove}
                 onScheduleFollowUp={setFollowUpLead}
+                onAssignLead={setAssignLead}
                 onRestore={handleRestore}
               />
             )
@@ -241,12 +248,14 @@ function PipelineColumn({
   leads,
   onMove,
   onScheduleFollowUp,
+  onAssignLead,
   onRestore,
 }: {
   stage: LeadStage
   leads: Array<Lead & { trashReason?: string }>
   onMove: (id: string, stage: LeadStage) => void
   onScheduleFollowUp?: (lead: Lead) => void
+  onAssignLead?: (lead: Lead) => void
   onRestore?: (id: string) => void
 }) {
   const meta = leadStageMeta[stage] ?? {
@@ -286,6 +295,7 @@ function PipelineColumn({
               canDrag
               onMove={onMove}
               onScheduleFollowUp={onScheduleFollowUp}
+              onAssignLead={onAssignLead}
             />
           )
         )}
@@ -304,12 +314,14 @@ function PipelineColumnStatic({
   leads,
   onMove,
   onScheduleFollowUp,
+  onAssignLead,
   onRestore,
 }: {
   stage: LeadStage
   leads: Array<Lead & { trashReason?: string }>
   onMove: (id: string, stage: LeadStage) => void
   onScheduleFollowUp?: (lead: Lead) => void
+  onAssignLead?: (lead: Lead) => void
   onRestore?: (id: string) => void
 }) {
   const meta = leadStageMeta[stage] ?? {
@@ -344,6 +356,7 @@ function PipelineColumnStatic({
               canDrag={false}
               onMove={onMove}
               onScheduleFollowUp={onScheduleFollowUp}
+              onAssignLead={onAssignLead}
             />
           )
         )}

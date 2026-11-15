@@ -46,6 +46,35 @@ let transactionCalled = false;
 let sendEmailCalled = false;
 let sentEmails = [];
 
+const matchesStudentWhere = (s, where) => {
+    if (!where || !s) return Boolean(s);
+    if (Array.isArray(where.AND) && !where.AND.every((clause) => matchesStudentWhere(s, clause))) return false;
+    if (Array.isArray(where.OR) && !where.OR.some((clause) => matchesStudentWhere(s, clause))) return false;
+    if (where.isActive !== undefined && (s.isActive ?? true) !== where.isActive) return false;
+    if (where.assignedCounselorId !== undefined && s.assignedCounselorId !== where.assignedCounselorId) return false;
+    if (where.branchId !== undefined && s.branchId !== where.branchId) return false;
+    if (where.assignedCounselor?.branchId !== undefined) {
+        const counselor = s.assignedCounselorId ? store.users.get(s.assignedCounselorId) : null;
+        if (!counselor || counselor.branchId !== where.assignedCounselor.branchId) return false;
+    }
+    if (where.academicBackground?.path && where.academicBackground?.equals !== undefined) {
+        const key = where.academicBackground.path[0];
+        const val = s.academicBackground?.[key] ?? (key === "branchId" ? s.branchId : null) ?? null;
+        if (val !== where.academicBackground.equals) return false;
+    }
+    return true;
+};
+
+const matchesVisaWhere = (vc, where) => {
+    if (!where) return true;
+    if (Array.isArray(where.AND) && !where.AND.every((clause) => matchesVisaWhere(vc, clause))) return false;
+    if (Array.isArray(where.OR) && !where.OR.some((clause) => matchesVisaWhere(vc, clause))) return false;
+    const app = store.applications.get(vc.applicationId);
+    const student = app ? store.students.get(app.studentId) : null;
+    if (where.application?.student && !matchesStudentWhere(student, where.application.student)) return false;
+    return true;
+};
+
 const mockPrisma = {
     user: {
         findUnique: async ({ where }) => {
@@ -110,11 +139,7 @@ const mockPrisma = {
         findMany: async ({ where, select }) => {
             const results = [];
             for (const s of store.students.values()) {
-                if (where.assignedCounselorId && s.assignedCounselorId !== where.assignedCounselorId) continue;
-                if (where.assignedCounselor?.branchId) {
-                    const counselor = s.assignedCounselorId ? store.users.get(s.assignedCounselorId) : null;
-                    if (!counselor || counselor.branchId !== where.assignedCounselor.branchId) continue;
-                }
+                if (!matchesStudentWhere(s, where)) continue;
                 const counselor = s.assignedCounselorId ? store.users.get(s.assignedCounselorId) : null;
                 results.push({
                     ...s,
@@ -126,11 +151,7 @@ const mockPrisma = {
         count: async ({ where }) => {
             let count = 0;
             for (const s of store.students.values()) {
-                if (where.assignedCounselorId && s.assignedCounselorId !== where.assignedCounselorId) continue;
-                if (where.assignedCounselor?.branchId) {
-                    const counselor = s.assignedCounselorId ? store.users.get(s.assignedCounselorId) : null;
-                    if (!counselor || counselor.branchId !== where.assignedCounselor.branchId) continue;
-                }
+                if (!matchesStudentWhere(s, where)) continue;
                 count++;
             }
             return count;
@@ -178,16 +199,10 @@ const mockPrisma = {
         findMany: async ({ where }) => {
             const results = [];
             for (const vc of store.visaCases.values()) {
+                if (!matchesVisaWhere(vc, where)) continue;
                 const app = store.applications.get(vc.applicationId);
                 const student = app ? store.students.get(app.studentId) : null;
                 const counselor = student?.assignedCounselorId ? store.users.get(student.assignedCounselorId) : null;
-
-                if (where.application?.student?.assignedCounselorId) {
-                    if (student?.assignedCounselorId !== where.application.student.assignedCounselorId) continue;
-                }
-                if (where.application?.student?.assignedCounselor?.branchId) {
-                    if (counselor?.branchId !== where.application.student.assignedCounselor.branchId) continue;
-                }
                 results.push({
                     ...vc,
                     application: app ? {
@@ -205,16 +220,7 @@ const mockPrisma = {
         count: async ({ where }) => {
             let count = 0;
             for (const vc of store.visaCases.values()) {
-                const app = store.applications.get(vc.applicationId);
-                const student = app ? store.students.get(app.studentId) : null;
-                const counselor = student?.assignedCounselorId ? store.users.get(student.assignedCounselorId) : null;
-
-                if (where.application?.student?.assignedCounselorId) {
-                    if (student?.assignedCounselorId !== where.application.student.assignedCounselorId) continue;
-                }
-                if (where.application?.student?.assignedCounselor?.branchId) {
-                    if (counselor?.branchId !== where.application.student.assignedCounselor.branchId) continue;
-                }
+                if (!matchesVisaWhere(vc, where)) continue;
                 count++;
             }
             return count;
@@ -301,6 +307,15 @@ const mockPrisma = {
             ];
         },
     },
+    $queryRaw: async (strings, ...values) => {
+        const sql = Array.isArray(strings) ? strings.join(" ") : String(strings);
+        if (sql.includes('"Application"')) {
+            const appId = values[0];
+            const app = store.applications.get(appId);
+            return app ? [{ id: app.id }] : [];
+        }
+        return [];
+    },
     $transaction: async (fn) => {
         transactionCalled = true;
         if (Array.isArray(fn)) return Promise.all(fn);
@@ -375,10 +390,12 @@ test("Auth Middleware: requireAuth rejects invalid token format with 401", async
 });
 
 test("Auth Middleware: requireAuth accepts valid JWT and normalizes both id and userId", async () => {
+    resetStore();
+    store.users.set("user-123", { id: "user-123", role: "COUNSELOR", branchId: "br-1", status: "ACTIVE", mustChangePassword: false });
     const token = signAccessToken({ userId: "user-123", role: "COUNSELOR", branchId: "br-1", mustChangePassword: false });
     const req = { headers: { authorization: `Bearer ${token}` } };
     let error = null;
-    requireAuth(req, {}, (err) => { error = err; });
+    await requireAuth(req, {}, (err) => { error = err; });
     assert.equal(error, undefined);
     assert.equal(req.user.userId, "user-123");
     assert.equal(req.user.id, "user-123");
@@ -1090,17 +1107,18 @@ test("Visa Creation: Rejects nonexistent application with 404", async () => {
 });
 
 // ── Section 9: Student Creation and Counselor Assignment ────────────────────
-test("Student Assignment: Counselor creating student without assignedCounselorId defaults to themselves", async () => {
+test("Student Assignment: Counselor is blocked from creating prospective leads (403 FORBIDDEN)", async () => {
     resetStore();
     store.users.set("c1", { id: "c1", role: "COUNSELOR" });
 
-    const student = await studentService.createStudent(
-        { firstName: "John", lastName: "Doe", email: "john@example.com" },
-        { userId: "c1", role: "COUNSELOR" }
+    await assert.rejects(
+        () => studentService.createStudent(
+            { firstName: "John", lastName: "Doe", email: "john@example.com" },
+            { userId: "c1", role: "COUNSELOR" }
+        ),
+        (err) => err.statusCode === 403 && err.code === "FORBIDDEN"
     );
-    assert.ok(student);
-    assert.equal(student.assignedCounselorId, "c1");
-    assert.equal(createStudentCalled, true);
+    assert.equal(createStudentCalled, false);
 });
 
 test("Student Assignment: Counselor creating student with another counselor's ID is rejected with 403", async () => {

@@ -86,6 +86,14 @@ const mockPrisma = {
       }
       return null;
     },
+    count: async ({ where }) => {
+      let count = 0;
+      for (const e of store.enrollments.values()) {
+        if (where?.classId && e.classId !== where.classId) continue;
+        count++;
+      }
+      return count;
+    },
   },
   pipelineStageHistory: {
     create: async ({ data }) => {
@@ -262,37 +270,31 @@ function mockContext() {
 
 // ── 4. PART A TESTS: Class enrollment history & atomicity ─────────────────────
 
-test("Part A.1: Class enrollment creates valid PipelineStageHistory payload matching schema", async () => {
+test("Part A.1: Class enrollment preserves macro pipeline stage under Policy A", async () => {
   resetStore();
   store.classes.set("cls-1", { id: "cls-1", name: "IELTS Morning", branchId: "br-1" });
-  store.students.set("stu-1", { id: "stu-1", firstName: "Suman", lastName: "Karki", currentStage: "LEAD" });
+  store.students.set("stu-1", { id: "stu-1", firstName: "Suman", lastName: "Karki", currentStage: "LEAD", assignedCounselorId: "counselor-1", assignedCounselor: { id: "counselor-1", branchId: "br-1" } });
 
-  const result = await classService.enrollStudent("cls-1", "stu-1", { id: "counselor-1" });
+  const result = await classService.enrollStudent("cls-1", "stu-1", { id: "admin-1", role: "BRANCH_ADMIN", branchId: "br-1" });
 
   assert.ok(result.enrollment, "Enrollment must succeed");
-  assert.equal(store.pipelineStageHistories.length, 1, "Exactly one history record must be created");
+  assert.equal(store.pipelineStageHistories.length, 0, "Policy A: class enrollment must not mutate macro pipeline stage");
 
-  const history = store.pipelineStageHistories[0];
-  assert.equal(history.studentId, "stu-1");
-  assert.equal(history.stage, "ENROLLED");
-  assert.equal(history.changedById, "counselor-1");
-  assert.equal(history.reasonCode, "CLASS_ENROLLMENT");
-
-  // Verify student's currentStage was updated to ENROLLED
+  // Verify student's currentStage remains LEAD
   const updatedStudent = store.students.get("stu-1");
-  assert.equal(updatedStudent.currentStage, "ENROLLED");
+  assert.equal(updatedStudent.currentStage, "LEAD");
 });
 
 test("Part A.2: Class enrollment failure aborts transaction atomically without partial mutations", async () => {
   resetStore();
   store.classes.set("cls-1", { id: "cls-1", name: "IELTS Morning", branchId: "br-1" });
-  store.students.set("stu-1", { id: "stu-1", firstName: "Suman", lastName: "Karki", currentStage: "LEAD" });
+  store.students.set("stu-1", { id: "stu-1", firstName: "Suman", lastName: "Karki", currentStage: "LEAD", assignedCounselorId: "counselor-1", assignedCounselor: { id: "counselor-1", branchId: "br-1" } });
 
   // Arm the failure trigger inside the transaction
   transactionRollbackTrigger = true;
   await assert.rejects(
     async () => {
-      await classService.enrollStudent("cls-1", "stu-1", { id: "counselor-1" });
+      await classService.enrollStudent("cls-1", "stu-1", { id: "admin-1", role: "BRANCH_ADMIN", branchId: "br-1" });
     },
     /Simulated database failure during enrollment/
   );
@@ -307,14 +309,14 @@ test("Part A.2: Class enrollment failure aborts transaction atomically without p
 test("Part A.3: Duplicate class enrollment is prevented cleanly", async () => {
   resetStore();
   store.classes.set("cls-1", { id: "cls-1", name: "IELTS Morning", branchId: "br-1" });
-  store.students.set("stu-1", { id: "stu-1", firstName: "Suman", lastName: "Karki", currentStage: "LEAD" });
+  store.students.set("stu-1", { id: "stu-1", firstName: "Suman", lastName: "Karki", currentStage: "LEAD", assignedCounselorId: "counselor-1", assignedCounselor: { id: "counselor-1", branchId: "br-1" } });
 
   // First enrollment
-  const res1 = await classService.enrollStudent("cls-1", "stu-1", { id: "counselor-1" });
+  const res1 = await classService.enrollStudent("cls-1", "stu-1", { id: "admin-1", role: "BRANCH_ADMIN", branchId: "br-1" });
   assert.ok(res1.enrollment);
 
   // Second enrollment for same student in same class
-  const res2 = await classService.enrollStudent("cls-1", "stu-1", { id: "counselor-1" });
+  const res2 = await classService.enrollStudent("cls-1", "stu-1", { id: "admin-1", role: "BRANCH_ADMIN", branchId: "br-1" });
   assert.equal(res2.error, "ALREADY_ENROLLED", "Must report ALREADY_ENROLLED without creating duplicate");
   assert.equal(store.enrollments.size, 1, "Only one enrollment record must exist");
 });
@@ -322,9 +324,9 @@ test("Part A.3: Duplicate class enrollment is prevented cleanly", async () => {
 test("Part A.4: Student already at higher pipeline stage does not regress to ENROLLED", async () => {
   resetStore();
   store.classes.set("cls-1", { id: "cls-1", name: "IELTS Morning", branchId: "br-1" });
-  store.students.set("stu-1", { id: "stu-1", firstName: "Suman", lastName: "Karki", currentStage: "VISA_GRANTED" });
+  store.students.set("stu-1", { id: "stu-1", firstName: "Suman", lastName: "Karki", currentStage: "VISA_GRANTED", assignedCounselorId: "counselor-1", assignedCounselor: { id: "counselor-1", branchId: "br-1" } });
 
-  const res = await classService.enrollStudent("cls-1", "stu-1", { id: "counselor-1" });
+  const res = await classService.enrollStudent("cls-1", "stu-1", { id: "admin-1", role: "BRANCH_ADMIN", branchId: "br-1" });
   assert.ok(res.enrollment);
   assert.equal(store.students.get("stu-1").currentStage, "VISA_GRANTED", "Stage must not regress");
   assert.equal(store.pipelineStageHistories.length, 0, "Stage history not created if student was not LEAD/PROSPECT");

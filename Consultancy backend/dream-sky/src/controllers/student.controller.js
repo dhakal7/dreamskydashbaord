@@ -8,6 +8,7 @@ const {
     validateTrashReason,
     validateBranchTransfer,
     validateCounselorAssignmentBody,
+    validateAssignmentAppointment,
 } = require("../validators/student.validator");
 
 const create = async (req, res) => {
@@ -103,7 +104,13 @@ const assign = async (req, res, next) => {
     try {
         const validatedCounselorId = validateCounselorAssignmentBody(req.body);
         const counselorId = validatedCounselorId || req.body.assignedCounselorId || req.body.counselorId;
-        const result = await studentService.assignLeadToCounselor(req.params.id, counselorId, req.user);
+        const appointmentDatetime = validateAssignmentAppointment(req.body);
+        const result = await studentService.assignLeadToCounselor(req.params.id, counselorId, req.user, {
+            appointmentDatetime,
+            durationMin: req.body?.durationMin,
+            meetingMode: req.body?.meetingMode,
+            notes: req.body?.notes,
+        });
         sendSuccess(res, { message: "Lead assigned to counselor successfully.", data: result });
     } catch (err) {
         next(err);

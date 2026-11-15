@@ -479,10 +479,14 @@ test("Phase 28.25B Suite: Persistent Trash Reasons, Leads Trash View, and Restor
         );
         assert.strictEqual(trashB2.students.length, 0, "Cross-branch trashed records must be hidden");
 
-        // Counselor can view own trash (scoped)
+        // Counselor is blocked from Trash-management access
         const counselor = store.users.get("counselor-b1");
-        const counselorTrash = await studentService.listTrash({}, counselor);
-        assert.ok(Array.isArray(counselorTrash.students));
+        await assert.rejects(
+            async () => {
+                await studentService.listTrash({}, counselor);
+            },
+            (err) => err.statusCode === 403 && err.code === "FORBIDDEN"
+        );
 
         // Unauthorized roles (e.g. TEACHER) are rejected from viewing Trash
         await assert.rejects(

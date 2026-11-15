@@ -24,6 +24,32 @@ const validateUpdateStudent = (body) => {
 
 const VALID_LEAD_STAGES = ["NEW", "FOLLOW_UP", "ASSIGNED", "COUNSELLING", "INTERESTED", "NOT_CONTRACTED"];
 
+const validateAssignmentAppointment = (body) => {
+    const { appointmentDate, appointmentTime, followUpDate, followUpTime, datetime } = body || {};
+    const dateVal = appointmentDate || followUpDate;
+    const timeVal = appointmentTime || followUpTime;
+
+    const hasDate = Boolean(dateVal || (datetime && String(datetime).includes("T")));
+    const hasTime = Boolean(timeVal || (datetime && String(datetime).includes("T")));
+    if (!hasDate || !hasTime) {
+        throw AppError.badRequest(
+            "Appointment date and time are required when moving to Assigned.",
+            "MISSING_APPOINTMENT_DATETIME"
+        );
+    }
+
+    const dateStr = datetime || `${dateVal}T${timeVal && String(timeVal).length === 5 ? timeVal + ":00" : timeVal}`;
+    const parsedDate = new Date(dateStr);
+    if (isNaN(parsedDate.getTime())) {
+        throw AppError.badRequest(
+            "Invalid appointment date or time format.",
+            "INVALID_APPOINTMENT_DATETIME"
+        );
+    }
+
+    return parsedDate;
+};
+
 const validatePipelineChange = (body) => {
     const { stage, leadStage, reasonCode, email, followUpDate, followUpTime, datetime } = body || {};
     const effectiveStage = stage || leadStage;
@@ -60,6 +86,11 @@ const validatePipelineChange = (body) => {
                 "INVALID_FOLLOWUP_DATETIME"
             );
         }
+    }
+
+    if (upperStage === "ASSIGNED" || upperLeadStage === "ASSIGNED") {
+        validateCounselorAssignmentBody(body);
+        validateAssignmentAppointment(body);
     }
 
     if (upperStage === "LOST" && !reasonCode?.trim())
@@ -109,6 +140,7 @@ module.exports = {
     validateTrashReason,
     validateBranchTransfer,
     validateCounselorAssignmentBody,
+    validateAssignmentAppointment,
     VALID_STAGES,
     VALID_LEAD_STAGES,
     VALID_SOURCES,

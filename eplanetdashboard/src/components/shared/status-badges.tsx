@@ -7,11 +7,11 @@ import type {
 type LeadStageMetaVariant = 'default' | 'secondary' | 'success' | 'warning' | 'info' | 'slate'
 
 export const leadStageMeta: Record<LeadStage, { label: string; variant: LeadStageMetaVariant }> = {
-  new: { label: 'New', variant: 'slate' },
+  new: { label: 'New Lead', variant: 'slate' },
   follow_up: { label: 'Follow Up', variant: 'warning' },
   assigned: { label: 'Assigned', variant: 'info' },
   not_contracted: { label: 'Not Contracted', variant: 'secondary' },
-  counseling: { label: 'Counseling', variant: 'info' },
+  counseling: { label: 'Assigned', variant: 'info' },
   interested: { label: 'Interested', variant: 'default' },
   application: { label: 'Application', variant: 'warning' },
   offer_letter: { label: 'Offer Letter', variant: 'warning' },
@@ -24,7 +24,7 @@ export const leadStageMeta: Record<LeadStage, { label: string; variant: LeadStag
 // Only these 4 stages are shown in the pipeline view.
 // After 'interested', leads are converted to students via the pipeline card action.
 export const leadStageOrder: LeadStage[] = [
-  'new', 'follow_up', 'counseling', 'interested',
+  'new', 'follow_up', 'assigned', 'interested',
 ]
 
 export const priorityMeta: Record<Priority, { label: string; variant: 'slate' | 'info' | 'warning' | 'danger'; dot: string }> = {

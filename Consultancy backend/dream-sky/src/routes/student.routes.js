@@ -24,7 +24,7 @@ router.get(
 
 router.get(
     "/trash",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"),
     studentController.trash
 );
 
@@ -44,7 +44,7 @@ router.patch(
 
 router.patch(
     "/:id/restore",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"),
     studentController.restore
 );
 
@@ -62,7 +62,7 @@ router.patch(
 
 router.delete(
     "/:id",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"),
     studentController.remove
 );
 

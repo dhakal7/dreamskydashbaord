@@ -17,7 +17,7 @@ export interface ApiFollowUp {
   createdAt: string
   updatedAt: string
   student?: { id: string; firstName: string; lastName: string }
-  author?: { id: string; firstName: string; lastName: string } | null
+  author?: { id: string; firstName: string; lastName: string; role?: string } | null
 }
 
 export interface FollowUpListParams {

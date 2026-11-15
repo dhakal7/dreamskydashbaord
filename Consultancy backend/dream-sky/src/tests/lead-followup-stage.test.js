@@ -213,7 +213,16 @@ test("DreamSky CRM Phase 28.25A — Lead Stages & Follow-Up Unit Test Suite", as
         assert.equal(res2.nextCalled, true);
         assert.equal(res2.statusCode, 200);
 
-        const resAssigned = runValidator(validatePipelineChange, { stage: "ASSIGNED" });
+        const resAssignedMissing = runValidator(validatePipelineChange, { stage: "ASSIGNED" });
+        assert.equal(resAssignedMissing.nextCalled, false);
+        assert.equal(resAssignedMissing.statusCode, 400);
+
+        const resAssigned = runValidator(validatePipelineChange, {
+            stage: "ASSIGNED",
+            counselorId: "c-1",
+            appointmentDate: "2026-12-01",
+            appointmentTime: "10:00",
+        });
         assert.equal(resAssigned.nextCalled, true);
         assert.equal(resAssigned.statusCode, 200);
 

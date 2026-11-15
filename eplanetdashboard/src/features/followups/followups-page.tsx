@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
+import dayjs from 'dayjs'
 import { Calendar, Clock, Table2, Plus, Phone, Mail, MessageSquare, User, BellOff } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card } from '@/components/ui/card'
@@ -37,32 +38,39 @@ export default function FollowUpsPage() {
   const mockFollowUps = useFollowUpsStore((s) => s.followUps)
   const currentUser = useAuthStore((s) => s.currentUser)
 
-  // Live mode: scope to counselor's own follow-ups
-  const authorId = currentUser.role === 'counselor' ? (currentUser.linkedId || undefined) : undefined
+  // Live mode: scope to user's own follow-ups for front_desk and counselor (server also enforces)
+  const authorId =
+    currentUser.role === 'counselor' || currentUser.role === 'front_desk'
+      ? (currentUser.linkedId || undefined)
+      : undefined
   const { data: apiData } = useFollowUps({ authorId, limit: 200 })
   const cancelMutation = useCancelFollowUp()
 
-  const followUps: FollowUp[] = !isMockMode()
-    ? (apiData?.followUps ?? []).map((f) => ({
-        id: f.id,
-        studentId: f.studentId,
-        studentName: f.student ? `${f.student.firstName} ${f.student.lastName}` : 'Student',
-        counselorId: f.authorId ?? '',
-        counselorName: f.author ? `${f.author.firstName} ${f.author.lastName}` : 'Counselor',
-        reminder: f.content,
-        priority: 'medium' as FollowUp['priority'],
-        status: f.nextFollowUpAt && new Date(f.nextFollowUpAt) > new Date() ? 'pending' : 'completed' as FollowUp['status'],
-        date: f.nextFollowUpAt ? f.nextFollowUpAt.slice(0, 10) : f.createdAt.slice(0, 10),
-        time: f.nextFollowUpAt ? f.nextFollowUpAt.slice(11, 16) : '09:00',
-        channel: (f.channel?.toLowerCase() as FollowUp['channel']) ?? 'call',
-        notes: '',
-      }))
+  type FollowUpItem = FollowUp & { authorRole?: string }
+
+  const followUps: FollowUpItem[] = !isMockMode()
+    ? (apiData?.followUps ?? []).map((f) => {
+        const localDt = dayjs(f.nextFollowUpAt || f.createdAt)
+        return {
+          id: f.id,
+          studentId: f.studentId,
+          studentName: f.student ? `${f.student.firstName} ${f.student.lastName}` : 'Student',
+          counselorId: f.authorId ?? '',
+          counselorName: f.author ? `${f.author.firstName} ${f.author.lastName}` : 'Staff',
+          authorRole: f.author?.role,
+          reminder: f.content,
+          priority: 'medium' as FollowUp['priority'],
+          status: f.nextFollowUpAt && new Date(f.nextFollowUpAt) > new Date() ? 'pending' : ('completed' as FollowUp['status']),
+          date: localDt.format('YYYY-MM-DD'),
+          time: f.nextFollowUpAt ? localDt.format('HH:mm') : '09:00',
+          channel: (f.channel?.toLowerCase() as FollowUp['channel']) ?? 'call',
+          notes: '',
+        }
+      })
     : mockFollowUps
 
   const [view, setView] = useState<ViewMode>('calendar')
-  const [scopeFilter, setScopeFilter] = useState<'all' | 'front_desk' | 'counselor'>(
-    currentUser.role === 'front_desk' ? 'front_desk' : currentUser.role === 'counselor' ? 'counselor' : 'all'
-  )
+  const [scopeFilter, setScopeFilter] = useState<'all' | 'front_desk' | 'counselor'>('all')
   const [filters, setFilters] = useState<FollowUpFilters>(defaultFollowUpFilters)
   const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUp | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
@@ -81,13 +89,11 @@ export default function FollowUpsPage() {
   // Filtered followups
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase()
+    const isAdmin = currentUser.role === 'super_admin' || currentUser.role === 'branch_admin'
     return visibleFollowUps(currentUser, followUps, { verifiedBranchScopedApi: !isMockMode() }).filter((f) => {
-      if (scopeFilter === 'front_desk') {
-        const isFd = !f.counselorId || f.counselorName?.toLowerCase().includes('front') || f.counselorName === 'Unassigned'
-        if (!isFd) return false
-      } else if (scopeFilter === 'counselor') {
-        const isFd = !f.counselorId || f.counselorName?.toLowerCase().includes('front') || f.counselorName === 'Unassigned'
-        if (isFd) return false
+      if (isAdmin && scopeFilter !== 'all' && !isMockMode()) {
+        if (scopeFilter === 'front_desk' && f.authorRole !== 'FRONT_DESK') return false
+        if (scopeFilter === 'counselor' && f.authorRole === 'FRONT_DESK') return false
       }
       if (q && !`${f.studentName} ${f.reminder} ${f.counselorName}`.toLowerCase().includes(q)) return false
       if (filters.status !== 'all' && f.status !== filters.status) return false

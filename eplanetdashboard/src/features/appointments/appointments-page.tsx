@@ -2,13 +2,12 @@ import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
 import {
   Plus, ChevronLeft, ChevronRight, CalendarDays, CalendarRange, Clock3,
-  Search, SlidersHorizontal, ShieldAlert, Lock, RefreshCw, AlertTriangle, Loader2
+  Search, SlidersHorizontal, RefreshCw, AlertTriangle, Loader2
 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -201,44 +200,29 @@ export default function AppointmentsPage() {
 
   return (
     <div className="space-y-5">
-      {/* ── Phase 4A Safety Notice Banner ─────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-sky-200 bg-sky-50/80 px-3.5 py-2.5 text-xs text-sky-900">
-        <div className="flex items-start sm:items-center gap-2">
-          <ShieldAlert className="size-4 text-sky-600 shrink-0 mt-0.5 sm:mt-0" />
-          <div>
-            <span className="font-semibold">Phase 4A Read-Only Mode Active:</span>{' '}
-            Connected to live database appointments in read-only mode. Creating appointments, rescheduling, status updates, cancellations, and notification emails are safely locked.
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge variant="outline" className="bg-sky-100 text-sky-800 border-sky-300">
-            <Lock className="size-3 mr-1" /> Phase 4A Read-Only
-          </Badge>
-          {!isMock && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 px-2 text-[11px] gap-1 text-sky-700 hover:text-sky-900 hover:bg-sky-100"
-              onClick={() => refetchAppts()}
-              disabled={isApptsFetching}
-            >
-              <RefreshCw className={`size-3 ${isApptsFetching ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          )}
-        </div>
-      </div>
-
       <PageHeader
         title="Appointments"
         description="Schedule and manage counseling sessions, document reviews, and visa preparation meetings."
         actions={
-          canManage && (
-            <Button size="sm" onClick={() => openNewDialog()}>
-              <Plus className="size-3.5 mr-1" />
-              New Appointment
-            </Button>
-          )
+          <div className="flex items-center gap-2">
+            {!isMock && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => refetchAppts()}
+                disabled={isApptsFetching}
+              >
+                <RefreshCw className={`size-3.5 mr-1 ${isApptsFetching ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            )}
+            {canManage && (
+              <Button size="sm" onClick={() => openNewDialog()}>
+                <Plus className="size-3.5 mr-1" />
+                New Appointment
+              </Button>
+            )}
+          </div>
         }
       />
 

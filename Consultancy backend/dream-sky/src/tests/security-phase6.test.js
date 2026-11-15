@@ -102,12 +102,25 @@ test("Document Security: Student accessing OWN document succeeds", async () => {
 });
 
 test("Document Security: Authorized staff roles (SUPER_ADMIN, BRANCH_ADMIN, COUNSELOR, FRONT_DESK) succeed", async () => {
-    const mockDoc = { id: "doc-valid-student-1", studentId: "stu-100" };
-    const roles = ["SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"];
-    for (const role of roles) {
+    const mockDoc = {
+        id: "doc-valid-student-1",
+        studentId: "stu-100",
+        student: {
+            id: "stu-100",
+            assignedCounselorId: "user-COUNSELOR",
+            assignedCounselor: { branchId: "br-1" },
+        },
+    };
+    const actors = [
+        { userId: "user-SUPER_ADMIN", role: "SUPER_ADMIN" },
+        { userId: "user-BRANCH_ADMIN", role: "BRANCH_ADMIN", branchId: "br-1" },
+        { userId: "user-COUNSELOR", role: "COUNSELOR", branchId: "br-1" },
+        { userId: "user-FRONT_DESK", role: "FRONT_DESK", branchId: "br-1" },
+    ];
+    for (const actor of actors) {
         assert.doesNotThrow(
-            () => documentService.checkDocumentAccess(mockDoc, { userId: `user-${role}`, role }),
-            `Expected ${role} to have access`
+            () => documentService.checkDocumentAccess(mockDoc, actor),
+            `Expected ${actor.role} to have access`
         );
     }
 });

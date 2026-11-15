@@ -71,15 +71,28 @@ const createFollowUp = async (data, authorId) => {
 };
 
 // ─── GET ONE ──────────────────────────────────────────────────────────────────
-const getFollowUpById = async (id) => {
+const getFollowUpById = async (id, currentUser = null) => {
     const log = await prisma.communicationLog.findUnique({
         where: { id },
         include: {
-            student: { select: { id: true, firstName: true, lastName: true, email: true } },
-            author: { select: { id: true, firstName: true, lastName: true } },
+            student: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    assignedCounselorId: true,
+                    academicBackground: true,
+                    assignedCounselor: { select: { id: true, branchId: true } },
+                },
+            },
+            author: { select: { id: true, firstName: true, lastName: true, role: true } },
         },
     });
     if (!log) throw AppError.notFound("Follow-up not found.", "FOLLOWUP_NOT_FOUND");
+    if (currentUser) {
+        assertFollowUpAuthorization(log, currentUser, "view");
+    }
     return log;
 };
 
@@ -110,13 +123,28 @@ const listFollowUps = async (query, currentUser = null) => {
         where.nextFollowUpAt = { not: null };
     }
 
-    // Role-based scoping & scope filters
+    // Role-based scoping & ownership enforcement (never trust client-supplied authorId for restricted roles)
     if (currentUser) {
         const actorRole = currentUser.role;
         const actorId = currentUser.userId || currentUser.id;
-        if (actorRole === "COUNSELOR") {
-            where.student = { assignedCounselorId: actorId };
-        } else if (actorRole === "FRONT_DESK" || actorRole === "BRANCH_ADMIN") {
+        if (actorRole === "FRONT_DESK") {
+            // Front Desk users may retrieve ONLY follow-ups they personally created
+            where.authorId = actorId;
+        } else if (actorRole === "COUNSELOR") {
+            // Counselors see their own follow-ups or non-Front-Desk follow-ups for their assigned students;
+            // they must NEVER retrieve Front Desk-authored private follow-ups.
+            delete where.authorId;
+            where.AND = where.AND || [];
+            where.AND.push({
+                OR: [
+                    { authorId: actorId },
+                    {
+                        student: { assignedCounselorId: actorId },
+                        author: { role: { not: "FRONT_DESK" } },
+                    },
+                ],
+            });
+        } else if (actorRole === "BRANCH_ADMIN") {
             if (!isValidBranchId(currentUser.branchId)) {
                 throw AppError.forbidden("Access denied. No branch assigned to user.", "NO_BRANCH_ASSIGNED");
             }
@@ -141,6 +169,8 @@ const listFollowUps = async (query, currentUser = null) => {
             } else if (counselorId) {
                 where.student = { assignedCounselorId };
             }
+        } else {
+            throw AppError.forbidden("Access denied.", "INSUFFICIENT_ROLE");
         }
     }
 
@@ -153,7 +183,7 @@ const listFollowUps = async (query, currentUser = null) => {
             where,
             include: {
                 student: { select: { id: true, firstName: true, lastName: true } },
-                author: { select: { id: true, firstName: true, lastName: true } },
+                author: { select: { id: true, firstName: true, lastName: true, role: true } },
             },
             orderBy: { createdAt: "desc" },
             skip,
@@ -183,6 +213,12 @@ const assertFollowUpAuthorization = (log, currentUser, action = "manage") => {
 
     if (actorRole === "COUNSELOR") {
         const isAuthor = Boolean(log.authorId && log.authorId === actorId);
+        if (log.author?.role === "FRONT_DESK" && !isAuthor) {
+            throw AppError.forbidden(
+                `Access denied. Counselors cannot ${action} private Front Desk follow-ups.`,
+                "FORBIDDEN"
+            );
+        }
         const isAssigned = Boolean(log.student && log.student.assignedCounselorId === actorId);
         if (!isAuthor && !isAssigned) {
             throw AppError.forbidden(
@@ -193,7 +229,17 @@ const assertFollowUpAuthorization = (log, currentUser, action = "manage") => {
         return;
     }
 
-    if (actorRole === "BRANCH_ADMIN" || actorRole === "FRONT_DESK") {
+    if (actorRole === "FRONT_DESK") {
+        if (!log.authorId || log.authorId !== actorId) {
+            throw AppError.forbidden(
+                `Access denied. Front Desk officers can only ${action} follow-ups they personally created.`,
+                "FORBIDDEN"
+            );
+        }
+        return;
+    }
+
+    if (actorRole === "BRANCH_ADMIN") {
         if (!isValidBranchId(currentUser.branchId)) {
             throw AppError.forbidden("Access denied. No branch assigned to user.", "NO_BRANCH_ASSIGNED");
         }
@@ -213,13 +259,30 @@ const assertFollowUpAuthorization = (log, currentUser, action = "manage") => {
 };
 
 // ─── STUDENT TIMELINE ─────────────────────────────────────────────────────────
-const getStudentTimeline = async (studentId) => {
-    const student = await prisma.student.findUnique({ where: { id: studentId }, select: { id: true } });
+const getStudentTimeline = async (studentId, currentUser) => {
+    const student = await prisma.student.findUnique({
+        where: { id: studentId },
+        select: { id: true, branchId: true, assignedCounselorId: true, assignedCounselor: { select: { branchId: true } } },
+    });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
 
+    const where = { studentId };
+    if (currentUser) {
+        const actorRole = currentUser.role;
+        const actorId = currentUser.userId || currentUser.id;
+        if (actorRole === "FRONT_DESK") {
+            where.authorId = actorId;
+        } else if (actorRole === "COUNSELOR") {
+            where.OR = [
+                { authorId: actorId },
+                { author: { role: { not: "FRONT_DESK" } } },
+            ];
+        }
+    }
+
     return prisma.communicationLog.findMany({
-        where: { studentId },
-        include: { author: { select: { id: true, firstName: true, lastName: true } } },
+        where,
+        include: { author: { select: { id: true, firstName: true, lastName: true, role: true } } },
         orderBy: { createdAt: "desc" },
     });
 };
@@ -229,6 +292,7 @@ const updateFollowUp = async (id, data, currentUser) => {
     const existing = await prisma.communicationLog.findUnique({
         where: { id },
         include: {
+            author: { select: { id: true, role: true } },
             student: {
                 select: {
                     id: true,
@@ -262,6 +326,7 @@ const deleteFollowUp = async (id, currentUser) => {
     const existing = await prisma.communicationLog.findUnique({
         where: { id },
         include: {
+            author: { select: { id: true, role: true } },
             student: {
                 select: {
                     id: true,
@@ -345,10 +410,18 @@ const getDashboardStats = async (userId, role) => {
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
     const endOfWeek = new Date(startOfDay.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    // Counselors see only their own students' follow-ups; admins see all
-    const scopeFilter = ["SUPER_ADMIN", "BRANCH_ADMIN"].includes(role)
-        ? {}
-        : { student: { assignedCounselorId: userId } };
+    // Front Desk sees only follow-ups they authored; Counselors exclude Front Desk private follow-ups; admins see all
+    let scopeFilter = {};
+    if (role === "FRONT_DESK") {
+        scopeFilter = { authorId: userId };
+    } else if (role === "COUNSELOR") {
+        scopeFilter = {
+            OR: [
+                { authorId: userId },
+                { student: { assignedCounselorId: userId }, author: { role: { not: "FRONT_DESK" } } },
+            ],
+        };
+    }
 
     const baseWhere = { nextFollowUpAt: { not: null }, ...scopeFilter };
 
