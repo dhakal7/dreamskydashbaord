@@ -14,7 +14,7 @@ import { useAuthStore } from '@/store/auth-store'
 import { useDeleteStudent, useResendCredentials } from '@/hooks/use-students'
 import { TrashLeadDialog } from '@/features/leads/components/trash-lead-dialog'
 import { toast } from 'sonner'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 function StudentRowActions({ student }: { student: Student }) {
   const navigate = useNavigate()
@@ -100,7 +100,14 @@ export const studentColumns: ColumnDef<Student, any>[] = [
         <PersonAvatar name={row.original.name} color={row.original.photoColor} className="size-8" />
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <p className="truncate text-[13px] font-medium">{row.original.name}</p>
+            <Link
+              to={`/students/${row.original.id}`}
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => e.stopPropagation()}
+              className="truncate text-[13px] font-medium text-foreground hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xs"
+            >
+              {row.original.name}
+            </Link>
             {row.original.processingType === 'partner_consultancy' && (
               <span className="inline-flex items-center rounded-xs bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 shrink-0">
                 B2B: {row.original.partnerConsultancyName || 'Partner'}

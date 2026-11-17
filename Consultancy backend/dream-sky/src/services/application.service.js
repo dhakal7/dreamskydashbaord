@@ -12,6 +12,129 @@ const ALLOWED_TRANSITIONS = {
     WITHDRAWN: [],
 };
 
+const STUDENT_AUTHZ_SELECT = {
+    id: true,
+    isActive: true,
+    assignedCounselorId: true,
+    academicBackground: true,
+    assignedCounselor: { select: { id: true, branchId: true } },
+};
+
+function isValidBranchId(value) {
+    return typeof value === "string" && value.trim().length > 0;
+}
+
+function resolveStudentBranchId(student) {
+    if (!student || typeof student !== "object") return null;
+
+    const hasAssignedCounselor =
+        (student.assignedCounselorId !== undefined &&
+            student.assignedCounselorId !== null &&
+            String(student.assignedCounselorId).trim().length > 0) ||
+        (student.assignedCounselor !== undefined &&
+            student.assignedCounselor !== null &&
+            typeof student.assignedCounselor === "object");
+
+    if (hasAssignedCounselor) {
+        const counselorBranchId = student.assignedCounselor?.branchId;
+        return isValidBranchId(counselorBranchId) ? counselorBranchId.trim() : null;
+    }
+
+    const bg = student.academicBackground;
+    if (bg && typeof bg === "object" && isValidBranchId(bg.branchId)) {
+        return bg.branchId.trim();
+    }
+
+    return null;
+}
+
+const buildApplicationScopeWhere = (currentUser) => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
+    const actorRole = currentUser.role;
+    const actorId = currentUser.userId || currentUser.id;
+
+    if (actorRole === "SUPER_ADMIN") {
+        return {};
+    }
+
+    if (actorRole === "COUNSELOR") {
+        return {
+            student: {
+                assignedCounselorId: actorId,
+            },
+        };
+    }
+
+    if (actorRole === "BRANCH_ADMIN" || actorRole === "FRONT_DESK") {
+        if (!isValidBranchId(currentUser.branchId)) {
+            throw AppError.forbidden(`${actorRole} lacks assigned branch context.`, "NO_BRANCH_CONTEXT");
+        }
+        const authorizedBranchId = currentUser.branchId.trim();
+        return {
+            student: {
+                OR: [
+                    { assignedCounselor: { branchId: authorizedBranchId } },
+                    {
+                        assignedCounselorId: null,
+                        academicBackground: { path: ["branchId"], equals: authorizedBranchId },
+                    },
+                ],
+            },
+        };
+    }
+
+    throw AppError.forbidden("You are not authorized to access applications.", "INSUFFICIENT_ROLE");
+};
+
+const assertStudentApplicationAccess = (student, currentUser, action = "access") => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
+    const actorRole = currentUser.role;
+    const actorId = currentUser.userId || currentUser.id;
+
+    if (actorRole === "SUPER_ADMIN") {
+        return;
+    }
+
+    if (actorRole === "COUNSELOR") {
+        if (!student || !student.assignedCounselorId || student.assignedCounselorId !== actorId) {
+            throw AppError.forbidden(`You are not authorized to ${action} this application.`, "FORBIDDEN");
+        }
+        return;
+    }
+
+    if (actorRole === "BRANCH_ADMIN") {
+        if (!isValidBranchId(currentUser.branchId)) {
+            throw AppError.forbidden("Branch Admin lacks assigned branch context.", "NO_BRANCH_CONTEXT");
+        }
+        const authorizedBranchId = currentUser.branchId.trim();
+        const studentBranchId = resolveStudentBranchId(student);
+        if (!studentBranchId || studentBranchId !== authorizedBranchId) {
+            throw AppError.forbidden(`You are not authorized to ${action} this application.`, "FORBIDDEN");
+        }
+        return;
+    }
+
+    if (actorRole === "FRONT_DESK" && action === "view") {
+        if (!isValidBranchId(currentUser.branchId)) {
+            throw AppError.forbidden("Front Desk lacks assigned branch context.", "NO_BRANCH_CONTEXT");
+        }
+        const authorizedBranchId = currentUser.branchId.trim();
+        const studentBranchId = resolveStudentBranchId(student);
+        if (!studentBranchId || studentBranchId !== authorizedBranchId) {
+            throw AppError.forbidden(`You are not authorized to ${action} this application.`, "FORBIDDEN");
+        }
+        return;
+    }
+
+    throw AppError.forbidden(`You are not authorized to ${action} this application.`, "FORBIDDEN");
+};
+
 const includeRelations = {
     student: { select: { id: true, firstName: true, lastName: true, email: true } },
     university: { select: { id: true, name: true } },
@@ -21,9 +144,18 @@ const includeRelations = {
 };
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
-const createApplication = async (data) => {
-    const student = await prisma.student.findUnique({ where: { id: data.studentId }, select: { id: true, isActive: true } });
+const createApplication = async (data, currentUser = null) => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
+    const student = await prisma.student.findUnique({
+        where: { id: data.studentId },
+        select: STUDENT_AUTHZ_SELECT,
+    });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
+    assertStudentApplicationAccess(student, currentUser, "create an application for");
+
     if (student.isActive === false) throw AppError.badRequest("Cannot create an application for a student in Trash. Please restore the student first.", "STUDENT_IN_TRASH");
 
     const university = await prisma.university.findUnique({ where: { id: data.universityId }, select: { id: true } });
@@ -48,19 +180,39 @@ const createApplication = async (data) => {
 };
 
 // ─── GET ONE ──────────────────────────────────────────────────────────────────
-const getApplicationById = async (id) => {
+const getApplicationById = async (id, currentUser = null) => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
     const app = await prisma.application.findUnique({
         where: { id },
-        include: includeRelations,
+        include: {
+            ...includeRelations,
+            student: {
+                select: {
+                    id: true,
+                    firstName: true,
+                    lastName: true,
+                    email: true,
+                    assignedCounselorId: true,
+                    academicBackground: true,
+                    assignedCounselor: { select: { id: true, branchId: true } },
+                },
+            },
+        },
     });
     if (!app) throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
+
+    assertStudentApplicationAccess(app.student, currentUser, "view");
     return app;
 };
 
 // ─── LIST / FILTER ────────────────────────────────────────────────────────────
-const listApplications = async (query) => {
+const listApplications = async (query, currentUser = null) => {
+    const scopeWhere = buildApplicationScopeWhere(currentUser);
     const { studentId, universityId, status, priority, page, limit } = query;
-    const where = {};
+    const where = { ...scopeWhere };
 
     if (studentId) where.studentId = studentId;
     if (universityId) where.universityId = universityId;
@@ -95,9 +247,18 @@ const listApplications = async (query) => {
 };
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
-const updateApplication = async (id, data) => {
-    const existing = await prisma.application.findUnique({ where: { id } });
+const updateApplication = async (id, data, currentUser = null) => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
+    const existing = await prisma.application.findUnique({
+        where: { id },
+        include: { student: { select: STUDENT_AUTHZ_SELECT } },
+    });
     if (!existing) throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
+
+    assertStudentApplicationAccess(existing.student, currentUser, "update");
 
     const update = {};
     if (data.intake !== undefined) update.intake = data.intake?.trim() || null;
@@ -113,9 +274,18 @@ const updateApplication = async (id, data) => {
 };
 
 // ─── CHANGE STATUS ────────────────────────────────────────────────────────────
-const changeStatus = async (id, { status }) => {
-    const existing = await prisma.application.findUnique({ where: { id } });
+const changeStatus = async (id, { status }, currentUser = null) => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
+    const existing = await prisma.application.findUnique({
+        where: { id },
+        include: { student: { select: STUDENT_AUTHZ_SELECT } },
+    });
     if (!existing) throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
+
+    assertStudentApplicationAccess(existing.student, currentUser, "update");
 
     if (existing.status === status) {
         return existing;
@@ -137,7 +307,11 @@ const changeStatus = async (id, { status }) => {
 };
 
 // ─── RECORD OFFER ─────────────────────────────────────────────────────────────
-const recordOffer = async (applicationId, data) => {
+const recordOffer = async (applicationId, data, currentUser = null) => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
     return prisma.$transaction(async (tx) => {
         const [lockedApp] = await tx.$queryRaw`
             SELECT id FROM "Application" WHERE id = ${applicationId} FOR UPDATE
@@ -145,6 +319,12 @@ const recordOffer = async (applicationId, data) => {
         if (!lockedApp) {
             throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
         }
+
+        const appWithStudent = await tx.application.findUnique({
+            where: { id: applicationId },
+            select: { id: true, student: { select: STUDENT_AUTHZ_SELECT } },
+        });
+        assertStudentApplicationAccess(appWithStudent?.student, currentUser, "record an offer for");
 
         const offer = await tx.offer.create({
             data: {
@@ -159,7 +339,11 @@ const recordOffer = async (applicationId, data) => {
 };
 
 // ─── DELETE ───────────────────────────────────────────────────────────────────
-const deleteApplication = async (id) => {
+const deleteApplication = async (id, currentUser = null) => {
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
     return prisma.$transaction(async (tx) => {
         const [locked] = await tx.$queryRaw`
             SELECT id FROM "Application" WHERE id = ${id} FOR UPDATE
@@ -167,6 +351,12 @@ const deleteApplication = async (id) => {
         if (!locked) {
             throw AppError.notFound("Application not found.", "APPLICATION_NOT_FOUND");
         }
+
+        const appWithStudent = await tx.application.findUnique({
+            where: { id },
+            select: { id: true, student: { select: STUDENT_AUTHZ_SELECT } },
+        });
+        assertStudentApplicationAccess(appWithStudent?.student, currentUser, "delete");
 
         const [offersCount, visaCase] = await Promise.all([
             tx.offer.count({ where: { applicationId: id } }),
@@ -194,11 +384,12 @@ const deleteApplication = async (id) => {
 };
 
 // ─── DASHBOARD STATS ──────────────────────────────────────────────────────────
-const getDashboardStats = async () => {
+const getDashboardStats = async (currentUser = null) => {
+    const scopeWhere = buildApplicationScopeWhere(currentUser);
     const statuses = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "ACCEPTED", "REJECTED", "DEFERRED", "WITHDRAWN"];
 
     const counts = await Promise.all(
-        statuses.map((s) => prisma.application.count({ where: { status: s } }))
+        statuses.map((s) => prisma.application.count({ where: { ...scopeWhere, status: s } }))
     );
 
     const result = {};
@@ -219,4 +410,7 @@ module.exports = {
     recordOffer,
     deleteApplication,
     getDashboardStats,
+    assertStudentApplicationAccess,
+    buildApplicationScopeWhere,
+    resolveStudentBranchId,
 };

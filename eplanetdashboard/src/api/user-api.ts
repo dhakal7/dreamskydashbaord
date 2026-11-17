@@ -81,6 +81,16 @@ export const userApi = {
   },
 
   /**
+   * Updates a staff user profile (name, email, phone).
+   */
+  updateUserProfile(
+    id: string,
+    payload: { name?: string; firstName?: string; lastName?: string; email?: string; phone?: string | null }
+  ): Promise<any> {
+    return api.patch(`/users/${id}`, payload)
+  },
+
+  /**
    * Retrieves active branches.
    */
   getBranches(): Promise<Array<{ id: string; name: string; isActive: boolean }>> {

@@ -33,7 +33,11 @@ router.get(
     appointmentController.upcomingFollowUps
 );
 
-router.get("/:id", appointmentController.getOne);
+router.get(
+    "/:id",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    appointmentController.getOne
+);
 
 router.put(
     "/:id",

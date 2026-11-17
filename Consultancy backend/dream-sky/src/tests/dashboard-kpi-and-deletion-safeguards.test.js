@@ -475,7 +475,7 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
 
         await assert.rejects(
             async () => {
-                await applicationService.deleteApplication("app-with-offer");
+                await applicationService.deleteApplication("app-with-offer", { id: "user-superadmin-1", role: "SUPER_ADMIN" });
             },
             (err) => {
                 assert.ok(err instanceof AppError, "Expected error to be instance of AppError");
@@ -497,7 +497,7 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
 
         await assert.rejects(
             async () => {
-                await applicationService.deleteApplication("app-with-visa");
+                await applicationService.deleteApplication("app-with-visa", { id: "user-superadmin-1", role: "SUPER_ADMIN" });
             },
             (err) => {
                 assert.ok(err instanceof AppError, "Expected error to be instance of AppError");
@@ -519,7 +519,7 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
 
         await assert.rejects(
             async () => {
-                await applicationService.deleteApplication("app-with-both");
+                await applicationService.deleteApplication("app-with-both", { id: "user-superadmin-1", role: "SUPER_ADMIN" });
             },
             (err) => {
                 assert.ok(err instanceof AppError);
@@ -538,7 +538,7 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
         resetStore();
         store.applications.set("app-clean", { id: "app-clean", studentId: "s-4", status: "DRAFT" });
 
-        const result = await applicationService.deleteApplication("app-clean");
+        const result = await applicationService.deleteApplication("app-clean", { id: "user-superadmin-1", role: "SUPER_ADMIN" });
 
         // Verify lock acquisition happened before delete
         assert.ok(store.invocations.queryRawCalls.length >= 1, "Must acquire row lock via $queryRaw");
@@ -555,7 +555,7 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
 
         await assert.rejects(
             async () => {
-                await applicationService.deleteApplication("non-existent-app-id");
+                await applicationService.deleteApplication("non-existent-app-id", { id: "user-superadmin-1", role: "SUPER_ADMIN" });
             },
             (err) => {
                 assert.ok(err instanceof AppError);
@@ -575,7 +575,7 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
 
         await assert.rejects(
             async () => {
-                await applicationService.deleteApplication("app-race");
+                await applicationService.deleteApplication("app-race", { id: "user-superadmin-1", role: "SUPER_ADMIN" });
             },
             (err) => {
                 assert.ok(err instanceof AppError, "Must wrap P2025 in AppError");
@@ -590,7 +590,7 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
         resetStore();
         store.applications.set("app-order-check", { id: "app-order-check", studentId: "s-6", status: "DRAFT" });
 
-        await applicationService.deleteApplication("app-order-check");
+        await applicationService.deleteApplication("app-order-check", { id: "user-superadmin-1", role: "SUPER_ADMIN" });
 
         assert.ok(store.invocations.queryRawCalls.length > 0, "Row lock must be acquired");
         const lockCall = store.invocations.queryRawCalls[0];
@@ -602,7 +602,8 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
         resetStore();
         store.applications.set("app-offer-target", { id: "app-offer-target", studentId: "s-7", status: "SUBMITTED" });
 
-        const offer = await applicationService.recordOffer("app-offer-target", { type: "CONDITIONAL", details: { cond: "IELTS 7" } });
+        const currentUser = { id: "user-superadmin-1", role: "SUPER_ADMIN" };
+        const offer = await applicationService.recordOffer("app-offer-target", { type: "CONDITIONAL", details: { cond: "IELTS 7" } }, currentUser);
 
         // Verify lock acquired
         assert.ok(store.invocations.queryRawCalls.length >= 1, "recordOffer must acquire parent row lock");
@@ -617,7 +618,7 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
         // Verify missing parent throws 404
         await assert.rejects(
             async () => {
-                await applicationService.recordOffer("missing-app", { type: "UNCONDITIONAL" });
+                await applicationService.recordOffer("missing-app", { type: "UNCONDITIONAL" }, currentUser);
             },
             (err) => {
                 assert.ok(err instanceof AppError);
@@ -691,7 +692,7 @@ test("Isolated Offline Test Suite: Dashboard KPIs & Deletion Safeguards", async 
 
         await assert.rejects(
             async () => {
-                await applicationService.deleteApplication("app-tx-fail");
+                await applicationService.deleteApplication("app-tx-fail", { id: "user-superadmin-1", role: "SUPER_ADMIN" });
             },
             (err) => {
                 assert.strictEqual(err.message, "Simulated database connection failure");

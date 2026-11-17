@@ -244,6 +244,13 @@ function createMockPrismaStore() {
 }
 
 test("Phase 34E.3.2 — Production Advisory Lock Session Lifecycle Verification", async (t) => {
+  // Ensure ../prisma is stubbed before requiring notification.poller or server
+  const prismaPath = require.resolve("../prisma");
+  if (!require.cache[prismaPath]) {
+    const { mockPrisma: initialMockPrisma } = createMockPrismaStore();
+    require.cache[prismaPath] = { id: prismaPath, filename: prismaPath, loaded: true, exports: initialMockPrisma };
+  }
+
   const {
     startNotificationPoller,
     stopNotificationPoller,

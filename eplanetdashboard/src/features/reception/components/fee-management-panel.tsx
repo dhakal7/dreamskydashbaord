@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Wallet, Mail, CheckCircle2, Clock, AlertCircle, Search, DollarSign, RefreshCw, Plus, Trash2,
   Database, FileText, Lock, History, AlertTriangle
@@ -18,9 +18,13 @@ import {
 import { PersonAvatar } from '@/components/ui/avatar'
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 import { useStudentsStore } from '@/features/students/store'
+import { useStudents } from '@/hooks/use-students'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import type { FeePaymentStatus } from '@/types'
 import { api, isMockMode } from '@/lib/api-client'
-import { usePayments } from '@/hooks/use-payments'
+import { useAuthStore } from '@/store/auth-store'
+import { usePayments, paymentKeys } from '@/hooks/use-payments'
+import { useQueryClient } from '@tanstack/react-query'
 import type { ApiPaymentItem, ApiPaymentTransaction } from '@/api/payment-api'
 
 export interface DisplayFeeRecord {
@@ -40,12 +44,18 @@ export interface DisplayFeeRecord {
   lastReminderSentAt?: string
   notes?: string
   transactions?: ApiPaymentTransaction[]
-  source: 'database' | 'local_draft'
+  source: 'database'
 }
 
 export function FeeManagementPanel() {
   const storeStudents = useStudentsStore((s) => s.students)
+  const currentUser = useAuthStore((s) => s.currentUser)
+  const queryClient = useQueryClient()
   const isMock = isMockMode()
+  const canCreateFee = ['super_admin', 'branch_admin', 'front_desk'].includes(currentUser.role)
+  const canManageFees = canCreateFee
+  const canSendReminder = ['super_admin', 'branch_admin', 'front_desk', 'counselor'].includes(currentUser.role)
+  const canDeleteFee = currentUser.role === 'super_admin'
 
   // ── 1. TanStack Query for Live Database Payments ───────────────────────────
   const {
@@ -57,28 +67,10 @@ export function FeeManagementPanel() {
     isFetching: isPaymentsFetching,
   } = usePayments()
 
-  // ── 2. Local-only Drafts (Preserved safely in localStorage) ───────────────────
-  // We NEVER overwrite or clear 'dreamsky-fee-records' during API fetches
-  const [localDrafts] = useState<DisplayFeeRecord[]>(() => {
-    try {
-      const saved = localStorage.getItem('dreamsky-fee-records')
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((item: any) => ({
-            ...item,
-            source: 'local_draft' as const,
-          }))
-        }
-      }
-    } catch {}
-    return []
-  })
-
-  // ── 3. Combine & Tag Sources Without Merging or Overwriting ─────────────────
+  // ── 2. Database Fee List ────────────────────────────────────────────────────
   const combinedFees = useMemo<DisplayFeeRecord[]>(() => {
     if (isMock) {
-      return localDrafts
+      return []
     }
 
     const liveList: DisplayFeeRecord[] = (dbPayments || []).map((p: ApiPaymentItem) => ({
@@ -101,32 +93,13 @@ export function FeeManagementPanel() {
       source: 'database' as const,
     }))
 
-    // Live mode strictly renders verified database records only (never mixes mock/local_draft fees)
     return liveList
-  }, [isMock, dbPayments, localDrafts])
+  }, [isMock, dbPayments])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | FeePaymentStatus>('ALL')
-  const [sourceFilter, setSourceFilter] = useState<'ALL' | 'database' | 'local_draft'>('ALL')
-
-  // Students list for Fee Creation picker
-  const [students, setStudents] = useState<Array<{ id: string; name: string; email?: string; phone?: string; studentId?: string }>>([])
-
-  const allStudents = useMemo(() => {
-    const map = new Map<string, { id: string; name: string; email?: string; phone?: string; studentId?: string }>()
-
-    students.forEach((s) => map.set(s.id, s))
-
-    if (isMock) {
-      storeStudents.forEach((s) => {
-        if (!map.has(s.id)) {
-          map.set(s.id, { id: s.id, name: s.name, email: s.email, phone: s.phone, studentId: s.studentId })
-        }
-      })
-    }
-
-    return Array.from(map.values())
-  }, [isMock, students, storeStudents])
+  const [studentSearch, setStudentSearch] = useState('')
+  const debouncedStudentSearch = useDebouncedValue(studentSearch.trim(), 300)
 
   // Modals & Inspection States
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -136,6 +109,7 @@ export function FeeManagementPanel() {
   const [paidAmountInput, setPaidAmountInput] = useState('0')
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [notesInput, setNotesInput] = useState('')
+  const [isCreatingFee, setIsCreatingFee] = useState(false)
 
   // Edit Modal State
   const [editRecord, setEditRecord] = useState<DisplayFeeRecord | null>(null)
@@ -143,11 +117,20 @@ export function FeeManagementPanel() {
   const [newPaidAmount, setNewPaidAmount] = useState<number>(0)
   const [newStatus, setNewStatus] = useState<FeePaymentStatus>('FULL_PAID')
   const [updateNotes, setUpdateNotes] = useState('')
+  const [isUpdatingFee, setIsUpdatingFee] = useState(false)
+
+  // Installment Modal State
+  const [installmentRecord, setInstallmentRecord] = useState<DisplayFeeRecord | null>(null)
+  const [installmentAmountInput, setInstallmentAmountInput] = useState('')
+  const [installmentMethod, setInstallmentMethod] = useState('Cash')
+  const [installmentNotes, setInstallmentNotes] = useState('')
+  const [isRecordingInstallment, setIsRecordingInstallment] = useState(false)
 
   // Mail Modal State
   const [mailRecord, setMailRecord] = useState<DisplayFeeRecord | null>(null)
   const [emailSubject, setEmailSubject] = useState('')
   const [emailBody, setEmailBody] = useState('')
+  const [isSendingReminder, setIsSendingReminder] = useState(false)
 
   // Delete Confirmation State
   const [deleteRecord, setDeleteRecord] = useState<DisplayFeeRecord | null>(null)
@@ -155,41 +138,44 @@ export function FeeManagementPanel() {
   // Transaction History Modal State (Read-Only)
   const [historyRecord, setHistoryRecord] = useState<DisplayFeeRecord | null>(null)
 
-  // Fetch student options for student picker
-  const fetchStudents = async () => {
-    try {
-      const res = await api.get<any>('/students?limit=500')
-      let list: any[] = []
+  // Server-side searchable student options for Fee Creation picker
+  const {
+    data: liveStudentsData,
+    isLoading: isStudentsLoading,
+    isError: isStudentsError,
+    refetch: refetchStudents,
+  } = useStudents(
+    isMock
+      ? { limit: 500 }
+      : {
+          limit: 50,
+          search: debouncedStudentSearch || undefined,
+          stageIn: 'LEAD,PROSPECT,ENROLLED,APPLIED,OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED,DEPARTED,LOST',
+        },
+    { enabled: isCreateOpen && !isMock }
+  )
 
-      if (Array.isArray(res)) {
-        list = res
-      } else if (res && Array.isArray(res.data)) {
-        list = res.data
-      } else if (res && Array.isArray(res.students)) {
-        list = res.students
-      }
-
-      if (list.length > 0) {
-        setStudents(
-          list.map((s) => ({
-            id: s.id,
-            name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || s.name || 'Unknown Student',
-            email: s.email || '',
-            phone: s.phone || '',
-            studentId: s.studentId || s.id,
-          }))
-        )
-      }
-    } catch {
-      // Retain fallback list
+  const allStudents = useMemo(() => {
+    if (isMock) {
+      return storeStudents.map((s) => ({
+        id: s.id,
+        name: s.name,
+        email: s.email,
+        phone: s.phone,
+        studentId: s.studentId,
+      }))
     }
-  }
+    const list = liveStudentsData?.students || []
+    return list.map((s) => ({
+      id: s.id,
+      name: `${s.firstName || ''} ${s.lastName || ''}`.trim() || 'Unknown Student',
+      email: s.email || '',
+      phone: s.phone || '',
+      studentId: s.id,
+    }))
+  }, [isMock, liveStudentsData, storeStudents])
 
-  useEffect(() => {
-    fetchStudents()
-  }, [])
-
-  // Computed Statistics (based on combined fees or filtered source)
+  // Computed Statistics
   const stats = useMemo(() => {
     const list = combinedFees
     const totalCollected = list.reduce((acc, f) => acc + (f.paidAmount || 0), 0)
@@ -197,10 +183,8 @@ export function FeeManagementPanel() {
     const fullyPaidCount = list.filter((f) => f.status === 'FULL_PAID').length
     const dueCount = list.filter((f) => f.status === 'DUE').length
     const unpaidCount = list.filter((f) => f.status === 'UNPAID').length
-    const dbCount = list.filter((f) => f.source === 'database').length
-    const localDraftCount = list.filter((f) => f.source === 'local_draft').length
 
-    return { totalCollected, totalDue, fullyPaidCount, dueCount, unpaidCount, dbCount, localDraftCount }
+    return { totalCollected, totalDue, fullyPaidCount, dueCount, unpaidCount }
   }, [combinedFees])
 
   // Filtered Fee Roster
@@ -211,10 +195,9 @@ export function FeeManagementPanel() {
         fee.studentEmail.toLowerCase().includes(searchQuery.toLowerCase()) ||
         fee.feeCategory.toLowerCase().includes(searchQuery.toLowerCase())
       const matchesStatus = statusFilter === 'ALL' || fee.status === statusFilter
-      const matchesSource = sourceFilter === 'ALL' || fee.source === sourceFilter
-      return matchesSearch && matchesStatus && matchesSource
+      return matchesSearch && matchesStatus
     })
-  }, [combinedFees, searchQuery, statusFilter, sourceFilter])
+  }, [combinedFees, searchQuery, statusFilter])
 
   // Open Edit Modal
   function handleOpenUpdateModal(record: DisplayFeeRecord) {
@@ -227,13 +210,25 @@ export function FeeManagementPanel() {
 
   // ── Handle Fee Status Update ───────────────────────────────
   async function handleSaveFeeStatus() {
-    if (!editRecord) return
-    const total = Math.max(0, Number(newTotalAmount))
-    const paid = Math.min(Math.max(0, Number(newPaidAmount)), total)
+    if (!editRecord || !canManageFees || isUpdatingFee) return
+    const total = Number(newTotalAmount)
+    const collected = editRecord.paidAmount
+
+    if (!Number.isFinite(total) || total <= 0) {
+      toast.error('Total fee amount must be greater than 0')
+      return
+    }
+    if (total < collected) {
+      toast.error(`Total amount cannot be lower than already collected amount (${editRecord.currency} ${collected.toLocaleString()})`)
+      return
+    }
+
     let finalStatus: FeePaymentStatus = newStatus
-    if (paid >= total && total > 0) finalStatus = 'FULL_PAID'
-    else if (paid > 0 && paid < total) finalStatus = 'DUE'
-    else if (paid === 0) finalStatus = 'UNPAID'
+    if (newStatus !== 'CANCELLED') {
+      if (collected >= total && total > 0) finalStatus = 'FULL_PAID'
+      else if (collected > 0 && collected < total) finalStatus = 'DUE'
+      else finalStatus = 'UNPAID'
+    }
 
     if (isMock) {
       toast.success('Fee record updated (demo mode)')
@@ -241,27 +236,114 @@ export function FeeManagementPanel() {
       return
     }
 
+    setIsUpdatingFee(true)
     try {
-      await api.patch(`/payments/${editRecord.id}`, { totalAmount: total, paidAmount: paid, status: finalStatus, notes: updateNotes })
+      await api.patch(`/payments/${editRecord.id}`, {
+        totalAmount: total,
+        status: finalStatus,
+        notes: updateNotes.trim() || undefined,
+      })
       toast.success('Payment record updated successfully')
-      refetchPayments()
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: paymentKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['payments'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      ])
+      setEditRecord(null)
     } catch (err: any) {
       toast.error(err?.message || 'Failed to update payment record')
+    } finally {
+      setIsUpdatingFee(false)
     }
-    setEditRecord(null)
+  }
+
+  function handleOpenInstallmentModal(record: DisplayFeeRecord) {
+    setInstallmentRecord(record)
+    setInstallmentAmountInput(record.dueAmount > 0 ? String(record.dueAmount) : '')
+    setInstallmentMethod('Cash')
+    setInstallmentNotes('')
+  }
+
+  // ── Handle Record Subsequent Installment ───────────────────
+  async function handleRecordInstallment() {
+    if (!installmentRecord || !canManageFees || isRecordingInstallment) return
+    const amount = Number(installmentAmountInput)
+    const remainingDue = Math.max(0, installmentRecord.dueAmount)
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast.error('Installment amount must be greater than 0')
+      return
+    }
+    if (amount > remainingDue) {
+      toast.error(`Installment amount cannot exceed remaining due (${installmentRecord.currency} ${remainingDue.toLocaleString()})`)
+      return
+    }
+    if (!installmentMethod.trim()) {
+      toast.error('Please select a payment method')
+      return
+    }
+
+    if (isMock) {
+      toast.success('Installment recorded (demo mode)')
+      setInstallmentRecord(null)
+      return
+    }
+
+    setIsRecordingInstallment(true)
+    try {
+      await api.post(`/payments/${installmentRecord.id}/transactions`, {
+        amount,
+        paymentMethod: installmentMethod,
+        notes: installmentNotes.trim() || undefined,
+      })
+      toast.success('Installment recorded successfully')
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: paymentKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['payments'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      ])
+      setInstallmentRecord(null)
+      setInstallmentAmountInput('')
+      setInstallmentNotes('')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to record installment')
+    } finally {
+      setIsRecordingInstallment(false)
+    }
   }
 
   // ── Handle Create New Fee Record ───────────────────────────
   async function handleCreateFeeRecord() {
+    if (!canCreateFee) {
+      toast.error('You do not have permission to create fee records')
+      return
+    }
     if (!selectedStudentId) {
       toast.error('Please select a student')
       return
     }
-    const total = Number(totalAmountInput) || 0
-    const paid = Number(paidAmountInput) || 0
+    if (!feeCategory.trim()) {
+      toast.error('Please select a fee category')
+      return
+    }
 
-    if (total <= 0) {
+    const total = Number(totalAmountInput)
+    const paid = Number(paidAmountInput || 0)
+
+    if (!Number.isFinite(total) || total <= 0) {
       toast.error('Total amount must be greater than 0')
+      return
+    }
+    if (!Number.isFinite(paid) || paid < 0) {
+      toast.error('Paid amount cannot be negative')
+      return
+    }
+    if (paid > total) {
+      toast.error('Paid amount cannot exceed total amount')
+      return
+    }
+    if (paid > 0 && !paymentMethod.trim()) {
+      toast.error('Please select a payment method')
       return
     }
 
@@ -271,22 +353,30 @@ export function FeeManagementPanel() {
       return
     }
 
+    setIsCreatingFee(true)
     try {
       await api.post('/payments', {
         studentId: selectedStudentId,
-        feeCategory,
+        feeCategory: feeCategory.trim(),
         totalAmount: total,
         paidAmount: paid,
         paymentMethod,
-        notes: notesInput,
+        notes: notesInput.trim() || undefined,
       })
       toast.success('Student fee record created successfully')
-      refetchPayments()
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: paymentKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['payments'] }),
+        queryClient.invalidateQueries({ queryKey: ['dashboard'] }),
+      ])
       setIsCreateOpen(false)
       setSelectedStudentId('')
+      setPaidAmountInput('0')
       setNotesInput('')
     } catch (err: any) {
       toast.error(err?.message || 'Failed to create fee record')
+    } finally {
+      setIsCreatingFee(false)
     }
   }
 
@@ -303,21 +393,35 @@ export function FeeManagementPanel() {
 
   // ── Handle Send Fee Due Mail ───────────────────────────────
   async function handleSendFeeEmail() {
-    if (!mailRecord) return
+    if (!mailRecord || !canSendReminder || isSendingReminder) return
+    if (mailRecord.dueAmount <= 0) {
+      toast.error('Cannot send reminder when there is no outstanding balance')
+      return
+    }
+    if (!mailRecord.studentEmail || !mailRecord.studentEmail.includes('@')) {
+      toast.error('Student does not have a valid email address on record')
+      return
+    }
     if (isMock) {
       toast.success('Fee reminder email simulated (demo mode)')
       setMailRecord(null)
       return
     }
 
+    setIsSendingReminder(true)
     try {
       await api.post(`/payments/${mailRecord.id}/remind`)
       toast.success(`Fee reminder sent to ${mailRecord.studentName}`)
-      refetchPayments()
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: paymentKeys.all }),
+        queryClient.invalidateQueries({ queryKey: ['payments'] }),
+      ])
+      setMailRecord(null)
     } catch (err: any) {
       toast.error(err?.message || 'Failed to dispatch payment reminder email')
+    } finally {
+      setIsSendingReminder(false)
     }
-    setMailRecord(null)
   }
 
   // ── Handle Delete Fee Record (Preserve Financial Audit History) ────────────
@@ -370,14 +474,16 @@ export function FeeManagementPanel() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                className="gap-1.5 bg-primary/80 hover:bg-primary/90 text-primary-foreground text-xs h-8"
-                onClick={() => setIsCreateOpen(true)}
-              >
-                <Plus className="size-3.5" />
-                Add Student Fee
-              </Button>
+              {canCreateFee && (
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-primary/80 hover:bg-primary/90 text-primary-foreground text-xs h-8"
+                  onClick={() => setIsCreateOpen(true)}
+                >
+                  <Plus className="size-3.5" />
+                  Add Student Fee
+                </Button>
+              )}
               <Badge variant="outline" className="text-xs py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
                 <CheckCircle2 className="size-3 mr-1 text-emerald-600" />
                 Fully Paid: {stats.fullyPaidCount}
@@ -437,15 +543,15 @@ export function FeeManagementPanel() {
             </p>
           </div>
           <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
-            <p className="text-[11px] font-medium text-muted-foreground">Database Confirmed</p>
+            <p className="text-[11px] font-medium text-muted-foreground">Total Fee Records</p>
             <p className="mt-1 text-lg font-bold text-foreground">
-              {stats.dbCount} <span className="text-xs font-normal text-muted-foreground">records</span>
+              {combinedFees.length} <span className="text-xs font-normal text-muted-foreground">records</span>
             </p>
           </div>
           <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
-            <p className="text-[11px] font-medium text-muted-foreground">Local Drafts (Offline)</p>
+            <p className="text-[11px] font-medium text-muted-foreground">Outstanding Fee Records</p>
             <p className="mt-1 text-lg font-bold text-amber-700">
-              {stats.localDraftCount} <span className="text-xs font-normal text-muted-foreground">drafts</span>
+              {stats.dueCount + stats.unpaidCount} <span className="text-xs font-normal text-muted-foreground">pending</span>
             </p>
           </div>
         </div>
@@ -463,45 +569,6 @@ export function FeeManagementPanel() {
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            {/* Record Source Filter (Database vs Local Draft) */}
-            <div className="flex items-center rounded-md border border-border/70 p-0.5 bg-muted/30 text-xs mr-1">
-              <button
-                type="button"
-                onClick={() => setSourceFilter('ALL')}
-                className={`px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                  sourceFilter === 'ALL'
-                    ? 'bg-background shadow-xs text-foreground font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                All Sources ({combinedFees.length})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSourceFilter('database')}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                  sourceFilter === 'database'
-                    ? 'bg-background shadow-xs text-emerald-700 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Database className="size-3" />
-                Live DB ({stats.dbCount})
-              </button>
-              <button
-                type="button"
-                onClick={() => setSourceFilter('local_draft')}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-colors ${
-                  sourceFilter === 'local_draft'
-                    ? 'bg-background shadow-xs text-amber-700 font-semibold'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <FileText className="size-3" />
-                Local Drafts ({stats.localDraftCount})
-              </button>
-            </div>
-
             {/* Status Filter */}
             <div className="flex items-center gap-1">
               <Button
@@ -539,16 +606,6 @@ export function FeeManagementPanel() {
             </div>
           </div>
         </div>
-
-        {/* Local Draft Notice when local_draft filter is active */}
-        {sourceFilter === 'local_draft' && (
-          <div className="rounded-md border border-amber-200 bg-amber-50/60 p-2.5 text-xs text-amber-800 flex items-center gap-2">
-            <FileText className="size-4 text-amber-600 shrink-0" />
-            <span>
-              <strong>Local Drafts View:</strong> These records are stored locally on this workstation (or sample templates) and have not been committed to the database. They are preserved intact and will not overwrite confirmed client records.
-            </span>
-          </div>
-        )}
 
         {/* Fee Collection Roster Table */}
         <div className="rounded-lg border border-border/70 overflow-hidden">
@@ -593,6 +650,7 @@ export function FeeManagementPanel() {
                   const isPaid = fee.status === 'FULL_PAID'
                   const isDue = fee.status === 'DUE'
                   const isUnpaid = fee.status === 'UNPAID'
+                  const isCancelled = fee.status === 'CANCELLED'
                   const isDatabase = fee.source === 'database'
                   const txCount = fee.transactions ? fee.transactions.length : 0
 
@@ -652,6 +710,11 @@ export function FeeManagementPanel() {
                             Unpaid
                           </Badge>
                         )}
+                        {isCancelled && (
+                          <Badge variant="secondary" className="text-muted-foreground">
+                            Cancelled
+                          </Badge>
+                        )}
                         {fee.lastReminderSentAt && (
                           <p className="text-[9px] text-muted-foreground mt-0.5">
                             Reminder: {fee.lastReminderSentAt}
@@ -673,17 +736,31 @@ export function FeeManagementPanel() {
                             </Button>
                           )}
 
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-[11px] gap-1 px-2 text-muted-foreground hover:text-foreground"
-                            onClick={() => handleOpenUpdateModal(fee)}
-                          >
-                            <RefreshCw className="size-3 text-muted-foreground" />
-                            Update Status
-                          </Button>
+                          {canManageFees && !isPaid && !isCancelled && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[11px] gap-1 px-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                              onClick={() => handleOpenInstallmentModal(fee)}
+                            >
+                              <Plus className="size-3" />
+                              Installment
+                            </Button>
+                          )}
 
-                          {!isPaid && (
+                          {canManageFees && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[11px] gap-1 px-2 text-muted-foreground hover:text-foreground"
+                              onClick={() => handleOpenUpdateModal(fee)}
+                            >
+                              <RefreshCw className="size-3 text-muted-foreground" />
+                              Update Fee
+                            </Button>
+                          )}
+
+                          {!isPaid && !isCancelled && canSendReminder && (
                             <Button
                               size="sm"
                               variant="default"
@@ -695,15 +772,17 @@ export function FeeManagementPanel() {
                             </Button>
                           )}
 
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-[11px] gap-1 px-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                            onClick={() => setDeleteRecord(fee)}
-                          >
-                            <Trash2 className="size-3" />
-                            Delete
-                          </Button>
+                          {canDeleteFee && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-[11px] gap-1 px-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                              onClick={() => setDeleteRecord(fee)}
+                            >
+                              <Trash2 className="size-3" />
+                              Delete
+                            </Button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -715,8 +794,8 @@ export function FeeManagementPanel() {
         </div>
       </CardContent>
 
-      {/* CREATE STUDENT FEE MODAL (Phase 3A Guarded) */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+      {/* CREATE STUDENT FEE MODAL */}
+      <Dialog open={isCreateOpen && canCreateFee} onOpenChange={setIsCreateOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
@@ -728,14 +807,6 @@ export function FeeManagementPanel() {
             </DialogDescription>
           </DialogHeader>
 
-          {/* Phase 3A Mutation Warning */}
-          <div className="rounded-md border border-amber-200 bg-amber-50/80 p-2.5 text-xs text-amber-800 flex items-center gap-2">
-            <Lock className="size-4 text-amber-600 shrink-0" />
-            <span>
-              <strong>Phase 3A Notice:</strong> Fee creation is locked during read-only verification to prevent unauthorized financial writes.
-            </span>
-          </div>
-
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <SearchableStudentPicker
@@ -743,8 +814,23 @@ export function FeeManagementPanel() {
                 students={allStudents}
                 value={selectedStudentId}
                 onChange={setSelectedStudentId}
-                placeholder="Search student by name, email, or phone..."
+                onSearchChange={isMock ? undefined : setStudentSearch}
+                searching={isMock ? false : isStudentsLoading}
+                placeholder={isStudentsLoading ? 'Searching students...' : 'Search student by name, email, or phone...'}
+                emptyMessage={debouncedStudentSearch ? 'No matching students found.' : 'Type to search students...'}
               />
+              {!isMock && isStudentsError && (
+                <div className="flex items-center justify-between rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
+                  <span>Unable to load students from server.</span>
+                  <button
+                    type="button"
+                    onClick={() => refetchStudents()}
+                    className="font-semibold underline hover:no-underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -795,6 +881,7 @@ export function FeeManagementPanel() {
                   <SelectItem value="Fonepay">Fonepay / QR Code</SelectItem>
                   <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
                   <SelectItem value="Card">Credit / Debit Card</SelectItem>
+                  <SelectItem value="Cheque">Cheque</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -811,38 +898,29 @@ export function FeeManagementPanel() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(false)}>
+            <Button variant="outline" size="sm" onClick={() => setIsCreateOpen(false)} disabled={isCreatingFee}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleCreateFeeRecord} disabled={true}>
-              <Lock className="size-3 mr-1" />
-              Locked (Phase 3A Read-Only)
+            <Button size="sm" onClick={handleCreateFeeRecord} disabled={isCreatingFee || !canCreateFee}>
+              {isCreatingFee ? 'Saving...' : 'Save Fee Record'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* UPDATE FEE STATUS MODAL (Phase 3A Guarded) */}
-      {editRecord && (
+      {/* UPDATE FEE MODAL */}
+      {editRecord && canManageFees && (
         <Dialog open={!!editRecord} onOpenChange={() => setEditRecord(null)}>
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-base font-bold">
                 <DollarSign className="size-4 text-emerald-600" />
-                Update Fee Status — {editRecord.studentName}
+                Update Fee — {editRecord.studentName}
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Inspect fee details and outstanding balance.
+                Update total fee amount or notes. Use Record Installment to log new payments.
               </DialogDescription>
             </DialogHeader>
-
-            {/* Phase 3A Mutation Warning */}
-            <div className="rounded-md border border-amber-200 bg-amber-50/80 p-2.5 text-xs text-amber-800 flex items-center gap-2">
-              <Lock className="size-4 text-amber-600 shrink-0" />
-              <span>
-                <strong>Phase 3A Notice:</strong> Modifying payment amounts or recording transactions is locked in read-only mode.
-              </span>
-            </div>
 
             <div className="space-y-4 py-2">
               <div className="rounded-lg border border-border/70 bg-muted/20 p-3 text-xs space-y-1">
@@ -862,38 +940,45 @@ export function FeeManagementPanel() {
                   <label className="text-xs font-semibold">Total Fee Amount ({editRecord.currency})</label>
                   <Input
                     type="number"
+                    min={editRecord.paidAmount}
                     value={newTotalAmount}
                     onChange={(e) => setNewTotalAmount(Number(e.target.value))}
                     className="h-9 text-xs font-semibold"
-                    disabled
+                    disabled={isUpdatingFee}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold">Amount Paid ({editRecord.currency})</label>
+                  <label className="text-xs font-semibold">Collected Paid ({editRecord.currency})</label>
                   <Input
                     type="number"
                     value={newPaidAmount}
-                    onChange={(e) => setNewPaidAmount(Number(e.target.value))}
-                    className="h-9 text-xs font-semibold text-emerald-600"
+                    className="h-9 text-xs font-semibold text-emerald-600 bg-muted/40"
                     disabled
                   />
                 </div>
               </div>
               <p className="text-[11px] font-medium text-amber-600">
                 Remaining Due: {editRecord.currency}{' '}
-                {Math.max(0, Number(newTotalAmount) - Number(newPaidAmount)).toLocaleString()}
+                {Math.max(0, Number(newTotalAmount) - editRecord.paidAmount).toLocaleString()}
               </p>
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold">Payment Status</label>
-                <Select value={newStatus} onValueChange={(val) => setNewStatus(val as FeePaymentStatus)} disabled>
+                <Select value={newStatus} onValueChange={(val) => setNewStatus(val as FeePaymentStatus)} disabled={isUpdatingFee}>
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="FULL_PAID">Fully Paid</SelectItem>
-                    <SelectItem value="DUE">Partial / Fee Due</SelectItem>
-                    <SelectItem value="UNPAID">Unpaid</SelectItem>
+                    <SelectItem value="FULL_PAID" disabled={editRecord.paidAmount < Number(newTotalAmount)}>
+                      Fully Paid
+                    </SelectItem>
+                    <SelectItem value="DUE" disabled={editRecord.paidAmount <= 0 || editRecord.paidAmount >= Number(newTotalAmount)}>
+                      Partial / Fee Due
+                    </SelectItem>
+                    <SelectItem value="UNPAID" disabled={editRecord.paidAmount > 0}>
+                      Unpaid
+                    </SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -905,26 +990,109 @@ export function FeeManagementPanel() {
                   value={updateNotes}
                   onChange={(e) => setUpdateNotes(e.target.value)}
                   className="h-9 text-xs"
-                  disabled
+                  disabled={isUpdatingFee}
                 />
               </div>
             </div>
 
             <DialogFooter>
-              <Button variant="outline" size="sm" onClick={() => setEditRecord(null)}>
-                Close
+              <Button variant="outline" size="sm" onClick={() => setEditRecord(null)} disabled={isUpdatingFee}>
+                Cancel
               </Button>
-              <Button size="sm" onClick={handleSaveFeeStatus} disabled={true}>
-                <Lock className="size-3 mr-1" />
-                Locked (Phase 3A Read-Only)
+              <Button size="sm" onClick={handleSaveFeeStatus} disabled={isUpdatingFee}>
+                {isUpdatingFee ? 'Saving...' : 'Save Fee Update'}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       )}
 
-      {/* SEND FEE DUE EMAIL MODAL (Phase 3A Guarded) */}
-      {mailRecord && (
+      {/* RECORD INSTALLMENT MODAL */}
+      {installmentRecord && canManageFees && (
+        <Dialog open={!!installmentRecord} onOpenChange={() => setInstallmentRecord(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                <Plus className="size-4 text-emerald-600" />
+                Record Installment — {installmentRecord.studentName}
+              </DialogTitle>
+              <DialogDescription className="text-xs">
+                Log a subsequent payment transaction against {installmentRecord.feeCategory}. Existing transactions remain preserved.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg border border-border/70 bg-muted/20 p-3 text-xs grid grid-cols-3 gap-2">
+                <div>
+                  <p className="text-muted-foreground">Total</p>
+                  <p className="font-semibold">{installmentRecord.currency} {installmentRecord.totalAmount.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Collected</p>
+                  <p className="font-semibold text-emerald-600">{installmentRecord.currency} {installmentRecord.paidAmount.toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Remaining Due</p>
+                  <p className="font-semibold text-amber-600">{installmentRecord.currency} {installmentRecord.dueAmount.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold">Installment Amount ({installmentRecord.currency})</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={installmentRecord.dueAmount}
+                  value={installmentAmountInput}
+                  onChange={(e) => setInstallmentAmountInput(e.target.value)}
+                  placeholder="Enter amount collected"
+                  className="h-9 text-xs"
+                  disabled={isRecordingInstallment}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold">Payment Method</label>
+                <Select value={installmentMethod} onValueChange={setInstallmentMethod} disabled={isRecordingInstallment}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue placeholder="Select payment method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cash">Cash at Front Desk</SelectItem>
+                    <SelectItem value="Fonepay">Fonepay / QR Code</SelectItem>
+                    <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                    <SelectItem value="Card">Credit / Debit Card</SelectItem>
+                    <SelectItem value="Cheque">Cheque</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold">Notes / Receipt Reference (Optional)</label>
+                <Input
+                  value={installmentNotes}
+                  onChange={(e) => setInstallmentNotes(e.target.value)}
+                  placeholder="e.g. Installment #2, Receipt #1055"
+                  className="h-9 text-xs"
+                  disabled={isRecordingInstallment}
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={() => setInstallmentRecord(null)} disabled={isRecordingInstallment}>
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleRecordInstallment} disabled={isRecordingInstallment}>
+                {isRecordingInstallment ? 'Recording...' : 'Record Installment'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* SEND FEE DUE EMAIL MODAL */}
+      {mailRecord && canSendReminder && (
         <Dialog open={!!mailRecord} onOpenChange={() => setMailRecord(null)}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
@@ -933,17 +1101,9 @@ export function FeeManagementPanel() {
                 Send Fee Due Email Notice
               </DialogTitle>
               <DialogDescription className="text-xs">
-                Inspect draft notice for {mailRecord.studentName}.
+                Dispatch official server-generated fee reminder for {mailRecord.studentName}.
               </DialogDescription>
             </DialogHeader>
-
-            {/* Phase 3A Mutation Warning */}
-            <div className="rounded-md border border-amber-200 bg-amber-50/80 p-2.5 text-xs text-amber-800 flex items-center gap-2">
-              <Lock className="size-4 text-amber-600 shrink-0" />
-              <span>
-                <strong>Phase 3A Notice:</strong> Email dispatch is locked during read-only verification to prevent external communications.
-              </span>
-            </div>
 
             <div className="space-y-3 py-2">
               <div className="grid grid-cols-2 gap-3 text-xs rounded-lg border border-border/70 bg-muted/20 p-3">
@@ -961,40 +1121,54 @@ export function FeeManagementPanel() {
                 </div>
               </div>
 
+              {(mailRecord.dueAmount <= 0 || !mailRecord.studentEmail || !mailRecord.studentEmail.includes('@')) && (
+                <div className="rounded-md border border-rose-200 bg-rose-50/80 p-2.5 text-xs text-rose-800 flex items-center gap-2">
+                  <AlertTriangle className="size-4 text-rose-600 shrink-0" />
+                  <span>
+                    {mailRecord.dueAmount <= 0
+                      ? 'Reminder disabled: there is no outstanding balance on this fee record.'
+                      : 'Reminder disabled: student does not have a valid email address on record.'}
+                  </span>
+                </div>
+              )}
+
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold">Email Subject</label>
+                <label className="text-xs font-semibold">Email Subject (Server Preview)</label>
                 <Input
                   value={emailSubject}
-                  onChange={(e) => setEmailSubject(e.target.value)}
-                  className="h-9 text-xs"
-                  disabled
+                  readOnly
+                  className="h-9 text-xs bg-muted/20"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold">Email Body Message</label>
+                <label className="text-xs font-semibold">Email Body Preview (Generated by Server)</label>
                 <textarea
                   rows={6}
                   value={emailBody}
-                  onChange={(e) => setEmailBody(e.target.value)}
-                  className="w-full rounded-md border border-border p-2.5 text-xs font-sans focus:outline-none focus:ring-1 focus:ring-primary bg-muted/10"
-                  disabled
+                  readOnly
+                  className="w-full rounded-md border border-border p-2.5 text-xs font-sans focus:outline-none bg-muted/20"
                 />
               </div>
             </div>
 
             <DialogFooter>
-              <Button variant="outline" size="sm" onClick={() => setMailRecord(null)}>
-                Close
+              <Button variant="outline" size="sm" onClick={() => setMailRecord(null)} disabled={isSendingReminder}>
+                Cancel
               </Button>
               <Button
                 size="sm"
-                className="gap-1.5 bg-amber-600 text-white"
+                className="gap-1.5 bg-amber-600 hover:bg-amber-700 text-white"
                 onClick={handleSendFeeEmail}
-                disabled={true}
+                disabled={
+                  isSendingReminder ||
+                  mailRecord.dueAmount <= 0 ||
+                  !mailRecord.studentEmail ||
+                  !mailRecord.studentEmail.includes('@')
+                }
               >
-                <Lock className="size-3.5" />
-                Locked (Phase 3A Read-Only)
+                <Mail className="size-3.5" />
+                {isSendingReminder ? 'Sending...' : 'Send Reminder Email'}
               </Button>
             </DialogFooter>
           </DialogContent>

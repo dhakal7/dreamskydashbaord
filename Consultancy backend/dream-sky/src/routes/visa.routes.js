@@ -27,7 +27,11 @@ router.get(
     visaController.list
 );
 
-router.get("/:id", visaController.getOne);
+router.get(
+    "/:id",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+    visaController.getOne
+);
 
 router.put(
     "/:id",

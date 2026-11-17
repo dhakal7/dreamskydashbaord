@@ -1,10 +1,22 @@
 import { defineConfig } from 'vite'
+import { configDefaults } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
+declare module 'vite' {
+  interface UserConfig {
+    test?: {
+      exclude?: string[]
+    }
+  }
+}
+
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  test: {
+    exclude: [...configDefaults.exclude, 'src/tests/production-cleanliness.test.mjs'],
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

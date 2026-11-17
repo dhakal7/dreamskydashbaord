@@ -33,29 +33,28 @@ const requireRole = (...allowedRoles) => {
 };
 
 /**
- * requireOwnStudentPortal — ensures a STUDENT user can only access their own data.
+ * requireOwnStudentPortal — ensures ONLY a STUDENT user can access their own portal data.
  * Compares req.user.studentId with req.params.studentId (or req.body.studentId).
  *
- * Usage:
- *   router.get("/students/:studentId/profile",
- *     requireAuth,
- *     requireOwnStudentPortal,
- *     controller.getProfile
- *   );
- *
- * Staff roles bypass this check — they can see any student.
- * STUDENT role can only see their own studentId.
+ * All non-STUDENT roles (TEACHER, REFERRAL_AGENT, FRONT_DESK, COUNSELOR, BRANCH_ADMIN,
+ * SUPER_ADMIN) are denied with 403 STUDENT_PORTAL_ACCESS_DENIED on /api/portal/:studentId/*.
+ * Staff and administrators access student records through their dedicated CRM routes.
  */
 const requireOwnStudentPortal = (req, res, next) => {
     const { role, studentId: tokenStudentId } = req.user;
 
-    // Staff roles can always proceed
-    const staffRoles = ["SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK", "TEACHER", "REFERRAL_AGENT"];
-    if (staffRoles.includes(role)) return next();
+    if (role !== "STUDENT") {
+        return next(
+            AppError.forbidden(
+                "Student portal routes are restricted to the student account owner.",
+                "STUDENT_PORTAL_ACCESS_DENIED"
+            )
+        );
+    }
 
     // For STUDENT role: check they're accessing only their own record
     const requestedStudentId = req.params.studentId || req.body.studentId;
-    if (!requestedStudentId || tokenStudentId !== requestedStudentId) {
+    if (!requestedStudentId || !tokenStudentId || tokenStudentId !== requestedStudentId) {
         return next(
             AppError.forbidden("You can only access your own portal data.", "STUDENT_PORTAL_ACCESS_DENIED")
         );

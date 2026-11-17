@@ -19,17 +19,124 @@ const VALID_FIELDS_OF_STUDY = [
 
 // ─── Countries ────────────────────────────────────────────────────────────────
 
+const COUNTRY_TOKEN_ALIASES = {
+  uk: "united kingdom",
+  "u.k.": "united kingdom",
+  britain: "united kingdom",
+  usa: "united states",
+  "u.s.a.": "united states",
+  us: "united states",
+  "u.s.": "united states",
+  america: "united states",
+  aus: "australia",
+  can: "canada",
+  nz: "new zealand",
+};
+
+function buildCountryLookup(countries) {
+  const lookup = new Map();
+  for (const c of countries) {
+    if (c.name) lookup.set(c.name.trim().toLowerCase(), c.id);
+    if (c.code) lookup.set(c.code.trim().toLowerCase(), c.id);
+  }
+  return lookup;
+}
+
+function resolveCountryIdsForStudent(student, countryLookup) {
+  const matchedIds = new Set();
+
+  if (Array.isArray(student.applications)) {
+    for (const app of student.applications) {
+      const cid = app?.course?.university?.countryId;
+      if (cid) matchedIds.add(cid);
+    }
+  }
+
+  const bg = student.academicBackground;
+  if (bg && typeof bg === "object") {
+    const rawTokens = [];
+    if (Array.isArray(bg.interestedCountries)) {
+      rawTokens.push(...bg.interestedCountries);
+    }
+    if (typeof bg.countriesInterested === "string") {
+      rawTokens.push(...bg.countriesInterested.split(/[,/&]+/));
+    }
+
+    for (const raw of rawTokens) {
+      if (typeof raw !== "string") continue;
+      const normalized = raw.trim().toLowerCase();
+      if (!normalized) continue;
+      const direct = countryLookup.get(normalized);
+      if (direct) {
+        matchedIds.add(direct);
+        continue;
+      }
+      const alias = COUNTRY_TOKEN_ALIASES[normalized];
+      if (alias && countryLookup.has(alias)) {
+        matchedIds.add(countryLookup.get(alias));
+      }
+    }
+  }
+
+  return matchedIds;
+}
+
 const listCountries = async (req, res, next) => {
   try {
-    const countries = await prisma.country.findMany({
-      include: {
-        _count: {
-          select: { universities: true },
+    const [countries, activeStudents] = await Promise.all([
+      prisma.country.findMany({
+        include: {
+          _count: {
+            select: { universities: true },
+          },
         },
-      },
-      orderBy: { name: "asc" },
+        orderBy: { name: "asc" },
+      }),
+      prisma.student.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          academicBackground: true,
+          applications: {
+            select: {
+              course: {
+                select: {
+                  university: {
+                    select: { countryId: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    const countryLookup = buildCountryLookup(countries);
+    const studentSetsByCountry = new Map(countries.map((c) => [c.id, new Set()]));
+    const uniqueMatchedStudents = new Set();
+
+    for (const student of activeStudents) {
+      const matchedCountryIds = resolveCountryIdsForStudent(student, countryLookup);
+      for (const countryId of matchedCountryIds) {
+        const bucket = studentSetsByCountry.get(countryId);
+        if (bucket) {
+          bucket.add(student.id);
+          uniqueMatchedStudents.add(student.id);
+        }
+      }
+    }
+
+    const enrichedCountries = countries.map((c) => ({
+      ...c,
+      universityCount: c._count?.universities ?? 0,
+      studentCount: studentSetsByCountry.get(c.id)?.size ?? 0,
+    }));
+
+    sendSuccess(res, {
+      data: enrichedCountries,
+      meta: { totalUniqueStudents: uniqueMatchedStudents.size },
     });
-    sendSuccess(res, { data: countries });
   } catch (err) {
     next(err);
   }

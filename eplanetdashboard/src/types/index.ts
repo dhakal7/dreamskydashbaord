@@ -626,7 +626,7 @@ export interface Commission {
 
 // ── Fee Management ────────────────────────────────────────────────────────
 
-export type FeePaymentStatus = 'FULL_PAID' | 'DUE' | 'UNPAID'
+export type FeePaymentStatus = 'FULL_PAID' | 'DUE' | 'UNPAID' | 'CANCELLED'
 
 export interface StudentFeeRecord {
   id: string

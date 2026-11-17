@@ -50,7 +50,9 @@ export interface CreateFollowUpBody {
   nextFollowUpAt?: string
 }
 
-export interface UpdateFollowUpBody extends Partial<CreateFollowUpBody> {}
+export interface UpdateFollowUpBody extends Partial<Omit<CreateFollowUpBody, 'nextFollowUpAt'>> {
+  nextFollowUpAt?: string | null
+}
 
 export const followUpApi = {
   /** GET /follow-ups */

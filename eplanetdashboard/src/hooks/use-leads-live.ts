@@ -175,7 +175,7 @@ export function useLiveLeads(options?: { enabled?: boolean }) {
   const isPermitted = !['teacher', 'student'].includes(currentUser.role)
   const isEnabled = isPermitted && (options?.enabled ?? true)
 
-  const { data, isLoading, isError, error, refetch } = useStudents(
+  const { data, isLoading, isFetching, isError, error, refetch } = useStudents(
     {
       stageIn: 'LEAD,PROSPECT',
       limit: 1000,
@@ -191,7 +191,7 @@ export function useLiveLeads(options?: { enabled?: boolean }) {
 
   const totalCount = data?.pagination?.total ?? leads.length
 
-  return { leads, totalCount, isLoading, isError, error, refetch }
+  return { leads, totalCount, isLoading, isFetching, isError, error, refetch }
 }
 
 // ── Mutation: move a lead stage in the backend ───────────────────────────────

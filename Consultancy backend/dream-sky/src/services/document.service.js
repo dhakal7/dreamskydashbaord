@@ -191,24 +191,13 @@ const assertStudentDocumentAuthorization = (student, user, action = "access") =>
         return;
     }
 
-    if (actorRole === "BRANCH_ADMIN") {
+    if (actorRole === "BRANCH_ADMIN" || actorRole === "FRONT_DESK") {
         if (!isValidBranchId(user.branchId)) {
             throw AppError.forbidden(`${actorRole} lacks assigned branch context.`, "NO_BRANCH_CONTEXT");
         }
         const authorizedBranchId = user.branchId.trim();
         const studentBranchId = resolveStudentBranchId(student);
         if (!student || !student.id || !studentBranchId || studentBranchId !== authorizedBranchId) {
-            throw AppError.forbidden(`You are not authorized to ${action} documents outside your branch.`, "FORBIDDEN");
-        }
-        return;
-    }
-
-    if (actorRole === "FRONT_DESK") {
-        if (!user.branchId) {
-            throw AppError.forbidden(`${actorRole} lacks assigned branch context.`, "NO_BRANCH_CONTEXT");
-        }
-        const studentBranchId = student?.assignedCounselor?.branchId;
-        if (!student || !student.id || !studentBranchId || studentBranchId !== user.branchId) {
             throw AppError.forbidden(`You are not authorized to ${action} documents outside your branch.`, "FORBIDDEN");
         }
         return;

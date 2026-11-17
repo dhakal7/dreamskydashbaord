@@ -11,13 +11,14 @@ import { studentStatusMeta } from '@/components/shared/status-badges'
 export interface StudentFilters {
   search: string
   status: string
+  studentType: 'all' | 'consultancy' | 'class_only'
   counselorId: string
   country: string
   level: string
 }
 
 export const defaultStudentFilters: StudentFilters = {
-  search: '', status: 'all', counselorId: 'all', country: 'all', level: 'all',
+  search: '', status: 'all', studentType: 'all', counselorId: 'all', country: 'all', level: 'all',
 }
 
 const levels = ['foundation', 'diploma', 'bachelor', 'master', 'phd']
@@ -51,6 +52,20 @@ export function StudentFiltersBar({
           {Object.entries(studentStatusMeta).map(([key, meta]) => (
             <SelectItem key={key} value={key}>{meta.label}</SelectItem>
           ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.studentType}
+        onValueChange={(v) => onChange({ ...filters, studentType: v as StudentFilters['studentType'] })}
+      >
+        <SelectTrigger className="w-[150px]" aria-label="Student type">
+          <SelectValue placeholder="All types" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All types</SelectItem>
+          <SelectItem value="consultancy">Consultancy</SelectItem>
+          <SelectItem value="class_only">Class Only</SelectItem>
         </SelectContent>
       </Select>
 

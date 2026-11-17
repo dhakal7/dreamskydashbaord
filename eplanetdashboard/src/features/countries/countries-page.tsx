@@ -43,8 +43,8 @@ export default function CountriesPage() {
         flag: c.flagUrl || '🌐',
         visaDifficulty: 'moderate' as const,
         avgTuitionUsd: 15000,
-        universityCount: c._count?.universities ?? c.universities?.length ?? 0,
-        studentCount: 0,
+        universityCount: c.universityCount ?? c._count?.universities ?? c.universities?.length ?? 0,
+        studentCount: typeof c.studentCount === 'number' ? c.studentCount : 0,
         popularCourses: [],
       }))
     : storeCountries
@@ -53,7 +53,9 @@ export default function CountriesPage() {
   const [editingCountry, setEditingCountry] = useState<Country | null>(null)
 
   const totalStudents = countries.reduce((sum, c) => sum + c.studentCount, 0)
-  const totalUniversities = universities.length
+  const totalUniversities = isMock
+    ? universities.length
+    : countries.reduce((sum, c) => sum + c.universityCount, 0)
   const avgTuition = countries.length > 0
     ? Math.round(countries.reduce((sum, c) => sum + c.avgTuitionUsd, 0) / countries.length)
     : 0
@@ -148,7 +150,9 @@ export default function CountriesPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {countries.map((country) => {
             const difficulty = visaDifficultyMeta[country.visaDifficulty]
-            const uniCount = universities.filter((u) => u.countryId === country.id).length
+            const uniCount = isMock
+              ? universities.filter((u) => u.countryId === country.id).length
+              : country.universityCount
 
             return (
               <Card key={country.id} className="p-5 border-border/70 shadow-sm hover:shadow-elevated transition-shadow">

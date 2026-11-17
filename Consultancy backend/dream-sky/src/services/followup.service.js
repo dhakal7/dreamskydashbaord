@@ -262,7 +262,12 @@ const assertFollowUpAuthorization = (log, currentUser, action = "manage") => {
 const getStudentTimeline = async (studentId, currentUser) => {
     const student = await prisma.student.findUnique({
         where: { id: studentId },
-        select: { id: true, branchId: true, assignedCounselorId: true, assignedCounselor: { select: { branchId: true } } },
+        select: {
+            id: true,
+            academicBackground: true,
+            assignedCounselorId: true,
+            assignedCounselor: { select: { id: true, branchId: true } },
+        },
     });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
 
@@ -270,13 +275,29 @@ const getStudentTimeline = async (studentId, currentUser) => {
     if (currentUser) {
         const actorRole = currentUser.role;
         const actorId = currentUser.userId || currentUser.id;
-        if (actorRole === "FRONT_DESK") {
-            where.authorId = actorId;
+        if (actorRole === "SUPER_ADMIN") {
+            // Global access
+        } else if (actorRole === "BRANCH_ADMIN" || actorRole === "FRONT_DESK") {
+            if (!isValidBranchId(currentUser.branchId)) {
+                throw AppError.forbidden(`${actorRole} lacks assigned branch context.`, "NO_BRANCH_CONTEXT");
+            }
+            const studentBranchId = resolveStudentBranchId(student);
+            if (!studentBranchId || studentBranchId !== currentUser.branchId.trim()) {
+                throw AppError.forbidden("Access denied. Student is outside your branch.", "FORBIDDEN");
+            }
+            if (actorRole === "FRONT_DESK") {
+                where.authorId = actorId;
+            }
         } else if (actorRole === "COUNSELOR") {
+            if (!student.assignedCounselorId || student.assignedCounselorId !== actorId) {
+                throw AppError.forbidden("Access denied. You can only view follow-ups for students assigned to you.", "FORBIDDEN");
+            }
             where.OR = [
                 { authorId: actorId },
                 { author: { role: { not: "FRONT_DESK" } } },
             ];
+        } else {
+            throw AppError.forbidden(`Access denied. Role ${actorRole} cannot view follow-up timelines.`, "INSUFFICIENT_ROLE");
         }
     }
 

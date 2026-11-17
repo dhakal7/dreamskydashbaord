@@ -441,10 +441,17 @@ export default function ClassDetailPage() {
               </div>
               <div className="text-center">
                 <p className="text-xs text-muted-foreground">Fill</p>
-                <p className="text-lg font-bold font-tabular">{enrollmentPct}%</p>
+                <p className={`text-lg font-bold font-tabular ${cls.capacity > 0 && cls.enrolledCount > cls.capacity ? 'text-rose-600' : ''}`}>
+                  {enrollmentPct}%
+                </p>
               </div>
             </div>
           </div>
+          {cls.capacity > 0 && cls.enrolledCount > cls.capacity && (
+            <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50/80 px-3.5 py-2.5 text-xs text-rose-800">
+              <strong>Over Capacity Warning:</strong> This batch currently has {cls.enrolledCount} enrolled students against a capacity of {cls.capacity} seats ({enrollmentPct}%). Existing enrollments are preserved; new student admissions are blocked until seats open.
+            </div>
+          )}
         </Card>
 
         <Tabs defaultValue="roster" className="w-full">

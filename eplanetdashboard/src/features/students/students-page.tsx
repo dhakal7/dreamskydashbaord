@@ -231,6 +231,8 @@ export default function StudentsPage() {
       if (q && !`${s.name} ${s.email} ${s.phone} ${s.studentId}`.toLowerCase().includes(q)) return false
       if (viewTab === 'active') {
         if (filters.status !== 'all' && s.status !== filters.status) return false
+        if (filters.studentType === 'class_only' && !s.isClassOnly) return false
+        if (filters.studentType === 'consultancy' && s.isClassOnly) return false
         if (filters.counselorId !== 'all' && s.counselorId !== filters.counselorId) return false
         if (filters.country !== 'all' && !s.preferredCountries.includes(filters.country)) return false
         if (filters.level !== 'all' && s.preferredLevel !== filters.level) return false

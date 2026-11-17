@@ -281,15 +281,7 @@ const getVisaCaseById = async (id, currentUser = null) => {
     return vc;
 };
 
-// ─── LIST / FILTER ────────────────────────────────────────────────────────────
-const listVisaCases = async (query = {}, currentUser = null) => {
-    const { status, applicationId, studentId, page, limit } = query;
-    const where = {};
-
-    if (status) where.status = status;
-    if (applicationId) where.applicationId = applicationId;
-    if (studentId) where.application = { studentId };
-
+const buildVisaScopeWhere = (currentUser = null, existingApplicationFilter = undefined) => {
     if (!currentUser) {
         throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
     }
@@ -297,44 +289,63 @@ const listVisaCases = async (query = {}, currentUser = null) => {
     const actorRole = currentUser.role;
     const actorId = currentUser.userId || currentUser.id;
 
+    if (actorRole === "SUPER_ADMIN") {
+        return existingApplicationFilter ? { application: existingApplicationFilter } : {};
+    }
+
     if (actorRole === "COUNSELOR") {
-        where.application = {
-            ...(where.application || {}),
-            student: {
-                ...(where.application?.student || {}),
-                assignedCounselorId: actorId,
+        return {
+            application: {
+                ...(existingApplicationFilter || {}),
+                student: {
+                    ...(existingApplicationFilter?.student || {}),
+                    assignedCounselorId: actorId,
+                },
             },
         };
-    } else if (actorRole === "BRANCH_ADMIN") {
+    }
+
+    if (actorRole === "BRANCH_ADMIN") {
         if (!isValidBranchId(currentUser.branchId)) {
             throw AppError.forbidden("Branch Admin lacks assigned branch context.", "NO_BRANCH_CONTEXT");
         }
         const authorizedBranchId = currentUser.branchId.trim();
-        where.application = {
-            ...(where.application || {}),
-            student: {
-                ...(where.application?.student || {}),
-                OR: [
-                    {
-                        assignedCounselor: {
-                            branchId: authorizedBranchId,
+        return {
+            application: {
+                ...(existingApplicationFilter || {}),
+                student: {
+                    ...(existingApplicationFilter?.student || {}),
+                    OR: [
+                        {
+                            assignedCounselor: {
+                                branchId: authorizedBranchId,
+                            },
                         },
-                    },
-                    {
-                        assignedCounselorId: null,
-                        academicBackground: {
-                            path: ["branchId"],
-                            equals: authorizedBranchId,
+                        {
+                            assignedCounselorId: null,
+                            academicBackground: {
+                                path: ["branchId"],
+                                equals: authorizedBranchId,
+                            },
                         },
-                    },
-                ],
+                    ],
+                },
             },
         };
-    } else if (actorRole === "SUPER_ADMIN") {
-        // Full global access
-    } else {
-        throw AppError.forbidden("You are not authorized to view visa cases.", "FORBIDDEN");
     }
+
+    throw AppError.forbidden("You are not authorized to view visa cases.", "FORBIDDEN");
+};
+
+// ─── LIST / FILTER ────────────────────────────────────────────────────────────
+const listVisaCases = async (query = {}, currentUser = null) => {
+    const { status, applicationId, studentId, page, limit } = query;
+    const baseApplicationFilter = studentId ? { studentId } : undefined;
+    const scopeWhere = buildVisaScopeWhere(currentUser, baseApplicationFilter);
+    const where = { ...scopeWhere };
+
+    if (status) where.status = status;
+    if (applicationId) where.applicationId = applicationId;
 
     const pageNum = Math.max(parseInt(page) || 1, 1);
     const pageSize = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
@@ -444,11 +455,12 @@ const deleteVisaCase = async (id, currentUser = null) => {
 };
 
 // ─── DASHBOARD STATS ──────────────────────────────────────────────────────────
-const getDashboardStats = async () => {
+const getDashboardStats = async (currentUser = null) => {
+    const scopeWhere = buildVisaScopeWhere(currentUser);
     const statuses = ["NOT_APPLIED", "PREPARING", "SUBMITTED", "APPROVED", "REFUSED", "RESUBMITTING"];
 
     const counts = await Promise.all(
-        statuses.map((s) => prisma.visaCase.count({ where: { status: s } }))
+        statuses.map((s) => prisma.visaCase.count({ where: { ...scopeWhere, status: s } }))
     );
 
     const result = {};
@@ -468,4 +480,5 @@ module.exports = {
     deleteVisaCase,
     getDashboardStats,
     assertVisaCaseAuthorization,
+    buildVisaScopeWhere,
 };

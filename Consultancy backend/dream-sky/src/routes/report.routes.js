@@ -7,9 +7,11 @@ const router = Router();
 
 router.use(requireAuth);
 
+// Aligned with frontend RBAC `reports.view` (FRONT_DESK is not granted reports access).
+// TEACHER uses the dedicated /reports/teacher endpoint below.
 router.get(
   "/summary",
-  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"),
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
   reportController.getSummary
 );
 

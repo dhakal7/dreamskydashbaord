@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import dayjs from 'dayjs'
-import { AlertCircle, BarChart3, BookOpen, ClipboardCheck, Download, FileText, GraduationCap, Loader2, PlaneTakeoff, TrendingUp, Users } from 'lucide-react'
+import { AlertCircle, BarChart3, BookOpen, ClipboardCheck, Download, FileText, GraduationCap, Loader2, PlaneTakeoff, RefreshCw, TrendingUp, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -8,11 +8,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { EmptyState } from '@/components/shared/empty-state'
 import { useAuthStore } from '@/store/auth-store'
-import { useAttendanceStore } from '@/features/classes/attendance-store'
-import { useClassStudentNotesStore } from '@/features/classes/class-student-notes-store'
-import { visibleClasses } from '@/lib/data-visibility'
-const allClasses: any[] = []
-const allEnrollments: any[] = []
 import { hasPermission } from '@/lib/rbac'
 import { exportCsv } from '@/lib/export'
 import { isMockMode } from '@/lib/api-client'
@@ -24,133 +19,9 @@ import {
   CountryDistributionChart, SourceDistributionChart, CumulativeStudentsChart,
 } from './report-charts'
 
-/* ── Helpers ─────────────────────────────────────────────────────────── */
-
-function computeWeeklyTrend(records: { date: string; presentCount: number; totalCount: number }[]) {
-  const weeks: Record<string, { present: number; total: number }> = {}
-  for (const r of records) {
-    const weekKey = dayjs(r.date).startOf('week').format('YYYY-MM-DD')
-    if (!weeks[weekKey]) weeks[weekKey] = { present: 0, total: 0 }
-    weeks[weekKey].present += r.presentCount
-    weeks[weekKey].total += r.totalCount
-  }
-  return Object.entries(weeks)
-    .map(([week, { present, total }]) => ({
-      week,
-      label: dayjs(week).format('MMM D'),
-      pct: total > 0 ? Math.round((present / total) * 100) : 0,
-      present,
-      total,
-    }))
-    .sort((a, b) => a.week.localeCompare(b.week))
-}
-
-function computeMonthlyTrend(records: { date: string; presentCount: number; totalCount: number }[]) {
-  const months: Record<string, { present: number; total: number }> = {}
-  for (const r of records) {
-    const monthKey = dayjs(r.date).format('YYYY-MM')
-    if (!months[monthKey]) months[monthKey] = { present: 0, total: 0 }
-    months[monthKey].present += r.presentCount
-    months[monthKey].total += r.totalCount
-  }
-  return Object.entries(months)
-    .map(([month, { present, total }]) => ({
-      month,
-      label: dayjs(month + '-01').format('MMM YYYY'),
-      pct: total > 0 ? Math.round((present / total) * 100) : 0,
-      present,
-      total,
-    }))
-    .sort((a, b) => a.month.localeCompare(b.month))
-}
-
 /* ── Teacher Reports View ────────────────────────────────────────────── */
 
 function TeacherReportsView() {
-  const currentUser = useAuthStore((s) => s.currentUser)
-  const attendanceRecords = useAttendanceStore((s) => s.attendanceRecords)
-  const { notes } = useClassStudentNotesStore()
-
-  // 1. Get teacher's own classes via visibleClasses
-  const myClasses = useMemo(
-    () => visibleClasses(currentUser, allClasses),
-    [currentUser],
-  )
-  const myClassIds = useMemo(() => new Set(myClasses.map((c) => c.id)), [myClasses])
-
-  // 2. Get enrollments for teacher's classes
-  const myEnrollments = useMemo(
-    () => allEnrollments.filter((e) => myClassIds.has(e.classId)),
-    [myClassIds],
-  )
-
-  // 3. Get attendance records for teacher's classes
-  const myAttendance = useMemo(
-    () => attendanceRecords
-      .filter((a) => myClassIds.has(a.classId))
-      .sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf()),
-    [attendanceRecords, myClassIds],
-  )
-
-  // 4. Get test result notes for students in teacher's classes
-  const studentIdsInMyClasses = useMemo(
-    () => new Set(myEnrollments.map((e) => e.studentId)),
-    [myEnrollments],
-  )
-  const testResults = useMemo(
-    () => notes.filter(
-      (n) => n.type === 'test_result' && studentIdsInMyClasses.has(n.studentId) && myClassIds.has(n.classId),
-    ),
-    [notes, studentIdsInMyClasses, myClassIds],
-  )
-
-  // 5. Per-class attendance trends
-  const mockPerClassAttendance = useMemo(
-    () => myClasses.map((cls) => {
-      const classRecords = myAttendance.filter((a) => a.classId === cls.id)
-      const weekly = computeWeeklyTrend(classRecords)
-      const monthly = computeMonthlyTrend(classRecords)
-      const overallPct = classRecords.length
-        ? Math.round(classRecords.reduce((s, a) => s + (a.presentCount / a.totalCount) * 100, 0) / classRecords.length)
-        : 0
-      return { classId: cls.id, className: cls.name, overallPct, weekly, monthly }
-    }),
-    [myClasses, myAttendance],
-  )
-
-  // 6. Per-student average test results per class
-  const mockPerStudentTestResults = useMemo(
-    () => myEnrollments.map((enr) => {
-      const studentResults = testResults.filter(
-        (n) => n.studentId === enr.studentId && n.classId === enr.classId,
-      )
-      // Parse numeric scores from test result messages (e.g. "IELTS: 6.5" or "Score: 85%")
-      const scores = studentResults
-        .map((n) => {
-          const match = n.message.match(/(\d+(?:\.\d+)?)/)
-          return match ? parseFloat(match[1]) : null
-        })
-        .filter((s): s is number => s !== null)
-
-      const avgScore = scores.length > 0
-        ? Math.round((scores.reduce((s, v) => s + v, 0) / scores.length) * 10) / 10
-        : null
-
-      return {
-        studentId: enr.studentId,
-        studentName: enr.studentName,
-        classId: enr.classId,
-        className: myClasses.find((c) => c.id === enr.classId)?.name ?? '',
-        testCount: studentResults.length,
-        avgScore,
-        latestResult: studentResults.length > 0
-          ? studentResults.sort((a, b) => dayjs(b.createdAt).valueOf() - dayjs(a.createdAt).valueOf())[0]
-          : null,
-      }
-    }).filter((s) => s.testCount > 0),
-    [myEnrollments, testResults, myClasses],
-  )
-
   const { data: teacherApiData, isLoading, isError, refetch } = useTeacherReports()
 
   if (!isMockMode() && isLoading) {
@@ -177,34 +48,27 @@ function TeacherReportsView() {
     )
   }
 
-  const perClassAttendance = !isMockMode()
-    ? (teacherApiData?.perClassAttendance ?? [])
-    : mockPerClassAttendance
+  const perClassAttendance = teacherApiData?.perClassAttendance ?? []
+  const perStudentTestResults = teacherApiData?.perStudentTestResults ?? []
 
-  const perStudentTestResults = !isMockMode()
-    ? (teacherApiData?.perStudentTestResults ?? [])
-    : mockPerStudentTestResults
-
-  const totalClasses = !isMockMode() && teacherApiData?.stats
-    ? teacherApiData.stats.totalClasses
-    : myClasses.length
-  const totalStudents = !isMockMode() && teacherApiData?.stats
-    ? teacherApiData.stats.totalStudents
-    : myEnrollments.length
-  const overallAttendance = !isMockMode() && teacherApiData?.stats
-    ? teacherApiData.stats.overallAttendance
-    : (myAttendance.length
-      ? Math.round(myAttendance.reduce((s, a) => s + (a.presentCount / a.totalCount) * 100, 0) / myAttendance.length)
-      : 0)
-  const testsRecorded = !isMockMode() && teacherApiData?.stats
-    ? teacherApiData.stats.testsRecorded
-    : testResults.length
+  const totalClasses = teacherApiData?.stats?.totalClasses ?? perClassAttendance.length
+  const totalStudents = teacherApiData?.stats?.totalStudents ?? 0
+  const overallAttendance = teacherApiData?.stats?.overallAttendance ?? 0
+  const testsRecorded = teacherApiData?.stats?.testsRecorded ?? 0
 
   return (
     <div className="space-y-5">
       <PageHeader
         title="Reports"
         description="Attendance trends and test results for your classes."
+        actions={
+          !isMockMode() ? (
+            <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isLoading}>
+              <RefreshCw className={`size-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          ) : undefined
+        }
       />
 
       {/* ── Summary Stats ── */}

@@ -32,7 +32,7 @@ interface UsersState {
   changeUserRole: (id: string, role: Role) => Promise<void>
   changeUserBranch: (id: string, branchId: string | null, branchName?: string) => Promise<void>
   updateUserEmail: (id: string, email: string) => void
-  updateUserProfile: (id: string, updates: Partial<UserAccount>) => void
+  updateUserProfile: (id: string, updates: Partial<UserAccount>) => Promise<void>
 }
 
 export const useUsersStore = create<UsersState>((set, get) => ({
@@ -244,14 +244,47 @@ export const useUsersStore = create<UsersState>((set, get) => ({
       }
     }),
 
-  updateUserProfile: (id, updates) =>
-    set((state) => {
-      const user = state.users.find((u) => u.id === id)
-      toast.success(`Profile updated for ${updates.name ?? user?.name ?? 'User'}`)
-      return {
+  updateUserProfile: async (id, updates) => {
+    const user = get().users.find((u) => u.id === id)
+    if (isMockMode()) {
+      set((state) => ({
         users: state.users.map((u) =>
           u.id === id ? { ...u, ...updates } : u
         ),
-      }
-    }),
+      }))
+      toast.success(`[Mock] Profile updated for ${updates.name ?? user?.name ?? 'User'}`)
+      return
+    }
+
+    try {
+      const payload: { name?: string; email?: string; phone?: string | null } = {}
+      if (updates.name !== undefined) payload.name = updates.name
+      if (updates.email !== undefined) payload.email = updates.email
+      if (updates.phone !== undefined) payload.phone = updates.phone || null
+
+      const res: any = await userApi.updateUserProfile(id, payload)
+      const updatedUser = res?.data ?? res
+      const fullName = updatedUser?.firstName
+        ? `${updatedUser.firstName} ${updatedUser.lastName || ''}`.trim()
+        : updates.name
+
+      set((state) => ({
+        users: state.users.map((u) =>
+          u.id === id
+            ? {
+                ...u,
+                ...updates,
+                ...(fullName ? { name: fullName } : {}),
+                ...(updatedUser?.email ? { email: updatedUser.email } : {}),
+                phone: updatedUser?.phone !== undefined ? (updatedUser.phone ?? undefined) : updates.phone,
+              }
+            : u
+        ),
+      }))
+      toast.success(`Profile updated for ${fullName ?? user?.name ?? 'User'}`)
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update user profile')
+      throw err
+    }
+  },
 }))

@@ -6,6 +6,9 @@ function isValidBranchId(value) {
     return typeof value === "string" && value.trim().length > 0;
 }
 
+const SUMMARY_ALLOWED_ROLES = Object.freeze(["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"]);
+const COUNSELOR_SUMMARY_ALLOWED_ROLES = Object.freeze(["SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"]);
+
 /**
  * GET /dashboard/summary
  *
@@ -37,6 +40,11 @@ const getSummary = async (req, res, next) => {
         const currentUser = req.user;
         if (!currentUser) {
             throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+        }
+        // Defense in depth (route also enforces requireRole): organization-wide KPIs
+        // are restricted to administrators and front desk staff.
+        if (!SUMMARY_ALLOWED_ROLES.includes(currentUser.role)) {
+            throw AppError.forbidden("You are not authorized to view the organization dashboard summary.", "INSUFFICIENT_ROLE");
         }
 
         let studentBranchFilter = {};
@@ -207,8 +215,36 @@ const getSummary = async (req, res, next) => {
  * Returns stats for a specific counselor's dashboard.
  */
 const getCounselorSummary = async (req, res) => {
+    if (!req.user) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+    // Defense in depth (route also enforces requireRole).
+    if (!COUNSELOR_SUMMARY_ALLOWED_ROLES.includes(req.user.role)) {
+        throw AppError.forbidden("You are not authorized to view counselor summaries.", "INSUFFICIENT_ROLE");
+    }
+
     const actorId = req.user.userId || req.user.id;
-    const counselorId = req.user.role === "COUNSELOR" ? actorId : (req.query.counselorId || actorId);
+    const rawRequested = req.query.counselorId;
+    if (rawRequested !== undefined && (typeof rawRequested !== "string" || !rawRequested.trim())) {
+        throw AppError.badRequest("counselorId must be a single non-empty string.", "VALIDATION_ERROR");
+    }
+    // COUNSELOR is always pinned to their own ID; any counselorId query parameter is ignored.
+    const counselorId = req.user.role === "COUNSELOR" ? actorId : (rawRequested ? rawRequested.trim() : actorId);
+
+    // BRANCH_ADMIN may only view counselors belonging to their own branch.
+    if (req.user.role === "BRANCH_ADMIN" && counselorId !== actorId) {
+        if (!isValidBranchId(req.user.branchId)) {
+            throw AppError.forbidden("Branch Admin lacks assigned branch context.", "NO_BRANCH_CONTEXT");
+        }
+        const target = await prisma.user.findUnique({
+            where: { id: counselorId },
+            select: { id: true, branchId: true },
+        });
+        if (!target || target.branchId !== req.user.branchId.trim()) {
+            throw AppError.forbidden("You can only view counselors in your own branch.", "CROSS_BRANCH_ACCESS_DENIED");
+        }
+    }
+
     const now = new Date();
     const STUDENT_STAGES = [
         "LEAD", "PROSPECT", "ENROLLED", "APPLIED",

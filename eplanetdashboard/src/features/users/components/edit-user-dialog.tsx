@@ -98,18 +98,19 @@ export function EditUserDialog({ user, open, onOpenChange }: EditUserDialogProps
         }
       }
 
-      // 4. Update local profile state
-      const targetBranchId = branchId === 'unassigned' ? undefined : branchId
-      const selectedBranch = availableBranches.find((b) => b.id === targetBranchId)
-      updateUserProfile(user.id, {
-        name: name.trim(),
-        email: email.trim(),
-        phone: phone.trim() || undefined,
-        role,
-        status,
-        branchId: targetBranchId,
-        branchName: selectedBranch?.name || (targetBranchId ? 'Assigned Branch' : 'Unassigned'),
-      })
+      // 4. Live profile update (name, email, phone) if changed
+      const profileChanged =
+        name.trim() !== user.name ||
+        email.trim().toLowerCase() !== user.email.toLowerCase() ||
+        phone.trim() !== (user.phone ?? '').trim()
+
+      if (profileChanged) {
+        await updateUserProfile(user.id, {
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim() || undefined,
+        })
+      }
 
       onOpenChange(false)
     } catch {

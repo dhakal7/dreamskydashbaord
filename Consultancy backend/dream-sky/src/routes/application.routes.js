@@ -23,11 +23,15 @@ router.post(
 
 router.get(
     "/",
-    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
     applicationController.list
 );
 
-router.get("/:id", applicationController.getOne);
+router.get(
+    "/:id",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+    applicationController.getOne
+);
 
 router.put(
     "/:id",

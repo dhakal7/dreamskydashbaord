@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { EmptyState } from '@/components/shared/empty-state'
 import { PriorityBadge, leadStageMeta, leadStageOrder } from '@/components/shared/status-badges'
-import { Users, TrendingUp, CalendarClock, CalendarDays, UserCheck } from 'lucide-react'
+import { Users, TrendingUp, CalendarClock, CalendarDays, UserCheck, RefreshCw } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { RoleStatCards } from './shared'
 import { useCounselorDashboard, ZERO_COUNSELOR } from '../hooks/use-dashboard-stats'
 import { useLiveLeads } from '@/hooks/use-leads-live'
@@ -19,14 +20,40 @@ import dayjs from 'dayjs'
 export function CounselorDashboard() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const counselorScopeId = getCounselorScopeId(currentUser) ?? currentUser.linkedId
-  const { data } = useCounselorDashboard(counselorScopeId)
+  const {
+    data,
+    isLoading: isDashboardLoading,
+    isFetching: isDashboardFetching,
+    isError: isDashboardError,
+    error: dashboardError,
+    refetch: refetchDashboard,
+  } = useCounselorDashboard(counselorScopeId)
   const dashboard = data ?? ZERO_COUNSELOR
 
-  const { leads: liveLeads } = useLiveLeads({ enabled: !isMockMode() })
-  const { data: apptsData } = useAppointments({
+  const {
+    leads: liveLeads,
+    refetch: refetchLeads,
+    isFetching: isLeadsFetching,
+  } = useLiveLeads({ enabled: !isMockMode() })
+  const {
+    data: apptsData,
+    refetch: refetchAppts,
+    isFetching: isApptsFetching,
+  } = useAppointments({
     counselorId: counselorScopeId || undefined,
     limit: 200,
   })
+
+  const isRefreshing = isDashboardFetching || isLeadsFetching || isApptsFetching
+
+  const handleRefresh = () => {
+    if (isRefreshing) return
+    void Promise.all([
+      refetchDashboard(),
+      !isMockMode() ? refetchLeads() : Promise.resolve(),
+      refetchAppts(),
+    ])
+  }
 
   const assignedStudents = useMemo(() => {
     const apptsByStudent = new Map<string, { datetime: string; type: string; status: string }>()
@@ -72,6 +99,16 @@ export function CounselorDashboard() {
         description="Your assigned students, pipeline, and follow-ups."
         actions={
           <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              aria-label="Refresh dashboard"
+            >
+              <RefreshCw className={cn('size-4', isRefreshing && 'animate-spin')} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </Button>
             <Button variant="outline" size="sm" asChild><Link to="/students"><Users className="size-4" /> My Students</Link></Button>
             <Button variant="outline" size="sm" asChild><Link to="/appointments"><CalendarDays className="size-4" /> Appointments</Link></Button>
             <Button variant="outline" size="sm" asChild><Link to="/follow-ups"><CalendarClock className="size-4" /> Follow-ups</Link></Button>
@@ -79,7 +116,29 @@ export function CounselorDashboard() {
         }
       />
 
-      <RoleStatCards stats={stats} />
+      {!isMockMode() && isDashboardError && (
+        <Card className="p-4 border-destructive/40 bg-destructive/5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-destructive">Failed to load dashboard data</p>
+            <p className="text-xs text-muted-foreground">
+              {(dashboardError as Error)?.message || 'Unable to fetch counselor summary from server.'}
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={handleRefresh} disabled={isRefreshing}>
+            Retry
+          </Button>
+        </Card>
+      )}
+
+      {!isMockMode() && isDashboardLoading && !data ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="h-24 animate-pulse bg-muted/40" />
+          ))}
+        </div>
+      ) : (
+        <RoleStatCards stats={stats} />
+      )}
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">

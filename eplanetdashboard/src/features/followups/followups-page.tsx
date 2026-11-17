@@ -33,6 +33,13 @@ const channelIcons = {
   sms: MessageSquare,
 }
 
+export function resolveFollowUpStatus(nextFollowUpAt?: string | null, now = new Date()): FollowUp['status'] {
+  if (!nextFollowUpAt) return 'completed'
+  const ts = new Date(nextFollowUpAt).getTime()
+  if (Number.isNaN(ts)) return 'completed'
+  return ts > now.getTime() ? 'pending' : 'missed'
+}
+
 export default function FollowUpsPage() {
   const location = useLocation()
   const mockFollowUps = useFollowUpsStore((s) => s.followUps)
@@ -60,7 +67,7 @@ export default function FollowUpsPage() {
           authorRole: f.author?.role,
           reminder: f.content,
           priority: 'medium' as FollowUp['priority'],
-          status: f.nextFollowUpAt && new Date(f.nextFollowUpAt) > new Date() ? 'pending' : ('completed' as FollowUp['status']),
+          status: resolveFollowUpStatus(f.nextFollowUpAt),
           date: localDt.format('YYYY-MM-DD'),
           time: f.nextFollowUpAt ? localDt.format('HH:mm') : '09:00',
           channel: (f.channel?.toLowerCase() as FollowUp['channel']) ?? 'call',

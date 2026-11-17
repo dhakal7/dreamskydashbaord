@@ -20,6 +20,14 @@ const PAYMENT_STUDENT_AUTHZ_SELECT = {
 
 const isValidBranchId = (value) => typeof value === 'string' && value.trim().length > 0;
 
+const mapPaymentMethod = (paymentMethod = 'CASH') => {
+  const m = String(paymentMethod || 'CASH').toUpperCase();
+  if (m.includes('BANK') || m.includes('ONLINE') || m.includes('FONEPAY')) return 'BANK_TRANSFER';
+  if (m.includes('CARD')) return 'CARD';
+  if (m.includes('CHEQUE')) return 'CHEQUE';
+  return 'CASH';
+};
+
 const resolveStudentBranchId = (student) => {
   if (!student || typeof student !== 'object') return null;
 
@@ -311,9 +319,7 @@ class PaymentService {
       });
 
       if (numericPaid > 0) {
-        let mappedMethod = 'CASH';
-        const m = String(paymentMethod).toUpperCase();
-        if (m.includes('BANK') || m.includes('ONLINE') || m.includes('FONEPAY')) mappedMethod = 'BANK_TRANSFER';
+        const mappedMethod = mapPaymentMethod(paymentMethod);
 
         await tx.transaction.create({
           data: {
@@ -402,9 +408,7 @@ class PaymentService {
       throw AppError.badRequest("Transaction amount must be greater than zero.", "INVALID_TRANSACTION_AMOUNT");
     }
 
-    let mappedMethod = 'CASH';
-    const m = String(paymentMethod).toUpperCase();
-    if (m.includes('BANK') || m.includes('ONLINE') || m.includes('FONEPAY')) mappedMethod = 'BANK_TRANSFER';
+    const mappedMethod = mapPaymentMethod(paymentMethod);
 
     await prisma.$transaction(async (tx) => {
       if (typeof tx.$executeRaw === 'function') {
@@ -547,17 +551,31 @@ class PaymentService {
       const updateData = {};
       if (totalAmount !== undefined) updateData.totalAmount = effectiveTotal;
 
-      if (finalPaid >= effectiveTotal && effectiveTotal > 0) {
-        updateData.status = 'COMPLETED';
-      } else if (finalPaid > 0) {
-        updateData.status = 'PARTIAL';
-      } else if (status !== undefined) {
-        if (status === 'FULL_PAID' || status === 'COMPLETED') updateData.status = 'COMPLETED';
-        else if (status === 'DUE' || status === 'PARTIAL') updateData.status = 'PARTIAL';
-        else if (status === 'UNPAID' || status === 'PENDING') updateData.status = 'PENDING';
-        else if (['OVERDUE', 'CANCELLED'].includes(status)) updateData.status = status;
+      if (status === 'CANCELLED') {
+        updateData.status = 'CANCELLED';
       } else {
-        updateData.status = 'PENDING';
+        if ((status === 'FULL_PAID' || status === 'COMPLETED') && !(finalPaid >= effectiveTotal && effectiveTotal > 0)) {
+          throw AppError.badRequest(
+            'Cannot mark payment as COMPLETED unless the full fee amount has been collected.',
+            'INVALID_PAYMENT_STATUS'
+          );
+        }
+        if ((status === 'DUE' || status === 'PARTIAL') && finalPaid <= 0) {
+          throw AppError.badRequest(
+            'Cannot mark payment as PARTIAL with zero collected amount.',
+            'INVALID_PAYMENT_STATUS'
+          );
+        }
+
+        if (finalPaid >= effectiveTotal && effectiveTotal > 0) {
+          updateData.status = 'COMPLETED';
+        } else if (finalPaid > 0) {
+          updateData.status = 'PARTIAL';
+        } else if (status === 'OVERDUE') {
+          updateData.status = 'OVERDUE';
+        } else {
+          updateData.status = 'PENDING';
+        }
       }
 
       if (Object.keys(updateData).length > 0) {

@@ -38,6 +38,14 @@ router.post("/logout", requireAuth, authController.logout);
 router.get("/me", requireAuth, authController.getMe);
 
 /**
+ * PATCH /api/auth/me
+ * Header: Authorization: Bearer <accessToken>
+ * Body: { name?, firstName?, lastName?, email?, phone? }
+ * Updates the authenticated user's own profile details.
+ */
+router.patch("/me", requireAuth, authController.updateMe);
+
+/**
  * POST /api/auth/change-password
  * Header: Authorization: Bearer <accessToken>
  * Body: { currentPassword, newPassword }

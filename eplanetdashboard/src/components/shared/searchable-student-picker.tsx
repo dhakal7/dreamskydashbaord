@@ -26,6 +26,8 @@ interface SearchableStudentPickerProps {
   onSearchChange?: (query: string) => void
   /** Show a loading indicator while server-side search is in progress. */
   searching?: boolean
+  /** Show an error message inside the dropdown when loading fails. */
+  error?: string | null
 }
 
 export function SearchableStudentPicker({
@@ -38,16 +40,16 @@ export function SearchableStudentPicker({
   disabled = false,
   onSearchChange,
   searching = false,
+  error = null,
 }: SearchableStudentPickerProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
+  const [cachedSelected, setCachedSelected] = useState<StudentOption | null>(null)
 
-  const selectedStudent = students.find((student) => student.id === value)
+  const matchedInList = students.find((student) => student.id === value)
+  const selectedStudent = matchedInList ?? (cachedSelected?.id === value ? cachedSelected : undefined)
 
   const filteredStudents = useMemo(() => {
-    // When server-side search is enabled, the parent is responsible for filtering.
-    if (onSearchChange) return students
-
     const query = search.trim().toLowerCase()
     if (!query) return students
 
@@ -55,7 +57,7 @@ export function SearchableStudentPicker({
       const haystack = `${student.name} ${student.studentId || ''} ${student.email || ''} ${student.phone || ''}`.toLowerCase()
       return haystack.includes(query)
     })
-  }, [students, search, onSearchChange])
+  }, [students, search])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -64,6 +66,8 @@ export function SearchableStudentPicker({
   }
 
   const handleSelect = (studentId: string) => {
+    const picked = students.find((student) => student.id === studentId)
+    if (picked) setCachedSelected(picked)
     onChange(studentId)
     setOpen(false)
     setSearch('')
@@ -105,7 +109,9 @@ export function SearchableStudentPicker({
             />
           </div>
           <div className="max-h-56 space-y-0.5 overflow-y-auto">
-            {searching ? (
+            {error ? (
+              <p className="px-2 py-3 text-center text-xs text-destructive">{error}</p>
+            ) : searching ? (
               <p className="px-2 py-3 text-center text-xs text-muted-foreground">Searching...</p>
             ) : filteredStudents.length > 0 ? (
               filteredStudents.map((student) => {

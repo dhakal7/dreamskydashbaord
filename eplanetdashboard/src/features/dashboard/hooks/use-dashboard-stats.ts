@@ -108,7 +108,7 @@ export function useSuperAdminStats() {
         { label: "Today's Follow-ups",  value: summary.pendingFollowUps, delta: 'Upcoming',                           trend: 'flat' as const },
         { label: 'Applications',        value: summary.applications,     delta: `${summary.applications} active`,     trend: 'up'   as const },
         { label: 'Offer Letters',       value: summary.offerLetters,     delta: `${summary.offerLetters} received`,   trend: 'up'   as const },
-        { label: 'Visa Processing',     value: summary.visaCases,        delta: `${summary.visaCases} total cases`,   trend: 'flat' as const },
+        { label: 'Active Visa Cases',   value: summary.visaCases,        delta: `${summary.visaCases} active`,      trend: 'flat' as const },
         { label: 'Enrolled Students',   value: summary.enrolledOnly,     delta: `${summary.enrolledOnly} enrolled`,   trend: 'up'   as const },
       ]
     },

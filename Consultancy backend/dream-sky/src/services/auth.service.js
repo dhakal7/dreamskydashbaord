@@ -28,6 +28,7 @@ const sanitizeUser = (user) => ({
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
+    phone: user.phone ?? null,
     role: user.role,
     status: user.status,
     branchId: user.branchId ?? null,
@@ -208,6 +209,51 @@ const getMe = async (userId) => {
 };
 
 /**
+ * UPDATE ME
+ * Allows the authenticated user to update their own name, email, and phone.
+ */
+const updateMe = async (userId, { firstName, lastName, name, email, phone }) => {
+    const existingUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existingUser) throw AppError.notFound("User not found.", "USER_NOT_FOUND");
+
+    const data = {};
+
+    if (firstName !== undefined) data.firstName = firstName.trim();
+    if (lastName !== undefined) data.lastName = lastName.trim();
+    if (name !== undefined && firstName === undefined && lastName === undefined) {
+        const parts = name.trim().split(/\s+/);
+        data.firstName = parts[0];
+        data.lastName = parts.slice(1).join(" ");
+    }
+
+    if (email !== undefined) {
+        const normalizedEmail = email.toLowerCase().trim();
+        if (normalizedEmail !== existingUser.email) {
+            const conflict = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+            if (conflict && conflict.id !== userId) {
+                throw AppError.conflict(`Email '${normalizedEmail}' is already in use.`, "EMAIL_EXISTS");
+            }
+            data.email = normalizedEmail;
+        }
+    }
+
+    if (phone !== undefined) {
+        data.phone = phone === null || phone.trim() === "" ? null : phone.trim();
+    }
+
+    const updated = await prisma.user.update({
+        where: { id: userId },
+        data,
+        include: {
+            branch: { select: { id: true, name: true } },
+            referralAgentProfile: { select: { id: true } },
+        },
+    });
+
+    return sanitizeUser(updated);
+};
+
+/**
  * CHANGE PASSWORD
  * Used for all voluntary password changes AND the mandatory first-login change.
  * After a successful change, mustChangePassword is reset to false.
@@ -329,6 +375,7 @@ module.exports = {
     refreshToken,
     logout,
     getMe,
+    updateMe,
     changePassword,
     activateStudentPortal,
 };

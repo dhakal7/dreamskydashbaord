@@ -51,6 +51,8 @@ export default function StudentProfilePage() {
   const navigate = useNavigate()
   const currentUser = useAuthStore((s) => s.currentUser)
   const isAdmin = currentUser.role === 'super_admin' || currentUser.role === 'branch_admin'
+  const canViewApplications = hasPermission(currentUser?.role ?? 'student', 'applications.view')
+  const visibleTabs = tabs.filter((tab) => tab.id !== 'applications' || canViewApplications)
   const mockStudents = useStudentsStore((s) => s.students)
   const deleteMutation = useDeleteStudent()
   const resendMutation = useResendCredentials()
@@ -138,9 +140,11 @@ export default function StudentProfilePage() {
               </div>
 
               <div className="mt-5 flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => setActiveTab('applications')}>
-                  <FileStack className="size-3.5" /> Review Applications
-                </Button>
+                {canViewApplications && (
+                  <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => setActiveTab('applications')}>
+                    <FileStack className="size-3.5" /> Review Applications
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" className="h-8 gap-1.5" onClick={() => setActiveTab('documents')}>
                   <FolderKanban className="size-3.5" /> Check Documents
                 </Button>
@@ -227,7 +231,7 @@ export default function StudentProfilePage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <div className="overflow-x-auto pb-1 -mb-1">
           <TabsList className="w-full justify-start sm:w-auto h-10 min-w-max">
-            {tabs.map((tab) => (
+            {visibleTabs.map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id}>
                 {tab.label}
               </TabsTrigger>
@@ -242,7 +246,9 @@ export default function StudentProfilePage() {
           <TabsContent value="preferences"><PreferencesTab student={student} /></TabsContent>
           <TabsContent value="parents"><ParentsTab student={student} /></TabsContent>
           <TabsContent value="documents"><DocumentsTab student={student} /></TabsContent>
-          <TabsContent value="applications"><ApplicationsTab student={student} /></TabsContent>
+          {canViewApplications && (
+            <TabsContent value="applications"><ApplicationsTab student={student} /></TabsContent>
+          )}
           <TabsContent value="visa"><VisaTab student={student} /></TabsContent>
           <TabsContent value="lifecycle"><LifecycleTab student={student} /></TabsContent>
           <TabsContent value="activity"><ActivityTab student={student} /></TabsContent>

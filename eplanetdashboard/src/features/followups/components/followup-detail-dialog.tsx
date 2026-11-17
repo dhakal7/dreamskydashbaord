@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PriorityBadge, FollowUpStatusBadge } from '@/components/shared/status-badges'
 import { isMockMode } from '@/lib/api-client'
-import { useCancelFollowUp } from '@/hooks/use-followups'
+import { useCancelFollowUp, useUpdateFollowUp } from '@/hooks/use-followups'
 import { useFollowUpsStore } from '../store'
 import type { FollowUp } from '@/types'
 
@@ -39,6 +39,7 @@ export function FollowUpDetailDialog({
   const addNote = useFollowUpsStore((s) => s.addNote)
   const removeFollowUp = useFollowUpsStore((s) => s.removeFollowUp)
   const cancelMutation = useCancelFollowUp()
+  const updateMutation = useUpdateFollowUp()
 
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
@@ -59,19 +60,45 @@ export function FollowUpDetailDialog({
   const ChannelIcon = channelIcons[followup.channel] || Phone
 
   const handleMarkComplete = () => {
-    markComplete(followup.id)
-    onOpenChange(false)
+    if (isMockMode()) {
+      markComplete(followup.id)
+      onOpenChange(false)
+      return
+    }
+    updateMutation.mutate(
+      { id: followup.id, body: { nextFollowUpAt: null } },
+      { onSuccess: () => onOpenChange(false) }
+    )
   }
 
   const handleReschedule = (e: React.FormEvent) => {
     e.preventDefault()
     if (!date || !time) return
-    reschedule(followup.id, date, time)
-    setIsRescheduling(false)
+    if (isMockMode()) {
+      reschedule(followup.id, date, time)
+      setIsRescheduling(false)
+      return
+    }
+    const iso = new Date(`${date}T${time}`).toISOString()
+    updateMutation.mutate(
+      { id: followup.id, body: { nextFollowUpAt: iso } },
+      {
+        onSuccess: () => {
+          setIsRescheduling(false)
+          onOpenChange(false)
+        },
+      }
+    )
   }
 
   const handleSaveNotes = () => {
-    addNote(followup.id, notes)
+    if (isMockMode()) {
+      addNote(followup.id, notes)
+      return
+    }
+    const trimmed = notes.trim()
+    if (!trimmed) return
+    updateMutation.mutate({ id: followup.id, body: { content: trimmed } })
   }
 
   const handleCancelReminder = () => {

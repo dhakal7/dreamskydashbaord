@@ -769,6 +769,173 @@ const updateUserBranch = async (targetId, newBranchId, currentUser) => {
     );
 };
 
+const updateUserProfile = async (targetId, { firstName, lastName, name, email, phone }, currentUser = null) => {
+    if (!targetId || typeof targetId !== "string") {
+        throw AppError.badRequest("Valid user ID is required.", "VALIDATION_ERROR");
+    }
+    if (!currentUser) {
+        throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+    }
+
+    const hasAnyField =
+        firstName !== undefined ||
+        lastName !== undefined ||
+        name !== undefined ||
+        email !== undefined ||
+        phone !== undefined;
+    if (!hasAnyField) {
+        throw AppError.badRequest(
+            "At least one profile field (name, firstName, lastName, email, or phone) is required.",
+            "VALIDATION_ERROR"
+        );
+    }
+
+    if (name !== undefined && (typeof name !== "string" || !name.trim())) {
+        throw AppError.badRequest("Name cannot be empty.", "VALIDATION_ERROR");
+    }
+    if (firstName !== undefined && (typeof firstName !== "string" || !firstName.trim())) {
+        throw AppError.badRequest("First name cannot be empty.", "VALIDATION_ERROR");
+    }
+    if (lastName !== undefined && typeof lastName !== "string") {
+        throw AppError.badRequest("Last name must be a string.", "VALIDATION_ERROR");
+    }
+    if (email !== undefined) {
+        if (typeof email !== "string" || !email.trim()) {
+            throw AppError.badRequest("Email cannot be empty.", "VALIDATION_ERROR");
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            throw AppError.badRequest("Email format is invalid.", "VALIDATION_ERROR");
+        }
+    }
+    if (phone !== undefined && phone !== null) {
+        if (typeof phone !== "string") {
+            throw AppError.badRequest("Phone must be a string.", "VALIDATION_ERROR");
+        }
+        if (phone.trim().length > 30) {
+            throw AppError.badRequest("Phone number must be 30 characters or fewer.", "VALIDATION_ERROR");
+        }
+    }
+
+    const actorId = currentUser.userId || currentUser.id;
+
+    return prisma.$transaction(
+        async (tx) => {
+            const target = await tx.user.findUnique({
+                where: { id: targetId },
+                select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                    phone: true,
+                    role: true,
+                    status: true,
+                    branchId: true,
+                },
+            });
+            if (!target) {
+                throw AppError.notFound(`User with id '${targetId}' not found.`, "USER_NOT_FOUND");
+            }
+
+            const actor = await tx.user.findUnique({
+                where: { id: actorId },
+                select: { id: true, role: true, status: true, branchId: true },
+            });
+            if (!actor || actor.status !== "ACTIVE") {
+                throw AppError.unauthorized("Authentication required or account is inactive.", "UNAUTHORIZED");
+            }
+
+            if (actor.role === "BRANCH_ADMIN") {
+                if (["SUPER_ADMIN", "BRANCH_ADMIN"].includes(target.role)) {
+                    throw AppError.forbidden(
+                        "Branch admins cannot modify profile of administrative staff accounts.",
+                        "FORBIDDEN"
+                    );
+                }
+                if (!actor.branchId) {
+                    throw AppError.forbidden("Branch Admin lacks assigned branch context.", "NO_BRANCH_CONTEXT");
+                }
+                if (target.branchId !== actor.branchId) {
+                    throw AppError.forbidden(
+                        "Branch admins cannot modify staff outside their assigned branch.",
+                        "FORBIDDEN"
+                    );
+                }
+            } else if (actor.role !== "SUPER_ADMIN") {
+                throw AppError.forbidden("You do not have permission to update user profiles.", "FORBIDDEN");
+            }
+
+            const data = {};
+            if (firstName !== undefined) data.firstName = firstName.trim();
+            if (lastName !== undefined) data.lastName = lastName.trim();
+            if (name !== undefined && firstName === undefined && lastName === undefined) {
+                const parts = name.trim().split(/\s+/);
+                data.firstName = parts[0];
+                data.lastName = parts.slice(1).join(" ");
+            }
+
+            if (email !== undefined) {
+                const normalizedEmail = email.toLowerCase().trim();
+                if (normalizedEmail !== target.email) {
+                    const conflict = await tx.user.findUnique({ where: { email: normalizedEmail } });
+                    if (conflict && conflict.id !== target.id) {
+                        throw AppError.conflict(`Email '${normalizedEmail}' is already in use.`, "EMAIL_EXISTS");
+                    }
+                    data.email = normalizedEmail;
+                }
+            }
+
+            if (phone !== undefined) {
+                data.phone = phone === null || phone.trim() === "" ? null : phone.trim();
+            }
+
+            const updated = await tx.user.update({
+                where: { id: targetId },
+                data,
+                select: SAFE_USER_SELECT,
+            });
+
+            const auditChanges = [];
+            if (data.email !== undefined && data.email !== target.email) {
+                auditChanges.push({ field: "email", oldValue: target.email, newValue: data.email });
+            }
+            if (data.phone !== undefined && data.phone !== target.phone) {
+                auditChanges.push({
+                    field: "phone",
+                    oldValue: target.phone ?? "null",
+                    newValue: data.phone ?? "null",
+                });
+            }
+            if (
+                (data.firstName !== undefined && data.firstName !== target.firstName) ||
+                (data.lastName !== undefined && data.lastName !== target.lastName)
+            ) {
+                auditChanges.push({
+                    field: "name",
+                    oldValue: `${target.firstName} ${target.lastName}`.trim(),
+                    newValue: `${updated.firstName} ${updated.lastName}`.trim(),
+                });
+            }
+
+            if (auditChanges.length > 0) {
+                await tx.auditLog.createMany({
+                    data: auditChanges.map((c) => ({
+                        actorId: actor.id,
+                        entity: "User",
+                        entityId: target.id,
+                        field: c.field,
+                        oldValue: c.oldValue,
+                        newValue: c.newValue,
+                    })),
+                });
+            }
+
+            return updated;
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted }
+    );
+};
+
 const listBranches = async () => {
     return prisma.branch.findMany({
         where: { isActive: true },
@@ -784,6 +951,7 @@ module.exports = {
     updateUserStatus,
     updateUserRole,
     updateUserBranch,
+    updateUserProfile,
     listBranches,
     generateUniqueReferralCode,
     SUPER_ADMIN_STATUS_ADVISORY_LOCK,

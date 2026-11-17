@@ -560,6 +560,22 @@ const assertStudentAuthorization = (student, currentUser, action = "modify") => 
 
 // ─── GET ONE (360° profile) ───────────────────────────────────────────────────
 const getStudentById = async (id, currentUser = null) => {
+    const actorRole = currentUser?.role;
+    const actorId = currentUser?.userId || currentUser?.id;
+
+    let communicationLogsWhere = undefined;
+    if (actorRole === "COUNSELOR" && actorId) {
+        communicationLogsWhere = {
+            OR: [
+                { authorId: actorId },
+                { authorId: null },
+                { author: { role: { not: "FRONT_DESK" } } },
+            ],
+        };
+    } else if (actorRole === "FRONT_DESK" && actorId) {
+        communicationLogsWhere = { authorId: actorId };
+    }
+
     const student = await prisma.student.findUnique({
         where: { id },
         select: {
@@ -590,7 +606,12 @@ const getStudentById = async (id, currentUser = null) => {
             payments: { include: { transactions: true } },
             applications: { include: { university: { select: { id: true, name: true } }, course: { select: { id: true, name: true } } } },
             appointments: { orderBy: { datetime: "desc" }, take: 5 },
-            communicationLogs: { orderBy: { createdAt: "desc" }, take: 10 },
+            communicationLogs: {
+                ...(communicationLogsWhere ? { where: communicationLogsWhere } : {}),
+                include: { author: { select: { id: true, firstName: true, lastName: true, role: true } } },
+                orderBy: { createdAt: "desc" },
+                take: 10,
+            },
         },
     });
 
@@ -608,6 +629,19 @@ const getStudentById = async (id, currentUser = null) => {
             assertStudentAuthorization(student, currentUser, "view");
         } catch {
             throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
+        }
+    }
+
+    // Defense-in-depth: strip private logs in-memory as well
+    if (Array.isArray(student.communicationLogs) && currentUser) {
+        if (actorRole === "COUNSELOR") {
+            student.communicationLogs = student.communicationLogs.filter(
+                (log) => log.authorId === actorId || log.author?.role !== "FRONT_DESK"
+            );
+        } else if (actorRole === "FRONT_DESK") {
+            student.communicationLogs = student.communicationLogs.filter(
+                (log) => log.authorId === actorId
+            );
         }
     }
 

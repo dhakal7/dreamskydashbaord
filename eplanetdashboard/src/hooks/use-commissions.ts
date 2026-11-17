@@ -38,6 +38,36 @@ export function useCommissionRules(params: CommissionRuleListParams = {}) {
   })
 }
 
+export function useCreateCommissionRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return commissionApi.createRule(body as any)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: commissionKeys.rules() })
+      toast.success('Commission rule created')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to create commission rule'),
+  })
+}
+
+export function useUpdateCommissionRule() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return commissionApi.updateRule(id, body as any)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: commissionKeys.rules() })
+      toast.success('Commission rule updated')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to update commission rule'),
+  })
+}
+
 export function useMarkCommissionPaid() {
   const qc = useQueryClient()
   return useMutation({

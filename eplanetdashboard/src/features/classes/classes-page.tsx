@@ -75,9 +75,11 @@ export default function ClassesPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
   const role = currentUser?.role ?? 'front_desk'
   const linkedId = currentUser?.linkedId
+  const canManageClasses = hasPermission(role, 'classes.manage')
 
   // Page-level section: 'batches' = admitted class batches | 'capture' = inquiry-only list
   const [sectionTab, setSectionTab] = useState<'batches' | 'capture'>('batches')
+  const activeSectionTab = canManageClasses ? sectionTab : 'batches'
 
   // Class Capture List state (local — these are not pushed to backend yet)
   const [captureList, setCaptureList] = useState<ClassCaptureEntry[]>([])
@@ -156,7 +158,7 @@ export default function ClassesPage() {
   const [liveTeachers, setLiveTeachers] = useState<Array<{ id: string; name: string; email: string }>>([])
 
   useEffect(() => {
-    if (!isMockMode()) {
+    if (!isMockMode() && canManageClasses) {
       api.get<any[]>('/users')
         .then((users) => {
           if (Array.isArray(users)) {
@@ -173,7 +175,7 @@ export default function ClassesPage() {
         })
         .catch(() => {})
     }
-  }, [currentUser])
+  }, [currentUser, canManageClasses])
 
   // Component state
   const [searchQuery, setSearchQuery] = useState('')
@@ -340,6 +342,14 @@ export default function ClassesPage() {
     }
 
     const cls = formattedClasses.find((c) => c.id === targetClassId)
+    if (cls && cls.capacity > 0 && cls.enrolledCount >= cls.capacity) {
+      toast.error(
+        cls.enrolledCount > cls.capacity
+          ? `This batch is over capacity (${cls.enrolledCount}/${cls.capacity}). New enrollments are blocked.`
+          : `Class has reached maximum capacity (${cls.capacity} seats).`
+      )
+      return
+    }
     const st = availableStudents.find((s) => s.id === targetStudentId)
 
     setIsEnrolling(true)
@@ -408,7 +418,7 @@ export default function ClassesPage() {
         <button
           onClick={() => setSectionTab('batches')}
           className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-            sectionTab === 'batches'
+            activeSectionTab === 'batches'
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
@@ -418,28 +428,30 @@ export default function ClassesPage() {
             Admitted Class Batches
           </span>
         </button>
-        <button
-          onClick={() => setSectionTab('capture')}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-            sectionTab === 'capture'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <span className="flex items-center gap-1.5">
-            <ClipboardList className="size-4" />
-            Class Capture List
-            {captureList.length > 0 && (
-              <span className="ml-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5">
-                {captureList.length}
-              </span>
-            )}
-          </span>
-        </button>
+        {canManageClasses && (
+          <button
+            onClick={() => setSectionTab('capture')}
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
+              activeSectionTab === 'capture'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <span className="flex items-center gap-1.5">
+              <ClipboardList className="size-4" />
+              Class Capture List
+              {captureList.length > 0 && (
+                <span className="ml-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5">
+                  {captureList.length}
+                </span>
+              )}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* ========== CLASS CAPTURE LIST TAB ========== */}
-      {sectionTab === 'capture' && (
+      {canManageClasses && activeSectionTab === 'capture' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
@@ -557,7 +569,7 @@ export default function ClassesPage() {
       )}
 
       {/* ========== ADMITTED CLASS BATCHES TAB (all existing content, untouched) ========== */}
-      {sectionTab === 'batches' && (
+      {activeSectionTab === 'batches' && (
       <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -575,8 +587,8 @@ export default function ClassesPage() {
             <Button
               size="sm"
               className="gap-1.5 bg-primary hover:bg-primary/90 text-white text-xs h-9"
-              disabled={formattedClasses.length === 0}
-              onClick={() => handleOpenAdmitModal(formattedClasses[0]?.id || '')}
+              disabled={!formattedClasses.some((c) => !(c.capacity > 0 && c.enrolledCount >= c.capacity))}
+              onClick={() => handleOpenAdmitModal('')}
             >
               <UserPlus className="size-4" />
               + Admit Student to Class
@@ -664,7 +676,10 @@ export default function ClassesPage() {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredClasses.map((c) => {
           const isIelts = c.subject.toUpperCase() === 'IELTS'
-          const pct = Math.min(100, Math.round((c.enrolledCount / c.capacity) * 100))
+          const rawPct = c.capacity > 0 ? Math.round((c.enrolledCount / c.capacity) * 100) : 0
+          const barPct = Math.min(100, rawPct)
+          const isOverCapacity = c.capacity > 0 && c.enrolledCount > c.capacity
+          const isAtCapacity = c.capacity > 0 && c.enrolledCount >= c.capacity
 
           return (
             <Card
@@ -676,7 +691,7 @@ export default function ClassesPage() {
             >
               <div className="p-4 space-y-3">
                 {/* Header Tag & Status */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <Badge
                     variant="outline"
                     className={
@@ -687,9 +702,16 @@ export default function ClassesPage() {
                   >
                     {c.subject} Batch
                   </Badge>
-                  <Badge variant="outline" className="text-[10px] py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200">
-                    {c.status}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    {isOverCapacity && (
+                      <Badge variant="outline" className="text-[10px] py-0.5 bg-rose-50 text-rose-700 border-rose-200 font-semibold">
+                        Over Capacity (+{c.enrolledCount - c.capacity})
+                      </Badge>
+                    )}
+                    <Badge variant="outline" className="text-[10px] py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200">
+                      {c.status}
+                    </Badge>
+                  </div>
                 </div>
 
                 {/* Class Title & Schedule */}
@@ -733,11 +755,16 @@ export default function ClassesPage() {
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-[11px]">
                     <span className="text-muted-foreground">Class Capacity</span>
-                    <span className="font-semibold text-foreground">
-                      {c.enrolledCount} / {c.capacity} Enrolled ({pct}%)
+                    <span className={`font-semibold ${isOverCapacity ? 'text-rose-600' : 'text-foreground'}`}>
+                      {c.enrolledCount} / {c.capacity} Enrolled ({rawPct}%)
                     </span>
                   </div>
-                  <Progress value={pct} className="h-1.5 bg-muted" />
+                  <Progress value={barPct} className="h-1.5 bg-muted" />
+                  {isOverCapacity && (
+                    <p className="text-[11px] font-medium text-rose-600">
+                      Batch exceeds seat limit; new enrollments are blocked.
+                    </p>
+                  )}
                 </div>
 
                 {/* Card Action Footer */}
@@ -746,14 +773,15 @@ export default function ClassesPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="h-8 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10 mr-auto"
+                      disabled={isAtCapacity}
+                      className="h-8 text-xs gap-1.5 text-primary border-primary/30 hover:bg-primary/10 mr-auto disabled:opacity-60"
                       onClick={(e) => {
                         e.stopPropagation()
                         handleOpenAdmitModal(c.id)
                       }}
                     >
                       <UserPlus className="size-3.5" />
-                      + Admit Student
+                      {isOverCapacity ? 'Over Capacity' : isAtCapacity ? 'Batch Full' : 'Admit'}
                     </Button>
                   )}
 
@@ -862,14 +890,18 @@ export default function ClassesPage() {
               <label className="text-xs font-semibold">Select Class Batch</label>
               <Select value={targetClassId} onValueChange={setTargetClassId}>
                 <SelectTrigger className="h-9 text-xs">
-                  <SelectValue placeholder="Choose class timing batch…" />
+                  <SelectValue placeholder="Select an available class" />
                 </SelectTrigger>
                 <SelectContent>
-                  {formattedClasses.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name} ({c.schedule})
-                    </SelectItem>
-                  ))}
+                  {formattedClasses.map((c) => {
+                    const full = c.capacity > 0 && c.enrolledCount >= c.capacity
+                    const over = c.capacity > 0 && c.enrolledCount > c.capacity
+                    return (
+                      <SelectItem key={c.id} value={c.id} disabled={full}>
+                        {c.name} ({c.schedule}) — {c.enrolledCount}/{c.capacity}{over ? ' (Over Capacity)' : full ? ' (Full)' : ''}
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -890,7 +922,16 @@ export default function ClassesPage() {
             <Button variant="outline" size="sm" onClick={() => setEnrollDialogOpen(false)}>
               Cancel
             </Button>
-            <Button size="sm" onClick={handleAdmitSubmit} disabled={isEnrolling}>
+            <Button
+              size="sm"
+              onClick={handleAdmitSubmit}
+              disabled={
+                isEnrolling ||
+                !targetClassId ||
+                !targetStudentId ||
+                formattedClasses.some((c) => c.id === targetClassId && c.capacity > 0 && c.enrolledCount >= c.capacity)
+              }
+            >
               {isEnrolling ? 'Admitting…' : 'Admit Student'}
             </Button>
           </DialogFooter>

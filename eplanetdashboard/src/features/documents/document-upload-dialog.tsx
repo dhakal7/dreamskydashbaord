@@ -20,6 +20,7 @@ import {
 import { SearchableStudentPicker } from '@/components/shared/searchable-student-picker'
 import { useUploadDocument } from '@/hooks/use-documents'
 import { useStudents } from '@/hooks/use-students'
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { useStudentsStore } from '@/features/students/store'
 import { useAuthStore } from '@/store/auth-store'
 import { isMockMode } from '@/lib/api-client'
@@ -92,12 +93,24 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
   const currentUser = useAuthStore((s) => s.currentUser)
 
   const mockMode = isMockMode()
+  const [studentSearch, setStudentSearch] = useState('')
+  const debouncedStudentSearch = useDebouncedValue(studentSearch.trim(), 300)
   const {
     data: liveStudentsData,
     isLoading: isStudentsLoading,
+    isFetching: isStudentsFetching,
     isError: isStudentsError,
     refetch: refetchStudents,
-  } = useStudents({ limit: 500 })
+  } = useStudents(
+    mockMode
+      ? { limit: 500 }
+      : {
+          limit: 50,
+          search: debouncedStudentSearch || undefined,
+          stageIn: 'LEAD,PROSPECT,ENROLLED,APPLIED,OFFER_RECEIVED,VISA_APPLIED,VISA_APPROVED,DEPARTED,LOST',
+        },
+    { enabled: open && !mockMode && !preselectedStudentId }
+  )
   const mockStudents = useStudentsStore((s) => s.students)
   const isCounselor = String(currentUser?.role).toLowerCase() === 'counselor'
 
@@ -147,8 +160,30 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
   const [multiFileWarning, setMultiFileWarning] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
 
+  const [cachedSelectedStudent, setCachedSelectedStudent] = useState<{
+    id: string
+    name: string
+    studentId?: string
+    email?: string
+    phone?: string
+  } | null>(null)
+
   const activeStudentId = preselectedStudentId || studentId
-  const selectedStudent = students.find((s) => s.id === activeStudentId)
+  const matchedStudent = students.find((s) => s.id === activeStudentId)
+  const selectedStudent = matchedStudent ?? (cachedSelectedStudent?.id === activeStudentId ? cachedSelectedStudent : undefined)
+
+  const handleStudentChange = (nextId: string) => {
+    setStudentId(nextId)
+    const found = students.find((s) => s.id === nextId)
+    if (found) setCachedSelectedStudent(found)
+  }
+
+  const handleDialogOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setStudentSearch('')
+    }
+    onOpenChange(nextOpen)
+  }
 
   const handleCategoryChange = (cat: DocumentCategory) => {
     setCategory(cat)
@@ -214,7 +249,7 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="max-w-md sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Upload Document</DialogTitle>
@@ -234,8 +269,12 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
                 label="Student"
                 students={students}
                 value={studentId}
-                onChange={setStudentId}
-                placeholder={isStudentsLoading ? 'Loading students...' : 'Search student by name, ID, or passport...'}
+                onChange={handleStudentChange}
+                onSearchChange={mockMode ? undefined : setStudentSearch}
+                searching={mockMode ? false : (isStudentsLoading || isStudentsFetching || studentSearch.trim() !== debouncedStudentSearch)}
+                error={!mockMode && isStudentsError ? 'Unable to load students from server.' : null}
+                placeholder={isStudentsLoading ? 'Searching students...' : 'Search student by name, email, or phone...'}
+                emptyMessage={debouncedStudentSearch ? 'No matching students found.' : 'Type to search students...'}
                 showDropdown
               />
               {!mockMode && isStudentsLoading && (

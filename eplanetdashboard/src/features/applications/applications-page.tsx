@@ -77,8 +77,14 @@ export default function ApplicationsPage() {
     return set
   }, [apiVisaData])
 
+  const rawApiApps = !isMockMode() ? (apiAppData?.applications ?? []) : []
+  const linkedToVisaCount = useMemo(
+    () => rawApiApps.filter((app) => Boolean((app as any).visaCase) || visaApplicationIds.has(app.id)).length,
+    [rawApiApps, visaApplicationIds]
+  )
+
   const applications: Application[] = !isMockMode()
-    ? (apiAppData?.applications ?? [])
+    ? rawApiApps
         .filter((app) => !(app as any).visaCase && !visaApplicationIds.has(app.id))
         .map((app) => ({
         id: app.id,
@@ -197,10 +203,21 @@ export default function ApplicationsPage() {
           emptyState={
             <div className="py-12 flex flex-col items-center justify-center text-center">
               <FileStack className="size-10 text-muted-foreground/50 mb-3" />
-              <h3 className="font-semibold text-lg">No Applications Found</h3>
-              <p className="text-sm text-muted-foreground max-w-sm mt-1">
-                Try adjusting your filters or search terms to locate specific records.
+              <h3 className="font-semibold text-lg">
+                {linkedToVisaCount > 0 && applications.length === 0
+                  ? 'All Applications Moved to Visa Processing'
+                  : 'No Applications Found'}
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-md mt-1">
+                {linkedToVisaCount > 0 && applications.length === 0
+                  ? `All ${linkedToVisaCount} application${linkedToVisaCount === 1 ? '' : 's'} have already moved to Visa Processing and are tracked on the Visa Processing page.`
+                  : 'Try adjusting your filters or search terms to locate specific records.'}
               </p>
+              {linkedToVisaCount > 0 && applications.length === 0 && (
+                <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate('/visa')}>
+                  View Visa Processing
+                </Button>
+              )}
             </div>
           }
         />

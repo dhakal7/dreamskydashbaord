@@ -35,7 +35,7 @@ const remove = async (req, res) => {
 };
 
 const dashboard = async (req, res) => {
-    const stats = await visaService.getDashboardStats();
+    const stats = await visaService.getDashboardStats(req.user);
     sendSuccess(res, { data: stats });
 };
 

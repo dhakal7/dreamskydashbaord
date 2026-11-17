@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { User, Lock, Eye, EyeOff } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -15,13 +16,106 @@ import { api, isMockMode } from '@/lib/api-client'
 
 function StaffProfileSection() {
   const currentUser = useAuthStore((s) => s.currentUser)
+  const mockMode = isMockMode()
+
+  const { data: meData, isLoading, isError, refetch } = useQuery({
+    queryKey: ['auth', 'me'],
+    queryFn: () => api.get<{
+      id: string
+      email: string
+      firstName?: string
+      lastName?: string
+      phone?: string | null
+    }>('/auth/me'),
+    enabled: !mockMode,
+  })
+
   const [name, setName] = useState(currentUser.name)
   const [email, setEmail] = useState(currentUser.email)
-  const [phone, setPhone] = useState('+977 9801234567')
+  const [phone, setPhone] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (!mockMode && meData) {
+      const fullName = `${meData.firstName || ''} ${meData.lastName || ''}`.trim()
+      setName(fullName || currentUser.name)
+      setEmail(meData.email || currentUser.email)
+      setPhone(meData.phone || '')
+    }
+  }, [mockMode, meData, currentUser.name, currentUser.email])
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Profile details updated successfully')
+    const trimmedName = name.trim()
+    const trimmedEmail = email.trim()
+    const trimmedPhone = phone.trim()
+
+    if (!trimmedName) {
+      toast.error('Full name is required')
+      return
+    }
+    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      toast.error('Please enter a valid email address')
+      return
+    }
+
+    if (mockMode) {
+      toast.success('Profile details updated (Mock Mode)')
+      return
+    }
+
+    setSaving(true)
+    try {
+      const updated = await api.patch<{
+        id: string
+        email: string
+        firstName?: string
+        lastName?: string
+        phone?: string | null
+      }>('/auth/me', {
+        name: trimmedName,
+        email: trimmedEmail,
+        phone: trimmedPhone || null,
+      })
+
+      const resolvedName =
+        `${updated?.firstName || ''} ${updated?.lastName || ''}`.trim() || trimmedName
+      const resolvedEmail = updated?.email || trimmedEmail
+
+      useAuthStore.setState((state) => ({
+        currentUser: {
+          ...state.currentUser,
+          name: resolvedName,
+          email: resolvedEmail,
+        },
+      }))
+
+      try {
+        const rawUser = localStorage.getItem('dreamsky-user')
+        if (rawUser) {
+          const parsed = JSON.parse(rawUser)
+          localStorage.setItem(
+            'dreamsky-user',
+            JSON.stringify({
+              ...parsed,
+              firstName: updated?.firstName ?? parsed.firstName,
+              lastName: updated?.lastName ?? parsed.lastName,
+              email: resolvedEmail,
+              phone: updated?.phone ?? (trimmedPhone || null),
+            })
+          )
+        }
+      } catch {
+        // Ignore storage sync errors
+      }
+
+      await refetch()
+      toast.success('Profile updated successfully')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to update profile')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -31,28 +125,61 @@ function StaffProfileSection() {
           <User className="size-4 text-muted-foreground" />
           Staff Profile Information
         </CardTitle>
-        <CardDescription>View and update your personal details and contact information</CardDescription>
+        <CardDescription>Authenticated account details loaded from the server</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSaveProfile} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Full Name</label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full Name" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Email Address</label>
-              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email Address" />
-            </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Phone Number</label>
-              <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+977 98XXXXXXXX" />
-            </div>
+        {!mockMode && isLoading ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 animate-pulse">
+            <div className="h-10 rounded-md bg-muted" />
+            <div className="h-10 rounded-md bg-muted" />
+            <div className="h-10 rounded-md bg-muted" />
           </div>
-          <div className="flex justify-end pt-1">
-            <Button type="submit">Update Profile</Button>
+        ) : !mockMode && isError ? (
+          <div className="flex items-center justify-between rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+            <span>Failed to load your profile from the server.</span>
+            <Button type="button" variant="outline" size="sm" onClick={() => refetch()}>
+              Retry
+            </Button>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={handleSaveProfile} className="space-y-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Full Name</label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Full Name"
+                  disabled={saving}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Email Address</label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email Address"
+                  disabled={saving}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Phone Number</label>
+                <Input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="e.g. +977 9801234567"
+                  disabled={saving}
+                />
+              </div>
+            </div>
+            <div className="flex justify-end pt-1">
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Saving...' : 'Update Profile'}
+              </Button>
+            </div>
+          </form>
+        )}
       </CardContent>
     </Card>
   )

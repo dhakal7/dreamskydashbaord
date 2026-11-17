@@ -1,0 +1,1 @@
+var e={super_admin:`Super Admin`,branch_admin:`Branch Admin`,front_desk:`Front Desk`,counselor:`Counselor`,teacher:`Teacher`,student:`Student`,referral_agent:`Referral Agent`};export{e as t};

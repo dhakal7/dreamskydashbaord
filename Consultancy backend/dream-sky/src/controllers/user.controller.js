@@ -111,6 +111,24 @@ const updateUserBranch = async (req, res, next) => {
     }
 };
 
+const updateUserProfile = async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const { firstName, lastName, name, email, phone } = req.body;
+        const updated = await userService.updateUserProfile(
+            id,
+            { firstName, lastName, name, email, phone },
+            req.user
+        );
+        sendSuccess(res, {
+            message: "User profile successfully updated.",
+            data: updated,
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
 const listBranches = async (req, res, next) => {
     try {
         const branches = await userService.listBranches();
@@ -127,6 +145,7 @@ module.exports = {
     updateUserStatus,
     updateUserRole,
     updateUserBranch,
+    updateUserProfile,
     listBranches,
 };
 

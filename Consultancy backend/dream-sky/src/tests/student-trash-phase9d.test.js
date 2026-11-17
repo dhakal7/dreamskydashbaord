@@ -702,7 +702,10 @@ test("TRASH-15: Related record creation blocked for students in Trash", async ()
     // 1. Application
     await assert.rejects(
         async () => {
-            await applicationService.createApplication({ studentId: trashedId, universityId: "u1", courseName: "CS" });
+            await applicationService.createApplication(
+                { studentId: trashedId, universityId: "u1", courseName: "CS" },
+                { id: "sa-1", role: "SUPER_ADMIN" }
+            );
         },
         (err) => {
             assert.strictEqual(err.statusCode, 400);

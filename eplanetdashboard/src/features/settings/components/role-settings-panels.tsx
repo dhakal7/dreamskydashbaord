@@ -4,16 +4,46 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
-import { Clock, Video, Target, Building2, Printer, BellRing, Sparkles } from 'lucide-react'
+import { Clock, Video, Target, Building2, Printer, BellRing, Sparkles, Info } from 'lucide-react'
+import { isMockMode } from '@/lib/api-client'
 import type { Role } from '@/types'
 
+function notifyRolePreferenceSave(mockMessage: string) {
+  if (isMockMode()) {
+    toast.success(mockMessage)
+  } else {
+    toast.info('Role workspace preferences are not persisted yet (backend endpoint not implemented).')
+  }
+}
+
 export function RoleSettingsPanel({ role }: { role: Role }) {
-  if (role === 'counselor') return <CounselorSettingsPanel />
-  if (role === 'teacher') return <TeacherSettingsPanel />
-  if (role === 'student') return <StudentSettingsPanel />
-  if (role === 'referral_agent') return <ReferralAgentSettingsPanel />
-  if (role === 'front_desk') return <FrontDeskSettingsPanel />
-  return null
+  const panel =
+    role === 'counselor' ? <CounselorSettingsPanel /> :
+    role === 'teacher' ? <TeacherSettingsPanel /> :
+    role === 'student' ? <StudentSettingsPanel /> :
+    role === 'referral_agent' ? <ReferralAgentSettingsPanel /> :
+    role === 'front_desk' ? <FrontDeskSettingsPanel /> :
+    null
+
+  if (!panel) return null
+
+  if (!isMockMode()) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 rounded-md border border-border/70 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          <Info className="size-3.5 shrink-0" />
+          <span>
+            Role-specific workspace preferences below are read-only previews — backend persistence endpoints are not yet implemented.
+          </span>
+        </div>
+        <fieldset disabled className="opacity-75">
+          {panel}
+        </fieldset>
+      </div>
+    )
+  }
+
+  return panel
 }
 
 /* ── Counselor Settings Panel ────────────────────────────────────────── */
@@ -25,7 +55,7 @@ function CounselorSettingsPanel() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Counselor consultation settings updated')
+    notifyRolePreferenceSave('Counselor consultation settings updated')
   }
 
   return (
@@ -98,7 +128,7 @@ function TeacherSettingsPanel() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Teacher classroom settings updated')
+    notifyRolePreferenceSave('Teacher classroom settings updated')
   }
 
   return (
@@ -170,7 +200,7 @@ function StudentSettingsPanel() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Student study preferences updated')
+    notifyRolePreferenceSave('Student study preferences updated')
   }
 
   return (
@@ -243,7 +273,7 @@ function ReferralAgentSettingsPanel() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Referral payout & bank details updated')
+    notifyRolePreferenceSave('Referral payout & bank details updated')
   }
 
   return (
@@ -311,7 +341,7 @@ function FrontDeskSettingsPanel() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Front desk reception settings updated')
+    notifyRolePreferenceSave('Front desk reception settings updated')
   }
 
   return (

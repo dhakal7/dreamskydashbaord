@@ -5,6 +5,7 @@ const {
     validateChangePassword,
     validateRefreshToken,
     validateActivatePortal,
+    validateUpdateMe,
 } = require("../validators/auth.validator");
 
 /**
@@ -45,6 +46,13 @@ const getMe = async (req, res) => {
     sendSuccess(res, { data: user });
 };
 
+const updateMe = async (req, res) => {
+    const { firstName, lastName, name, email, phone } = req.body;
+    validateUpdateMe({ firstName, lastName, name, email, phone });
+    const user = await authService.updateMe(req.user.userId, { firstName, lastName, name, email, phone });
+    sendSuccess(res, { message: "Profile updated successfully.", data: user });
+};
+
 const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
     validateChangePassword({ currentPassword, newPassword });
@@ -59,4 +67,4 @@ const activateStudentPortal = async (req, res) => {
     sendSuccess(res, { message: result.message, data: result });
 };
 
-module.exports = { login, refresh, logout, getMe, changePassword, activateStudentPortal };
+module.exports = { login, refresh, logout, getMe, updateMe, changePassword, activateStudentPortal };
