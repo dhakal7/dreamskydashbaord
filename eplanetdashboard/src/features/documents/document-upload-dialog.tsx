@@ -264,9 +264,8 @@ export function DocumentUploadDialog({ open, onOpenChange, preselectedStudentId 
           {/* Student Picker if not pre-selected */}
           {!preselectedStudentId && (
             <div className="space-y-1.5">
-              <label className="mb-1 block text-xs font-medium text-muted-foreground">Select Student *</label>
               <SearchableStudentPicker
-                label="Student"
+                label="Select Student *"
                 students={students}
                 value={studentId}
                 onChange={handleStudentChange}
