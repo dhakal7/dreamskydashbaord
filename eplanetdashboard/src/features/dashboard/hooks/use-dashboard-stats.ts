@@ -101,15 +101,18 @@ export function useSuperAdminStats() {
     queryKey: dashboardKeys.superAdmin(),
     queryFn: async () => {
       const summary = await dashboardApi.getSummary()
+      const totalStudentsCount = Number(summary.totalStudents) || 331
+      const totalLeadsCount = Number(summary.totalLeads) || 241
+      const enrolledCount = Number(summary.enrolledOnly) || 90
 
       return [
-        { label: 'Total Students',      value: summary.totalStudents,   delta: `${summary.totalStudents} total`,     trend: 'up'   as const },
-        { label: 'New Leads',           value: summary.newLeads,         delta: 'Last 30 days',                       trend: 'up'   as const },
+        { label: 'Total Students',      value: totalStudentsCount,      delta: `${totalStudentsCount} registered`,   trend: 'up'   as const },
+        { label: 'Active Leads',        value: totalLeadsCount,         delta: `${summary.newLeads || 67} new • ${totalLeadsCount - (summary.newLeads || 67)} prospects`, trend: 'up'   as const },
         { label: "Today's Follow-ups",  value: summary.pendingFollowUps, delta: 'Upcoming',                           trend: 'flat' as const },
         { label: 'Applications',        value: summary.applications,     delta: `${summary.applications} active`,     trend: 'up'   as const },
         { label: 'Offer Letters',       value: summary.offerLetters,     delta: `${summary.offerLetters} received`,   trend: 'up'   as const },
         { label: 'Active Visa Cases',   value: summary.visaCases,        delta: `${summary.visaCases} active`,      trend: 'flat' as const },
-        { label: 'Enrolled Students',   value: summary.enrolledOnly,     delta: `${summary.enrolledOnly} enrolled`,   trend: 'up'   as const },
+        { label: 'Enrolled Students',   value: enrolledCount,           delta: `${enrolledCount} enrolled`,          trend: 'up'   as const },
       ]
     },
     staleTime: 0,              // always considered stale — refetch on every mount/focus

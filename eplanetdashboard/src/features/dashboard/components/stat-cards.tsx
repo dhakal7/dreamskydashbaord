@@ -13,10 +13,13 @@ const iconColors = ['#2563EB', '#7C3AED', '#D97706', '#0891B2', '#16A34A', '#DB2
 const LABEL_ROUTES: Record<string, string> = {
   'Total Students':     '/students',
   'New Leads':          '/leads',
+  'Active Leads':       '/leads',
+  'Total Leads':        '/leads',
   "Today's Follow-ups": '/follow-ups',
   'Applications':       '/applications',
   'Offer Letters':      '/applications',
   'Visa Processing':    '/visa',
+  'Active Visa Cases':  '/visa',
   'Enrolled Students':  '/students',
 }
 

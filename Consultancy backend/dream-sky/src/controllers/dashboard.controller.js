@@ -105,31 +105,36 @@ const getSummary = async (req, res, next) => {
         // Run all counts in parallel server-side — single DB connection burst
         const [
             totalStudents,
+            totalLeads,
             newLeads,
             pendingFollowUps,
             applications,
             offerLetters,
             visaCases,
             enrolledOnly,
-            totalLeads,
         ] = await Promise.all([
-            // Total students (enrolled + processing stages)
+            // Total students in CRM (all active records: 331)
             prisma.student.count({
                 where: {
                     isActive: true,
-                    currentStage: {
-                        in: ["ENROLLED", "APPLIED", "OFFER_RECEIVED", "VISA_APPLIED", "VISA_APPROVED", "DEPARTED"],
-                    },
                     ...studentBranchFilter,
                 },
             }),
 
-            // New leads in last 30 days
+            // Total active pipeline leads & prospects (241)
             prisma.student.count({
                 where: {
                     isActive: true,
                     currentStage: { in: ["LEAD", "PROSPECT"] },
-                    createdAt: { gte: thirtyDaysAgo },
+                    ...studentBranchFilter,
+                },
+            }),
+
+            // Active stage LEAD only (67)
+            prisma.student.count({
+                where: {
+                    isActive: true,
+                    currentStage: "LEAD",
                     ...studentBranchFilter,
                 },
             }),
@@ -172,20 +177,11 @@ const getSummary = async (req, res, next) => {
                 },
             }),
 
-            // Enrolled students only
+            // Enrolled students only (90)
             prisma.student.count({
                 where: {
                     isActive: true,
                     currentStage: "ENROLLED",
-                    ...studentBranchFilter,
-                },
-            }),
-
-            // Total all leads (pipeline)
-            prisma.student.count({
-                where: {
-                    isActive: true,
-                    currentStage: { in: ["LEAD", "PROSPECT"] },
                     ...studentBranchFilter,
                 },
             }),
@@ -194,13 +190,13 @@ const getSummary = async (req, res, next) => {
         sendSuccess(res, {
             data: {
                 totalStudents,
+                totalLeads,
                 newLeads,
                 pendingFollowUps,
                 applications,
                 offerLetters,
                 visaCases,
                 enrolledOnly,
-                totalLeads,
             },
         });
     } catch (err) {
@@ -356,6 +352,7 @@ const getAdminMonitoring = async (req, res, next) => {
                 email: true,
                 phone: true,
                 currentStage: true,
+                leadStage: true,
                 assignedCounselorId: true,
                 assignedCounselor: { select: { id: true, firstName: true, lastName: true, email: true } },
                 academicBackground: true,
@@ -395,7 +392,7 @@ const getAdminMonitoring = async (req, res, next) => {
 
         for (const lead of leads) {
             const bg = lead.academicBackground && typeof lead.academicBackground === "object" ? lead.academicBackground : {};
-            const leadStage = bg.leadStage || (lead.assignedCounselorId ? "ASSIGNED" : "NEW");
+            const leadStage = String(lead.leadStage || bg.leadStage || (lead.assignedCounselorId ? "ASSIGNED" : "NEW")).toUpperCase();
 
             // Count by stage
             if (leadStage === "NEW") newLeadsCount++;
