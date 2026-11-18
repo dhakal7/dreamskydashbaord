@@ -26,8 +26,16 @@ export default function DocumentsPage() {
   const deleteMutation = useDeleteDocument()
 
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
   const [selectedProfile, setSelectedProfile] = useState<StudentDocumentProfile | null>(null)
+
+  const PAGE_SIZE = 9
+
+  const handleSearchChange = (val: string) => {
+    setSearchQuery(val)
+    setCurrentPage(1)
+  }
 
   const handleDeleteProfile = (profile: StudentDocumentProfile) => {
     if (!isMockMode()) {
@@ -54,18 +62,20 @@ export default function DocumentsPage() {
   // Generate fallback student profile cards if using mock store or before backend response
   const profiles: StudentDocumentProfile[] = useMemo(() => {
     if (!isMockMode()) {
-      return (apiProfiles ?? []).map((p: any) => ({
-        ...p,
-        documents: (p.documents || []).map((d: any) => ({
-          ...d,
-          uploadedBy: formatUploaderName(d.uploadedBy),
-          fileName: d.fileName || d.originalName || `${d.type || 'document'}.pdf`,
-          fileSizeKb: d.fileSizeKb ?? (d.fileSize ? Math.round(d.fileSize / 1024) : 0),
-          version: d.version || d.currentVersion || 1,
-          uploadedAt: d.uploadedAt || d.createdAt || new Date().toISOString(),
-          status: (d.status || 'pending').toLowerCase(),
-        })),
-      }))
+      return (apiProfiles ?? [])
+        .filter((p: any) => (Array.isArray(p.documents) && p.documents.length > 0) || Number(p.totalDocuments) > 0)
+        .map((p: any) => ({
+          ...p,
+          documents: (p.documents || []).map((d: any) => ({
+            ...d,
+            uploadedBy: formatUploaderName(d.uploadedBy),
+            fileName: d.fileName || d.originalName || `${d.type || 'document'}.pdf`,
+            fileSizeKb: d.fileSizeKb ?? (d.fileSize ? Math.round(d.fileSize / 1024) : 0),
+            version: d.version || d.currentVersion || 1,
+            uploadedAt: d.uploadedAt || d.createdAt || new Date().toISOString(),
+            status: (d.status || 'pending').toLowerCase(),
+          })),
+        }))
     }
 
     // Adapt students + documents store into Student Profile Cards
@@ -143,18 +153,17 @@ export default function DocumentsPage() {
       }
     })
 
-    // If search bar is empty, ONLY show student profiles that actually have at least 1 uploaded document
-    if (!q) {
-      return computedProfiles.filter((p) => p.totalDocuments > 0)
-    }
-
-    return computedProfiles
+    return computedProfiles.filter((p) => p.totalDocuments > 0)
   }, [apiProfiles, apiDocsData, mockDocs, students, searchQuery, currentUser])
 
   // Sync selectedProfile if updated
   const activeProfile = selectedProfile
     ? profiles.find((p) => p.studentId === selectedProfile.studentId) || selectedProfile
     : null
+
+  const totalPages = Math.ceil(profiles.length / PAGE_SIZE) || 1
+  const validCurrentPage = Math.min(Math.max(currentPage, 1), totalPages)
+  const paginatedProfiles = profiles.slice((validCurrentPage - 1) * PAGE_SIZE, validCurrentPage * PAGE_SIZE)
 
   return (
     <div className="space-y-6">
@@ -176,12 +185,12 @@ export default function DocumentsPage() {
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="Search by Student Name, Application ID, Passport Number, or Counselor..."
               className="pl-9 text-sm"
             />
           </div>
-          <Button variant="outline" onClick={() => setSearchQuery('')} className="shrink-0 text-xs">
+          <Button variant="outline" onClick={() => handleSearchChange('')} className="shrink-0 text-xs">
             Clear Search
           </Button>
         </div>
@@ -217,96 +226,130 @@ export default function DocumentsPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {profiles.map((profile) => (
-            <Card
-              key={profile.studentId}
-              className="flex flex-col justify-between p-5 hover:border-primary/50 transition-all duration-200 shadow-soft hover:shadow-md border-border/80"
-            >
-              <div className="space-y-4">
-                {/* Profile Card Header */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <PersonAvatar name={profile.studentName} className="size-11 font-semibold text-sm" />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {paginatedProfiles.map((profile) => (
+              <Card
+                key={profile.studentId}
+                className="flex flex-col justify-between p-5 hover:border-primary/50 transition-all duration-200 shadow-soft hover:shadow-md border-border/80"
+              >
+                <div className="space-y-4">
+                  {/* Profile Card Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <PersonAvatar name={profile.studentName} className="size-11 font-semibold text-sm" />
+                      <div>
+                        <h3 className="font-bold text-base text-foreground leading-tight">{profile.studentName}</h3>
+                        <p className="text-xs font-tabular font-medium text-muted-foreground mt-0.5">{profile.applicationId}</p>
+                      </div>
+                    </div>
+                    <span className="shrink-0 rounded-full bg-accent px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+                      {profile.totalDocuments} Docs
+                    </span>
+                  </div>
+
+                  {/* Info Pills */}
+                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground bg-accent/20 p-2.5 rounded-lg border border-border/50">
                     <div>
-                      <h3 className="font-bold text-base text-foreground leading-tight">{profile.studentName}</h3>
-                      <p className="text-xs font-tabular font-medium text-muted-foreground mt-0.5">{profile.applicationId}</p>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground/70 block">Counselor</span>
+                      <span className="font-medium text-foreground truncate block">{profile.assignedCounselor}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground/70 block">Passport</span>
+                      <span className="font-tabular font-medium text-foreground truncate block">{profile.passportNumber}</span>
                     </div>
                   </div>
-                  <span className="shrink-0 rounded-full bg-accent px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
-                    {profile.totalDocuments} Docs
+
+                  {/* Metrics Breakdown */}
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="rounded-lg bg-green-500/10 p-2 border border-green-500/20">
+                      <span className="block text-lg font-extrabold text-green-600 dark:text-green-400">{profile.verifiedDocuments}</span>
+                      <span className="text-[10px] font-medium text-muted-foreground">Verified</span>
+                    </div>
+                    <div className="rounded-lg bg-amber-500/10 p-2 border border-amber-500/20">
+                      <span className="block text-lg font-extrabold text-amber-600 dark:text-amber-400">{profile.pendingDocuments}</span>
+                      <span className="text-[10px] font-medium text-muted-foreground">Pending</span>
+                    </div>
+                    <div className="rounded-lg bg-red-500/10 p-2 border border-red-500/20">
+                      <span className="block text-lg font-extrabold text-red-600 dark:text-red-400">{profile.changesRequestedDocuments}</span>
+                      <span className="text-[10px] font-medium text-muted-foreground">Requested</span>
+                    </div>
+                  </div>
+
+                  {/* Document Completion Progress Bar */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between text-xs font-semibold">
+                      <span className="text-muted-foreground">Completion</span>
+                      <span className="text-primary font-bold">{profile.completionPercentage}%</span>
+                    </div>
+                    <Progress value={profile.completionPercentage} className="h-2" />
+                  </div>
+                </div>
+
+                {/* Action Button */}
+                <div className="mt-5 pt-3 border-t border-border/60 flex items-center justify-between">
+                  <span className="text-[11px] text-muted-foreground">
+                    Updated {dayjs(profile.lastUpdated).format('MMM D, YYYY')}
                   </span>
-                </div>
-
-                {/* Info Pills */}
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground bg-accent/20 p-2.5 rounded-lg border border-border/50">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground/70 block">Counselor</span>
-                    <span className="font-medium text-foreground truncate block">{profile.assignedCounselor}</span>
-                  </div>
-                  <div>
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground/70 block">Passport</span>
-                    <span className="font-tabular font-medium text-foreground truncate block">{profile.passportNumber}</span>
-                  </div>
-                </div>
-
-                {/* Metrics Breakdown */}
-                <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded-lg bg-green-500/10 p-2 border border-green-500/20">
-                    <span className="block text-lg font-extrabold text-green-600 dark:text-green-400">{profile.verifiedDocuments}</span>
-                    <span className="text-[10px] font-medium text-muted-foreground">Verified</span>
-                  </div>
-                  <div className="rounded-lg bg-amber-500/10 p-2 border border-amber-500/20">
-                    <span className="block text-lg font-extrabold text-amber-600 dark:text-amber-400">{profile.pendingDocuments}</span>
-                    <span className="text-[10px] font-medium text-muted-foreground">Pending</span>
-                  </div>
-                  <div className="rounded-lg bg-red-500/10 p-2 border border-red-500/20">
-                    <span className="block text-lg font-extrabold text-red-600 dark:text-red-400">{profile.changesRequestedDocuments}</span>
-                    <span className="text-[10px] font-medium text-muted-foreground">Requested</span>
-                  </div>
-                </div>
-
-                {/* Document Completion Progress Bar */}
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex items-center justify-between text-xs font-semibold">
-                    <span className="text-muted-foreground">Completion</span>
-                    <span className="text-primary font-bold">{profile.completionPercentage}%</span>
-                  </div>
-                  <Progress value={profile.completionPercentage} className="h-2" />
-                </div>
-              </div>
-
-              {/* Action Button */}
-              <div className="mt-5 pt-3 border-t border-border/60 flex items-center justify-between">
-                <span className="text-[11px] text-muted-foreground">
-                  Updated {dayjs(profile.lastUpdated).format('MMM D, YYYY')}
-                </span>
-                <div className="flex items-center gap-2">
-                  {isMockMode() && (
+                  <div className="flex items-center gap-2">
+                    {isMockMode() && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+                        title="Delete Mock Student Document Profile"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteProfile(profile)
+                        }}
+                      >
+                        <Trash2 className="size-4" />
+                      </Button>
+                    )}
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-8 text-destructive/80 hover:text-destructive hover:bg-destructive/10"
-                      title="Delete Mock Student Document Profile"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteProfile(profile)
-                      }}
+                      onClick={() => setSelectedProfile(profile)}
+                      size="sm"
+                      className="gap-1.5 text-xs font-semibold px-3 shadow-soft"
                     >
-                      <Trash2 className="size-4" />
+                      Open Documents <ChevronRight className="size-3.5" />
                     </Button>
-                  )}
-                  <Button
-                    onClick={() => setSelectedProfile(profile)}
-                    size="sm"
-                    className="gap-1.5 text-xs font-semibold px-3 shadow-soft"
-                  >
-                    Open Documents <ChevronRight className="size-3.5" />
-                  </Button>
+                  </div>
                 </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* ── Pagination Controls ── */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-border/60">
+              <p className="text-xs text-muted-foreground">
+                Showing {(validCurrentPage - 1) * PAGE_SIZE + 1}–{Math.min(validCurrentPage * PAGE_SIZE, profiles.length)} of {profiles.length} document profiles
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={validCurrentPage <= 1}
+                  className="text-xs h-8 px-3"
+                >
+                  Previous
+                </Button>
+                <span className="text-xs font-medium px-2">
+                  Page {validCurrentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                  disabled={validCurrentPage >= totalPages}
+                  className="text-xs h-8 px-3"
+                >
+                  Next
+                </Button>
               </div>
-            </Card>
-          ))}
+            </div>
+          )}
         </div>
       )}
 

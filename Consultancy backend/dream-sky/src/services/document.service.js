@@ -693,12 +693,7 @@ const listStudentProfiles = async (query = {}, user = null) => {
     const profileWhere = {
         AND: [
             baseSearchWhere,
-            {
-                OR: [
-                    { documents: { some: {} } },
-                    { currentStage: { notIn: ["LEAD", "PROSPECT"] } },
-                ],
-            },
+            { documents: { some: {} } },
         ],
     };
 
