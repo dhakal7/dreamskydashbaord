@@ -15,7 +15,15 @@ router.post(
   recommendationController.generateRecommendations
 );
 
-router.get("/:recordId/latest", recommendationController.getLatestRecommendation);
-router.get("/:recordId/history", recommendationController.getRecommendationHistory);
+router.get(
+  "/:recordId/latest",
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK", "STUDENT"),
+  recommendationController.getLatestRecommendation
+);
+router.get(
+  "/:recordId/history",
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK", "STUDENT"),
+  recommendationController.getRecommendationHistory
+);
 
 module.exports = router;

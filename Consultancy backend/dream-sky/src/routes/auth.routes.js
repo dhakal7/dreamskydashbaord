@@ -26,7 +26,7 @@ router.post("/refresh", authController.refresh);
 /**
  * POST /api/auth/logout
  * Header: Authorization: Bearer <accessToken>
- * Body: { refreshToken } (optional — revokes that specific session)
+ * Body: { refreshToken } (optional â€” revokes that specific session)
  */
 router.post("/logout", requireAuth, authController.logout);
 
@@ -41,8 +41,8 @@ router.get("/me", requireAuth, authController.getMe);
  * POST /api/auth/change-password
  * Header: Authorization: Bearer <accessToken>
  * Body: { currentPassword, newPassword }
- * Available to ALL authenticated users — required path for first-login students.
- * NOTE: No requirePasswordChanged here intentionally — this IS the change endpoint.
+ * Available to ALL authenticated users â€” required path for first-login students.
+ * NOTE: No requirePasswordChanged here intentionally â€” this IS the change endpoint.
  */
 router.post("/change-password", requireAuth, authController.changePassword);
 

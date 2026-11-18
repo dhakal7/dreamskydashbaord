@@ -179,7 +179,7 @@ const getStudentById = async (id) => {
 };
 
 // ─── LIST / SEARCH / FILTER ──────────────────────────────────────────────────
-const listStudents = async ({ search, stage, stageIn, type, counselorId, source, isActive, createdFrom, createdTo, page, limit, sortBy, order }) => {
+const listStudents = async ({ search, stage, stageIn, type, counselorId, source, isActive, createdFrom, createdTo, page, limit, sortBy, order }, callerContext = {}) => {
     const where = {};
 
     // Active filter (default: true)
@@ -204,7 +204,14 @@ const listStudents = async ({ search, stage, stageIn, type, counselorId, source,
         where.currentStage = { notIn: ["LEAD", "PROSPECT"] };
     }
 
-    if (counselorId) where.assignedCounselorId = counselorId;
+    // ── Counselor scoping (server-enforced, never from query params) ─────────────────────
+    if (callerContext.role === "COUNSELOR") {
+        // Ignore any client-supplied counselorId — always restrict to own records
+        where.assignedCounselorId = callerContext.userId;
+    } else {
+        // Admin / FRONT_DESK: honour explicit counselorId filter from query
+        if (counselorId) where.assignedCounselorId = counselorId;
+    }
     if (source) where.source = source;
 
     // Date range filter on createdAt
@@ -254,7 +261,7 @@ const listStudents = async ({ search, stage, stageIn, type, counselorId, source,
 };
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
-const updateStudent = async (id, data) => {
+const updateStudent = async (id, data, callerContext = {}) => {
     const student = await prisma.student.findUnique({ where: { id } });
     if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
 
@@ -273,7 +280,14 @@ const updateStudent = async (id, data) => {
     if (data.dateOfBirth !== undefined) update.dateOfBirth = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
     if (data.nationality !== undefined) update.nationality = data.nationality?.trim() || null;
     if (data.source !== undefined) update.source = data.source;
-    if (data.assignedCounselorId !== undefined) update.assignedCounselorId = data.assignedCounselorId || null;
+    if (data.assignedCounselorId !== undefined) {
+        // Only SUPER_ADMIN / BRANCH_ADMIN may reassign students to a different counselor
+        if (callerContext.role === "COUNSELOR") {
+            // Silently ignore counselorId changes from counselors
+        } else {
+            update.assignedCounselorId = data.assignedCounselorId || null;
+        }
+    }
     if (data.notes !== undefined) update.notes = data.notes;
     if (data.academicBackground !== undefined) update.academicBackground = data.academicBackground;
     if (data.financialBackground !== undefined) update.financialBackground = data.financialBackground;

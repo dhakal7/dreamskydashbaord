@@ -1,5 +1,6 @@
 const prisma = require("../prisma");
 const AppError = require("../utils/apiError");
+const { appointmentScopeFilter } = require("../utils/student-access");
 const { sendNotificationEmail } = require("./email.service");
 
 // ─── Status transition rules ─────────────────────────────────────────────────
@@ -61,7 +62,13 @@ const checkConflicts = async (datetime, durationMin, counselorId, studentId, exc
 };
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
-const createAppointment = async (data) => {
+const createAppointment = async (data, callerContext = {}) => {
+    if (callerContext?.role === "COUNSELOR") {
+        if (data.counselorId && data.counselorId !== callerContext.userId) {
+            throw AppError.forbidden("Counselors cannot assign another counselor as appointment host.", "FORBIDDEN");
+        }
+        data = { ...data, counselorId: callerContext.userId };
+    }
     const student = await prisma.student.findUnique({
         where: { id: data.studentId },
         select: { id: true, email: true, firstName: true, lastName: true },
@@ -123,9 +130,13 @@ const getAppointmentById = async (id) => {
 };
 
 // ─── LIST / FILTER ────────────────────────────────────────────────────────────
-const listAppointments = async (query) => {
+const listAppointments = async (query, user = null) => {
     const { studentId, counselorId, status, type, from, to, page, limit } = query;
     const where = {};
+
+    // Server-enforced ownership scope; combined with filters via AND
+    const scope = user ? appointmentScopeFilter(user) : null;
+    if (scope) where.AND = [scope];
 
     if (studentId) where.studentId = studentId;
     if (counselorId) where.counselorId = counselorId;
@@ -163,7 +174,14 @@ const listAppointments = async (query) => {
 };
 
 // ─── UPDATE ───────────────────────────────────────────────────────────────────
-const updateAppointment = async (id, data) => {
+const updateAppointment = async (id, data, callerContext = {}) => {
+    if (
+        callerContext?.role === "COUNSELOR" &&
+        data.counselorId !== undefined &&
+        data.counselorId !== callerContext.userId
+    ) {
+        throw AppError.forbidden("Counselors cannot assign another counselor as appointment host.", "FORBIDDEN");
+    }
     const existing = await prisma.appointment.findUnique({ where: { id } });
     if (!existing) throw AppError.notFound("Appointment not found.", "APPOINTMENT_NOT_FOUND");
 
@@ -241,7 +259,7 @@ const getDashboardStats = async (userId, role) => {
     const endOfDay = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000);
 
     // Counselors see their own; admins see all
-    const scope = ["SUPER_ADMIN", "BRANCH_ADMIN"].includes(role) ? {} : { counselorId: userId };
+    const scope = ["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"].includes(role) ? {} : { counselorId: userId };
 
     const [today, upcoming, completed, noShow, cancelled] = await Promise.all([
         prisma.appointment.count({ where: { ...scope, datetime: { gte: startOfDay, lt: endOfDay }, status: "SCHEDULED" } }),

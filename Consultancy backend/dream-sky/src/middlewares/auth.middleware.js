@@ -2,13 +2,13 @@ const { verifyAccessToken } = require("../utils/jwt.util");
 const AppError = require("../utils/apiError");
 
 /**
- * requireAuth — Authentication Middleware (Contract #3 from backend split doc)
+ * requireAuth â€” Authentication Middleware (Contract #3 from backend split doc)
  *
  * Verifies the Bearer token in the Authorization header.
  * On success: attaches req.user = { userId, role, branchId, mustChangePassword }
  * On failure: throws 401 Unauthorized
  *
- * Track B imports this as a black box — they don't need to know how JWT works internally.
+ * Track B imports this as a black box â€” they don't need to know how JWT works internally.
  * Usage in any route file:
  *   const { requireAuth } = require("../middlewares/auth.middleware");
  *   router.get("/protected", requireAuth, controller.handler);
@@ -23,11 +23,11 @@ const requireAuth = (req, res, next) => {
         const token = authHeader.split(" ")[1];
         const decoded = verifyAccessToken(token);
 
-        // Attach decoded payload to req — available downstream in all handlers
+        // Attach decoded payload to req â€” available downstream in all handlers
         req.user = decoded;
         next();
     } catch (err) {
-        // jwt.verify throws JsonWebTokenError / TokenExpiredError — convert to AppError
+        // jwt.verify throws JsonWebTokenError / TokenExpiredError â€” convert to AppError
         if (err.isOperational) return next(err);
         if (err.name === "TokenExpiredError")
             return next(AppError.unauthorized("Token has expired. Please refresh.", "TOKEN_EXPIRED"));
@@ -36,7 +36,7 @@ const requireAuth = (req, res, next) => {
 };
 
 /**
- * requirePasswordChanged — blocks access if mustChangePassword is true.
+ * requirePasswordChanged â€” blocks access if mustChangePassword is true.
  * Apply this on every protected route EXCEPT /auth/change-password itself.
  * Ensures students (and anyone with a temp password) cannot skip the change step.
  *

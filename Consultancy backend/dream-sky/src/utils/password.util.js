@@ -4,7 +4,7 @@ const SALT_ROUNDS = 12;
 
 /**
  * Hash a plain-text password.
- * Always use this — never store plain text passwords.
+ * Always use this â€” never store plain text passwords.
  */
 const hashPassword = async (plainText) => {
     return bcrypt.hash(plainText, SALT_ROUNDS);

@@ -1,11 +1,12 @@
 const paymentService = require('../services/payment.service');
 const emailService = require('../services/email.service');
+const { assertPaymentAccess } = require('../utils/student-access');
 
 class PaymentController {
   async listPayments(req, res) {
     try {
       const { status, search, limit, offset } = req.query;
-      const result = await paymentService.listPayments({ status, search, limit, offset });
+      const result = await paymentService.listPayments({ status, search, limit, offset }, req.user);
       res.json({ success: true, data: result.items, total: result.total });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
@@ -55,6 +56,11 @@ class PaymentController {
   async sendPaymentReminder(req, res) {
     try {
       const { id } = req.params;
+      try {
+        await assertPaymentAccess(req.user, id);
+      } catch (accessErr) {
+        return res.status(accessErr.statusCode || 403).json({ success: false, message: accessErr.message });
+      }
       const payment = await paymentService.getPaymentById(id);
       if (!payment) {
         return res.status(404).json({ success: false, message: 'Payment record not found' });

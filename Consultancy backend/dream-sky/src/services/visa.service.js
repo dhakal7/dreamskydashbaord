@@ -1,5 +1,6 @@
 const prisma = require("../prisma");
 const AppError = require("../utils/apiError");
+const { studentScopeFilter } = require("../utils/student-access");
 const { sendNotificationEmail } = require("./email.service");
 
 // ─── Status transition rules ─────────────────────────────────────────────────
@@ -116,13 +117,21 @@ const getVisaCaseById = async (id) => {
 };
 
 // ─── LIST / FILTER ────────────────────────────────────────────────────────────
-const listVisaCases = async (query) => {
+const listVisaCases = async (query, user = null) => {
     const { status, applicationId, studentId, page, limit } = query;
     const where = {};
 
     if (status) where.status = status;
     if (applicationId) where.applicationId = applicationId;
-    if (studentId) where.application = { studentId };
+
+    // Server-enforced ownership scope (counselors see only their assigned students)
+    const scope = user ? studentScopeFilter(user) : null;
+    if (studentId || scope) {
+        where.application = {
+            ...(studentId ? { studentId } : {}),
+            ...(scope ? { student: scope } : {}),
+        };
+    }
 
     const pageNum = Math.max(parseInt(page) || 1, 1);
     const pageSize = Math.min(Math.max(parseInt(limit) || 20, 1), 100);
@@ -207,11 +216,13 @@ const deleteVisaCase = async (id) => {
 };
 
 // ─── DASHBOARD STATS ──────────────────────────────────────────────────────────
-const getDashboardStats = async () => {
+const getDashboardStats = async (user = null) => {
     const statuses = ["NOT_APPLIED", "PREPARING", "SUBMITTED", "APPROVED", "REFUSED", "RESUBMITTING"];
+    const scope = user ? studentScopeFilter(user) : null;
+    const baseWhere = scope ? { application: { student: scope } } : {};
 
     const counts = await Promise.all(
-        statuses.map((s) => prisma.visaCase.count({ where: { status: s } }))
+        statuses.map((s) => prisma.visaCase.count({ where: { ...baseWhere, status: s } }))
     );
 
     const result = {};

@@ -119,7 +119,10 @@ const getSummary = async (req, res) => {
  * Returns stats for a specific counselor's dashboard.
  */
 const getCounselorSummary = async (req, res) => {
-    const counselorId = req.query.counselorId || req.user.userId;
+    // Counselors can only view their own dashboard; admins may query any counselorId
+    const counselorId = req.user.role === "COUNSELOR"
+        ? req.user.userId
+        : (req.query.counselorId || req.user.userId);
     const now = new Date();
     const STUDENT_STAGES = [
         "LEAD", "PROSPECT", "ENROLLED", "APPLIED",
@@ -141,10 +144,10 @@ const getCounselorSummary = async (req, res) => {
             where: { assignedCounselorId: counselorId, isActive: false },
         }),
 
-        // Upcoming follow-ups for this counselor
+        // Upcoming follow-ups for this counselor's assigned students
         prisma.communicationLog.findMany({
             where: {
-                authorId: counselorId,
+                student: { assignedCounselorId: counselorId },
                 nextFollowUpAt: { gt: now },
             },
             take: 6,

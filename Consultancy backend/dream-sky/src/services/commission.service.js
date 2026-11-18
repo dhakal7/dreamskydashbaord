@@ -313,15 +313,21 @@ async function deleteCommissionRule(id) {
 /**
  * List commissions with filters
  */
-async function listCommissions(query = {}) {
+async function listCommissions(query = {}, callerContext = {}) {
   const { recipientId, recipientUserId, status, branchId } = query;
   const targetRecipientId = recipientId || recipientUserId;
   const where = {};
 
-  if (targetRecipientId) where.recipientId = targetRecipientId;
+  const isRestrictedRole = ["COUNSELOR", "REFERRAL_AGENT"].includes(callerContext.role);
+  if (isRestrictedRole) {
+    // Non-admin recipients may only list their own commissions; ignore client recipientId/branchId
+    where.recipientId = callerContext.userId;
+  } else {
+    if (targetRecipientId) where.recipientId = targetRecipientId;
+  }
   if (status) where.status = status;
 
-  if (branchId) {
+  if (branchId && !isRestrictedRole) {
     const usersInBranch = await prisma.user.findMany({
       where: { branchId },
       select: { id: true },

@@ -102,7 +102,7 @@ const listCommissions = async (req, res, next) => {
     if (status && !VALID_STATUSES.includes(status)) {
       throw new AppError(`Invalid status '${status}'. Must be one of: ${VALID_STATUSES.join(", ")}.`, 400);
     }
-    const commissions = await commissionService.listCommissions(req.query);
+    const commissions = await commissionService.listCommissions(req.query, { userId: req.user.userId, role: req.user.role });
     sendSuccess(res, { data: commissions });
   } catch (err) {
     next(err);
@@ -115,6 +115,12 @@ const getCommission = async (req, res, next) => {
     if (!commission) {
       throw new AppError(`Commission with id '${req.params.id}' not found.`, 404);
     }
+    if (
+      ["COUNSELOR", "REFERRAL_AGENT"].includes(req.user?.role) &&
+      commission.recipientId !== req.user.userId
+    ) {
+      throw AppError.forbidden("You are not authorised to view this commission.", "FORBIDDEN");
+    }
     sendSuccess(res, { data: commission });
   } catch (err) {
     next(err);
@@ -123,7 +129,7 @@ const getCommission = async (req, res, next) => {
 
 const markPaid = async (req, res, next) => {
   try {
-    const actorId = req.user ? req.user.id : null;
+    const actorId = req.user ? (req.user.userId || req.user.id) : null;
     const result = await commissionService.markCommissionPaid(req.params.id, actorId);
 
     if (!result) {
@@ -146,7 +152,18 @@ const dispute = async (req, res, next) => {
       throw new AppError("`reason` is required and must be a non-empty string.", 400);
     }
 
-    const actorId = req.user ? req.user.id : null;
+    const existing = await commissionService.getCommissionById(req.params.id);
+    if (!existing) {
+      throw new AppError(`Commission with id '${req.params.id}' not found.`, 404);
+    }
+    if (
+      ["COUNSELOR", "REFERRAL_AGENT"].includes(req.user?.role) &&
+      existing.recipientId !== req.user.userId
+    ) {
+      throw AppError.forbidden("You are not authorised to dispute this commission.", "FORBIDDEN");
+    }
+
+    const actorId = req.user ? (req.user.userId || req.user.id) : null;
     const result = await commissionService.disputeCommission(req.params.id, reason, actorId);
 
     if (!result) {

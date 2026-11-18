@@ -8,6 +8,7 @@ try {
 
 const prisma = require("../prisma");
 const AppError = require("../utils/apiError");
+const { studentScopeFilter } = require("../utils/student-access");
 const { encrypt, decrypt } = require("../utils/encryption.util");
 const { saveFile, readFile, deleteFile } = require("../utils/storage.util");
 const { sendNotificationEmail } = require("./email.service");
@@ -110,7 +111,7 @@ const uploadDocument = async (file, data, uploadedById) => {
             },
         },
         include: {
-            student: { select: { id: true, firstName: true, lastName: true, passportNumber: true, studentCode: true } },
+            student: { select: { id: true, firstName: true, lastName: true } },
             uploadedBy: { select: { id: true, firstName: true, lastName: true } },
             versions: { orderBy: { versionNumber: "desc" } },
         },
@@ -242,6 +243,11 @@ const reviewDocument = async (id, { action, comment }, reviewedById) => {
     return updated;
 };
 
+const isSchemaMismatchError = (err) =>
+    err?.code === "P2021" ||
+    err?.code === "P2022" ||
+    (typeof err?.message === "string" && err.message.includes("Unknown field"));
+
 // ─── GET DOCUMENT VERSION HISTORY ────────────────────────────────────────────
 const getDocumentHistory = async (id) => {
     try {
@@ -261,6 +267,7 @@ const getDocumentHistory = async (id) => {
         if (!doc) throw AppError.notFound("Document not found.", "DOCUMENT_NOT_FOUND");
         return doc;
     } catch (err) {
+        if (err.isOperational || !isSchemaMismatchError(err)) throw err;
         const doc = await prisma.document.findUnique({
             where: { id },
             include: {
@@ -289,6 +296,7 @@ const getDocumentById = async (id) => {
         if (!doc) throw AppError.notFound("Document not found.", "DOCUMENT_NOT_FOUND");
         return doc;
     } catch (err) {
+        if (err.isOperational || !isSchemaMismatchError(err)) throw err;
         const doc = await prisma.document.findUnique({
             where: { id },
             include: {
@@ -302,10 +310,11 @@ const getDocumentById = async (id) => {
 };
 
 // ─── LIST STUDENT DOCUMENT PROFILES (Student-Centric View) ───────────────────
-const listStudentProfiles = async (query) => {
+const listStudentProfiles = async (query, user = null) => {
     const { search } = query;
 
-    const baseSearchWhere = {};
+    // Server-enforced ownership scope (counselors see only their assigned students)
+    const baseSearchWhere = { ...(user ? studentScopeFilter(user) || {} : {}) };
     if (search?.trim()) {
         const q = search.trim();
         baseSearchWhere.OR = [
@@ -432,9 +441,12 @@ const listStudentProfiles = async (query) => {
 };
 
 // ─── LIST FLAT DOCUMENTS ─────────────────────────────────────────────────────
-const listDocuments = async (query) => {
+const listDocuments = async (query, user = null) => {
     const { studentId, type, category, status, page, limit } = query;
     const where = {};
+
+    const scope = user ? studentScopeFilter(user) : null;
+    if (scope) where.student = scope;
 
     if (studentId) where.studentId = studentId;
     if (type) where.type = type.toUpperCase();

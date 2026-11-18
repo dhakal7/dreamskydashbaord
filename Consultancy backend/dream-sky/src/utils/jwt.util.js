@@ -1,29 +1,40 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
-const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || "ds_access_super_secret_key_change_in_production_64chars_minimum";
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || "ds_refresh_super_secret_key_change_in_production_64chars_minimum";
-const JWT_ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN || "15m";
-const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "30d";
+const getAccessSecret = () => {
+    const secret = process.env.JWT_ACCESS_SECRET?.trim();
+    if (!secret && process.env.NODE_ENV === "production") {
+        throw new Error("[SECURITY CONFIG ERROR] JWT_ACCESS_SECRET must be set in production.");
+    }
+    return secret || "ds_access_super_secret_key_change_in_production_64chars_minimum";
+};
+
+const getRefreshSecret = () => {
+    const secret = process.env.JWT_REFRESH_SECRET?.trim();
+    if (!secret && process.env.NODE_ENV === "production") {
+        throw new Error("[SECURITY CONFIG ERROR] JWT_REFRESH_SECRET must be set in production.");
+    }
+    return secret || "ds_refresh_super_secret_key_change_in_production_64chars_minimum";
+};
 
 const signAccessToken = (payload) => {
-    return jwt.sign(payload, JWT_ACCESS_SECRET, {
-        expiresIn: JWT_ACCESS_EXPIRES_IN,
+    return jwt.sign(payload, getAccessSecret(), {
+        expiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
     });
 };
 
 const signRefreshToken = (payload) => {
-    return jwt.sign(payload, JWT_REFRESH_SECRET, {
-        expiresIn: JWT_REFRESH_EXPIRES_IN,
+    return jwt.sign(payload, getRefreshSecret(), {
+        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "30d",
     });
 };
 
 const verifyAccessToken = (token) => {
-    return jwt.verify(token, JWT_ACCESS_SECRET);
+    return jwt.verify(token, getAccessSecret());
 };
 
 const verifyRefreshToken = (token) => {
-    return jwt.verify(token, JWT_REFRESH_SECRET);
+    return jwt.verify(token, getRefreshSecret());
 };
 
 const hashToken = (token) => {
@@ -31,7 +42,7 @@ const hashToken = (token) => {
 };
 
 const refreshExpiresAt = () => {
-    const raw = JWT_REFRESH_EXPIRES_IN || "30d";
+    const raw = process.env.JWT_REFRESH_EXPIRES_IN || "30d";
     const unit = raw.slice(-1);
     const value = parseInt(raw.slice(0, -1), 10);
     const ms =

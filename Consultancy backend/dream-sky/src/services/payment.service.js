@@ -1,11 +1,16 @@
 const prisma = require('../prisma');
+const { studentScopeFilter } = require('../utils/student-access');
 
 class PaymentService {
   /**
    * List all payments with student details and transaction history
    */
-  async listPayments({ status, search, limit = 100, offset = 0 } = {}) {
+  async listPayments({ status, search, limit = 100, offset = 0 } = {}, user = null) {
     const where = {};
+
+    // Server-enforced ownership scope (counselors see only their assigned students)
+    const scope = user ? studentScopeFilter(user) : null;
+    if (scope) where.student = scope;
 
     if (search) {
       where.OR = [

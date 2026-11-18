@@ -1,0 +1,43 @@
+-- Migration 1 of 2 (PostgreSQL 13):
+-- Adds new enum values to public."DocumentStatus" and public."DocumentType".
+--
+-- Explicit transaction:
+--   BEGIN / COMMIT ensures this migration commits its enum additions before
+--   Migration 2 (20261118000002_reconcile_document_schema) references them.
+--   Preserves all existing enum values (including legacy ENGLISH_TEST and VISA).
+
+BEGIN;
+
+ALTER TYPE public."DocumentStatus" ADD VALUE IF NOT EXISTS 'UPLOADED';
+ALTER TYPE public."DocumentStatus" ADD VALUE IF NOT EXISTS 'PENDING_STUDENT_REVIEW';
+ALTER TYPE public."DocumentStatus" ADD VALUE IF NOT EXISTS 'CHANGES_REQUESTED';
+ALTER TYPE public."DocumentStatus" ADD VALUE IF NOT EXISTS 'RE_UPLOADED';
+
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'CITIZENSHIP';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'BIRTH_CERTIFICATE';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'NATIONAL_ID';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'SEE_CERTIFICATE';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'PLUS_TWO_CERTIFICATE';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'BACHELORS_CERTIFICATE';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'CHARACTER_CERTIFICATE';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'IELTS';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'PTE';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'TOEFL';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'DUOLINGO';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'BANK_CERTIFICATE';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'INCOME_CERTIFICATE';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'TAX_CLEARANCE';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'SPONSORSHIP_LETTER';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'AFFIDAVIT';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'LOAN_LETTER';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'PROPERTY_VALUATION';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'VISA_APPLICATION';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'VISA_DOCUMENTS';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'COE';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'CV';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'SOP';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'RECOMMENDATION';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'FINANCIAL';
+ALTER TYPE public."DocumentType" ADD VALUE IF NOT EXISTS 'VISA_LETTER';
+
+COMMIT;

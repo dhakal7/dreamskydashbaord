@@ -1,4 +1,5 @@
 const studentService = require("../services/student.service");
+const { assertCanAccessStudent, assertStudentAccessById } = require("../utils/student-access");
 const { sendSuccess, sendCreated } = require("../utils/response.util");
 const { isValidEmail } = require("../services/email.service");
 const {
@@ -9,7 +10,10 @@ const {
 
 const create = async (req, res) => {
     validateCreateStudent(req.body);
-    const student = await studentService.createStudent(req.body);
+    const payload = { ...req.body };
+    // Counselors cannot assign students to other counselors; new records are owned by the creator
+    if (req.user.role === "COUNSELOR") payload.assignedCounselorId = req.user.userId;
+    const student = await studentService.createStudent(payload);
     let message = "Student created successfully.";
     if (student?._portalProvision) {
         const mailSkippedOrFailed = student._portalProvision.mailResult?.error || student._portalProvision.mailResult?.skipped;
@@ -24,22 +28,25 @@ const create = async (req, res) => {
 
 const getOne = async (req, res) => {
     const student = await studentService.getStudentById(req.params.id);
+    assertCanAccessStudent(req.user, student);
     sendSuccess(res, { data: student });
 };
 
 const list = async (req, res) => {
-    const result = await studentService.listStudents(req.query);
+    const result = await studentService.listStudents(req.query, { userId: req.user.userId, role: req.user.role });
     sendSuccess(res, { data: result });
 };
 
 const update = async (req, res) => {
     validateUpdateStudent(req.body);
-    const student = await studentService.updateStudent(req.params.id, req.body);
+    await assertStudentAccessById(req.user, req.params.id);
+    const student = await studentService.updateStudent(req.params.id, req.body, { userId: req.user.userId, role: req.user.role });
     sendSuccess(res, { message: "Student updated successfully.", data: student });
 };
 
 const changePipeline = async (req, res) => {
     validatePipelineChange(req.body);
+    await assertStudentAccessById(req.user, req.params.id);
     const student = await studentService.changePipelineStage(req.params.id, req.body, req.user.userId);
     const provision = student?._portalProvision;
     let message = "Pipeline stage updated.";
@@ -64,6 +71,7 @@ const changePipeline = async (req, res) => {
 
 const remove = async (req, res, next) => {
     try {
+        await assertStudentAccessById(req.user, req.params.id);
         await studentService.deleteStudent(req.params.id);
         sendSuccess(res, { message: "Student deleted successfully." });
     } catch (err) {
@@ -72,6 +80,7 @@ const remove = async (req, res, next) => {
 };
 
 const timeline = async (req, res) => {
+    await assertStudentAccessById(req.user, req.params.id);
     const history = await studentService.getTimeline(req.params.id);
     sendSuccess(res, { data: history });
 };
@@ -79,6 +88,7 @@ const timeline = async (req, res) => {
 const resendCredentials = async (req, res, next) => {
     try {
         const student = await studentService.getStudentById(req.params.id);
+        assertCanAccessStudent(req.user, student);
         if (!student.email || !isValidEmail(student.email)) {
             return res.status(400).json({ success: false, message: "This student does not have a valid email address." });
         }

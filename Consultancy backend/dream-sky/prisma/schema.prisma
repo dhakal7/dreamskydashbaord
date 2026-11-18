@@ -51,6 +51,10 @@ enum DocumentCategory {
 }
 
 enum DocumentType {
+  // Legacy production enum values (preserved for existing records)
+  ENGLISH_TEST
+  VISA
+
   PASSPORT
   CITIZENSHIP
   BIRTH_CERTIFICATE

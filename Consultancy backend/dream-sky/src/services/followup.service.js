@@ -1,5 +1,6 @@
 const prisma = require("../prisma");
 const AppError = require("../utils/apiError");
+const { studentScopeFilter } = require("../utils/student-access");
 const { sendNotificationEmail } = require("./email.service");
 
 // ─── CREATE ───────────────────────────────────────────────────────────────────
@@ -53,9 +54,13 @@ const getFollowUpById = async (id) => {
 };
 
 // ─── LIST (cross-student with filters) ────────────────────────────────────────
-const listFollowUps = async (query) => {
+const listFollowUps = async (query, user = null) => {
     const { studentId, channel, direction, authorId, status, from, to, page, limit } = query;
     const where = {};
+
+    // Server-enforced ownership scope (counselors see only their assigned students)
+    const scope = user ? studentScopeFilter(user) : null;
+    if (scope) where.student = scope;
 
     if (studentId) where.studentId = studentId;
     if (channel) where.channel = channel;
@@ -142,7 +147,7 @@ const getDashboardStats = async (userId, role) => {
     const endOfWeek = new Date(startOfDay.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     // Counselors see only their own students' follow-ups; admins see all
-    const scopeFilter = ["SUPER_ADMIN", "BRANCH_ADMIN"].includes(role)
+    const scopeFilter = ["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"].includes(role)
         ? {}
         : { student: { assignedCounselorId: userId } };
 

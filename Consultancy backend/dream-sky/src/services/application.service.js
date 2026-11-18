@@ -1,5 +1,6 @@
 const prisma = require("../prisma");
 const AppError = require("../utils/apiError");
+const { studentScopeFilter } = require("../utils/student-access");
 
 // ─── Status transition rules ─────────────────────────────────────────────────
 const ALLOWED_TRANSITIONS = {
@@ -57,9 +58,13 @@ const getApplicationById = async (id) => {
 };
 
 // ─── LIST / FILTER ────────────────────────────────────────────────────────────
-const listApplications = async (query) => {
+const listApplications = async (query, user = null) => {
     const { studentId, universityId, status, priority, page, limit } = query;
     const where = {};
+
+    // Server-enforced ownership scope (counselors see only their assigned students)
+    const scope = user ? studentScopeFilter(user) : null;
+    if (scope) where.student = scope;
 
     if (studentId) where.studentId = studentId;
     if (universityId) where.universityId = universityId;
@@ -159,11 +164,13 @@ const deleteApplication = async (id) => {
 };
 
 // ─── DASHBOARD STATS ──────────────────────────────────────────────────────────
-const getDashboardStats = async () => {
+const getDashboardStats = async (user = null) => {
     const statuses = ["DRAFT", "SUBMITTED", "UNDER_REVIEW", "ACCEPTED", "REJECTED", "DEFERRED", "WITHDRAWN"];
+    const scope = user ? studentScopeFilter(user) : null;
+    const baseWhere = scope ? { student: scope } : {};
 
     const counts = await Promise.all(
-        statuses.map((s) => prisma.application.count({ where: { status: s } }))
+        statuses.map((s) => prisma.application.count({ where: { ...baseWhere, status: s } }))
     );
 
     const result = {};

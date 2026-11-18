@@ -1,6 +1,7 @@
 const prisma = require("../prisma");
 const { sendSuccess, sendCreated } = require("../utils/response.util");
 const AppError = require("../utils/apiError");
+const { assertStudentAccessById } = require("../utils/student-access");
 const { scoreAndRank } = require("../services/recommendation.scoring");
 
 const VALID_TEST_TYPES = ["IELTS", "PTE", "TOEFL"];
@@ -21,6 +22,7 @@ const generateRecommendations = async (req, res, next) => {
     if (!targetRecordId) {
       throw new AppError("Missing required field: `recordId` or `studentId`.", 400);
     }
+    await assertStudentAccessById(req.user, targetRecordId);
 
     const gpa = req.body.gpa ?? 3.5;
     const gpaScale = req.body.gpaScale ?? 4.0;
@@ -85,6 +87,7 @@ const generateRecommendations = async (req, res, next) => {
 const getLatestRecommendation = async (req, res, next) => {
   try {
     const { recordId } = req.params;
+    await assertStudentAccessById(req.user, recordId);
     const latest = await prisma.recommendationResult.findFirst({
       where: { recordId },
       orderBy: { generatedAt: "desc" },
@@ -104,6 +107,7 @@ const getLatestRecommendation = async (req, res, next) => {
 const getRecommendationHistory = async (req, res, next) => {
   try {
     const { recordId } = req.params;
+    await assertStudentAccessById(req.user, recordId);
     const history = await prisma.recommendationResult.findMany({
       where: { recordId },
       orderBy: { generatedAt: "desc" },

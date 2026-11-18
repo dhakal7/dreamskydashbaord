@@ -15,7 +15,11 @@ router.get(
 );
 
 // ─── Student timeline ─────────────────────────────────────────────────────────
-router.get("/student/:studentId", followUpController.studentTimeline);
+router.get(
+    "/student/:studentId",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    followUpController.studentTimeline
+);
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
 router.post(
@@ -30,7 +34,11 @@ router.get(
     followUpController.list
 );
 
-router.get("/:id", followUpController.getOne);
+router.get(
+    "/:id",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    followUpController.getOne
+);
 
 router.put(
     "/:id",

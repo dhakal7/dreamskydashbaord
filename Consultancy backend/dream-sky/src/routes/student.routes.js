@@ -22,7 +22,11 @@ router.get(
     studentController.list
 );
 
-router.get("/:id", studentController.getOne);
+router.get(
+    "/:id",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    studentController.getOne
+);
 
 router.put(
     "/:id",
@@ -52,7 +56,11 @@ router.patch(
 
 // ─── Timeline ─────────────────────────────────────────────────────────────────
 
-router.get("/:id/timeline", studentController.timeline);
+router.get(
+    "/:id/timeline",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR", "FRONT_DESK"),
+    studentController.timeline
+);
 
 // ─── Credentials / Welcome Email ─────────────────────────────────────────────
 

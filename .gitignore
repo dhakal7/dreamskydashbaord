@@ -1,3 +1,8 @@
+# Environment configuration
+.env
+.env.*
+!.env.example
+
 # Node dependencies & logs
 node_modules/
 npm-debug.log*
@@ -20,3 +25,14 @@ legacy_html/
 .claude/
 .windsurf/
 .agents/
+
+# DreamSky disposable database and restore-test files
+Consultancy backend/dream-sky/.env.production-restore-test
+Consultancy backend/dream-sky/.env.restore-test
+Consultancy backend/dream-sky/.env.test.disposable
+Consultancy backend/dream-sky/.env.test.disposable.bak
+Consultancy backend/dream-sky/.disposable-cluster-ref.json
+Consultancy backend/dream-sky/.disposable-fixture-manifest.json
+
+# DreamSky local backups
+/backups/

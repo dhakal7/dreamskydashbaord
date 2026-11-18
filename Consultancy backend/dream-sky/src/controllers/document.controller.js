@@ -1,5 +1,6 @@
 const documentService = require("../services/document.service");
 const { sendSuccess, sendCreated } = require("../utils/response.util");
+const { assertStudentAccessById, assertDocumentAccess } = require("../utils/student-access");
 const { validateUpload, validateVerify, validateReview } = require("../validators/document.validator");
 
 const upload = async (req, res, next) => {
@@ -8,6 +9,7 @@ const upload = async (req, res, next) => {
             return res.status(400).json({ success: false, code: "NO_FILE", message: "No file was uploaded." });
         }
         validateUpload(req.body);
+        await assertStudentAccessById(req.user, req.body.studentId);
         const doc = await documentService.uploadDocument(req.file, req.body, req.user.userId);
         sendCreated(res, { message: "Document uploaded successfully.", data: doc });
     } catch (err) {
@@ -20,6 +22,7 @@ const replace = async (req, res, next) => {
         if (!req.file) {
             return res.status(400).json({ success: false, code: "NO_FILE", message: "No file was uploaded." });
         }
+        await assertDocumentAccess(req.user, req.params.id);
         const doc = await documentService.replaceDocument(req.params.id, req.file, req.body, req.user.userId);
         sendSuccess(res, { message: "Document replaced successfully with new version.", data: doc });
     } catch (err) {
@@ -30,6 +33,7 @@ const replace = async (req, res, next) => {
 const review = async (req, res, next) => {
     try {
         validateReview(req.body);
+        await assertDocumentAccess(req.user, req.params.id);
         const doc = await documentService.reviewDocument(req.params.id, req.body, req.user.userId);
         sendSuccess(res, { message: `Document review saved (${doc.status.toLowerCase()}).`, data: doc });
     } catch (err) {
@@ -39,6 +43,7 @@ const review = async (req, res, next) => {
 
 const getHistory = async (req, res, next) => {
     try {
+        await assertDocumentAccess(req.user, req.params.id);
         const doc = await documentService.getDocumentHistory(req.params.id);
         sendSuccess(res, { data: doc });
     } catch (err) {
@@ -48,7 +53,7 @@ const getHistory = async (req, res, next) => {
 
 const listProfiles = async (req, res, next) => {
     try {
-        const profiles = await documentService.listStudentProfiles(req.query);
+        const profiles = await documentService.listStudentProfiles(req.query, req.user);
         sendSuccess(res, { data: profiles });
     } catch (err) {
         next(err);
@@ -57,6 +62,7 @@ const listProfiles = async (req, res, next) => {
 
 const getOne = async (req, res, next) => {
     try {
+        await assertDocumentAccess(req.user, req.params.id);
         const doc = await documentService.getDocumentById(req.params.id);
         sendSuccess(res, { data: doc });
     } catch (err) {
@@ -66,7 +72,7 @@ const getOne = async (req, res, next) => {
 
 const list = async (req, res, next) => {
     try {
-        const result = await documentService.listDocuments(req.query);
+        const result = await documentService.listDocuments(req.query, req.user);
         sendSuccess(res, { data: result });
     } catch (err) {
         next(err);
@@ -75,6 +81,7 @@ const list = async (req, res, next) => {
 
 const download = async (req, res, next) => {
     try {
+        await assertDocumentAccess(req.user, req.params.id);
         const { buffer, originalName, mimeType } = await documentService.downloadDocument(req.params.id);
         // Use "inline" so the browser renders the file natively in a new tab
         // (PDFs open as PDFs, images display as images). Pass ?download=true to force save.
@@ -96,6 +103,7 @@ const download = async (req, res, next) => {
 const verify = async (req, res, next) => {
     try {
         validateVerify(req.body);
+        await assertDocumentAccess(req.user, req.params.id);
         const doc = await documentService.verifyDocument(req.params.id, req.body, req.user.userId);
         sendSuccess(res, { message: `Document ${doc.status.toLowerCase()}.`, data: doc });
     } catch (err) {
@@ -105,6 +113,7 @@ const verify = async (req, res, next) => {
 
 const rename = async (req, res, next) => {
     try {
+        await assertDocumentAccess(req.user, req.params.id);
         const doc = await documentService.renameDocument(req.params.id, req.body);
         sendSuccess(res, { message: "Document renamed.", data: doc });
     } catch (err) {
@@ -114,6 +123,7 @@ const rename = async (req, res, next) => {
 
 const update = async (req, res, next) => {
     try {
+        await assertDocumentAccess(req.user, req.params.id);
         const doc = await documentService.updateDocument(req.params.id, req.body);
         sendSuccess(res, { message: "Document updated.", data: doc });
     } catch (err) {
@@ -123,6 +133,7 @@ const update = async (req, res, next) => {
 
 const remove = async (req, res, next) => {
     try {
+        await assertDocumentAccess(req.user, req.params.id);
         await documentService.deleteDocument(req.params.id);
         sendSuccess(res, { message: "Document deleted." });
     } catch (err) {
