@@ -14,7 +14,6 @@ import { visibleApplications } from '@/lib/data-visibility'
 import { hasPermission } from '@/lib/rbac'
 import type { Application, ApplicationStage } from '@/types'
 import { useApplications } from '@/hooks/use-applications'
-import { useVisaCases } from '@/hooks/use-visa'
 import { ApplicationFormDialog } from './components/application-form-dialog'
 
 
@@ -59,34 +58,16 @@ export default function ApplicationsPage() {
   const navigate = useNavigate()
   const mockApplications = useApplicationsStore((s) => s.applications)
   const { data: apiAppData } = useApplications()
-  const { data: apiVisaData } = useVisaCases()
   const students = useStudentsStore((s) => s.students)
   const currentUser = useAuthStore((s) => s.currentUser)
   const canManage = hasPermission(currentUser.role, 'applications.manage')
   const [filters, setFilters] = useState<ApplicationFilters>(defaultApplicationFilters)
   const [formOpen, setFormOpen] = useState(false)
 
-  const visaApplicationIds = useMemo(() => {
-    const set = new Set<string>()
-    if (!isMockMode() && apiVisaData?.visaCases) {
-      for (const vc of apiVisaData.visaCases) {
-        if (vc.applicationId) set.add(vc.applicationId)
-        if (vc.application?.id) set.add(vc.application.id)
-      }
-    }
-    return set
-  }, [apiVisaData])
-
   const rawApiApps = !isMockMode() ? (apiAppData?.applications ?? []) : []
-  const linkedToVisaCount = useMemo(
-    () => rawApiApps.filter((app) => Boolean((app as any).visaCase) || visaApplicationIds.has(app.id)).length,
-    [rawApiApps, visaApplicationIds]
-  )
 
   const applications: Application[] = !isMockMode()
-    ? rawApiApps
-        .filter((app) => !(app as any).visaCase && !visaApplicationIds.has(app.id))
-        .map((app) => ({
+    ? rawApiApps.map((app) => ({
         id: app.id,
         applicationRef: app.id.length > 12 ? `APP-${app.id.slice(-6).toUpperCase()}` : app.id,
         studentId: app.studentId,
@@ -203,21 +184,10 @@ export default function ApplicationsPage() {
           emptyState={
             <div className="py-12 flex flex-col items-center justify-center text-center">
               <FileStack className="size-10 text-muted-foreground/50 mb-3" />
-              <h3 className="font-semibold text-lg">
-                {linkedToVisaCount > 0 && applications.length === 0
-                  ? 'All Applications Moved to Visa Processing'
-                  : 'No Applications Found'}
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-md mt-1">
-                {linkedToVisaCount > 0 && applications.length === 0
-                  ? `All ${linkedToVisaCount} application${linkedToVisaCount === 1 ? '' : 's'} have already moved to Visa Processing and are tracked on the Visa Processing page.`
-                  : 'Try adjusting your filters or search terms to locate specific records.'}
+              <h3 className="font-semibold text-lg">No Applications Found</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mt-1">
+                Try adjusting your filters or search terms to locate specific records.
               </p>
-              {linkedToVisaCount > 0 && applications.length === 0 && (
-                <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate('/visa')}>
-                  View Visa Processing
-                </Button>
-              )}
             </div>
           }
         />
