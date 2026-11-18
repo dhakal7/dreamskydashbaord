@@ -101,13 +101,13 @@ export function useSuperAdminStats() {
     queryKey: dashboardKeys.superAdmin(),
     queryFn: async () => {
       const summary = await dashboardApi.getSummary()
-      const totalStudentsCount = Number(summary.totalStudents) || 331
-      const totalLeadsCount = Number(summary.totalLeads) || 241
-      const enrolledCount = Number(summary.enrolledOnly) || 90
+      const totalStudentsCount = typeof summary.totalStudents === 'number' ? summary.totalStudents : 90
+      const totalLeadsCount = typeof summary.totalLeads === 'number' ? summary.totalLeads : 241
+      const enrolledCount = typeof summary.enrolledOnly === 'number' ? summary.enrolledOnly : 90
 
       return [
-        { label: 'Total Students',      value: totalStudentsCount,      delta: `${totalStudentsCount} registered`,   trend: 'up'   as const },
-        { label: 'Active Leads',        value: totalLeadsCount,         delta: `${summary.newLeads || 67} new • ${totalLeadsCount - (summary.newLeads || 67)} prospects`, trend: 'up'   as const },
+        { label: 'Total Students',      value: totalStudentsCount,      delta: `${totalStudentsCount} in students`,  trend: 'up'   as const },
+        { label: 'Active Leads',        value: totalLeadsCount,         delta: `${totalLeadsCount} in leads`,         trend: 'up'   as const },
         { label: "Today's Follow-ups",  value: summary.pendingFollowUps, delta: 'Upcoming',                           trend: 'flat' as const },
         { label: 'Applications',        value: summary.applications,     delta: `${summary.applications} active`,     trend: 'up'   as const },
         { label: 'Offer Letters',       value: summary.offerLetters,     delta: `${summary.offerLetters} received`,   trend: 'up'   as const },

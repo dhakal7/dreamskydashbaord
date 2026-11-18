@@ -113,10 +113,13 @@ const getSummary = async (req, res, next) => {
             visaCases,
             enrolledOnly,
         ] = await Promise.all([
-            // Total students in CRM (all active records: 331)
+            // Total students in Student Section (ENROLLED + processing stages, excluding leads: 90)
             prisma.student.count({
                 where: {
                     isActive: true,
+                    currentStage: {
+                        notIn: ["LEAD", "PROSPECT"],
+                    },
                     ...studentBranchFilter,
                 },
             }),
