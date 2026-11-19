@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import {
-  Wallet, Mail, CheckCircle2, Clock, AlertCircle, Search, DollarSign, RefreshCw, Plus, Trash2,
-  Database, FileText, Lock, History, AlertTriangle
+  Wallet, Mail, CheckCircle2, Clock, Search, DollarSign, RefreshCw, Plus, Trash2,
+  FileText, Lock, History, AlertTriangle, Receipt
 } from 'lucide-react'
 import { toast } from 'sonner'
 import dayjs from 'dayjs'
@@ -26,6 +26,23 @@ import { useAuthStore } from '@/store/auth-store'
 import { usePayments, paymentKeys } from '@/hooks/use-payments'
 import { useQueryClient } from '@tanstack/react-query'
 import type { ApiPaymentItem, ApiPaymentTransaction } from '@/api/payment-api'
+
+export interface DisplayTransactionRecord {
+  id: string
+  paymentId: string
+  studentId: string
+  studentName: string
+  studentEmail: string
+  studentPhone: string
+  feeCategory: string
+  amount: number
+  currency: string
+  method: string
+  receiptNumber?: string | null
+  paidAt: string
+  notes?: string | null
+  parentRecord: DisplayFeeRecord
+}
 
 export interface DisplayFeeRecord {
   id: string
@@ -96,10 +113,62 @@ export function FeeManagementPanel() {
     return liveList
   }, [isMock, dbPayments])
 
+  const [activeView, setActiveView] = useState<'fees' | 'transactions'>('fees')
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'ALL' | FeePaymentStatus>('ALL')
+  const [txSearchQuery, setTxSearchQuery] = useState('')
+  const [txMethodFilter, setTxMethodFilter] = useState<string>('ALL')
   const [studentSearch, setStudentSearch] = useState('')
   const debouncedStudentSearch = useDebouncedValue(studentSearch.trim(), 300)
+
+  // ── 3. Flattened Transactions Across All Fee Records ────────────────────────
+  const allTransactions = useMemo<DisplayTransactionRecord[]>(() => {
+    const list: DisplayTransactionRecord[] = []
+    combinedFees.forEach((fee) => {
+      (fee.transactions || []).forEach((tx) => {
+        list.push({
+          id: tx.id,
+          paymentId: tx.paymentId || fee.id,
+          studentId: fee.studentId,
+          studentName: fee.studentName,
+          studentEmail: fee.studentEmail,
+          studentPhone: fee.studentPhone,
+          feeCategory: fee.feeCategory,
+          amount: Number(tx.amount) || 0,
+          currency: fee.currency || 'NPR',
+          method: (tx.method || 'CASH').toUpperCase(),
+          receiptNumber: tx.receiptNumber,
+          paidAt: tx.paidAt || (fee.lastPaymentDate ? new Date(fee.lastPaymentDate).toISOString() : new Date().toISOString()),
+          notes: tx.notes,
+          parentRecord: fee,
+        })
+      })
+    })
+    return list.sort((a, b) => new Date(b.paidAt).getTime() - new Date(a.paidAt).getTime())
+  }, [combinedFees])
+
+  const filteredTransactions = useMemo(() => {
+    return allTransactions.filter((tx) => {
+      const q = txSearchQuery.toLowerCase().trim()
+      const matchesSearch =
+        !q ||
+        tx.studentName.toLowerCase().includes(q) ||
+        tx.studentEmail.toLowerCase().includes(q) ||
+        tx.feeCategory.toLowerCase().includes(q) ||
+        (tx.receiptNumber && tx.receiptNumber.toLowerCase().includes(q)) ||
+        (tx.notes && tx.notes.toLowerCase().includes(q)) ||
+        tx.method.toLowerCase().includes(q)
+      const matchesMethod =
+        txMethodFilter === 'ALL' ||
+        tx.method === txMethodFilter ||
+        (txMethodFilter === 'BANK_TRANSFER' && (tx.method.includes('BANK') || tx.method.includes('ONLINE') || tx.method.includes('FONEPAY')))
+      return matchesSearch && matchesMethod
+    })
+  }, [allTransactions, txSearchQuery, txMethodFilter])
+
+  const totalTransactionAmount = useMemo(() => {
+    return allTransactions.reduce((acc, tx) => acc + tx.amount, 0)
+  }, [allTransactions])
 
   // Modals & Inspection States
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -431,77 +500,125 @@ export function FeeManagementPanel() {
   }
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="border-b border-border/60 pb-4">
-        <div className="flex flex-col gap-3">
-          {/* Live Finance Banner */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg border border-emerald-200 bg-emerald-50/80 px-3.5 py-2.5 text-xs text-emerald-900">
-            <div className="flex items-start sm:items-center gap-2">
-              <CheckCircle2 className="size-4 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
-              <div>
-                <span className="font-semibold">Live Financial Ledger Active:</span>{' '}
-                Connected to live database payments. Fee creations, installments, status updates, and reminder dispatches are recorded directly in PostgreSQL.
+    <Card className="shadow-sm border-border/80">
+      <CardHeader className="border-b border-border/60 pb-5">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/20 text-primary shrink-0">
+                <Wallet className="size-5" />
               </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300">
-                <Wallet className="size-3 mr-1" /> Live Ledger
-              </Badge>
-              {!isMock && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 text-[11px] gap-1 text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100"
-                  onClick={() => refetchPayments()}
-                  disabled={isPaymentsFetching}
-                >
-                  <RefreshCw className={`size-3 ${isPaymentsFetching ? 'animate-spin' : ''}`} />
-                  Refresh
-                </Button>
-              )}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-base font-bold">
-                <Wallet className="size-4 text-primary" />
-                Front Desk Fee & Payment Collection
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Inspect live database payment records, view transaction installments, and reference local drafts.
-              </CardDescription>
+              <div>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+                    Fee & Payment Management
+                  </CardTitle>
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] font-semibold gap-1.5 py-0 px-2 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25"
+                  >
+                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live Ledger
+                  </Badge>
+                </div>
+                <CardDescription className="text-xs text-muted-foreground mt-0.5">
+                  Track student fee schedules, installment records, and financial transaction histories.
+                </CardDescription>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              {!isMock && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-xs gap-1.5 border-border hover:bg-muted"
+                  onClick={() => refetchPayments()}
+                  disabled={isPaymentsFetching}
+                >
+                  <RefreshCw className={`size-3.5 ${isPaymentsFetching ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              )}
               {canCreateFee && (
                 <Button
                   size="sm"
-                  className="gap-1.5 bg-primary/80 hover:bg-primary/90 text-primary-foreground text-xs h-8"
+                  className="gap-1.5 bg-primary text-primary-foreground hover:bg-primary/90 text-xs h-8 shadow-sm font-medium"
                   onClick={() => setIsCreateOpen(true)}
                 >
                   <Plus className="size-3.5" />
                   Add Student Fee
                 </Button>
               )}
-              <Badge variant="outline" className="text-xs py-1 bg-emerald-50 text-emerald-700 border-emerald-200">
-                <CheckCircle2 className="size-3 mr-1 text-emerald-600" />
-                Fully Paid: {stats.fullyPaidCount}
-              </Badge>
-              <Badge variant="outline" className="text-xs py-1 bg-amber-50 text-amber-700 border-amber-200">
-                <Clock className="size-3 mr-1 text-amber-600" />
-                Due: {stats.dueCount}
-              </Badge>
-              <Badge variant="outline" className="text-xs py-1 bg-rose-50 text-rose-700 border-rose-200">
-                <AlertCircle className="size-3 mr-1 text-rose-600" />
-                Unpaid: {stats.unpaidCount}
-              </Badge>
+            </div>
+          </div>
+
+          {/* Metric Summary Cards */}
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <div className="rounded-xl border border-border/70 bg-gradient-to-br from-emerald-500/5 via-card to-card p-3.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground">Total Fee Collected</span>
+                <span className="flex size-6 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="size-3.5" />
+                </span>
+              </div>
+              <p className="mt-2 text-xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400">
+                NPR {stats.totalCollected.toLocaleString()}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                <span className="font-semibold text-foreground">{stats.fullyPaidCount}</span> fully paid accounts
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border/70 bg-gradient-to-br from-amber-500/5 via-card to-card p-3.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground">Outstanding Fee Records</span>
+                <span className="flex size-6 items-center justify-center rounded-lg bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                  <Clock className="size-3.5" />
+                </span>
+              </div>
+              <p className="mt-2 text-xl font-bold tracking-tight text-amber-600 dark:text-amber-400">
+                NPR {stats.totalDue.toLocaleString()}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                <span className="font-semibold text-foreground">{stats.dueCount + stats.unpaidCount}</span> pending balances
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border/70 bg-gradient-to-br from-primary/5 via-card to-card p-3.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground">Total Fee Records</span>
+                <span className="flex size-6 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                  <FileText className="size-3.5" />
+                </span>
+              </div>
+              <p className="mt-2 text-xl font-bold tracking-tight text-foreground">
+                {combinedFees.length} <span className="text-xs font-normal text-muted-foreground">records</span>
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Active student fee schedules
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border/70 bg-gradient-to-br from-sky-500/5 via-card to-card p-3.5 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-medium text-muted-foreground">Transactions Recorded</span>
+                <span className="flex size-6 items-center justify-center rounded-lg bg-sky-500/15 text-sky-600 dark:text-sky-400">
+                  <Receipt className="size-3.5" />
+                </span>
+              </div>
+              <p className="mt-2 text-xl font-bold tracking-tight text-sky-600 dark:text-sky-400">
+                {allTransactions.length} <span className="text-xs font-normal text-muted-foreground">receipts</span>
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground truncate">
+                NPR {totalTransactionAmount.toLocaleString()} total receipts
+              </p>
             </div>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 pt-4">
+      <CardContent className="space-y-4 pt-5">
         {/* Error State Banner */}
         {isPaymentsError && (
           <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-4 text-xs text-rose-900 space-y-2">
@@ -522,276 +639,418 @@ export function FeeManagementPanel() {
             <p className="text-rose-700">
               {paymentsError?.message || 'Failed to fetch live payments from GET /api/payments. Please verify network or session.'}
             </p>
-            <p className="text-[11px] text-muted-foreground">
-              Note: The system does not silently replace database payments with hardcoded records upon failure.
-            </p>
           </div>
         )}
 
-        {/* Metric Summary Cards */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
-            <p className="text-[11px] font-medium text-muted-foreground">Total Fee Collected</p>
-            <p className="mt-1 text-lg font-bold text-emerald-600">
-              NPR {stats.totalCollected.toLocaleString()}
-            </p>
+        {/* View Switcher Tabs (Fee Ledgers vs All Transactions) */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/60 pb-3">
+          <div className="flex items-center gap-1.5 p-1 rounded-lg bg-muted/60 border border-border/50">
+            <button
+              type="button"
+              onClick={() => setActiveView('fees')}
+              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                activeView === 'fees'
+                  ? 'bg-background text-foreground shadow-sm font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Wallet className="size-3.5" />
+              <span>Fee Ledgers</span>
+              <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4 ml-0.5">
+                {combinedFees.length}
+              </Badge>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveView('transactions')}
+              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                activeView === 'transactions'
+                  ? 'bg-background text-foreground shadow-sm font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Receipt className="size-3.5" />
+              <span>All Transactions</span>
+              <Badge variant="secondary" className="text-[10px] py-0 px-1.5 h-4 ml-0.5">
+                {allTransactions.length}
+              </Badge>
+            </button>
           </div>
-          <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
-            <p className="text-[11px] font-medium text-muted-foreground">Total Fee Outstanding Due</p>
-            <p className="mt-1 text-lg font-bold text-amber-600">
-              NPR {stats.totalDue.toLocaleString()}
-            </p>
-          </div>
-          <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
-            <p className="text-[11px] font-medium text-muted-foreground">Total Fee Records</p>
-            <p className="mt-1 text-lg font-bold text-foreground">
-              {combinedFees.length} <span className="text-xs font-normal text-muted-foreground">records</span>
-            </p>
-          </div>
-          <div className="rounded-lg border border-border/70 bg-muted/30 p-3">
-            <p className="text-[11px] font-medium text-muted-foreground">Outstanding Fee Records</p>
-            <p className="mt-1 text-lg font-bold text-amber-700">
-              {stats.dueCount + stats.unpaidCount} <span className="text-xs font-normal text-muted-foreground">pending</span>
-            </p>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>Operating Currency:</span>
+            <Badge variant="outline" className="font-mono text-[11px] font-semibold text-foreground bg-muted/30">
+              NPR (Nepalese Rupee)
+            </Badge>
           </div>
         </div>
 
-        {/* Search & Filter Toolbar */}
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-            <Input
-              placeholder="Search student, email, or fee category…"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 text-xs"
-            />
-          </div>
+        {/* VIEW 1: FEE LEDGERS */}
+        {activeView === 'fees' && (
+          <div className="space-y-4">
+            {/* Search & Filter Toolbar */}
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search student, email, phone, or category…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9 text-xs"
+                />
+              </div>
 
-          <div className="flex flex-wrap items-center gap-1.5">
-            {/* Status Filter */}
-            <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant={statusFilter === 'ALL' ? 'default' : 'outline'}
-                className="h-8 text-xs px-2.5"
-                onClick={() => setStatusFilter('ALL')}
-              >
-                All Status
-              </Button>
-              <Button
-                size="sm"
-                variant={statusFilter === 'FULL_PAID' ? 'default' : 'outline'}
-                className="h-8 text-xs px-2.5"
-                onClick={() => setStatusFilter('FULL_PAID')}
-              >
-                Fully Paid ({stats.fullyPaidCount})
-              </Button>
-              <Button
-                size="sm"
-                variant={statusFilter === 'DUE' ? 'default' : 'outline'}
-                className="h-8 text-xs px-2.5"
-                onClick={() => setStatusFilter('DUE')}
-              >
-                Due ({stats.dueCount})
-              </Button>
-              <Button
-                size="sm"
-                variant={statusFilter === 'UNPAID' ? 'default' : 'outline'}
-                className="h-8 text-xs px-2.5"
-                onClick={() => setStatusFilter('UNPAID')}
-              >
-                Unpaid ({stats.unpaidCount})
-              </Button>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant={statusFilter === 'ALL' ? 'default' : 'outline'}
+                  className="h-8 text-xs px-2.5"
+                  onClick={() => setStatusFilter('ALL')}
+                >
+                  All Status ({combinedFees.length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={statusFilter === 'FULL_PAID' ? 'default' : 'outline'}
+                  className="h-8 text-xs px-2.5"
+                  onClick={() => setStatusFilter('FULL_PAID')}
+                >
+                  Fully Paid ({stats.fullyPaidCount})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={statusFilter === 'DUE' ? 'default' : 'outline'}
+                  className="h-8 text-xs px-2.5"
+                  onClick={() => setStatusFilter('DUE')}
+                >
+                  Due ({stats.dueCount})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={statusFilter === 'UNPAID' ? 'default' : 'outline'}
+                  className="h-8 text-xs px-2.5"
+                  onClick={() => setStatusFilter('UNPAID')}
+                >
+                  Unpaid ({stats.unpaidCount})
+                </Button>
+              </div>
+            </div>
+
+            {/* Fee Collection Roster Table */}
+            <div className="rounded-lg border border-border/70 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-muted/50 text-muted-foreground border-b border-border/60">
+                    <tr>
+                      <th className="p-3 font-semibold">Student Details</th>
+                      <th className="p-3 font-semibold">Fee Category</th>
+                      <th className="p-3 font-semibold">Total Amount</th>
+                      <th className="p-3 font-semibold">Paid Amount</th>
+                      <th className="p-3 font-semibold">Due Balance</th>
+                      <th className="p-3 font-semibold">Status</th>
+                      <th className="p-3 font-semibold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60 bg-background">
+                    {/* Loading skeleton */}
+                    {isPaymentsLoading && !isMock && (
+                      <tr>
+                        <td colSpan={7} className="text-center py-10 text-muted-foreground">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <RefreshCw className="size-5 animate-spin text-primary" />
+                            <span>Loading verified payment records from database…</span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Empty State */}
+                    {!isPaymentsLoading && filteredFees.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="text-center py-8 text-muted-foreground">
+                          No fee records found matching your query.
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Populated records */}
+                    {!isPaymentsLoading && filteredFees.map((fee) => {
+                      const isPaid = fee.status === 'FULL_PAID'
+                      const isDue = fee.status === 'DUE'
+                      const isUnpaid = fee.status === 'UNPAID'
+                      const isCancelled = fee.status === 'CANCELLED'
+                      const txCount = fee.transactions ? fee.transactions.length : 0
+
+                      return (
+                        <tr key={fee.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="p-3">
+                            <div className="flex items-center gap-2.5">
+                              <PersonAvatar name={fee.studentName} className="size-7" />
+                              <div>
+                                <p className="font-semibold text-foreground">{fee.studentName}</p>
+                                <p className="text-[11px] text-muted-foreground">{fee.studentEmail}</p>
+                                {fee.studentPhone && fee.studentPhone !== 'N/A' && (
+                                  <p className="text-[10px] text-muted-foreground">{fee.studentPhone}</p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <p className="font-medium text-foreground">{fee.feeCategory}</p>
+                            <p className="text-[10px] text-muted-foreground">Due: {fee.dueDate || 'N/A'}</p>
+                          </td>
+                          <td className="p-3 font-semibold text-foreground">
+                            {fee.currency} {fee.totalAmount.toLocaleString()}
+                          </td>
+                          <td className="p-3 font-semibold text-emerald-600 dark:text-emerald-400">
+                            {fee.currency} {fee.paidAmount.toLocaleString()}
+                          </td>
+                          <td className="p-3 font-semibold text-amber-600 dark:text-amber-400">
+                            {fee.currency} {fee.dueAmount.toLocaleString()}
+                          </td>
+                          <td className="p-3">
+                            {isPaid && (
+                              <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 border-emerald-300 dark:border-emerald-800">
+                                Fully Paid
+                              </Badge>
+                            )}
+                            {isDue && (
+                              <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 border-amber-300 dark:border-amber-800">
+                                Fee Due
+                              </Badge>
+                            )}
+                            {isUnpaid && (
+                              <Badge className="bg-rose-500/15 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 border-rose-300 dark:border-rose-800">
+                                Unpaid
+                              </Badge>
+                            )}
+                            {isCancelled && (
+                              <Badge variant="secondary" className="text-muted-foreground">
+                                Cancelled
+                              </Badge>
+                            )}
+                            {fee.lastReminderSentAt && (
+                              <p className="text-[9px] text-muted-foreground mt-0.5">
+                                Reminder: {fee.lastReminderSentAt}
+                              </p>
+                            )}
+                          </td>
+                          <td className="p-3 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {/* Transaction history button */}
+                              {txCount > 0 && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-[11px] gap-1 px-2 text-primary hover:bg-primary/5"
+                                  onClick={() => setHistoryRecord(fee)}
+                                >
+                                  <History className="size-3" />
+                                  History ({txCount})
+                                </Button>
+                              )}
+
+                              {canManageFees && !isPaid && !isCancelled && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-[11px] gap-1 px-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400"
+                                  onClick={() => handleOpenInstallmentModal(fee)}
+                                >
+                                  <Plus className="size-3" />
+                                  Installment
+                                </Button>
+                              )}
+
+                              {canManageFees && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-[11px] gap-1 px-2 text-muted-foreground hover:text-foreground"
+                                  onClick={() => handleOpenUpdateModal(fee)}
+                                >
+                                  <RefreshCw className="size-3 text-muted-foreground" />
+                                  Update Fee
+                                </Button>
+                              )}
+
+                              {!isPaid && !isCancelled && canSendReminder && (
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="h-7 text-[11px] gap-1 px-2 bg-amber-600 hover:bg-amber-700 text-white"
+                                  onClick={() => handleOpenMailModal(fee)}
+                                >
+                                  <Mail className="size-3" />
+                                  Send Mail
+                                </Button>
+                              )}
+
+                              {canDeleteFee && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-[11px] gap-1 px-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-900 dark:text-rose-400"
+                                  onClick={() => setDeleteRecord(fee)}
+                                >
+                                  <Trash2 className="size-3" />
+                                  Delete
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Fee Collection Roster Table */}
-        <div className="rounded-lg border border-border/70 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-muted/50 text-muted-foreground border-b border-border/60">
-                <tr>
-                  <th className="p-3 font-semibold">Student Details</th>
-                  <th className="p-3 font-semibold">Source</th>
-                  <th className="p-3 font-semibold">Fee Category</th>
-                  <th className="p-3 font-semibold">Total Amount</th>
-                  <th className="p-3 font-semibold">Paid Amount</th>
-                  <th className="p-3 font-semibold">Due Balance</th>
-                  <th className="p-3 font-semibold">Status</th>
-                  <th className="p-3 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60 bg-background">
-                {/* Loading skeleton */}
-                {isPaymentsLoading && !isMock && (
-                  <tr>
-                    <td colSpan={8} className="text-center py-10 text-muted-foreground">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <RefreshCw className="size-5 animate-spin text-primary" />
-                        <span>Loading verified payment records from database…</span>
-                      </div>
-                    </td>
-                  </tr>
-                )}
+        {/* VIEW 2: ALL TRANSACTIONS */}
+        {activeView === 'transactions' && (
+          <div className="space-y-4">
+            {/* Search & Method Filter Toolbar */}
+            <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search receipt #, student name, notes…"
+                  value={txSearchQuery}
+                  onChange={(e) => setTxSearchQuery(e.target.value)}
+                  className="pl-9 h-9 text-xs"
+                />
+              </div>
 
-                {/* Empty State */}
-                {!isPaymentsLoading && filteredFees.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="text-center py-8 text-muted-foreground">
-                      No fee records found matching your query.
-                    </td>
-                  </tr>
-                )}
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Button
+                  size="sm"
+                  variant={txMethodFilter === 'ALL' ? 'default' : 'outline'}
+                  className="h-8 text-xs px-2.5"
+                  onClick={() => setTxMethodFilter('ALL')}
+                >
+                  All Methods ({allTransactions.length})
+                </Button>
+                <Button
+                  size="sm"
+                  variant={txMethodFilter === 'CASH' ? 'default' : 'outline'}
+                  className="h-8 text-xs px-2.5"
+                  onClick={() => setTxMethodFilter('CASH')}
+                >
+                  Cash
+                </Button>
+                <Button
+                  size="sm"
+                  variant={txMethodFilter === 'BANK_TRANSFER' ? 'default' : 'outline'}
+                  className="h-8 text-xs px-2.5"
+                  onClick={() => setTxMethodFilter('BANK_TRANSFER')}
+                >
+                  Bank / Online
+                </Button>
+                <Button
+                  size="sm"
+                  variant={txMethodFilter === 'CARD' ? 'default' : 'outline'}
+                  className="h-8 text-xs px-2.5"
+                  onClick={() => setTxMethodFilter('CARD')}
+                >
+                  Card
+                </Button>
+                <Button
+                  size="sm"
+                  variant={txMethodFilter === 'CHEQUE' ? 'default' : 'outline'}
+                  className="h-8 text-xs px-2.5"
+                  onClick={() => setTxMethodFilter('CHEQUE')}
+                >
+                  Cheque
+                </Button>
+              </div>
+            </div>
 
-                {/* Populated records */}
-                {!isPaymentsLoading && filteredFees.map((fee) => {
-                  const isPaid = fee.status === 'FULL_PAID'
-                  const isDue = fee.status === 'DUE'
-                  const isUnpaid = fee.status === 'UNPAID'
-                  const isCancelled = fee.status === 'CANCELLED'
-                  const isDatabase = fee.source === 'database'
-                  const txCount = fee.transactions ? fee.transactions.length : 0
-
-                  return (
-                    <tr key={fee.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="p-3">
-                        <div className="flex items-center gap-2.5">
-                          <PersonAvatar name={fee.studentName} className="size-7" />
-                          <div>
-                            <p className="font-semibold text-foreground">{fee.studentName}</p>
-                            <p className="text-[11px] text-muted-foreground">{fee.studentEmail}</p>
-                            {fee.studentPhone && fee.studentPhone !== 'N/A' && (
-                              <p className="text-[10px] text-muted-foreground">{fee.studentPhone}</p>
+            {/* Transactions Table */}
+            <div className="rounded-lg border border-border/70 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-muted/50 text-muted-foreground border-b border-border/60">
+                    <tr>
+                      <th className="p-3 font-semibold">Date & Time</th>
+                      <th className="p-3 font-semibold">Receipt / Ref</th>
+                      <th className="p-3 font-semibold">Student</th>
+                      <th className="p-3 font-semibold">Fee Category</th>
+                      <th className="p-3 font-semibold">Method</th>
+                      <th className="p-3 font-semibold">Amount Paid</th>
+                      <th className="p-3 font-semibold">Notes / Remarks</th>
+                      <th className="p-3 font-semibold text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/60 bg-background">
+                    {filteredTransactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="text-center py-8 text-muted-foreground">
+                          No transactions found matching your filter criteria.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredTransactions.map((tx) => (
+                        <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
+                          <td className="p-3 whitespace-nowrap text-muted-foreground">
+                            {tx.paidAt ? dayjs(tx.paidAt).format('YYYY-MM-DD HH:mm') : 'N/A'}
+                          </td>
+                          <td className="p-3">
+                            {tx.receiptNumber ? (
+                              <Badge variant="outline" className="font-mono text-[11px] font-semibold bg-muted/40">
+                                #{tx.receiptNumber}
+                              </Badge>
+                            ) : (
+                              <span className="font-mono text-[11px] text-muted-foreground">
+                                #{tx.id.slice(-6).toUpperCase()}
+                              </span>
                             )}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        {isDatabase ? (
-                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] gap-1 py-0.5">
-                            <Database className="size-2.5" />
-                            Live DB
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-amber-50 text-amber-800 border-amber-300 text-[10px] gap-1 py-0.5">
-                            <FileText className="size-2.5" />
-                            Local Draft
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="p-3">
-                        <p className="font-medium text-foreground">{fee.feeCategory}</p>
-                        <p className="text-[10px] text-muted-foreground">Due: {fee.dueDate || 'N/A'}</p>
-                      </td>
-                      <td className="p-3 font-medium">
-                        {fee.currency} {fee.totalAmount.toLocaleString()}
-                      </td>
-                      <td className="p-3 font-semibold text-emerald-600">
-                        {fee.currency} {fee.paidAmount.toLocaleString()}
-                      </td>
-                      <td className="p-3 font-semibold text-amber-600">
-                        {fee.currency} {fee.dueAmount.toLocaleString()}
-                      </td>
-                      <td className="p-3">
-                        {isPaid && (
-                          <Badge className="bg-emerald-500/15 text-emerald-700 hover:bg-emerald-500/20 border-emerald-300">
-                            Fully Paid
-                          </Badge>
-                        )}
-                        {isDue && (
-                          <Badge className="bg-amber-500/15 text-amber-700 hover:bg-amber-500/20 border-amber-300">
-                            Fee Due
-                          </Badge>
-                        )}
-                        {isUnpaid && (
-                          <Badge className="bg-rose-500/15 text-rose-700 hover:bg-rose-500/20 border-rose-300">
-                            Unpaid
-                          </Badge>
-                        )}
-                        {isCancelled && (
-                          <Badge variant="secondary" className="text-muted-foreground">
-                            Cancelled
-                          </Badge>
-                        )}
-                        {fee.lastReminderSentAt && (
-                          <p className="text-[9px] text-muted-foreground mt-0.5">
-                            Reminder: {fee.lastReminderSentAt}
-                          </p>
-                        )}
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          {/* Transaction history button */}
-                          {txCount > 0 && (
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <PersonAvatar name={tx.studentName} className="size-6" />
+                              <div>
+                                <p className="font-semibold text-foreground">{tx.studentName}</p>
+                                <p className="text-[10px] text-muted-foreground">{tx.studentEmail}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3 font-medium text-foreground">
+                            {tx.feeCategory}
+                          </td>
+                          <td className="p-3">
+                            <Badge variant="secondary" className="text-[10px] font-medium uppercase py-0.5 px-2">
+                              {tx.method}
+                            </Badge>
+                          </td>
+                          <td className="p-3 font-bold text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                            {tx.currency} {tx.amount.toLocaleString()}
+                          </td>
+                          <td className="p-3 text-muted-foreground max-w-xs truncate">
+                            {tx.notes || '—'}
+                          </td>
+                          <td className="p-3 text-right">
                             <Button
                               size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] gap-1 px-2 text-primary hover:bg-primary/5"
-                              onClick={() => setHistoryRecord(fee)}
+                              variant="ghost"
+                              className="h-7 text-[11px] gap-1 px-2 text-primary hover:bg-primary/10"
+                              onClick={() => setHistoryRecord(tx.parentRecord)}
                             >
                               <History className="size-3" />
-                              History ({txCount})
+                              Inspect
                             </Button>
-                          )}
-
-                          {canManageFees && !isPaid && !isCancelled && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] gap-1 px-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                              onClick={() => handleOpenInstallmentModal(fee)}
-                            >
-                              <Plus className="size-3" />
-                              Installment
-                            </Button>
-                          )}
-
-                          {canManageFees && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] gap-1 px-2 text-muted-foreground hover:text-foreground"
-                              onClick={() => handleOpenUpdateModal(fee)}
-                            >
-                              <RefreshCw className="size-3 text-muted-foreground" />
-                              Update Fee
-                            </Button>
-                          )}
-
-                          {!isPaid && !isCancelled && canSendReminder && (
-                            <Button
-                              size="sm"
-                              variant="default"
-                              className="h-7 text-[11px] gap-1 px-2 bg-amber-600 hover:bg-amber-700 text-white"
-                              onClick={() => handleOpenMailModal(fee)}
-                            >
-                              <Mail className="size-3" />
-                              Send Mail
-                            </Button>
-                          )}
-
-                          {canDeleteFee && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-[11px] gap-1 px-2 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                              onClick={() => setDeleteRecord(fee)}
-                            >
-                              <Trash2 className="size-3" />
-                              Delete
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
 
       {/* CREATE STUDENT FEE MODAL */}

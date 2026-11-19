@@ -1,3 +1,4 @@
+const { Prisma } = require('@prisma/client');
 const prisma = require('../prisma');
 const AppError = require('../utils/apiError');
 
@@ -84,7 +85,7 @@ class PaymentService {
       }
       const authorizedBranchId = currentUser.branchId.trim();
       const studentBranchId = resolveStudentBranchId(student);
-      if (!studentBranchId || studentBranchId !== authorizedBranchId) {
+      if (studentBranchId && studentBranchId !== authorizedBranchId) {
         throw AppError.forbidden(`You are not authorized to ${action} payment records outside your branch.`, 'FORBIDDEN');
       }
       return;
@@ -117,7 +118,11 @@ class PaymentService {
           { assignedCounselor: { branchId: authorizedBranchId } },
           {
             assignedCounselorId: null,
-            academicBackground: { path: ['branchId'], equals: authorizedBranchId },
+            OR: [
+              { academicBackground: { equals: Prisma.AnyNull } },
+              { academicBackground: { path: ['branchId'], equals: authorizedBranchId } },
+              { academicBackground: { path: ['branchId'], equals: Prisma.AnyNull } },
+            ],
           },
         ];
       } else {
@@ -672,7 +677,14 @@ class PaymentService {
           OR (${actorRole} = 'COUNSELOR' AND s."assignedCounselorId" = ${actorId})
           OR (${actorRole} IN ('BRANCH_ADMIN', 'FRONT_DESK') AND (
             u."branchId" = ${branchId}
-            OR (s."assignedCounselorId" IS NULL AND jsonb_extract_path_text(s."academicBackground", 'branchId') = ${branchId})
+            OR (
+              s."assignedCounselorId" IS NULL
+              AND (
+                s."academicBackground" IS NULL
+                OR jsonb_extract_path_text(s."academicBackground", 'branchId') = ${branchId}
+                OR jsonb_extract_path_text(s."academicBackground", 'branchId') IS NULL
+              )
+            )
           ))
         )
       GROUP BY NULLIF(TRIM(UPPER(p."currency")), '')
@@ -700,7 +712,14 @@ class PaymentService {
           OR (${actorRole} = 'COUNSELOR' AND s."assignedCounselorId" = ${actorId})
           OR (${actorRole} IN ('BRANCH_ADMIN', 'FRONT_DESK') AND (
             u."branchId" = ${branchId}
-            OR (s."assignedCounselorId" IS NULL AND jsonb_extract_path_text(s."academicBackground", 'branchId') = ${branchId})
+            OR (
+              s."assignedCounselorId" IS NULL
+              AND (
+                s."academicBackground" IS NULL
+                OR jsonb_extract_path_text(s."academicBackground", 'branchId') = ${branchId}
+                OR jsonb_extract_path_text(s."academicBackground", 'branchId') IS NULL
+              )
+            )
           ))
         )
     `;
