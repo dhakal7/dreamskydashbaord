@@ -3,13 +3,13 @@ const AppError = require("../utils/apiError");
 
 // ─── Status transition rules ─────────────────────────────────────────────────
 const ALLOWED_TRANSITIONS = {
-    DRAFT: ["SUBMITTED", "UNDER_REVIEW", "WITHDRAWN"],
-    SUBMITTED: ["UNDER_REVIEW", "WITHDRAWN"],
+    DRAFT: ["SUBMITTED", "UNDER_REVIEW", "WITHDRAWN", "REJECTED"],
+    SUBMITTED: ["UNDER_REVIEW", "WITHDRAWN", "REJECTED"],
     UNDER_REVIEW: ["ACCEPTED", "REJECTED", "DEFERRED", "WITHDRAWN"],
     DEFERRED: ["SUBMITTED", "UNDER_REVIEW", "ACCEPTED", "WITHDRAWN"],
     ACCEPTED: ["WITHDRAWN"],
-    REJECTED: [],
-    WITHDRAWN: [],
+    REJECTED: ["SUBMITTED", "UNDER_REVIEW"],
+    WITHDRAWN: ["DRAFT", "SUBMITTED"],
 };
 
 const STUDENT_AUTHZ_SELECT = {
@@ -274,7 +274,8 @@ const updateApplication = async (id, data, currentUser = null) => {
 };
 
 // ─── CHANGE STATUS ────────────────────────────────────────────────────────────
-const changeStatus = async (id, { status }, currentUser = null) => {
+const changeStatus = async (id, payload = {}, currentUser = null) => {
+    const { status, rejectionReason, notes } = payload;
     if (!currentUser) {
         throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
     }
@@ -302,8 +303,69 @@ const changeStatus = async (id, { status }, currentUser = null) => {
     if ((status === "SUBMITTED" || status === "UNDER_REVIEW") && !existing.submittedAt) {
         update.submittedAt = new Date();
     }
+    if (status === "REJECTED") {
+        const reasonText = [rejectionReason, notes].filter(Boolean).join(" - ").trim();
+        if (reasonText) {
+            update.notes = existing.notes ? `${existing.notes}\n[REJECTION] ${reasonText}` : `[REJECTION] ${reasonText}`;
+        }
+    }
 
-    return prisma.application.update({ where: { id }, data: update, include: includeRelations });
+    const updated = await prisma.application.update({ where: { id }, data: update, include: includeRelations });
+
+    const actorId = currentUser.userId || currentUser.id;
+
+    // ── AUDIT LOG: Application Status Transition ───────────────────────────────
+    await prisma.auditLog.create({
+        data: {
+            actorId,
+            entity: "Application",
+            entityId: id,
+            field: "status",
+            oldValue: existing.status,
+            newValue: status,
+        },
+    }).catch(() => {});
+
+    if (status === "REJECTED" && (rejectionReason || notes)) {
+        await prisma.auditLog.create({
+            data: {
+                actorId,
+                entity: "Application",
+                entityId: id,
+                field: "rejectionReason",
+                oldValue: null,
+                newValue: [rejectionReason, notes].filter(Boolean).join(" - ").trim(),
+            },
+        }).catch(() => {});
+    }
+
+    // ── AUTOMATED PIPELINE: ACCEPTED → VISA PROCESSING ─────────────────────────
+    if (status === "ACCEPTED" && existing.studentId) {
+        try {
+            const existingVisa = await prisma.visaCase.findFirst({
+                where: {
+                    OR: [
+                        { applicationId: id },
+                        { studentId: existing.studentId },
+                    ],
+                },
+            });
+            if (!existingVisa) {
+                await prisma.visaCase.create({
+                    data: {
+                        applicationId: id,
+                        studentId: existing.studentId,
+                        status: "NOT_APPLIED",
+                        visaType: "STUDENT_VISA",
+                    },
+                });
+            }
+        } catch (autoErr) {
+            console.warn("[application.service] Auto visaCase initialization note:", autoErr.message);
+        }
+    }
+
+    return updated;
 };
 
 // ─── RECORD OFFER ─────────────────────────────────────────────────────────────

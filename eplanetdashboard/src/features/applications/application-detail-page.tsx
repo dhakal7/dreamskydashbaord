@@ -21,6 +21,7 @@ import { toast } from 'sonner'
 import { useQueryClient } from '@tanstack/react-query'
 import { useVisaCases } from '@/hooks/use-visa'
 import { StartVisaDialog } from '@/features/students/components/profile-tabs/start-visa-dialog'
+import { ApplicationRejectionDialog } from './components/application-rejection-dialog'
 
 // Helper to add days to a YYYY-MM-DD string
 function addDays(dateStr: string, days: number): string {
@@ -85,6 +86,7 @@ export default function ApplicationDetailPage() {
   const queryClient = useQueryClient()
   const [isUpdatingStage, setIsUpdatingStage] = useState(false)
   const [visaDialogOpen, setVisaDialogOpen] = useState(false)
+  const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false)
   const canStartVisa = hasPermission(currentUser.role, 'visa.manage') ||
     (currentUser.role !== 'student' && currentUser.role !== 'referral_agent')
 
@@ -245,8 +247,13 @@ export default function ApplicationDetailPage() {
   const nextStageIndex = linearFlow.indexOf(app.stage) + 1
   const nextStage = nextStageIndex < linearFlow.length ? linearFlow[nextStageIndex] : null
 
-  const handleStageChange = async (newStage: ApplicationStage) => {
+  const handleStageChange = async (newStage: ApplicationStage, rejectionMeta?: { reason: string; notes: string }) => {
     if (!app) return
+    if (newStage === 'rejected' && !rejectionMeta) {
+      setRejectionDialogOpen(true)
+      return
+    }
+
     if (isMockMode()) {
       moveApplication(app.id, newStage)
       return
@@ -299,8 +306,11 @@ export default function ApplicationDetailPage() {
         await applicationApi.changeStatus(app.id, 'SUBMITTED')
         toast.success('Stage updated to Submitted')
       } else if (newStage === 'rejected') {
-        await applicationApi.changeStatus(app.id, 'REJECTED')
-        toast.success('Application marked as Rejected')
+        await applicationApi.changeStatus(app.id, 'REJECTED', {
+          rejectionReason: rejectionMeta?.reason,
+          notes: rejectionMeta?.notes,
+        })
+        toast.success('Application marked as Rejected with recorded reason')
       }
 
       await queryClient.invalidateQueries({ queryKey: applicationKeys.detail(app.id) })
@@ -311,6 +321,10 @@ export default function ApplicationDetailPage() {
     } finally {
       setIsUpdatingStage(false)
     }
+  }
+
+  const handleConfirmRejection = async (reason: string, notes: string) => {
+    await handleStageChange('rejected', { reason, notes })
   }
 
   const handleNextStage = () => {
@@ -621,6 +635,22 @@ export default function ApplicationDetailPage() {
             courseName: app.courseName,
             countryName: app.countryName,
           }}
+        />
+      )}
+
+      {/* Application Rejection Dialog */}
+      {app && (
+        <ApplicationRejectionDialog
+          open={rejectionDialogOpen}
+          onOpenChange={setRejectionDialogOpen}
+          application={{
+            id: app.id,
+            studentName: app.studentName,
+            universityName: app.universityName,
+            courseName: app.courseName,
+          }}
+          onConfirm={handleConfirmRejection}
+          isSubmitting={isUpdatingStage}
         />
       )}
     </div>

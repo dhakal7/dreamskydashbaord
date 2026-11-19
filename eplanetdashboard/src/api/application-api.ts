@@ -72,8 +72,8 @@ export const applicationApi = {
   update(id: string, body: Partial<CreateApplicationBody>): Promise<ApiApplication> {
     return api.put(`/applications/${id}`, body)
   },
-  changeStatus(id: string, status: string): Promise<ApiApplication> {
-    return api.patch(`/applications/${id}/status`, { status })
+  changeStatus(id: string, status: string, meta?: { rejectionReason?: string; notes?: string }): Promise<ApiApplication> {
+    return api.patch(`/applications/${id}/status`, { status, ...meta })
   },
   recordOffer(id: string, offer: { type: string; conditions?: string; deadline?: string; details?: any }): Promise<ApiOffer> {
     return api.post(`/applications/${id}/offers`, offer)

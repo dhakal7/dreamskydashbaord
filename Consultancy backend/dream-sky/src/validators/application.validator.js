@@ -17,10 +17,13 @@ const validateUpdateApplication = ({ priority }) => {
         throw AppError.badRequest(`Invalid priority. Must be one of: ${VALID_PRIORITIES.join(", ")}`, "VALIDATION_ERROR");
 };
 
-const validateStatusChange = ({ status }) => {
+const validateStatusChange = ({ status, rejectionReason, notes }) => {
     if (!status) throw AppError.badRequest("status is required.", "VALIDATION_ERROR");
     if (!VALID_STATUSES.includes(status))
         throw AppError.badRequest(`Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`, "VALIDATION_ERROR");
+    if (status === "REJECTED" && (!rejectionReason?.trim() && !notes?.trim())) {
+        throw AppError.badRequest("A valid rejection reason or explanation is required when rejecting an application.", "VALIDATION_ERROR");
+    }
 };
 
 const validateOffer = ({ type }) => {

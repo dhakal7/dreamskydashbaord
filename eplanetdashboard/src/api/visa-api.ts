@@ -53,7 +53,7 @@ export interface CreateVisaCaseBody {
 }
 
 export interface DepartureDetails {
-  status: 'VISA_GRANTED' | 'PREPARING_DEPARTURE' | 'TICKET_BOOKED' | 'DEPARTURE_DELAYED' | 'DEPARTED'
+  status: 'VISA_GRANTED' | 'PREPARING_DEPARTURE' | 'TICKET_BOOKED' | 'DEPARTURE_DELAYED' | 'DEPARTED' | 'VISA_APPROVED' | 'PREPARING' | string
   expectedDepartureDate: string | null
   actualDepartureDate: string | null
   destinationAirport: string | null
@@ -164,8 +164,8 @@ export const visaApi = {
   update(id: string, body: Partial<CreateVisaCaseBody>): Promise<ApiVisaCase> {
     return api.put(`/visa-cases/${id}`, body)
   },
-  changeStatus(id: string, status: string): Promise<ApiVisaCase> {
-    return api.patch(`/visa-cases/${id}/status`, { status })
+  changeStatus(id: string, status: string, meta?: { refusalReason?: string; notes?: string }): Promise<ApiVisaCase> {
+    return api.patch(`/visa-cases/${id}/status`, { status, ...meta })
   },
   remove(id: string): Promise<void> {
     return api.delete(`/visa-cases/${id}`)
@@ -173,12 +173,14 @@ export const visaApi = {
 
   // ── Visa Granted / Success Students ──────────────────────────────────────
   listGranted(params?: VisaGrantedListParams): Promise<VisaGrantedStudent[]> {
-    return api.get('/visa-cases/granted', { params })
+    return api.get<VisaGrantedStudent[]>('/visa-cases/granted', { params })
   },
+
   grantedAnalytics(): Promise<VisaGrantedAnalytics> {
-    return api.get('/visa-cases/granted/analytics')
+    return api.get<VisaGrantedAnalytics>('/visa-cases/granted/analytics')
   },
+
   updateDeparture(studentId: string, body: UpdateDepartureBody): Promise<DepartureDetails> {
-    return api.patch(`/visa-cases/granted/${studentId}/departure`, body)
+    return api.patch<DepartureDetails>(`/visa-cases/granted/${studentId}/departure`, body)
   },
 }

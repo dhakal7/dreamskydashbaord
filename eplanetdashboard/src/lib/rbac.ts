@@ -55,7 +55,7 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
   front_desk: [
     'dashboard.view', 'leads.view', 'leads.manage', 'leads.change-stage', 'students.view', 'students.manage',
     'followups.view', 'appointments.view', 'appointments.manage',
-    'documents.view', 'documents.manage', 'classes.view', 'classes.manage', 'events.view', 'events.manage', 'settings.manage',
+    'visa.view', 'documents.view', 'documents.manage', 'classes.view', 'classes.manage', 'events.view', 'events.manage', 'settings.manage',
   ],
   counselor: [
     'dashboard.view', 'leads.view', 'leads.manage', 'leads.change-stage', 'students.view', 'students.manage',
@@ -65,7 +65,7 @@ export const rolePermissions: Record<Role, readonly Permission[]> = {
   ],
   teacher: ['dashboard.view', 'classes.view', 'reports.view', 'settings.manage', 'events.view'],
   student: ['dashboard.view', 'appointments.view', 'applications.view', 'visa.view', 'documents.view', 'classes.view', 'events.view', 'settings.manage'],
-  referral_agent: ['dashboard.view', 'leads.view', 'commissions.view', 'events.view', 'settings.manage'],
+  referral_agent: ['dashboard.view', 'leads.view', 'visa.view', 'commissions.view', 'events.view', 'settings.manage'],
 }
 
 export const dashboardPaths: Record<Role, string> = {

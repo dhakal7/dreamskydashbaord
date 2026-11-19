@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
 import dayjs from 'dayjs'
-import { Filter, Users, UserCheck, Calendar, Receipt } from 'lucide-react'
+import { Filter, Users, UserCheck, Calendar, Receipt, Settings2 } from 'lucide-react'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -24,6 +25,7 @@ import { visibleCommissions as filterVisibleCommissions } from '@/lib/data-visib
 import { CounselorProfileView } from './components/counselor-profile-view'
 import { AgentProfileView } from './components/agent-profile-view'
 import { AnnualSettlementView } from './components/annual-settlement-view'
+import { CommissionRulesTabView } from './components/commission-rules-tab-view'
 
 const statusOptions: Array<'all' | CommissionStatus> = ['all', 'pending', 'approved', 'paid', 'disputed']
 const earnerTypeOptions: Array<'all' | Commission['earnerType']> = ['all', 'counselor', 'referral_agent']
@@ -38,8 +40,21 @@ export default function CommissionLedgerPage() {
   const isAgent = currentUser?.role === 'referral_agent'
   const isAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'branch_admin'
 
-  const defaultTab = isCounselor ? 'counselors' : isAgent ? 'agents' : 'ledger'
+  const [searchParams, setSearchParams] = useSearchParams()
+  const queryTab = searchParams.get('tab')
+  const defaultTab = queryTab || (isCounselor ? 'counselors' : isAgent ? 'agents' : 'counselors')
   const [activeTab, setActiveTab] = useState(defaultTab)
+
+  useEffect(() => {
+    if (queryTab && queryTab !== activeTab) {
+      setActiveTab(queryTab)
+    }
+  }, [queryTab])
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val)
+    setSearchParams({ tab: val })
+  }
 
   const mockCommissions = useCommissionStore((s) => s.commissions)
   const { data: apiCommissions } = useCommissions()
@@ -191,27 +206,35 @@ export default function CommissionLedgerPage() {
         description="Performance funnels, visa-approval commissions, individual counselor & agent profiles, and annual settlements."
       />
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 max-w-2xl">
-          <TabsTrigger value="ledger" className="gap-2">
-            <Receipt className="size-4" />
-            <span className="hidden sm:inline">Transactions</span> Ledger
-          </TabsTrigger>
-          <TabsTrigger value="counselors" className="gap-2">
-            <Users className="size-4" />
-            Counselor Profiles
-          </TabsTrigger>
-          <TabsTrigger value="agents" className="gap-2">
-            <UserCheck className="size-4" />
-            Referral Agents
-          </TabsTrigger>
-          {isAdmin && (
-            <TabsTrigger value="settlements" className="gap-2">
-              <Calendar className="size-4" />
-              Annual Settlement
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <div className="overflow-x-auto pb-1 -mb-1">
+          <TabsList className="flex flex-wrap w-full sm:w-auto min-w-max justify-start h-auto gap-1">
+            <TabsTrigger value="counselors" className="gap-2 text-xs">
+              <Users className="size-4" />
+              Counselor Profiles
             </TabsTrigger>
-          )}
-        </TabsList>
+            <TabsTrigger value="agents" className="gap-2 text-xs">
+              <UserCheck className="size-4" />
+              Referral Agents
+            </TabsTrigger>
+            {isAdmin && (
+              <TabsTrigger value="rules" className="gap-2 text-xs">
+                <Settings2 className="size-4" />
+                Commission Rules
+              </TabsTrigger>
+            )}
+            {isAdmin && (
+              <TabsTrigger value="settlements" className="gap-2 text-xs">
+                <Calendar className="size-4" />
+                Annual Settlement
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="ledger" className="gap-2 text-xs">
+              <Receipt className="size-4" />
+              Transactions Ledger
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* ── Tab 1: Ledger ── */}
         <TabsContent value="ledger" className="space-y-5 pt-4">
@@ -280,6 +303,13 @@ export default function CommissionLedgerPage() {
         <TabsContent value="agents" className="pt-4">
           <AgentProfileView />
         </TabsContent>
+
+        {/* ── Tab 4: Commission Rules ── */}
+        {isAdmin && (
+          <TabsContent value="rules" className="pt-4">
+            <CommissionRulesTabView />
+          </TabsContent>
+        )}
 
         {/* ── Tab 4: Annual Settlements ── */}
         {isAdmin && (

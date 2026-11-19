@@ -35,9 +35,9 @@ const all: Record<string, NavItem> = {
   materials: { label: 'Materials', to: '/materials', icon: Bookmark, permission: 'classes.view' },
   reports: { label: 'Reports', to: '/reports', icon: BarChart3, permission: 'reports.view' },
   settings: { label: 'Settings', to: '/settings', icon: Settings, permission: 'settings.manage' },
-  commissions: { label: 'My Commission', to: '/commissions', icon: Wallet, permission: 'commissions.view' },
+  commissions: { label: 'Commission Management', to: '/commissions', icon: Wallet, permission: 'commissions.view' },
   referrals: { label: 'My Referrals', to: '/referrals', icon: Link2, permission: 'commissions.view' },
-  commissionRules: { label: 'Commission Rules', to: '/commission-rules', icon: Wallet, permission: 'commission-rules.manage' },
+  commissionRules: { label: 'Commission Management', to: '/commissions?tab=rules', icon: Wallet, permission: 'commissions.view' },
   events: { label: 'Events', to: '/events', icon: CalendarDays, permission: 'events.view' },
   users: { label: 'Users', to: '/users', icon: UserCog, permission: 'users.view' },
   fees: { label: 'Fees & Payments', to: '/fees', icon: DollarSign, permission: 'appointments.view' },
@@ -47,11 +47,11 @@ const all: Record<string, NavItem> = {
 const byRole: Record<Role, (keyof typeof all)[]> = {
   super_admin: [
     'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa', 'visaGranted',
-    'documents', 'universities', 'countries', 'courses', 'classes', 'fees', 'reports', 'commissionRules', 'events', 'users', 'auditLogs', 'settings',
+    'documents', 'universities', 'countries', 'courses', 'classes', 'fees', 'reports', 'commissions', 'events', 'users', 'auditLogs', 'settings',
   ],
   branch_admin: [
     'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa', 'visaGranted',
-    'documents', 'universities', 'countries', 'courses', 'classes', 'fees', 'reports', 'commissionRules', 'events', 'users', 'auditLogs', 'settings',
+    'documents', 'universities', 'countries', 'courses', 'classes', 'fees', 'reports', 'commissions', 'events', 'users', 'auditLogs', 'settings',
   ],
   front_desk: ['dashboard', 'reception', 'fees', 'leads', 'students', 'followUps', 'appointments', 'classes', 'visaGranted', 'documents', 'settings'],
   counselor: [

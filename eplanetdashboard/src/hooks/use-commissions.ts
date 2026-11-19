@@ -29,7 +29,7 @@ export function useCounselorCommissionProfile(counselorId: string) {
   return useQuery({
     queryKey: commissionKeys.counselorProfile(counselorId),
     queryFn: () => commissionApi.getCounselorProfile(counselorId),
-    enabled: !isMockMode() && Boolean(counselorId),
+    enabled: Boolean(counselorId),
   })
 }
 
@@ -37,7 +37,7 @@ export function useReferralAgentCommissionProfile(agentId: string) {
   return useQuery({
     queryKey: commissionKeys.agentProfile(agentId),
     queryFn: () => commissionApi.getReferralAgentProfile(agentId),
-    enabled: !isMockMode() && Boolean(agentId),
+    enabled: Boolean(agentId),
   })
 }
 
@@ -45,7 +45,6 @@ export function useAnnualSettlement(year?: number) {
   return useQuery({
     queryKey: commissionKeys.annualSettlement(year),
     queryFn: () => commissionApi.getAnnualSettlement(year),
-    enabled: !isMockMode(),
   })
 }
 

@@ -20,7 +20,6 @@ export function useVisaGrantedStudents(params: any = {}) {
   return useQuery({
     queryKey: visaKeys.granted(params),
     queryFn: () => visaApi.listGranted(params),
-    enabled: !isMockMode(),
   })
 }
 
@@ -28,7 +27,6 @@ export function useVisaGrantedAnalytics() {
   return useQuery({
     queryKey: visaKeys.grantedAnalytics(),
     queryFn: () => visaApi.grantedAnalytics(),
-    enabled: !isMockMode(),
   })
 }
 
@@ -86,9 +84,9 @@ export function useCreateVisaCase() {
 export function useChangeVisaStatus() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => {
+    mutationFn: ({ id, status, refusalReason, notes }: { id: string; status: string; refusalReason?: string; notes?: string }) => {
       if (isMockMode()) return Promise.resolve(null as never)
-      return visaApi.changeStatus(id, status)
+      return visaApi.changeStatus(id, status, { refusalReason, notes })
     },
     onSuccess: (_d, { id }) => {
       qc.invalidateQueries({ queryKey: visaKeys.detail(id) })

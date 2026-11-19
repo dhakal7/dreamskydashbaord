@@ -116,20 +116,34 @@ export function TimelineTab({ student }: { student: Student }) {
       appsData.applications.forEach((app: any) => {
         const uName = app.university?.name || 'Institution'
         const cName = app.course?.name || 'Selected Program'
+        const isRejected = app.status === 'REJECTED'
         list.push({
           id: `app_${app.id}`,
           date: app.submittedAt || app.createdAt || student.createdAt,
           title: `Application: ${uName}`,
           desc: (
-            <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-              <span>{cName}</span>
-              <span className="text-[10px] rounded px-1.5 py-0.5 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium uppercase">
-                {app.status || 'SUBMITTED'}
-              </span>
+            <div className="flex flex-col gap-1 mt-0.5 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span>{cName}</span>
+                <span className={`text-[10px] rounded px-1.5 py-0.5 font-medium uppercase ${
+                  isRejected
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
+                    : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300'
+                }`}>
+                  {app.status || 'SUBMITTED'}
+                </span>
+              </div>
+              {app.notes && app.notes.includes('[REJECTION]') && (
+                <span className="text-[11px] text-destructive italic">
+                  {app.notes.split('[REJECTION]')[1]?.trim()}
+                </span>
+              )}
             </div>
           ),
           icon: Send,
-          color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+          color: isRejected
+            ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
         })
 
         // Offers attached to application
@@ -156,21 +170,58 @@ export function TimelineTab({ student }: { student: Student }) {
     if (visaData?.visaCases && Array.isArray(visaData.visaCases)) {
       visaData.visaCases.forEach((vc: any) => {
         const country = vc.country || 'Destination'
+        const isRefused = vc.status === 'REFUSED'
+        const isApproved = vc.status === 'APPROVED'
         list.push({
           id: `visa_${vc.id}`,
           date: vc.decisionDate || vc.submittedAt || vc.createdAt || student.createdAt,
           title: `Visa Case: ${country}`,
           desc: (
-            <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-              <span>{vc.visaType || 'Student Visa'}</span>
-              <span className="text-[10px] rounded px-1.5 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 font-medium uppercase">
-                {vc.status || 'PREPARING'}
-              </span>
+            <div className="flex flex-col gap-1 mt-0.5 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span>{vc.visaType || 'Student Visa'}</span>
+                <span className={`text-[10px] rounded px-1.5 py-0.5 font-medium uppercase ${
+                  isRefused
+                    ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300'
+                    : isApproved
+                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
+                    : 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300'
+                }`}>
+                  {vc.status || 'PREPARING'}
+                </span>
+              </div>
+              {vc.refusalReason && (
+                <span className="text-[11px] text-destructive italic">
+                  Refusal Reason: {vc.refusalReason}
+                </span>
+              )}
             </div>
           ),
           icon: Plane,
-          color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+          color: isRefused
+            ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
         })
+      })
+    }
+
+    // 5b. Departure Milestone Events
+    const dep = (student as any).academicBackground?.departureDetails || (student as any).departureDetails
+    if (dep && dep.status && dep.status !== 'VISA_APPROVED') {
+      list.push({
+        id: `dep_${student.id}`,
+        date: dep.actualDepartureDate || dep.expectedDepartureDate || dep.updatedAt || new Date().toISOString(),
+        title: `Departure: ${dep.status === 'DEPARTED' ? 'Successfully Departed' : dep.status === 'TICKET_BOOKED' ? 'Ticket Booked' : dep.status}`,
+        desc: (
+          <div className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+            {dep.flightNumber && <span>Flight: <strong>{dep.flightNumber}</strong> {dep.destinationAirport ? `to ${dep.destinationAirport}` : ''}</span>}
+            {dep.notes && <span className="text-[11px] italic">{dep.notes}</span>}
+          </div>
+        ),
+        icon: Plane,
+        color: dep.status === 'DEPARTED'
+          ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+          : 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
       })
     }
 

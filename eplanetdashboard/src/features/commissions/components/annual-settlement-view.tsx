@@ -85,7 +85,7 @@ export function AnnualSettlementView() {
     totalGenerated: 0,
     totalPaid: 0,
     totalOutstanding: 0,
-    currency: 'USD',
+    currency: 'NPR',
     commissionsCount: 0,
   }
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import dayjs from 'dayjs'
+import { toast } from 'sonner'
 import {
   Award,
   PlaneTakeoff,
@@ -57,8 +58,12 @@ export default function VisaGrantedPage() {
   const currentUser = useAuthStore((s) => s.currentUser)
 
   const [search, setSearch] = useState('')
-  const [selectedCounselor, setSelectedCounselor] = useState('all')
-  const [selectedAgent, setSelectedAgent] = useState('all')
+  const [selectedCounselor, setSelectedCounselor] = useState(() =>
+    currentUser?.role === 'counselor' ? currentUser.id : 'all'
+  )
+  const [selectedAgent, setSelectedAgent] = useState(() =>
+    currentUser?.role === 'referral_agent' ? currentUser.id : 'all'
+  )
   const [selectedCountry, setSelectedCountry] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards')
@@ -115,6 +120,14 @@ export default function VisaGrantedPage() {
 
   const handleSaveDeparture = async () => {
     if (!editingStudent) return
+    if ((depStatus === 'DELAYED' || depStatus === 'DEPARTURE_DELAYED') && !depNotes.trim()) {
+      toast.error('A delay reason or explanation is required when postponing departure.')
+      return
+    }
+    if (depStatus === 'DEPARTED' && !actDate) {
+      toast.error('Please specify the confirmed actual departure date.')
+      return
+    }
     await updateDepartureMutation.mutateAsync({
       studentId: editingStudent.studentId,
       body: {
@@ -248,22 +261,28 @@ export default function VisaGrantedPage() {
 
           <div className="flex flex-wrap items-center gap-2">
             {/* Counselor Filter with Counts */}
-            <Select value={selectedCounselor} onValueChange={setSelectedCounselor}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="All Counselors" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Counselors ({summary.totalApproved})</SelectItem>
-                {counselorOptions.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name} ({c.approvedCount})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {currentUser?.role !== 'counselor' ? (
+              <Select value={selectedCounselor} onValueChange={setSelectedCounselor}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="All Counselors" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Counselors ({summary.totalApproved})</SelectItem>
+                  {counselorOptions.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} ({c.approvedCount})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="h-9 px-3 rounded-md border border-border bg-muted/40 flex items-center text-xs font-medium">
+                My Assigned Students
+              </div>
+            )}
 
             {/* Referral Agent Filter */}
-            {agentOptions.length > 0 && (
+            {currentUser?.role !== 'referral_agent' && agentOptions.length > 0 && (
               <Select value={selectedAgent} onValueChange={setSelectedAgent}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="All Agents" />

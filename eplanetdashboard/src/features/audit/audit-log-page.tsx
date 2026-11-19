@@ -83,6 +83,9 @@ export default function AuditLogPage() {
               <SelectContent>
                 <SelectItem value="ALL">All Entities</SelectItem>
                 <SelectItem value="Student">Students / Leads</SelectItem>
+                <SelectItem value="Application">Applications</SelectItem>
+                <SelectItem value="VisaCase">Visa Cases</SelectItem>
+                <SelectItem value="Commission">Commissions</SelectItem>
                 <SelectItem value="User">Staff Users</SelectItem>
               </SelectContent>
             </Select>

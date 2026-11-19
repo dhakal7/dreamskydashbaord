@@ -424,6 +424,33 @@ const changeStatus = async (id, { status, refusalReason }, currentUser = null) =
 
     const updated = await prisma.visaCase.update({ where: { id }, data: update, include: includeRelations });
 
+    const actorId = currentUser.userId || currentUser.id;
+
+    // ── AUDIT LOG: Visa Case Status & Refusal Reason ──────────────────────────
+    await prisma.auditLog.create({
+        data: {
+            actorId,
+            entity: "VisaCase",
+            entityId: id,
+            field: "status",
+            oldValue: existing.status,
+            newValue: status,
+        },
+    }).catch(() => {});
+
+    if (status === "REFUSED" && refusalReason) {
+        await prisma.auditLog.create({
+            data: {
+                actorId,
+                entity: "VisaCase",
+                entityId: id,
+                field: "refusalReason",
+                oldValue: null,
+                newValue: refusalReason.trim(),
+            },
+        }).catch(() => {});
+    }
+
     // ── AUTOMATED VISA APPROVAL EVENT HOOKS ──────────────────────────────────
     // When a visa is approved:
     // 1. Advance student to VISA_APPROVED stage and initialize departure tracking
@@ -705,10 +732,10 @@ const getVisaGrantedAnalytics = async (currentUser) => {
     const list = await listVisaGrantedStudents({}, currentUser);
 
     const totalApproved = list.length;
-    const preparingDeparture = list.filter((s) => s.departureStatus === "PREPARING_DEPARTURE").length;
+    const preparingDeparture = list.filter((s) => s.departureStatus === "PREPARING" || s.departureStatus === "PREPARING_DEPARTURE").length;
     const ticketBooked = list.filter((s) => s.departureStatus === "TICKET_BOOKED").length;
     const departed = list.filter((s) => s.departureStatus === "DEPARTED").length;
-    const visaGrantedOnly = list.filter((s) => s.departureStatus === "VISA_GRANTED").length;
+    const visaGrantedOnly = list.filter((s) => s.departureStatus === "VISA_APPROVED" || s.departureStatus === "VISA_GRANTED").length;
 
     // Counselor Breakdown
     const counselorMap = new Map();
@@ -789,7 +816,7 @@ const updateStudentDepartureStatus = async (studentId, payload, currentUser) => 
 
     const { status, expectedDepartureDate, actualDepartureDate, destinationAirport, flightNumber, notes } = payload || {};
 
-    const validDepartureStatuses = ["VISA_GRANTED", "PREPARING_DEPARTURE", "TICKET_BOOKED", "DEPARTURE_DELAYED", "DEPARTED"];
+    const validDepartureStatuses = ["VISA_APPROVED", "VISA_GRANTED", "PREPARING", "PREPARING_DEPARTURE", "TICKET_BOOKED", "DEPARTURE_DELAYED", "DELAYED", "DEPARTED"];
     if (status && !validDepartureStatuses.includes(status)) {
         throw AppError.badRequest(`Invalid departure status. Must be one of: ${validDepartureStatuses.join(", ")}.`, "VALIDATION_ERROR");
     }
@@ -823,6 +850,31 @@ const updateStudentDepartureStatus = async (studentId, payload, currentUser) => 
         data: updateData,
         select: { id: true, currentStage: true, academicBackground: true },
     });
+
+    // ── AUDIT LOG: Departure Milestone & Delay Reason ──────────────────────────
+    await prisma.auditLog.create({
+        data: {
+            actorId,
+            entity: "Student",
+            entityId: studentId,
+            field: "departureStatus",
+            oldValue: existing.status || "VISA_GRANTED",
+            newValue: newDepStatus,
+        },
+    }).catch(() => {});
+
+    if ((newDepStatus === "DEPARTURE_DELAYED" || newDepStatus === "DELAYED") && notes) {
+        await prisma.auditLog.create({
+            data: {
+                actorId,
+                entity: "Student",
+                entityId: studentId,
+                field: "departureDelayReason",
+                oldValue: null,
+                newValue: notes.trim(),
+            },
+        }).catch(() => {});
+    }
 
     return updatedStudent.academicBackground?.departureDetails;
 };

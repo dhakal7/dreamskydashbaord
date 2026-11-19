@@ -54,9 +54,9 @@ export function useCreateApplication() {
 export function useChangeApplicationStatus() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => {
+    mutationFn: ({ id, status, rejectionReason, notes }: { id: string; status: string; rejectionReason?: string; notes?: string }) => {
       if (isMockMode()) return Promise.resolve(null as never)
-      return applicationApi.changeStatus(id, status)
+      return applicationApi.changeStatus(id, status, { rejectionReason, notes })
     },
     onSuccess: (_d, { id }) => {
       qc.invalidateQueries({ queryKey: applicationKeys.detail(id) })

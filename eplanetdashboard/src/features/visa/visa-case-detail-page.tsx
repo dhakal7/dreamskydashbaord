@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft, ShieldAlert, ChevronRight, CheckCircle2, Clock, Circle,
@@ -21,6 +21,7 @@ import { isMockMode } from '@/lib/api-client'
 import { useVisaCase, useChangeVisaStatus, useDeleteVisaCase } from '@/hooks/use-visa'
 import { useStudent } from '@/hooks/use-students'
 import { adaptApiStudentToStudent } from '@/lib/student-adapter'
+import { VisaRefusalDialog } from './components/visa-refusal-dialog'
 
 const BACKEND_VISA_STATUS_MAP: Record<string, VisaStatus> = {
   NOT_APPLIED: 'not_started',
@@ -144,8 +145,15 @@ export default function VisaCaseDetailPage() {
   const canView = isMockMode() ? Boolean(visaCase && student) : Boolean(visaCase)
   const canManage = hasPermission(currentUser.role, 'visa.manage')
 
-  const handleStatusChange = (newStatus: VisaStatus) => {
+  const [refusalDialogOpen, setRefusalDialogOpen] = useState(false)
+
+  const handleStatusChange = (newStatus: VisaStatus, refusalMeta?: { reason: string; notes: string; decisionDate?: string }) => {
     if (!visaCase) return
+    if (newStatus === 'rejected' && !refusalMeta) {
+      setRefusalDialogOpen(true)
+      return
+    }
+
     if (isMockMode()) {
       updateOverallStatus(visaCase.id, newStatus)
     } else {
@@ -159,8 +167,13 @@ export default function VisaCaseDetailPage() {
       changeVisaStatusMutation.mutate({
         id: visaCase.id,
         status: statusToBackend[newStatus] ?? 'PREPARING',
+        refusalReason: refusalMeta ? `${refusalMeta.reason}${refusalMeta.notes ? ': ' + refusalMeta.notes : ''}` : undefined,
       })
     }
+  }
+
+  const handleConfirmRefusal = async (reason: string, notes: string, decisionDate?: string) => {
+    handleStatusChange('rejected', { reason, notes, decisionDate })
   }
 
   if (!isMockMode() && isLoadingVisaCase) {
@@ -479,6 +492,16 @@ export default function VisaCaseDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Official Visa Refusal Dialog */}
+      <VisaRefusalDialog
+        open={refusalDialogOpen}
+        onOpenChange={setRefusalDialogOpen}
+        studentName={student?.name}
+        countryName={visaCase?.countryName}
+        onConfirm={handleConfirmRefusal}
+        isSubmitting={changeVisaStatusMutation.isPending}
+      />
     </div>
   )
 }

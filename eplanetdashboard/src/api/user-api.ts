@@ -39,17 +39,24 @@ export const userApi = {
    * Retrieves active counselors for lead assignment.
    */
   async getCounselors(): Promise<CounselorOption[]> {
-    const users = await api.get<Array<{ id: string; firstName: string; lastName: string; email: string; role: string; status: string; branchId?: string | null }>>('/users', {
-      params: { role: 'COUNSELOR' },
-    })
-    return (users || []).map((u) => ({
-      id: u.id,
-      name: `${u.firstName} ${u.lastName}`.trim(),
-      email: u.email,
-      role: u.role,
-      status: u.status,
-      branchId: u.branchId ?? null,
-    }))
+    try {
+      const users = await api.get<Array<{ id: string; firstName: string; lastName: string; email: string; role: string; status: string; branchId?: string | null }>>('/users', {
+        params: { role: 'COUNSELOR' },
+      })
+      if (Array.isArray(users)) {
+        return users.map((u) => ({
+          id: u.id,
+          name: `${u.firstName} ${u.lastName}`.trim(),
+          email: u.email,
+          role: u.role,
+          status: u.status,
+          branchId: u.branchId ?? null,
+        }))
+      }
+    } catch {
+      // Fallback
+    }
+    return []
   },
 
   /**

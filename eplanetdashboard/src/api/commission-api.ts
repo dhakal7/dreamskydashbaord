@@ -293,12 +293,16 @@ export const commissionApi = {
   getCounselorProfile(id: string): Promise<CounselorCommissionProfile> {
     return api.get(`/commissions/counselor/${id}/profile`)
   },
+
   getReferralAgentProfile(id: string): Promise<ReferralAgentCommissionProfile> {
     return api.get(`/commissions/referral-agent/${id}/profile`)
   },
+
   getAnnualSettlement(year?: number): Promise<AnnualSettlementData> {
-    return api.get('/commissions/settlements/annual', { params: year ? { year } : {} })
+    const targetYear = year || new Date().getFullYear()
+    return api.get('/commissions/settlements/annual', { params: { year: targetYear } })
   },
+
   settleAnnual(body: SettleAnnualBody): Promise<{ settledCount: number; paymentReference: string }> {
     return api.post('/commissions/settlements/annual/pay', body)
   },

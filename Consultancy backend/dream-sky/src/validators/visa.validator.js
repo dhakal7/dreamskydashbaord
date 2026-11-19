@@ -7,10 +7,13 @@ const validateCreateVisa = ({ applicationId, studentId }) => {
         throw AppError.badRequest("applicationId or studentId is required.", "VALIDATION_ERROR");
 };
 
-const validateStatusChange = ({ status }) => {
+const validateStatusChange = ({ status, refusalReason }) => {
     if (!status) throw AppError.badRequest("status is required.", "VALIDATION_ERROR");
     if (!VALID_STATUSES.includes(status))
         throw AppError.badRequest(`Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`, "VALIDATION_ERROR");
+    if (status === "REFUSED" && !refusalReason?.trim()) {
+        throw AppError.badRequest("A refusal reason is mandatory when marking a visa case as REFUSED.", "VALIDATION_ERROR");
+    }
 };
 
 module.exports = { validateCreateVisa, validateStatusChange };

@@ -26,7 +26,6 @@ const ClassesPage = lazy(() => import('@/features/classes/classes-page'))
 const ClassDetailPage = lazy(() => import('@/features/classes/class-detail-page'))
 const MaterialsPage = lazy(() => import('@/features/materials/materials-page'))
 const CommissionLedgerPage = lazy(() => import('@/features/commissions/commission-ledger-page'))
-const CommissionRulesPage = lazy(() => import('@/features/commissions/commission-rules-page'))
 const EventsPage = lazy(() => import('@/features/events/events-page'))
 const ReportsPage = lazy(() => import('@/features/reports/reports-page'))
 const SettingsPage = lazy(() => import('@/features/settings/settings-page'))
@@ -91,7 +90,7 @@ export const router = createBrowserRouter([
       { path: 'materials', element: protectedPage(<MaterialsPage />, 'classes.view') },
       { path: 'commissions', element: protectedPage(<CommissionLedgerPage />, 'commissions.view') },
       { path: 'referrals', element: protectedPage(<ReferralsPage />, 'commissions.view') },
-      { path: 'commission-rules', element: protectedPage(<CommissionRulesPage />, 'commission-rules.manage') },
+      { path: 'commission-rules', element: protectedPage(<CommissionLedgerPage />, 'commissions.view') },
       { path: 'events', element: protectedPage(<EventsPage />, 'events.view') },
       { path: 'reports', element: protectedPage(<ReportsPage />, 'reports.view') },
       { path: 'users', element: protectedPage(<UsersPage />, 'users.view') },

@@ -211,7 +211,7 @@ function CommissionSetupPanel() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fixed">Fixed Amount (₨)</SelectItem>
+                  <SelectItem value="fixed">Fixed Amount (NPR)</SelectItem>
                   <SelectItem value="percentage">Percentage (%)</SelectItem>
                   <SelectItem value="tiered">Tiered</SelectItem>
                 </SelectContent>
@@ -308,7 +308,7 @@ function CommissionSetupPanel() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="fixed">Fixed ($)</SelectItem>
+                        <SelectItem value="fixed">Fixed (NPR)</SelectItem>
                         <SelectItem value="percentage">Percentage (%)</SelectItem>
                         <SelectItem value="tiered">Tiered</SelectItem>
                       </SelectContent>

@@ -20,10 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Settings2 } from 'lucide-react'
 import { useCounselors } from '@/hooks/use-counselors'
 import { useCounselorCommissionProfile } from '@/hooks/use-commissions'
 import { useAuthStore } from '@/store/auth-store'
 import { formatCurrency } from '@/lib/utils'
+import { ConfigureCommissionRuleDialog } from './configure-commission-rule-dialog'
 
 interface CounselorProfileViewProps {
   initialCounselorId?: string
@@ -41,6 +43,8 @@ export function CounselorProfileView({ initialCounselorId }: CounselorProfileVie
     : initialCounselorId || counselors[0]?.id || ''
 
   const [selectedCounselorId, setSelectedCounselorId] = useState(defaultCounselorId)
+  const [ruleDialogOpen, setRuleDialogOpen] = useState(false)
+  const isAdmin = currentUser?.role === 'super_admin' || currentUser?.role === 'branch_admin'
 
   useEffect(() => {
     if (!selectedCounselorId && counselors.length > 0) {
@@ -119,21 +123,54 @@ export function CounselorProfileView({ initialCounselorId }: CounselorProfileVie
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Total Earned</p>
                 <p className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(profile.financials.totalEarned, profile.financials.currency)}
                 </p>
               </div>
-              <div className="h-8 w-px bg-border" />
+              <div className="h-8 w-px bg-border hidden sm:block" />
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">Outstanding</p>
                 <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
                   {formatCurrency(profile.financials.totalOutstanding, profile.financials.currency)}
                 </p>
               </div>
+              {isAdmin && (
+                <>
+                  <div className="h-8 w-px bg-border hidden sm:block" />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 h-9 text-xs"
+                    onClick={() => setRuleDialogOpen(true)}
+                  >
+                    <Settings2 className="size-3.5" />
+                    Configure Rule
+                  </Button>
+                </>
+              )}
             </div>
+          </div>
+
+          {/* ── Active Commission Rule Banner ── */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-4 py-2.5 rounded-lg border border-primary/25 bg-primary/5 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-primary">Active Commission Rule:</span>
+              <span className="font-medium text-foreground">NPR 50,000 Fixed per Verified Visa Grant</span>
+              <span className="text-muted-foreground">• Qualifying Milestone: On Visa Approval</span>
+            </div>
+            {isAdmin && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs text-primary hover:text-primary px-2 self-start sm:self-auto"
+                onClick={() => setRuleDialogOpen(true)}
+              >
+                Adjust Rate
+              </Button>
+            )}
           </div>
 
           {/* ── Funnel Performance Metrics ── */}
@@ -410,6 +447,14 @@ export function CounselorProfileView({ initialCounselorId }: CounselorProfileVie
           </Card>
         </div>
       )}
+
+      {/* ── Configure Commission Rule Modal ── */}
+      <ConfigureCommissionRuleDialog
+        open={ruleDialogOpen}
+        onOpenChange={setRuleDialogOpen}
+        defaultRole="COUNSELOR"
+        targetName={profile?.counselor.name}
+      />
     </div>
   )
 }
