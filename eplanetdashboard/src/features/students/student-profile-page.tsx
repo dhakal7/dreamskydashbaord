@@ -249,7 +249,7 @@ export default function StudentProfilePage() {
           {canViewApplications && (
             <TabsContent value="applications"><ApplicationsTab student={student} /></TabsContent>
           )}
-          <TabsContent value="visa"><VisaTab student={student} /></TabsContent>
+          <TabsContent value="visa"><VisaTab student={student} apiStudent={apiStudent} /></TabsContent>
           <TabsContent value="lifecycle"><LifecycleTab student={student} /></TabsContent>
           <TabsContent value="activity"><ActivityTab student={student} /></TabsContent>
           <TabsContent value="timeline"><TimelineTab student={student} /></TabsContent>

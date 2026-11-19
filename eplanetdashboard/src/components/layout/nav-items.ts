@@ -2,6 +2,7 @@ import {
   LayoutDashboard, Users, UserPlus, CalendarClock, CalendarDays, FileStack,
   PlaneTakeoff, FolderKanban, Landmark, Globe2, GraduationCap, BarChart3, Settings,
   Wallet, Link2, BookOpen, Bookmark, UserCog, CalendarCheck, DollarSign, ShieldAlert,
+  Award,
 } from 'lucide-react'
 import type { Role } from '@/types'
 import { hasPermission, type Permission } from '@/lib/rbac'
@@ -25,6 +26,7 @@ const all: Record<string, NavItem> = {
   appointments: { label: 'Appointments', to: '/appointments', icon: CalendarDays, permission: 'appointments.view' },
   applications: { label: 'Applications', to: '/applications', icon: FileStack, permission: 'applications.view' },
   visa: { label: 'Visa Processing', to: '/visa', icon: PlaneTakeoff, permission: 'visa.view' },
+  visaGranted: { label: 'Visa Granted / Success', to: '/visa-granted', icon: Award, permission: 'visa.view' },
   documents: { label: 'Documents', to: '/documents', icon: FolderKanban, permission: 'documents.view' },
   universities: { label: 'Universities', to: '/universities', icon: Landmark, permission: 'universities.view' },
   countries: { label: 'Countries', to: '/countries', icon: Globe2, permission: 'countries.view' },
@@ -44,21 +46,21 @@ const all: Record<string, NavItem> = {
 
 const byRole: Record<Role, (keyof typeof all)[]> = {
   super_admin: [
-    'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa',
+    'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa', 'visaGranted',
     'documents', 'universities', 'countries', 'courses', 'classes', 'fees', 'reports', 'commissionRules', 'events', 'users', 'auditLogs', 'settings',
   ],
   branch_admin: [
-    'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa',
+    'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa', 'visaGranted',
     'documents', 'universities', 'countries', 'courses', 'classes', 'fees', 'reports', 'commissionRules', 'events', 'users', 'auditLogs', 'settings',
   ],
-  front_desk: ['dashboard', 'reception', 'fees', 'leads', 'students', 'followUps', 'appointments', 'classes', 'documents', 'settings'],
+  front_desk: ['dashboard', 'reception', 'fees', 'leads', 'students', 'followUps', 'appointments', 'classes', 'visaGranted', 'documents', 'settings'],
   counselor: [
-    'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa',
+    'dashboard', 'students', 'leads', 'followUps', 'appointments', 'applications', 'visa', 'visaGranted',
     'documents', 'commissions', 'events', 'reports', 'settings',
   ],
   teacher: ['dashboard', 'classes', 'reports', 'settings'],
   student: ['dashboard', 'appointments', 'applications', 'visa', 'documents', 'classes', 'materials', 'settings'],
-  referral_agent: ['dashboard', 'leads', 'referrals', 'commissions', 'settings'],
+  referral_agent: ['dashboard', 'leads', 'visaGranted', 'referrals', 'commissions', 'settings'],
 }
 
 export function getNavItems(role: Role): NavItem[] {

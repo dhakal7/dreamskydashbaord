@@ -38,6 +38,31 @@ router.delete(
   commissionController.deleteRule
 );
 
+// ─── Commission Profiles & Annual Settlements (before /:id) ───────────────
+router.get(
+  "/counselor/:id/profile",
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
+  commissionController.getCounselorProfile
+);
+
+router.get(
+  "/referral-agent/:id/profile",
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "REFERRAL_AGENT"),
+  commissionController.getAgentProfile
+);
+
+router.get(
+  "/settlements/annual",
+  requireRole("SUPER_ADMIN", "BRANCH_ADMIN"),
+  commissionController.getAnnualSettlement
+);
+
+router.post(
+  "/settlements/annual/pay",
+  requireRole("SUPER_ADMIN"),
+  commissionController.settleAnnual
+);
+
 // ─── Commissions ─────────────────────────────────────────────────────────────
 router.get(
   "/",

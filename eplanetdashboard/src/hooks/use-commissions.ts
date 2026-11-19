@@ -20,6 +20,49 @@ export const commissionKeys = {
   detail: (id: string) => [...commissionKeys.all, 'detail', id] as const,
   rules: () => [...commissionKeys.all, 'rules'] as const,
   ruleList: (p: CommissionRuleListParams) => [...commissionKeys.rules(), p] as const,
+  counselorProfile: (id: string) => [...commissionKeys.all, 'counselor-profile', id] as const,
+  agentProfile: (id: string) => [...commissionKeys.all, 'agent-profile', id] as const,
+  annualSettlement: (year?: number) => [...commissionKeys.all, 'annual-settlement', year] as const,
+}
+
+export function useCounselorCommissionProfile(counselorId: string) {
+  return useQuery({
+    queryKey: commissionKeys.counselorProfile(counselorId),
+    queryFn: () => commissionApi.getCounselorProfile(counselorId),
+    enabled: !isMockMode() && Boolean(counselorId),
+  })
+}
+
+export function useReferralAgentCommissionProfile(agentId: string) {
+  return useQuery({
+    queryKey: commissionKeys.agentProfile(agentId),
+    queryFn: () => commissionApi.getReferralAgentProfile(agentId),
+    enabled: !isMockMode() && Boolean(agentId),
+  })
+}
+
+export function useAnnualSettlement(year?: number) {
+  return useQuery({
+    queryKey: commissionKeys.annualSettlement(year),
+    queryFn: () => commissionApi.getAnnualSettlement(year),
+    enabled: !isMockMode(),
+  })
+}
+
+export function useSettleAnnualCommissions() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (body: any) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return commissionApi.settleAnnual(body)
+    },
+    onSuccess: (data: any) => {
+      qc.invalidateQueries({ queryKey: commissionKeys.all })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      toast.success(`Successfully settled ${data?.settledCount ?? ''} commissions`)
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to settle commissions'),
+  })
 }
 
 export function useCommissions(params: CommissionListParams = {}) {

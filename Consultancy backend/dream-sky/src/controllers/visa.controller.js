@@ -39,4 +39,30 @@ const dashboard = async (req, res) => {
     sendSuccess(res, { data: stats });
 };
 
-module.exports = { create, getOne, list, update, changeStatus, remove, dashboard };
+const listGranted = async (req, res) => {
+    const students = await visaService.listVisaGrantedStudents(req.query, req.user);
+    sendSuccess(res, { data: students });
+};
+
+const grantedAnalytics = async (req, res) => {
+    const analytics = await visaService.getVisaGrantedAnalytics(req.user);
+    sendSuccess(res, { data: analytics });
+};
+
+const updateDeparture = async (req, res) => {
+    const details = await visaService.updateStudentDepartureStatus(req.params.studentId, req.body, req.user);
+    sendSuccess(res, { message: "Departure status updated.", data: details });
+};
+
+module.exports = {
+    create,
+    getOne,
+    list,
+    update,
+    changeStatus,
+    remove,
+    dashboard,
+    listGranted,
+    grantedAnalytics,
+    updateDeparture,
+};

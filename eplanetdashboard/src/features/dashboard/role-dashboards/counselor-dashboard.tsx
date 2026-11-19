@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { EmptyState } from '@/components/shared/empty-state'
 import { PriorityBadge, leadStageMeta, leadStageOrder } from '@/components/shared/status-badges'
-import { Users, TrendingUp, CalendarClock, CalendarDays, UserCheck, RefreshCw } from 'lucide-react'
+import { Users, TrendingUp, CalendarClock, CalendarDays, UserCheck, RefreshCw, Award, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { RoleStatCards } from './shared'
 import { useCounselorDashboard, ZERO_COUNSELOR } from '../hooks/use-dashboard-stats'
@@ -139,6 +139,29 @@ export function CounselorDashboard() {
       ) : (
         <RoleStatCards stats={stats} />
       )}
+
+      {/* Visa Approved Students Card */}
+      <Card className="p-4 border-l-4 border-l-emerald-500 bg-card">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-emerald-500/10 p-2.5 text-emerald-500">
+              <Award className="size-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold">Visa Granted Students & Departure Tracker</h4>
+              <p className="text-xs text-muted-foreground">
+                View your successful visa approvals, update travel milestones, and track earned commissions.
+              </p>
+            </div>
+          </div>
+          <Button asChild size="sm" className="shrink-0 gap-1.5">
+            <Link to="/visa-granted">
+              My Visa Approved Students
+              <ArrowRight className="size-3.5" />
+            </Link>
+          </Button>
+        </div>
+      </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">

@@ -239,6 +239,98 @@ const dispute = async (req, res, next) => {
   }
 };
 
+const getCounselorProfile = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) throw AppError.unauthorized("Authentication required.");
+
+    const targetCounselorId = req.params.id;
+
+    // Role-based scoping: counselors can only view their own profile
+    if (user.role === "COUNSELOR" && user.id !== targetCounselorId) {
+      throw AppError.forbidden("Counselors can only view their own commission profile.", "FORBIDDEN");
+    } else if (user.role === "BRANCH_ADMIN") {
+      // Must belong to their branch
+      const target = await prisma.user.findUnique({
+        where: { id: targetCounselorId },
+        select: { id: true, branchId: true },
+      });
+      if (!target || target.branchId !== user.branchId) {
+        throw AppError.forbidden("You can only view counselors in your own branch.", "CROSS_BRANCH_ACCESS_DENIED");
+      }
+    } else if (user.role !== "SUPER_ADMIN" && user.role !== "COUNSELOR") {
+      throw AppError.forbidden("You do not have permission to view counselor commission profiles.", "FORBIDDEN");
+    }
+
+    const profile = await commissionService.getCounselorCommissionProfile(targetCounselorId);
+    if (!profile) {
+      throw new AppError(`Counselor with id '${targetCounselorId}' not found.`, 404);
+    }
+
+    sendSuccess(res, { data: profile });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getAgentProfile = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) throw AppError.unauthorized("Authentication required.");
+
+    const targetAgentId = req.params.id;
+
+    // Role-based scoping: referral agents can only view their own profile
+    if (user.role === "REFERRAL_AGENT") {
+      const myProfile = await prisma.referralAgentProfile.findUnique({ where: { userId: user.id } });
+      if (user.id !== targetAgentId && myProfile?.id !== targetAgentId) {
+        throw AppError.forbidden("Referral agents can only view their own commission profile.", "FORBIDDEN");
+      }
+    } else if (user.role !== "SUPER_ADMIN" && user.role !== "BRANCH_ADMIN") {
+      throw AppError.forbidden("You do not have permission to view referral agent commission profiles.", "FORBIDDEN");
+    }
+
+    const profile = await commissionService.getReferralAgentCommissionProfile(targetAgentId);
+    if (!profile) {
+      throw new AppError(`Referral agent with id '${targetAgentId}' not found.`, 404);
+    }
+
+    sendSuccess(res, { data: profile });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getAnnualSettlement = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) throw AppError.unauthorized("Authentication required.");
+    if (user.role !== "SUPER_ADMIN" && user.role !== "BRANCH_ADMIN") {
+      throw AppError.forbidden("Only administrators can view annual commission settlements.", "FORBIDDEN");
+    }
+
+    const settlement = await commissionService.getAnnualCommissionSettlement(req.query.year);
+    sendSuccess(res, { data: settlement });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const settleAnnual = async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) throw AppError.unauthorized("Authentication required.");
+    if (user.role !== "SUPER_ADMIN") {
+      throw AppError.forbidden("Only Super Admins can execute annual commission settlements.", "FORBIDDEN");
+    }
+
+    const result = await commissionService.settleAnnualCommissions(req.body, user.id);
+    sendSuccess(res, { message: "Annual settlement executed successfully.", data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   listRules,
   getRule,
@@ -249,4 +341,8 @@ module.exports = {
   getCommission,
   markPaid,
   dispute,
+  getCounselorProfile,
+  getAgentProfile,
+  getAnnualSettlement,
+  settleAnnual,
 };

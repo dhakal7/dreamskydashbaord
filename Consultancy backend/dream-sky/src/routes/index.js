@@ -17,6 +17,7 @@ router.use("/appointments", require("./appointment.routes"));
 router.use("/documents", require("./document.routes"));
 router.use("/applications", require("./application.routes"));
 router.use("/visa-cases", require("./visa.routes"));
+router.use("/visa", require("./visa.routes"));
 router.use("/portal", require("./portal.routes"));
 
 router.use("/commissions", require("./commission.routes"));

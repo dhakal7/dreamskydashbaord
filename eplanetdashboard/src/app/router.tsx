@@ -17,6 +17,7 @@ const ApplicationsPage = lazy(() => import('@/features/applications/applications
 const ApplicationDetailPage = lazy(() => import('@/features/applications/application-detail-page'))
 const VisaPage = lazy(() => import('@/features/visa/visa-page'))
 const VisaCaseDetailPage = lazy(() => import('@/features/visa/visa-case-detail-page'))
+const VisaGrantedPage = lazy(() => import('@/features/visa/visa-granted-page'))
 const DocumentsPage = lazy(() => import('@/features/documents/documents-page'))
 const UniversitiesPage = lazy(() => import('@/features/universities/universities-page'))
 const CountriesPage = lazy(() => import('@/features/countries/countries-page'))
@@ -77,6 +78,7 @@ export const router = createBrowserRouter([
       { path: 'applications', element: protectedPage(<ApplicationsPage />, 'applications.view') },
       { path: 'applications/:id', element: protectedPage(<ApplicationDetailPage />, 'applications.view') },
       { path: 'visa', element: protectedPage(<VisaPage />, 'visa.view') },
+      { path: 'visa-granted', element: protectedPage(<VisaGrantedPage />, 'visa.view') },
       { path: 'visa/:id', element: protectedPage(<VisaCaseDetailPage />, 'visa.view') },
       { path: 'visa-processing', element: <Navigate to="/visa" replace /> },
       { path: 'visa-processing/:id', element: <Navigate to="/visa" replace /> },

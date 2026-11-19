@@ -7,11 +7,29 @@ const router = Router();
 
 router.use(requireAuth);
 
-// ─── Dashboard (before /:id) ──────────────────────────────────────────────────
+// ─── Dashboard & Visa Granted (before /:id) ──────────────────────────────────
 router.get(
     "/dashboard",
     requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "COUNSELOR"),
     visaController.dashboard
+);
+
+router.get(
+    "/granted",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR", "REFERRAL_AGENT"),
+    visaController.listGranted
+);
+
+router.get(
+    "/granted/analytics",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"),
+    visaController.grantedAnalytics
+);
+
+router.patch(
+    "/granted/:studentId/departure",
+    requireRole("SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "COUNSELOR"),
+    visaController.updateDeparture
 );
 
 // ─── CRUD ─────────────────────────────────────────────────────────────────────

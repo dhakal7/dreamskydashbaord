@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { PageHeader } from '@/components/shared/page-header'
 import { Button } from '@/components/ui/button'
-import { CalendarClock, Plus, UserPlus, Wallet, CalendarCheck, RefreshCw, AlertCircle } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { CalendarClock, Plus, UserPlus, Wallet, CalendarCheck, RefreshCw, AlertCircle, Award, ArrowRight } from 'lucide-react'
 import { RoleStatCards } from './shared'
 import { TodaysAppointmentsPanel, UpcomingFollowUpsPanel } from '../components/panels'
 import { useFrontDeskStats, ZERO_FRONT_DESK } from '../hooks/use-dashboard-stats'
@@ -82,6 +84,29 @@ export function FrontDeskDashboard() {
       ) : (
         <RoleStatCards stats={stats} />
       )}
+
+      {/* Visa Granted & Departure Spotlight */}
+      <Card className="p-4 border-l-4 border-l-sky-500 bg-card">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="rounded-lg bg-sky-500/10 p-2.5 text-sky-500">
+              <Award className="size-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold">Visa Granted & Departure Success Hub</h4>
+              <p className="text-xs text-muted-foreground">
+                Centralized registry of visa-approved students, counselor counts, and flight readiness.
+              </p>
+            </div>
+          </div>
+          <Button asChild variant="outline" size="sm" className="shrink-0 gap-1.5">
+            <Link to="/visa-granted">
+              View Visa Granted Registry
+              <ArrowRight className="size-3.5" />
+            </Link>
+          </Button>
+        </div>
+      </Card>
 
       {/* Class Section & Student Admissions for Front Desk Officer */}
       <ClassEnrollmentPanel />

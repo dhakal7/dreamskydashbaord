@@ -12,6 +12,42 @@ export const visaKeys = {
   lists: () => [...visaKeys.all, 'list'] as const,
   list: (p: VisaCaseListParams) => [...visaKeys.lists(), p] as const,
   detail: (id: string) => [...visaKeys.all, 'detail', id] as const,
+  granted: (p?: any) => [...visaKeys.all, 'granted', p] as const,
+  grantedAnalytics: () => [...visaKeys.all, 'granted-analytics'] as const,
+}
+
+export function useVisaGrantedStudents(params: any = {}) {
+  return useQuery({
+    queryKey: visaKeys.granted(params),
+    queryFn: () => visaApi.listGranted(params),
+    enabled: !isMockMode(),
+  })
+}
+
+export function useVisaGrantedAnalytics() {
+  return useQuery({
+    queryKey: visaKeys.grantedAnalytics(),
+    queryFn: () => visaApi.grantedAnalytics(),
+    enabled: !isMockMode(),
+  })
+}
+
+export function useUpdateDeparture() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ studentId, body }: { studentId: string; body: any }) => {
+      if (isMockMode()) return Promise.resolve(null as never)
+      return visaApi.updateDeparture(studentId, body)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: visaKeys.all })
+      qc.invalidateQueries({ queryKey: ['students'] })
+      qc.invalidateQueries({ queryKey: ['dashboard'] })
+      qc.invalidateQueries({ queryKey: ['commissions'] })
+      toast.success('Departure status updated successfully')
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to update departure status'),
+  })
 }
 
 export function useVisaCases(params: VisaCaseListParams = {}) {

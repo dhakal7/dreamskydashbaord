@@ -424,6 +424,44 @@ const changeStatus = async (id, { status, refusalReason }, currentUser = null) =
 
     const updated = await prisma.visaCase.update({ where: { id }, data: update, include: includeRelations });
 
+    // ── AUTOMATED VISA APPROVAL EVENT HOOKS ──────────────────────────────────
+    // When a visa is approved:
+    // 1. Advance student to VISA_APPROVED stage and initialize departure tracking
+    // 2. Automatically evaluate and generate Counselor & Referral Agent commissions
+    if (status === "APPROVED") {
+        const student = updated.application?.student;
+        if (student?.id) {
+            try {
+                const currentBg = (student.academicBackground && typeof student.academicBackground === "object")
+                    ? { ...student.academicBackground }
+                    : {};
+                const existingDeparture = currentBg.departureDetails || {};
+                currentBg.departureDetails = {
+                    status: existingDeparture.status || "VISA_GRANTED",
+                    expectedDepartureDate: existingDeparture.expectedDepartureDate || null,
+                    actualDepartureDate: existingDeparture.actualDepartureDate || null,
+                    updatedAt: new Date().toISOString(),
+                };
+
+                await prisma.student.update({
+                    where: { id: student.id },
+                    data: {
+                        currentStage: "VISA_APPROVED",
+                        academicBackground: currentBg,
+                    },
+                });
+
+                // Automated Commission Generation
+                const { evaluateVisaApprovalCommissions } = require("./commission.service");
+                if (typeof evaluateVisaApprovalCommissions === "function") {
+                    await evaluateVisaApprovalCommissions(student.id, updated.id);
+                }
+            } catch (autoErr) {
+                console.error(`[Visa Service] Post-approval automation error for student ${student.id}:`, autoErr);
+            }
+        }
+    }
+
     // Email the student whenever their visa case status changes
     const student = updated.application?.student;
     if (student?.email) {
@@ -471,6 +509,324 @@ const getDashboardStats = async (currentUser = null) => {
     return result;
 };
 
+// ─── VISA GRANTED & SUCCESS STUDENTS ──────────────────────────────────────────
+
+/**
+ * List all Visa Granted / Success Students with role-based scoping and filters.
+ */
+const listVisaGrantedStudents = async (query = {}, currentUser = null) => {
+    if (!currentUser) throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+
+    const actorRole = currentUser.role;
+    const actorId = currentUser.userId || currentUser.id;
+    const { counselorId, referralAgentId, country, university, departureStatus, search } = query;
+
+    const where = {
+        isActive: true,
+        OR: [
+            { currentStage: { in: ["VISA_APPROVED", "DEPARTED"] } },
+            { applications: { some: { visaCase: { status: "APPROVED" } } } },
+        ],
+    };
+
+    // Role-based scoping
+    if (actorRole === "COUNSELOR") {
+        where.assignedCounselorId = actorId;
+    } else if (actorRole === "REFERRAL_AGENT") {
+        where.referredByAgent = { userId: actorId };
+    } else if (actorRole === "BRANCH_ADMIN") {
+        if (!isValidBranchId(currentUser.branchId)) {
+            throw AppError.forbidden("Branch Admin lacks assigned branch context.", "NO_BRANCH_CONTEXT");
+        }
+        where.OR = [
+            { assignedCounselor: { branchId: currentUser.branchId.trim() } },
+            { assignedCounselorId: null, academicBackground: { path: ["branchId"], equals: currentUser.branchId.trim() } },
+        ];
+    } else if (actorRole === "FRONT_DESK" || actorRole === "SUPER_ADMIN") {
+        if (counselorId && counselorId !== "all") {
+            where.assignedCounselorId = counselorId.trim();
+        }
+        if (referralAgentId && referralAgentId !== "all") {
+            where.referredByAgentId = referralAgentId.trim();
+        }
+    } else {
+        throw AppError.forbidden("You do not have permission to view Visa Granted students.", "FORBIDDEN");
+    }
+
+    if (search && search.trim()) {
+        const q = search.trim();
+        where.AND = where.AND || [];
+        where.AND.push({
+            OR: [
+                { firstName: { contains: q, mode: "insensitive" } },
+                { lastName: { contains: q, mode: "insensitive" } },
+                { email: { contains: q, mode: "insensitive" } },
+                { phone: { contains: q, mode: "insensitive" } },
+                { id: { contains: q, mode: "insensitive" } },
+            ],
+        });
+    }
+
+    const students = await prisma.student.findMany({
+        where,
+        include: {
+            assignedCounselor: {
+                select: { id: true, firstName: true, lastName: true, email: true },
+            },
+            referredByAgent: {
+                include: {
+                    user: { select: { id: true, firstName: true, lastName: true, email: true } },
+                },
+            },
+            applications: {
+                where: { status: { notIn: ["WITHDRAWN", "REJECTED"] } },
+                include: {
+                    university: { select: { id: true, name: true, country: { select: { id: true, name: true, code: true } } } },
+                    course: { select: { id: true, name: true } },
+                    visaCase: {
+                        select: {
+                            id: true,
+                            status: true,
+                            visaType: true,
+                            embassy: true,
+                            submittedAt: true,
+                            decisionAt: true,
+                            updatedAt: true,
+                        },
+                    },
+                },
+                take: 1,
+                orderBy: { updatedAt: "desc" },
+            },
+            commissions: {
+                select: {
+                    id: true,
+                    amount: true,
+                    currency: true,
+                    status: true,
+                    paidAt: true,
+                    recipientId: true,
+                    recipient: { select: { id: true, firstName: true, lastName: true, role: true } },
+                },
+            },
+        },
+        orderBy: { updatedAt: "desc" },
+    });
+
+    let formatted = students.map((s) => {
+        const app = s.applications[0];
+        const vc = app?.visaCase;
+        const bg = s.academicBackground && typeof s.academicBackground === "object" ? s.academicBackground : {};
+        const departure = bg.departureDetails || {};
+
+        const counselorCommission = s.commissions.find((c) => c.recipientId === s.assignedCounselorId);
+        const agentCommission = s.referredByAgent?.userId
+            ? s.commissions.find((c) => c.recipientId === s.referredByAgent.userId)
+            : null;
+
+        const depStatus = departure.status || (s.currentStage === "DEPARTED" ? "DEPARTED" : "VISA_GRANTED");
+
+        return {
+            id: s.id,
+            studentId: s.id,
+            studentCode: s.id.length > 8 ? `EP-${s.id.slice(-6).toUpperCase()}` : s.id,
+            firstName: s.firstName,
+            lastName: s.lastName,
+            studentName: `${s.firstName} ${s.lastName}`.trim(),
+            email: s.email,
+            phone: s.phone,
+            photoUrl: bg.profilePhoto || null,
+            assignedCounselorId: s.assignedCounselorId,
+            assignedCounselorName: s.assignedCounselor
+                ? `${s.assignedCounselor.firstName} ${s.assignedCounselor.lastName}`.trim()
+                : "Unassigned",
+            referredByAgentId: s.referredByAgentId,
+            referralAgentName: s.referredByAgent?.user
+                ? `${s.referredByAgent.user.firstName} ${s.referredByAgent.user.lastName}`.trim()
+                : null,
+            referralCode: s.referredByAgent?.referralCode || null,
+            countryName: app?.university?.country?.name || app?.university?.countryName || "General",
+            countryFlag: app?.university?.country?.code || "🎓",
+            universityName: app?.university?.name || "University",
+            courseName: app?.course?.name || "Course",
+            intake: app?.intake || "Upcoming",
+            visaGrantDate: vc?.decisionAt || vc?.updatedAt || s.updatedAt,
+            visaApplicationDate: vc?.submittedAt || null,
+            visaCaseId: vc?.id || null,
+            departureStatus: depStatus,
+            departureDetails: {
+                status: depStatus,
+                expectedDepartureDate: departure.expectedDepartureDate || null,
+                actualDepartureDate: departure.actualDepartureDate || null,
+                destinationAirport: departure.destinationAirport || null,
+                flightNumber: departure.flightNumber || null,
+                notes: departure.notes || null,
+                updatedAt: departure.updatedAt || null,
+                updatedByName: departure.updatedByName || null,
+            },
+            counselorCommission: counselorCommission
+                ? {
+                      id: counselorCommission.id,
+                      amount: counselorCommission.amount,
+                      currency: counselorCommission.currency,
+                      status: counselorCommission.status,
+                      paidAt: counselorCommission.paidAt,
+                  }
+                : null,
+            agentCommission: agentCommission
+                ? {
+                      id: agentCommission.id,
+                      amount: agentCommission.amount,
+                      currency: agentCommission.currency,
+                      status: agentCommission.status,
+                      paidAt: agentCommission.paidAt,
+                  }
+                : null,
+        };
+    });
+
+    if (country && country !== "all") {
+        formatted = formatted.filter((item) => item.countryName.toLowerCase() === country.toLowerCase());
+    }
+    if (university && university !== "all") {
+        formatted = formatted.filter((item) => item.universityName.toLowerCase().includes(university.toLowerCase()));
+    }
+    if (departureStatus && departureStatus !== "all") {
+        formatted = formatted.filter((item) => item.departureStatus.toUpperCase() === departureStatus.toUpperCase());
+    }
+
+    return formatted;
+};
+
+/**
+ * Get aggregate analytics for Visa Granted students
+ */
+const getVisaGrantedAnalytics = async (currentUser) => {
+    const list = await listVisaGrantedStudents({}, currentUser);
+
+    const totalApproved = list.length;
+    const preparingDeparture = list.filter((s) => s.departureStatus === "PREPARING_DEPARTURE").length;
+    const ticketBooked = list.filter((s) => s.departureStatus === "TICKET_BOOKED").length;
+    const departed = list.filter((s) => s.departureStatus === "DEPARTED").length;
+    const visaGrantedOnly = list.filter((s) => s.departureStatus === "VISA_GRANTED").length;
+
+    // Counselor Breakdown
+    const counselorMap = new Map();
+    for (const s of list) {
+        const id = s.assignedCounselorId || "unassigned";
+        const name = s.assignedCounselorName || "Unassigned";
+        const existing = counselorMap.get(id) || { id, name, approvedCount: 0, departedCount: 0 };
+        existing.approvedCount += 1;
+        if (s.departureStatus === "DEPARTED") existing.departedCount += 1;
+        counselorMap.set(id, existing);
+    }
+
+    // Referral Agent Breakdown
+    const agentMap = new Map();
+    for (const s of list) {
+        if (!s.referredByAgentId) continue;
+        const id = s.referredByAgentId;
+        const name = s.referralAgentName || "Referral Agent";
+        const existing = agentMap.get(id) || { id, name, approvedCount: 0, departedCount: 0 };
+        existing.approvedCount += 1;
+        if (s.departureStatus === "DEPARTED") existing.departedCount += 1;
+        agentMap.set(id, existing);
+    }
+
+    // Country Breakdown
+    const countryMap = new Map();
+    for (const s of list) {
+        const c = s.countryName || "General";
+        countryMap.set(c, (countryMap.get(c) || 0) + 1);
+    }
+
+    return {
+        summary: {
+            totalApproved,
+            visaGrantedOnly,
+            preparingDeparture,
+            ticketBooked,
+            departed,
+            departureRate: totalApproved > 0 ? Math.round((departed / totalApproved) * 100) : 0,
+        },
+        counselors: Array.from(counselorMap.values()).sort((a, b) => b.approvedCount - a.approvedCount),
+        referralAgents: Array.from(agentMap.values()).sort((a, b) => b.approvedCount - a.approvedCount),
+        countries: Array.from(countryMap.entries()).map(([country, count]) => ({ country, count })).sort((a, b) => b.count - a.count),
+    };
+};
+
+/**
+ * Update departure details for a student.
+ * Counselors are explicitly permitted to update their own assigned students.
+ */
+const updateStudentDepartureStatus = async (studentId, payload, currentUser) => {
+    if (!currentUser) throw AppError.unauthorized("Authentication required.", "UNAUTHORIZED");
+
+    const student = await prisma.student.findUnique({
+        where: { id: studentId },
+        select: {
+            id: true,
+            assignedCounselorId: true,
+            academicBackground: true,
+            currentStage: true,
+        },
+    });
+    if (!student) throw AppError.notFound("Student not found.", "STUDENT_NOT_FOUND");
+
+    const actorRole = currentUser.role;
+    const actorId = currentUser.userId || currentUser.id;
+
+    // Check permissions:
+    // SUPER_ADMIN, FRONT_DESK, BRANCH_ADMIN: authorized
+    // COUNSELOR: authorized ONLY for their own assigned students!
+    if (actorRole === "COUNSELOR") {
+        if (!student.assignedCounselorId || student.assignedCounselorId !== actorId) {
+            throw AppError.forbidden("Counselors can only update departure status for their own assigned students.", "FORBIDDEN");
+        }
+    } else if (!["SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK"].includes(actorRole)) {
+        throw AppError.forbidden("You do not have permission to update departure status.", "FORBIDDEN");
+    }
+
+    const { status, expectedDepartureDate, actualDepartureDate, destinationAirport, flightNumber, notes } = payload || {};
+
+    const validDepartureStatuses = ["VISA_GRANTED", "PREPARING_DEPARTURE", "TICKET_BOOKED", "DEPARTURE_DELAYED", "DEPARTED"];
+    if (status && !validDepartureStatuses.includes(status)) {
+        throw AppError.badRequest(`Invalid departure status. Must be one of: ${validDepartureStatuses.join(", ")}.`, "VALIDATION_ERROR");
+    }
+
+    const bg = student.academicBackground && typeof student.academicBackground === "object" ? { ...student.academicBackground } : {};
+    const existing = bg.departureDetails || {};
+
+    const newDepStatus = status || existing.status || "VISA_GRANTED";
+    const actorName = `${currentUser.firstName || ""} ${currentUser.lastName || ""}`.trim() || actorRole;
+
+    bg.departureDetails = {
+        ...existing,
+        status: newDepStatus,
+        expectedDepartureDate: expectedDepartureDate !== undefined ? expectedDepartureDate : (existing.expectedDepartureDate || null),
+        actualDepartureDate: actualDepartureDate !== undefined ? actualDepartureDate : (existing.actualDepartureDate || null),
+        destinationAirport: destinationAirport !== undefined ? (destinationAirport?.trim() || null) : (existing.destinationAirport || null),
+        flightNumber: flightNumber !== undefined ? (flightNumber?.trim() || null) : (existing.flightNumber || null),
+        notes: notes !== undefined ? (notes?.trim() || null) : (existing.notes || null),
+        updatedAt: new Date().toISOString(),
+        updatedById: actorId,
+        updatedByName: actorName,
+    };
+
+    const updateData = { academicBackground: bg };
+    if (newDepStatus === "DEPARTED") {
+        updateData.currentStage = "DEPARTED";
+    }
+
+    const updatedStudent = await prisma.student.update({
+        where: { id: studentId },
+        data: updateData,
+        select: { id: true, currentStage: true, academicBackground: true },
+    });
+
+    return updatedStudent.academicBackground?.departureDetails;
+};
+
 module.exports = {
     createVisaCase,
     getVisaCaseById,
@@ -479,6 +835,9 @@ module.exports = {
     changeStatus,
     deleteVisaCase,
     getDashboardStats,
+    listVisaGrantedStudents,
+    getVisaGrantedAnalytics,
+    updateStudentDepartureStatus,
     assertVisaCaseAuthorization,
     buildVisaScopeWhere,
 };

@@ -62,6 +62,200 @@ export interface CommissionRuleListResponse {
   total: number
 }
 
+export interface CounselorCommissionProfile {
+  counselor: {
+    id: string
+    name: string
+    email: string
+    branchName: string
+  }
+  performance: {
+    totalAssigned: number
+    totalCounseled: number
+    totalApplications: number
+    totalVisaApplications: number
+    totalVisaApproved: number
+    totalDeparted: number
+    conversionRate: number
+  }
+  financials: {
+    totalEligible: number
+    totalEarned: number
+    totalPaid: number
+    totalOutstanding: number
+    totalPending?: number
+    totalDisputed: number
+    currency: string
+  }
+  students: Array<{
+    studentId: string
+    studentRefId?: string
+    studentName: string
+    email: string | null
+    phone: string | null
+    destinationCountry: string
+    universityName: string
+    courseName: string
+    intake: string
+    visaStatus: string
+    visaGrantDate: string | null
+    departureStatus: string
+    isCommissionEligible: boolean
+    isEligible?: boolean
+    commissionAmount: number
+    commissionStatus: string
+    commissionId: string | null
+  }>
+  commissionHistory: Array<{
+    id: string
+    studentId: string
+    studentName: string
+    amount: number
+    currency: string
+    status: string
+    triggerStage: string
+    generatedAt: string
+    paidAt: string | null
+  }>
+}
+
+export interface ReferralAgentCommissionProfile {
+  agent: {
+    profileId: string
+    userId: string
+    name: string
+    email: string
+    referralCode: string
+    bankDetails: any
+  }
+  performance: {
+    totalReferred: number
+    totalProcessed: number
+    totalVisaApplications: number
+    totalVisaApproved: number
+    totalDeparted: number
+    conversionRate: number
+  }
+  financials: {
+    totalEarned: number
+    totalPaid: number
+    totalOutstanding: number
+    currency: string
+  }
+  referrals: Array<{
+    studentId: string
+    studentName: string
+    email: string | null
+    phone: string | null
+    referralDate: string
+    counselorName: string
+    destinationCountry: string
+    universityName: string
+    courseName: string
+    visaStatus: string
+    visaGrantDate: string | null
+    departureStatus: string
+    commissionAmount: number
+    commissionStatus: string
+    commissionId: string | null
+  }>
+  commissionHistory: Array<{
+    id: string
+    studentId: string
+    studentName: string
+    amount: number
+    currency: string
+    status: string
+    generatedAt: string
+    paidAt: string | null
+  }>
+}
+
+export interface AnnualSettlementData {
+  year: number
+  summary: {
+    totalGenerated: number
+    totalPaid: number
+    totalOutstanding: number
+    currency: string
+    commissionsCount: number
+  }
+  counselors: Array<{
+    id: string
+    name: string
+    email: string
+    role: string
+    branch?: { id: string; name: string } | null
+    approvedCount?: number
+    departedCount?: number
+    totalCommissionsCount: number
+    totalGenerated?: number
+    totalEarned: number
+    totalPaid: number
+    totalOutstanding: number
+    currency?: string
+    commissionIds: string[]
+    pendingCommissionIds?: string[]
+  }>
+  referralAgents: Array<{
+    id: string
+    profileId?: string
+    name: string
+    email: string
+    role: string
+    referralCode?: string
+    approvedCount?: number
+    departedCount?: number
+    totalCommissionsCount: number
+    totalGenerated?: number
+    totalEarned: number
+    totalPaid: number
+    totalOutstanding: number
+    currency?: string
+    commissionIds: string[]
+    pendingCommissionIds?: string[]
+  }>
+  agents?: Array<{
+    id: string
+    profileId?: string
+    name: string
+    email: string
+    role: string
+    referralCode?: string
+    approvedCount?: number
+    departedCount?: number
+    totalCommissionsCount?: number
+    totalGenerated?: number
+    totalEarned?: number
+    totalPaid: number
+    totalOutstanding: number
+    currency?: string
+    commissionIds?: string[]
+    pendingCommissionIds?: string[]
+  }>
+  commissions: Array<{
+    id: string
+    recipientId: string
+    recipientName: string
+    recipientRole: string
+    studentId: string
+    studentName: string
+    amount: number
+    currency: string
+    status: string
+    generatedAt: string
+    paidAt: string | null
+    paymentReference: string | null
+  }>
+}
+
+export interface SettleAnnualBody {
+  commissionIds: string[]
+  paymentReference: string
+  paidAt?: string
+  notes?: string
+}
+
 export const commissionApi = {
   // ── Commission Rules ─────────────────────────────────────────────────────
   listRules(params?: CommissionRuleListParams): Promise<CommissionRuleListResponse> {
@@ -93,5 +287,19 @@ export const commissionApi = {
   },
   dispute(id: string, reason: string): Promise<ApiCommission> {
     return api.patch(`/commissions/${id}/dispute`, { reason })
+  },
+
+  // ── Commission Profiles & Settlements ─────────────────────────────────────
+  getCounselorProfile(id: string): Promise<CounselorCommissionProfile> {
+    return api.get(`/commissions/counselor/${id}/profile`)
+  },
+  getReferralAgentProfile(id: string): Promise<ReferralAgentCommissionProfile> {
+    return api.get(`/commissions/referral-agent/${id}/profile`)
+  },
+  getAnnualSettlement(year?: number): Promise<AnnualSettlementData> {
+    return api.get('/commissions/settlements/annual', { params: year ? { year } : {} })
+  },
+  settleAnnual(body: SettleAnnualBody): Promise<{ settledCount: number; paymentReference: string }> {
+    return api.post('/commissions/settlements/annual/pay', body)
   },
 }
