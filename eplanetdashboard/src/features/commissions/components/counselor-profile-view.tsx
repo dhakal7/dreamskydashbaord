@@ -8,6 +8,7 @@ import {
   Clock,
   ExternalLink,
   Loader2,
+  RefreshCw,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -52,7 +53,12 @@ export function CounselorProfileView({ initialCounselorId }: CounselorProfileVie
     }
   }, [counselors, defaultCounselorId, selectedCounselorId])
 
-  const { data: profile, isLoading, error } = useCounselorCommissionProfile(selectedCounselorId)
+  const { data: profile, isLoading, error, refetch } = useCounselorCommissionProfile(selectedCounselorId)
+  const activeCounselor = counselors.find((c) => c.id === selectedCounselorId)
+  const counselorDisplayName = (profile?.counselor.name && profile.counselor.name !== 'Counselor Profile')
+    ? profile.counselor.name
+    : (activeCounselor?.name || 'Counselor')
+  const counselorDisplayEmail = profile?.counselor.email || activeCounselor?.email || ''
 
   if (isLoadingCounselors && !selectedCounselorId) {
     return (
@@ -102,22 +108,28 @@ export function CounselorProfileView({ initialCounselorId }: CounselorProfileVie
           <p className="text-sm text-muted-foreground">Loading counselor commission profile...</p>
         </div>
       ) : !profile ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
-          {error ? 'Failed to load profile. Please verify connection.' : 'No counselor selected or profile data unavailable.'}
+        <Card className="p-8 flex flex-col items-center justify-center text-center gap-3">
+          <p className="text-sm text-muted-foreground">
+            {error ? 'Unable to load profile data. Please verify your connection or retry.' : 'No counselor selected or profile data unavailable.'}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2 text-xs">
+            <RefreshCw className="size-3.5" />
+            Retry Connection
+          </Button>
         </Card>
       ) : (
         <div className="space-y-6">
           {/* ── Counselor Info Header ── */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl border border-border bg-card">
             <div className="flex items-center gap-4">
-              <PersonAvatar name={profile.counselor.name} className="size-14 text-base" />
+              <PersonAvatar name={counselorDisplayName} className="size-14 text-base" />
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-bold">{profile.counselor.name}</h3>
+                  <h3 className="text-xl font-bold">{counselorDisplayName}</h3>
                   <Badge variant="info">Counselor</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {profile.counselor.email}
+                  {counselorDisplayEmail}
                   {profile.counselor.branchName && ` • Branch: ${profile.counselor.branchName}`}
                 </p>
               </div>

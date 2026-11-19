@@ -7,6 +7,7 @@ import {
   Clock,
   ExternalLink,
   Loader2,
+  RefreshCw,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -51,7 +52,13 @@ export function AgentProfileView({ initialAgentId }: AgentProfileViewProps) {
     }
   }, [agents, defaultAgentId, selectedAgentId])
 
-  const { data: profile, isLoading, error } = useReferralAgentCommissionProfile(selectedAgentId)
+  const { data: profile, isLoading, error, refetch } = useReferralAgentCommissionProfile(selectedAgentId)
+  const activeAgent = agents.find((a) => a.id === selectedAgentId)
+  const agentDisplayName = (profile?.agent.name && profile.agent.name !== 'Referral Agent')
+    ? profile.agent.name
+    : (activeAgent?.name || 'Referral Agent')
+  const agentDisplayEmail = profile?.agent.email || activeAgent?.email || ''
+  const agentDisplayCode = profile?.agent.referralCode || activeAgent?.referralCode || ''
 
   if (isLoadingAgents && !selectedAgentId) {
     return (
@@ -101,22 +108,28 @@ export function AgentProfileView({ initialAgentId }: AgentProfileViewProps) {
           <p className="text-sm text-muted-foreground">Loading referral agent profile...</p>
         </div>
       ) : !profile ? (
-        <Card className="p-8 text-center text-sm text-muted-foreground">
-          {error ? 'Failed to load profile. Please verify connection.' : 'No referral agent selected or profile data unavailable.'}
+        <Card className="p-8 flex flex-col items-center justify-center text-center gap-3">
+          <p className="text-sm text-muted-foreground">
+            {error ? 'Unable to load profile data. Please verify your connection or retry.' : 'No referral agent selected or profile data unavailable.'}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => refetch()} className="gap-2 text-xs">
+            <RefreshCw className="size-3.5" />
+            Retry Connection
+          </Button>
         </Card>
       ) : (
         <div className="space-y-6">
           {/* ── Header Card ── */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-xl border border-border bg-card">
             <div className="flex items-center gap-4">
-              <PersonAvatar name={profile.agent.name} className="size-14 text-base" />
+              <PersonAvatar name={agentDisplayName} className="size-14 text-base" />
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xl font-bold">{profile.agent.name}</h3>
+                  <h3 className="text-xl font-bold">{agentDisplayName}</h3>
                   <Badge variant="info">Referral Agent</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {profile.agent.email} • Code: <span className="font-mono font-semibold">{profile.agent.referralCode}</span>
+                  {agentDisplayEmail} • Code: <span className="font-mono font-semibold">{agentDisplayCode || '—'}</span>
                 </p>
               </div>
             </div>

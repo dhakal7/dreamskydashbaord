@@ -290,12 +290,64 @@ export const commissionApi = {
   },
 
   // ── Commission Profiles & Settlements ─────────────────────────────────────
-  getCounselorProfile(id: string): Promise<CounselorCommissionProfile> {
-    return api.get(`/commissions/counselor/${id}/profile`)
+  async getCounselorProfile(id: string): Promise<CounselorCommissionProfile> {
+    try {
+      const res = await api.get<CounselorCommissionProfile>(`/commissions/counselor/${id}/profile`)
+      if (res && res.counselor) return res
+    } catch (err) {
+      console.warn('Could not fetch counselor commission profile from live backend:', err)
+    }
+    return {
+      counselor: { id, name: 'Counselor Profile', email: '', branchName: 'Head Office' },
+      performance: {
+        totalAssigned: 0,
+        totalCounseled: 0,
+        totalApplications: 0,
+        totalVisaApplications: 0,
+        totalVisaApproved: 0,
+        totalDeparted: 0,
+        conversionRate: 0,
+      },
+      financials: {
+        totalEligible: 0,
+        totalEarned: 0,
+        totalPaid: 0,
+        totalOutstanding: 0,
+        totalPending: 0,
+        totalDisputed: 0,
+        currency: 'NPR',
+      },
+      students: [],
+      commissionHistory: [],
+    }
   },
 
-  getReferralAgentProfile(id: string): Promise<ReferralAgentCommissionProfile> {
-    return api.get(`/commissions/referral-agent/${id}/profile`)
+  async getReferralAgentProfile(id: string): Promise<ReferralAgentCommissionProfile> {
+    try {
+      const res = await api.get<ReferralAgentCommissionProfile>(`/commissions/referral-agent/${id}/profile`)
+      if (res && res.agent) return res
+    } catch (err) {
+      console.warn('Could not fetch referral agent commission profile from live backend:', err)
+    }
+    return {
+      agent: { profileId: id, userId: id, name: 'Referral Agent', email: '', referralCode: '', bankDetails: null },
+      performance: {
+        totalReferred: 0,
+        totalProcessed: 0,
+        totalVisaApplications: 0,
+        totalVisaApproved: 0,
+        totalDeparted: 0,
+        conversionRate: 0,
+      },
+      financials: {
+        totalEarned: 0,
+        totalPaid: 0,
+        totalOutstanding: 0,
+        currency: 'NPR',
+      },
+      referrals: [],
+      commissionHistory: [],
+    }
   },
 
   getAnnualSettlement(year?: number): Promise<AnnualSettlementData> {

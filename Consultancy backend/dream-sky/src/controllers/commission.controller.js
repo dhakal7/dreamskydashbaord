@@ -1,4 +1,5 @@
 const commissionService = require("../services/commission.service");
+const prisma = require("../prisma");
 const { sendSuccess, sendCreated } = require("../utils/response.util");
 const AppError = require("../utils/apiError");
 
@@ -245,11 +246,12 @@ const getCounselorProfile = async (req, res, next) => {
     if (!user) throw AppError.unauthorized("Authentication required.");
 
     const targetCounselorId = req.params.id;
+    const userRole = (user.role || "").toUpperCase();
 
     // Role-based scoping: counselors can only view their own profile
-    if (user.role === "COUNSELOR" && user.id !== targetCounselorId) {
+    if (userRole === "COUNSELOR" && user.id !== targetCounselorId) {
       throw AppError.forbidden("Counselors can only view their own commission profile.", "FORBIDDEN");
-    } else if (user.role === "BRANCH_ADMIN") {
+    } else if (userRole === "BRANCH_ADMIN") {
       // Must belong to their branch
       const target = await prisma.user.findUnique({
         where: { id: targetCounselorId },
@@ -258,7 +260,7 @@ const getCounselorProfile = async (req, res, next) => {
       if (!target || target.branchId !== user.branchId) {
         throw AppError.forbidden("You can only view counselors in your own branch.", "CROSS_BRANCH_ACCESS_DENIED");
       }
-    } else if (user.role !== "SUPER_ADMIN" && user.role !== "COUNSELOR") {
+    } else if (userRole !== "SUPER_ADMIN" && userRole !== "ADMIN" && userRole !== "COUNSELOR") {
       throw AppError.forbidden("You do not have permission to view counselor commission profiles.", "FORBIDDEN");
     }
 
@@ -269,6 +271,7 @@ const getCounselorProfile = async (req, res, next) => {
 
     sendSuccess(res, { data: profile });
   } catch (err) {
+    console.error("[getCounselorProfile Error]:", err);
     next(err);
   }
 };
@@ -279,14 +282,15 @@ const getAgentProfile = async (req, res, next) => {
     if (!user) throw AppError.unauthorized("Authentication required.");
 
     const targetAgentId = req.params.id;
+    const userRole = (user.role || "").toUpperCase();
 
     // Role-based scoping: referral agents can only view their own profile
-    if (user.role === "REFERRAL_AGENT") {
+    if (userRole === "REFERRAL_AGENT") {
       const myProfile = await prisma.referralAgentProfile.findUnique({ where: { userId: user.id } });
       if (user.id !== targetAgentId && myProfile?.id !== targetAgentId) {
         throw AppError.forbidden("Referral agents can only view their own commission profile.", "FORBIDDEN");
       }
-    } else if (user.role !== "SUPER_ADMIN" && user.role !== "BRANCH_ADMIN") {
+    } else if (userRole !== "SUPER_ADMIN" && userRole !== "ADMIN" && userRole !== "BRANCH_ADMIN") {
       throw AppError.forbidden("You do not have permission to view referral agent commission profiles.", "FORBIDDEN");
     }
 
@@ -297,6 +301,7 @@ const getAgentProfile = async (req, res, next) => {
 
     sendSuccess(res, { data: profile });
   } catch (err) {
+    console.error("[getAgentProfile Error]:", err);
     next(err);
   }
 };

@@ -765,25 +765,32 @@ async function getCounselorCommissionProfile(counselorId) {
       conversionRate: totalAssigned > 0 ? Math.round((totalVisaApproved / totalAssigned) * 100) : 0,
     },
     financials: {
-      totalEligible: totalEarned,
-      totalEarned,
-      totalPaid,
-      totalOutstanding,
-      totalDisputed,
+      totalEligible: totalEarned || 0,
+      totalEarned: totalEarned || 0,
+      totalPaid: totalPaid || 0,
+      totalOutstanding: totalOutstanding || 0,
+      totalPending: commissions.filter((c) => c.status === "PENDING").reduce((sum, c) => sum + (c.amount || 0), 0),
+      totalDisputed: totalDisputed || 0,
       currency: "NPR",
     },
     students: formattedStudents,
-    commissionHistory: commissions.map((c) => ({
-      id: c.id,
-      studentId: c.studentId,
-      studentName: c.student ? `${c.student.firstName} ${c.student.lastName}`.trim() : "Student",
-      amount: c.amount,
-      currency: c.currency,
-      status: c.status,
-      triggerStage: c.ruleSnapshot?.triggerStage || c.rule?.triggerStage || "VISA_APPROVED",
-      generatedAt: c.createdAt,
-      paidAt: c.paidAt,
-    })),
+    commissionHistory: commissions.map((c) => {
+      let snapshot = c.ruleSnapshot;
+      if (typeof snapshot === "string") {
+        try { snapshot = JSON.parse(snapshot); } catch { snapshot = {}; }
+      }
+      return {
+        id: c.id,
+        studentId: c.studentId,
+        studentName: c.student ? `${c.student.firstName} ${c.student.lastName}`.trim() : "Student",
+        amount: c.amount || 0,
+        currency: c.currency || "NPR",
+        status: c.status,
+        triggerStage: snapshot?.triggerStage || c.rule?.triggerStage || "VISA_APPROVED",
+        generatedAt: c.createdAt,
+        paidAt: c.paidAt,
+      };
+    }),
   };
 }
 
